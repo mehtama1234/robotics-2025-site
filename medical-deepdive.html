@@ -104,6 +104,19 @@
 <h2>Why it matters</h2>
 <p>A deformation-aware autonomous injection controller using dense iOCT 3D reconstruction that raises subretinal bleb generation success from 35% to 90% ex-vivo.</p></article>
 <article class="page" id="gp1"><h1>Advancing Dense Endoscopic Reconstruction with Gaussian Splatting-Driven Surface Normal-Aware Tracking and Mapping</h1>
+
+<div style="background:var(--ink);color:#E7ECED;border-radius:12px;padding:20px 22px;margin:10px 0 6px;border:1px solid #000">
+  <div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-lite);margin-bottom:6px">Live run · we actually ran it</div>
+  <h2 style="color:#fff;margin:0 0 8px;font-size:18px;border:0;padding:0">Reconstructing the inside of a colon from endoscope video</h2>
+  <p style="color:#C6D0D2;font-size:13.5px;margin:0 0 14px;line-height:1.62">This is a <em>SLAM</em> system built on 2D Gaussian Splatting: as the endoscope moves, it simultaneously figures out where the camera is (<em>tracking</em>) and builds a 3D surface of the tissue out of tiny flat Gaussian discs (<em>mapping</em>) — using surface normals to keep neighboring discs agreeing on which way the tissue faces. We ran the authors' code on a C3VD colonoscopy sequence on an L4 (2D-GS rasterizer compiled from source). Below is the model's own evaluation output at one frame — <strong>top row = ground truth, bottom row = the reconstruction</strong>.</p>
+  <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#fff"><img src="assets/endo2dtam/colon_recon_eval.png" alt="Endo-2DTAM — ground truth vs reconstructed colon (RGB + depth)" style="width:100%;max-width:100%;display:block"></div>
+  <p style="color:#C6D0D2;font-size:12px;margin:12px 0 0;line-height:1.6">The rendered RGB (bottom-left, <strong>PSNR 23.5</strong>) recovers the haustral folds and the dark lumen tunnel going deeper into the colon; the reconstructed depth (bottom-middle) tracks the ground-truth depth closely, with error (bottom-right) concentrated only at the sharp fold edges. Average PSNR over the sequence was 19.4, at ~0.7&nbsp;s per frame for tracking + mapping.</p>
+  <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#8fa3a6;margin:14px 0 6px">the recovered 3D surface (normal map — each colour is a surface orientation)</div>
+  <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#0f1619"><img src="assets/endo2dtam/colon_surface_normals.png" alt="Endo-2DTAM — recovered colon surface normals" style="width:100%;max-width:100%;display:block"></div>
+  <p style="color:#C6D0D2;font-size:12px;margin:12px 0 0;line-height:1.6">The "surface-normal-aware" part of the method, made visible: the reconstruction isn't just colored points, it's a coherent 3D <em>surface</em> — you can read the curved tunnel walls and the ring-like folds from how the orientation (colour) flows across them.</p>
+  <p style="color:#D9C089;font-size:12px;margin:12px 0 0;line-height:1.6;border-top:1px solid #2a3a3f;padding-top:12px"><b>Why it matters here:</b> a surgeon (or an autonomous tool) needs a live, consistent 3D model of moving tissue to navigate safely. This runs that reconstruction from nothing but the endoscope's own video — no external tracker, no depth sensor.</p>
+</div>
+
 <h2>What it solves</h2>
 <p>Building an accurate 3D map of the inside of a patient during surgery using a camera is hard because the tissue moves and deforms, causing the depth estimates to be inconsistent between frames.</p>
 <h2>How it works</h2>
