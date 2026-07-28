@@ -38,6 +38,10 @@
  .appr b{color:var(--ink)}
  .payoff{font-size:15px;color:var(--graphite);border-top:1px dashed var(--line);padding-top:9px;margin-top:12px}
  .payoff::before{content:"\2192  ";color:var(--accent);font-weight:700}
+ .bigidea{background:linear-gradient(180deg,rgba(14,124,134,.07),rgba(14,124,134,.01));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0 16px}
+ .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
+ .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
+ .bigidea b{color:var(--ink)}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -126,6 +130,10 @@
 <tr><td class="tt">3DWG: 3D Weakly Supervised Visual Grounding via Category and</td><td>ICRA</td><td>—</td><td class="mono">model/fusion.py or branches/category.py (dual-branch fusion core)</td><td><span class="run">gpu</span></td></tr></tbody></table></div>
   </div>
   <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>KARMA: Augmenting Embodied AI Agents with Long-and-Short Term Memory Systems</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> When a language model plans a task for a robot mid-way through it, the model has forgotten what the world looks like and what just changed—it treats each step as if it's starting fresh, leading to plans that ignore moved objects or updated states.</p>
+<p><b>The approach.</b> Maintain two structured records as the robot moves and acts: a long-term 3D map of the whole space, and a short-term log of recent changes. Feed relevant excerpts from both into the prompt before each planning step so the model sees both the permanent layout and what just shifted.</p>
+<p><b>What's unique.</b> Earlier systems asked the LLM to track state internally; here memory is external and structural (scene graphs + timestamped logs), injected into prompts without retraining the model. The robot treats memories like reference materials, not learned knowledge.</p></div>
 <p>ICRA 2025 · 5 citations · memory-agent</p>
 <h2>What it does — 2-3 plain sentences</h2>
 <p>KARMA gives a household robot two separate memory systems that work together when the robot plans its next action. Long-term memory stores a 3D map of the entire space as a scene graph (a structured representation of what objects are where and what they are), while short-term memory tracks recent changes—when something moved or changed state. When an LLM is asked to plan the next step for a multi-step task, it receives relevant excerpts from both memories as context, so it knows not only what the house looks like generally, but what has changed since the robot last looked.</p>
@@ -211,6 +219,10 @@ python3 scripts/GUI_karma.py
 <li><strong>Overall</strong>: On a CPU-only box <strong>without internet or without an OpenAI API key</strong>, this will fail at the LLM step. With internet and a valid API key, it will work but be slow in the simulator. To run the full system end-to-end, you need: (1) internet access, (2) OpenAI API key (paid), (3) ideally a GPU for the simulator, though CPU is acceptable for prototyping.</li>
 </ul></article>
 <article class="page" id="gp1"><h1>Multi-Floor Zero-Shot Object Navigation Policy</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot searching a multi-story building doesn't know which floor holds the target without searching each one exhaustively—floor transitions take time and add risk, so wasting them matters.</p>
+<p><b>The approach.</b> Separate the search into two loops: on each floor, do classical visual exploration with semantic segmentation. When stairs appear, ask a language model whether switching floors is worth it given what you're looking for, then use a vision-language model to evaluate each new floor before committing.</p>
+<p><b>What's unique.</b> Coupling spatial search (visual mapping on each floor) with semantic reasoning (LLM floor-choice, VLM target verification) so the robot doesn't brute-force floors but reasons about likelihood before moving.</p></div>
 <p>ICRA 2025 · 5 citations · language-navigation</p>
 <h2>What it does — 2-3 plain sentences</h2>
 <p>A robot searches for objects in buildings where the target might be on a different floor from where it starts. The system extends single-floor visual search to reason about when and how to move between floors, using visual understanding and semantic reasoning to decide which floor is likely to have the object without needing any training data specific to the building or task. Sub-approach: language-navigation—the framework uses visual-language models and LLMs to guide exploration across spatial boundaries.</p>
@@ -313,6 +325,10 @@ roslaunch mfnp quadruped_nav.launch --robot b2 --target_object kitchen
 <li>[Qwen2-VL Model Card](<a href="https://huggingface.co/Qwen/Qwen2-VL" target="_blank" rel="noopener">https://huggingface.co/Qwen/Qwen2-VL</a>)</li>
 </ul></article>
 <article class="page" id="gp2"><h1>E2Map: Experience-and-Emotion Map for Self-Reflective Robot Navigation with Language Models</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A language model planning a path doesn't know which locations are physically risky—it treats an empty room as a blank slate each time, leading to repeated collisions in tight or awkward spots.</p>
+<p><b>The approach.</b> After each navigation attempt, capture images of what went wrong, feed them to an LLM to describe the event in words, then score that event for emotional impact (how much it hurt, how much was the robot's fault). Encode those emotions as Gaussian bumps on a spatial map, making risky areas naturally repellent to a planner.</p>
+<p><b>What's unique.</b> Encoding learned risk as continuous spatial distributions (not binary obstacles) so the planner sees gradients and can find genuinely better paths around troublesome spots, and fusing LLM semantic understanding with embodied spatial memory.</p></div>
 <p>ICRA · 4 citations · language-navigation</p>
 <h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
 <p>E2Map lets a robot that is navigating to a goal by following instructions from a large language model (LLM) learn from what actually happened when things went wrong. Instead of just trusting the LLM&#x27;s general knowledge, the robot builds a spatial map where each location is tagged with both what the LLM thinks and how well the robot&#x27;s own attempts there worked, encoding success or failure as a spatial emotional response (positive or negative &quot;feeling&quot; for that spot). After each navigation attempt, the map updates, and the next time the robot plans a path, it avoids places where it previously struggled. This is the <strong>language-navigation</strong> sub-approach: it combines LLM-based path planning with real-world experience grounding.</p>
@@ -432,6 +448,10 @@ bash scripts/gpt.sh  # or ollama.sh for local LLM
 <p>However, without a GPU, event detection + emotion evaluation will take 10–15 seconds per event, making the robot nearly unresponsive in real time. In simulation this is acceptable (you can slow down the robot&#x27;s speed), but real robots need GPU.</p>
 <p><strong>Practical recommendation</strong>: Use GPU (NVIDIA RTX or A100). The paper&#x27;s experiments ran on NVIDIA GPUs. CPU-only deployment is technically possible but defeats the purpose—the whole appeal of E2Map is fast online learning, which requires fast LLM inference.</p></article>
 <article class="page" id="gp3"><h1>ConceptAgent: LLM-Driven Precondition Grounding and Tree Search for Robust Task Planning and Execution</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A language model drafts a plan step-by-step, but each step assumes preconditions the model can't see—the gripper must fit, the object must be reachable, the next step's prerequisite must hold. The robot only discovers this is wrong *after* attempting the step and failing.</p>
+<p><b>The approach.</b> Before the robot executes any step, verify the preconditions formally against the 3D scene. If a step is impossible, use tree search (Monte Carlo Tree Search) to explore alternative action sequences from that point, backtracking and trying different paths until one succeeds.</p>
+<p><b>What's unique.</b> Treating LLM-generated plans as drafts, not gospel—a formal precondition grounding layer catches impossibilities before wasted robot moves, and tree search lets the system recover without throwing away the whole plan.</p></div>
 <p>ICRA 2025 · 4 citations · grounding</p>
 <h2>What it does — 2-3 plain sentences, and which sub-approach it is.</h2>
 <p>ConceptAgent takes a high-level task (like &quot;clean up the kitchen&quot;) and breaks it into robot-executable steps using a language model, but crucially verifies each step before the robot attempts it—checking whether the preconditions (the things that must be true before the step can work) are actually met in the real world. When a step fails, the system detects this and replans immediately rather than crashing. This is a <strong>grounding</strong> approach: it anchors LLM plans in what the robot can actually perceive and do, preventing hallucinations from causing real-world failures.</p>
@@ -511,6 +531,10 @@ python task_executor.py --task &quot;pick up the cup&quot; --environment ai2thor
 </ul>
 <p><strong>Practical assessment:</strong> This is a research contribution that demonstrates the concept on Spot (real robot) and in AI2-THOR (sim), but reproducibility is hampered by lack of open-source code. If you wanted to apply the ideas, you would start with an existing robotic planning framework (e.g., Behavior Transformer from Google, or fine-tuned Llama for robotics) and add precondition grounding + MCTS on top.</p></article>
 <article class="page" id="gp4"><h1>GRACE: Generating Socially Appropriate Robot Actions Leveraging LLMs and Human Explanations</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A language model knows vacuum cleaners shouldn't run during sleep time, but doesn't know whether to vacuum before guests arrive or after they leave—social context isn't in its training data, and different people have different norms.</p>
+<p><b>The approach.</b> Classify each scenario as certain (everyone agrees on appropriateness) or uncertain (people disagree). For certain scenarios, trust the LLM's score directly. For uncertain ones, train a neural network to refine the score by learning from human explanations—what makes an action inappropriate in this home's specific context.</p>
+<p><b>What's unique.</b> Pairing LLM common sense with machine-learned human preferences via a conditional autoencoder, so the robot adapts not just to rules but to the actual preferences of the people sharing the space.</p></div>
 <p>ICRA 2025 · 3 citations · socially-aware action generation</p>
 <h2>What it does</h2>
 <p>GRACE solves the problem of robots that behave socially awkwardly even when they know correct general rules. A household robot might know it shouldn&#x27;t vacuum during a party, but not whether to vacuum before guests arrive or after they leave—rules that a person in that home would understand immediately. The system blends two knowledge sources: what a large language model (LLM) knows from common sense, and what the actual people in the home want based on their explanations. This is the socially-aware sub-approach: the robot generates actions that match both general social norms and specific person preferences.</p>
@@ -562,6 +586,10 @@ python task_executor.py --task &quot;pick up the cup&quot; --environment ai2thor
 </ul>
 <p><strong>Practical verdict:</strong> <strong>Unknown-to-difficult to reproduce.</strong> The paper is well-written and the method is conceptually straightforward, but without the MannersDB+ dataset and the authors&#x27; annotation process, you would need to build your own social-appropriateness dataset from scratch. The LLM-based pipeline (GPT-4o querying, explanation classification via GPT-4o-mini) is reproducible if you have OpenAI API access, but training the autoencoder requires labeled household scenarios, which is labor-intensive.</p></article>
 <article class="page" id="gp5"><h1>AdaptBot: Combining LLM with Knowledge Graphs and Human Input for Generic-to-Specific Task Decomposition and Knowledge Refinement</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> An LLM writes generic abstract steps ("fetch the kettle"), but the robot doesn't know if a kettle exists in this kitchen or where it's stored. The LLM's general knowledge doesn't match this specific environment's layout and constraints.</p>
+<p><b>The approach.</b> Check each LLM step against a knowledge graph recording facts about this kitchen (objects, locations, capabilities). When the KG can't answer—when it doesn't know where the kettle is—ask a human. Store that answer in the KG so future tasks benefit from it.</p>
+<p><b>What's unique.</b> Using the KG as a memory of this home's specifics that accumulates over time, so the initial cost of human feedback pays dividends as the robot builds domain knowledge for this particular space.</p></div>
 <p>ICRA 2025 · 3 citations · grounding approach to task planning with knowledge graphs</p>
 <h2>What it does — 2-3 plain sentences</h2>
 <p>AdaptBot solves the problem that when a language model generates abstract action sequences (e.g., &quot;prepare breakfast&quot;), those plans often ignore domain-specific constraints and limitations of the particular robot, kitchen, or workspace. Rather than relying only on the LLM&#x27;s general knowledge, AdaptBot checks each abstract step against a structured knowledge graph (a database of facts about objects, actions, and their preconditions specific to that domain), refines impossible steps when the KG reveals they won&#x27;t work, and asks a human a targeted question when the KG cannot decide—then stores that answer for future tasks. This is a <strong>grounding</strong> approach: it grounds generic LLM plans in concrete environmental and agent-specific knowledge before the robot acts.</p>
@@ -658,6 +686,10 @@ python3 stitching_everything.py 2 state.json
 <li>Test with one simple task (e.g., &quot;make coffee&quot;) rather than the full benchmark suite.</li>
 </ul></article>
 <article class="page" id="gp6"><h1>Enhancing Robustness in Language-Driven Robotics: A Modular Approach to Failure Reduction</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Small language models run on edge devices but misstate what will be true after a step completes, leaving the robot in the wrong state for the next step—the model is locally wrong, breaking downstream actions even when each individual step is plausible.</p>
+<p><b>The approach.</b> Before execution, ask a forward model "if we do this step, what will definitely be true afterward?" Compare that ground truth to what the LLM said should happen. If there's a mismatch, reject the plan and replan. During execution, real-time sensor feedback catches mistakes and triggers correction immediately.</p>
+<p><b>What's unique.</b> Layering outcome verification and live feedback on top of the LLM so small models don't derail long task chains—the verification layer catches logical errors early, and feedback prevents divergence from compounding.</p></div>
 <p>IROS · 3 citations · grounding</p>
 <h2>What it does</h2>
 <p>This work wraps a small language model in a corrective architecture that catches and fixes the model&#x27;s planning mistakes before the robot executes them. Instead of trusting every step the model proposes, the system checks each one against what&#x27;s actually physically possible, then recovers gracefully when something goes wrong anyway. This is the <strong>grounding</strong> sub-approach: the LLM&#x27;s abstract steps are grounded in concrete, verified preconditions and feedback.</p>
@@ -733,6 +765,10 @@ python experiments/run_hardware.py --robot spot --model llama-2-7b
 <p><strong>Blocker</strong>: No simulator? Use the paper&#x27;s prompts to add a simple outcome predictor (e.g., &quot;if I pick up the fork from the table, it will be in my hand&quot;) and test offline first.</p>
 <p><strong>Practical limitation</strong>: The system is only as good as the LLM&#x27;s understanding of the task. A model that doesn&#x27;t know what &quot;insert into drawer&quot; means won&#x27;t be fixed by verification alone.</p></article>
 <article class="page" id="gp7"><h1>TR-LLM: Integrating Trajectory Data for Scene-Aware LLM-Based Human Action Prediction</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> An LLM predicting what a person will do next has only semantic knowledge ("kitchens are for cooking"), missing the spatial geometry—where people actually move in kitchens and toward which objects. LLM guesses can be wildly wrong about direction and distance.</p>
+<p><b>The approach.</b> Encode observed human movement as images (trajectories as heat maps), run a U-Net model trained on thousands of recorded trajectories to predict destination zones. Multiply that spatial prior by the LLM's semantic scores, refining the prediction.</p>
+<p><b>What's unique.</b> Spatial grounding via learned trajectory patterns (episodic memory of movement data) anchoring semantic knowledge, so geometry constrains what the LLM can predict.</p></div>
 <p>IROS · 3 citations · memory-agent</p>
 <h2>What it does</h2>
 <p>A robot predicting human behavior receives two types of information: linguistic common sense from a large language model and precise geometric patterns from recorded human movement (trajectories). The system fuses them so that when an LLM would normally guess wrong due to poor spatial understanding, the trajectory component corrects it based on where people actually moved in similar situations. This is a memory-agent approach because the robot uses recorded past human trajectories as episodic memory to improve real-time prediction.</p>
@@ -782,6 +818,10 @@ TR-LLM/
 <p><strong>Project page:</strong> <a href="https://sites.google.com/view/trllm" target="_blank" rel="noopener">https://sites.google.com/view/trllm</a></p>
 <p><strong>Datasets:</strong> LocoVR (7000+ household trajectories), HM3DSem (3D scene graphs)</p></article>
 <article class="page" id="gp8"><h1>SayComply: Grounding Field Robotic Tasks in Operational Compliance Through Retrieval-Based Language Models</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A language model planning field inspection on a construction site doesn't know the site's actual safety rules, power line locations, or equipment specs—it makes confident guesses that violate regulations or put the robot at risk.</p>
+<p><b>The approach.</b> Organize the site's operational manuals, safety procedures, and equipment specs into a hierarchical database. Before the LLM writes each step, retrieve the relevant rules and procedures, passing them alongside the task description so the model sees written ground truth, not just its training.</p>
+<p><b>What's unique.</b> Tree-structured retrieval prioritizing compliance over task speed—the loss function weights safety heavily, forcing the LLM to prefer feasible-and-safe steps over ambitious-but-risky ones.</p></div>
 <p>ICRA 2025 · 2 citations · grounding (knowledge-grounded planning)</p>
 <h2>What it does</h2>
 <p>SayComply enables robots to plan complex multi-step field tasks while strictly adhering to domain-specific operational manuals and safety procedures. Rather than letting a large language model (LLM) invent task steps freely, the system grounds each step in the actual written rules—checking against hierarchical manuals for environmental procedures, robot capabilities, and site-specific safety constraints before committing to an action. This is the <strong>grounding</strong> sub-approach: the LLM decomposes a goal into steps, but continuously validates each step against external knowledge (in this case, retrieved operational compliance rules).</p>
@@ -905,6 +945,10 @@ python executor.py --plan-file generated_plan.yaml --robot spot --destination 19
 <li>Test on a low-cost legged robot (e.g., Unitree A1, ~$5k) or use a cheaper simulator-only benchmark</li>
 </ul></article>
 <article class="page" id="gp9"><h1>3DWG: 3D Weakly Supervised Visual Grounding via Category and Instance-Level Alignment</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot given "the chair to the left of the table" in natural language must find the exact 3D location in a point cloud. Existing systems need manual bounding box labels for every object instance to train, which doesn't scale.</p>
+<p><b>The approach.</b> Use two separate neural pathways: one that aligns *which type* of object is being described (category-level) by comparing scene embeddings against negative examples, and another that pins down *which specific instance* when multiples exist (instance-level) by reasoning about spatial relationships like "left of the table."</p>
+<p><b>What's unique.</b> Learning from scene-query pairs alone (no bounding boxes), letting the dual-branch design cleanly separate semantic matching from spatial disambiguation.</p></div>
 <p><strong>ICRA 2025 · 2 citations · grounding</strong></p>
 <h2>What it does</h2>
 <p>This paper solves the <strong>grounding</strong> sub-approach: translating natural language object descriptions into exact 3D locations in point cloud scenes. Given a text query like &quot;the chair to the left of the table,&quot; the system finds which 3D box in a sparse point cloud corresponds to that description—without needing manual bounding-box labels to train on. The core trick: separate the problem into two parallel branches: one that figures out *what type* of object is being described (category-level), and another that pinpoints *which specific instance* when multiple identical objects exist (instance-level).</p>

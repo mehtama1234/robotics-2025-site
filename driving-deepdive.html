@@ -38,6 +38,10 @@
  .appr b{color:var(--ink)}
  .payoff{font-size:15px;color:var(--graphite);border-top:1px dashed var(--line);padding-top:9px;margin-top:12px}
  .payoff::before{content:"\2192  ";color:var(--accent);font-weight:700}
+ .bigidea{background:linear-gradient(180deg,rgba(14,124,134,.07),rgba(14,124,134,.01));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0 16px}
+ .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
+ .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
+ .bigidea b{color:var(--ink)}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -126,6 +130,10 @@
 <tr><td class="tt">UniBEVFusion: Unified Radar-Vision Bevfusion for 3D Object D</td><td>ICRA</td><td><a href="https://github.com/huzhihen/unibevfusion" target="_blank" rel="noopener">huzhihen/unibevfusion</a></td><td class="mono">mmdet3d/models/fusion/rdl.py</td><td><span class="run">gpu</span></td></tr></tbody></table></div>
   </div>
   <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>SparseDrive: End-to-End Autonomous Driving via Sparse Scene Representation</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A self-driving car needs to detect objects, track them over time, map the road, and plan its own path. Dense systems build a complete grid map of the entire scene around the car—expensive in compute and memory—so they can only run in labs, not on the car itself.</p>
+<p><b>The approach.</b> Represent the scene as a small set of tokens (50–100 tokens total), one per real object or road element, not one per grid cell. Run detection, tracking, mapping, and planning through one unified network that reads and refines those same sparse tokens in a single pass.</p>
+<p><b>What's unique.</b> The sparse representation itself becomes the shared backbone for all four tasks at once, so planning sees exactly what perception found—there's no lossy hand-off between separate modules, and the savings compound (10× fewer tokens means 10× faster).</p></div>
 <p>ICRA 2025 · 30 citations · end-to-end driving</p>
 <h2>What it does — 2-3 plain sentences</h2>
 <p>SparseDrive is an end-to-end autonomous driving system that replaces dense grid-based scene maps with a sparse token-based representation, unifying detection, tracking, and online mapping into a single symmetric network. Instead of predicting fixed trajectories and then selecting one, it generates multiple candidate driving paths in parallel and uses a collision-aware safety scoring module to pick the safest and most feasible trajectory. This design is both faster and safer than prior work: it trains in 20–30 hours (vs. 40+ hours for dense methods) and achieves lower collision rates on the nuScenes benchmark.</p>
@@ -253,6 +261,10 @@ python tools/test.py projects/sparsedrive_small_stage1.py --checkpoint stage1.pt
 <p>✓ Runnable on GPU (24 GB VRAM) with nuScenes dataset</p>
 <p>✓ Code is public and pre-trained weights are available (check GitHub releases)</p></article>
 <article class="page" id="gp1"><h1>LightStereo: Channel Boost Is All You Need for Efficient 2D Cost Aggregation</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Stereo depth (judging distance from two camera views) requires matching pixels left-to-right, which creates a bulky cost volume. Shrinking it with 3D convolutions is expensive; traditional methods either run slow or lose detail where depth is uncertain (sky, distance, occlusions).</p>
+<p><b>The approach.</b> Build the cost volume with 2D operations instead of 3D: expand the channels first (add more feature maps), apply lightweight depthwise convolution to each channel independently, then project back down. This gives the refinement of bulky 3D methods without the compute cost.</p>
+<p><b>What's unique.</b> Channel boosting—expanding feature channels before refinement—replaces expensive 3D operations, making stereo depth run in 17ms on embedded hardware. Prior work used costly 4D structures; this finds that the width-expansion trick provides the same detail at a fraction of the cost.</p></div>
 <p>ICRA 2025 · 16 citations · perception-fusion (stereo depth from 2D cost aggregation)</p>
 
 <div style="background:var(--ink);color:#E7ECED;border-radius:12px;padding:20px 22px;margin:10px 0 6px;border:1px solid #000">
@@ -323,6 +335,10 @@ python tools/test.py projects/sparsedrive_small_stage1.py --checkpoint stage1.pt
 <p><strong>Simulator/API/keys:</strong> None needed. Pure computer-vision algorithm—no ROS, Gazebo, or external services.</p>
 <p><strong>Verdict:</strong> Runnable as-is on an NVIDIA GPU workstation. Use pre-trained weights for plug-and-play depth estimation from stereo pairs. Training requires GPU and multi-day patience; inference is ready-to-go.</p></article>
 <article class="page" id="gp2"><h1>Unleashing HyDRa: Hybrid Fusion, Depth Consistency and Radar for Unified 3D Perception</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Cameras alone struggle to judge depth at distance and fail in fog or darkness. Radar sees through weather and measures speed directly but has no height information. Most fusion methods treat them as separate streams and merge late; depth errors propagate and never get corrected.</p>
+<p><b>The approach.</b> Fuse radar and camera twice: first in camera perspective view (where radar depth readings help the camera's depth guesses), then again in the bird's-eye-view map. This two-stage alignment lets radar guide depth everywhere it's weak, especially in rain and darkness.</p>
+<p><b>What's unique.</b> By aligning radar and camera early in perspective view before lifting to bird's-eye, fine-grained spatial detail is preserved. Radar's height-insensitive but precise distance measurements become a direct guide for camera depth, avoiding the usual strategy of treating radar as sparse lidar.</p></div>
 <p>ICRA 2025 · 13 citations · perception-fusion</p>
 <h2>What it does</h2>
 <p>HyDRa fuses camera images and 4D radar point clouds into a unified 3D scene representation by combining them in two stages: first in the camera&#x27;s original 2D perspective view (where a transformer aligns radar depth with image features), then again in a bird&#x27;s-eye-view overhead map (where radar guides depth refinement). This is a <strong>perception-fusion</strong> approach—it replaces dense bird&#x27;s-eye-view grids with smarter multimodal fusion to detect and track 3D objects and predict what surfaces are occupied, especially when lighting is bad or weather is harsh.</p>
@@ -421,6 +437,10 @@ python tools/test.py configs/hydra_r50_nuScenes.py work_dirs/hydra_r50/latest.pt
 </ul>
 <p><strong>Summary:</strong> This is a pure offline perception module. It runs on recorded data, not live sensors. If you have a recent NVIDIA GPU (RTX 3090, 4090, or A100) and the nuScenes dataset, you can run inference immediately after the code release. CPU-only research is not feasible.</p></article>
 <article class="page" id="gp3"><h1>PoLaRIS Dataset: A Maritime Object Detection and Tracking Dataset in Pohang Canal</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Autonomous boats need to spot buoys, ships, and hazards at sea, but most detection datasets are road-focused. Water scenes have different lighting, small objects (buoys 10×10 pixels), weather variation (fog, glare), and lack the structured road labels that cars use.</p>
+<p><b>The approach.</b> Record real boating in a 7.5-km canal loop with stereo cameras, thermal, lidar, and marine radar—multiple sensor types, daytime and nighttime, different weathers—and manually label 360,000 images with 190,000 objects tracked through time.</p>
+<p><b>What's unique.</b> First dataset pairing thermal, stereo, lidar, and marine radar for water navigation. Small object sizes (10×10 pixels) force precision. Multi-modal setup lets researchers test which sensor works best in fog versus night versus glare—impossible to answer without this benchmark.</p></div>
 <p>ICRA 2025 · 9 citations · dataset</p>
 <h2>What it does</h2>
 <p>PoLaRIS is a multi-modal dataset for detecting and tracking maritime obstacles—ships, buoys, and other hazards—in a real 7.5-km canal route in Pohang, South Korea. It pairs stereo RGB cameras, thermal infrared, lidar, and marine radar with ~360,000 labeled images and 190,000 ground-truth object labels, including items as small as 10×10 pixels. This is a <strong>dataset</strong> sub-approach: a benchmark and collection of real-world recordings with annotations, designed to train and test detection and tracking systems for autonomous water navigation.</p>
@@ -463,6 +483,10 @@ python tools/test.py configs/hydra_r50_nuScenes.py work_dirs/hydra_r50/latest.pt
 </ul>
 <p><strong>Verdict: GPU required, large dataset, practical for robotics labs but not casual desktop use.</strong></p></article>
 <article class="page" id="gp4"><h1>AutoSplat: Constrained Gaussian Splatting for Autonomous Driving Scene Reconstruction</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Testing self-driving algorithms requires replicating rare, dangerous, or hard-to-find scenarios (crashes, heavy snow, edge cases). You can't collect your way to these, and simulation is slow and unrealistic. You need a way to turn a few real drives into many synthetic scenarios.</p>
+<p><b>The approach.</b> Reconstruct actual driving scenes as 3D point clouds (Gaussians) that can be re-rendered from new viewpoints. Add geometric constraints so the road stays flat, the sky stays distant, and vehicles match their physical shape—not free-form splotches.</p>
+<p><b>What's unique.</b> Standard 3D Gaussian Splatting ignores physics (floats the road, scatters the sky). AutoSplat keeps geometry real by enforcing that road and sky fit expected planes, and vehicles match CAD priors or reflection consistency, turning one real drive into many photo-realistic variations.</p></div>
 <p>ICRA 2025 · 9 citations · scene-sim (Gaussian splatting-based 3D scene reconstruction)</p>
 <h2>What it does</h2>
 <p>AutoSplat reconstructs driving scenes as cloud of colored point blobs called Gaussians, enabling fast photorealistic rendering and novel view synthesis for safety-critical simulation. It addresses a key limitation of standard 3D Gaussian Splatting (3DGS)—which fails on dynamic driving scenarios—by imposing geometric constraints to keep the background (road, sky) physically consistent across multiple viewpoints and handling moving foreground objects (vehicles) with template-based reconstruction. This is a <strong>scene-sim</strong> approach: building simulated driving environments for testing and validation rather than detecting or tracking individual objects.</p>
@@ -539,6 +563,10 @@ python render.py --ply output_scene.ply --camera_path novel_trajectory.json
 <p><strong>Code availability:</strong> Code not yet released (as of arXiv v2, July 2024). Implementation exists but not open-sourced—you would need to request it from the authors or wait for a future release.</p>
 <p><strong>Realistic run on a remote headless box:</strong> Would work if you have GPU access, real dataset, and can tolerate 1–2 month iteration cycle to implement from scratch. Direct execution of published code: not possible without release.</p></article>
 <article class="page" id="gp5"><h1>Talk2Radar: Bridging Natural Language with 4D mmWave Radar for 3D Referring Expression Comprehension</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Finding a specific object in a 3D scene using radar is hard—radar returns a sparse point cloud with no image context. You can ask a human "find the car to my left," but a machine needs to ground language in raw millimeter-wave data, which lacks color, texture, or orientation cues.</p>
+<p><b>The approach.</b> Encode the radar point cloud and text prompt separately, then fuse them with attention: for each radar point, learn which text tokens matter ("car", "left", "moving fast"), and score whether that point belongs to the target object. Regression predicts the 3D box.</p>
+<p><b>What's unique.</b> Gated graph fusion lets radar points selectively attend to language semantics rather than processing all radar points equally. Deformable sampling adapts to sparse radar instead of forcing it into dense grids—radar's native irregularity becomes an asset, not a problem.</p></div>
 <p>ICRA 2025 · 7 citations · multimodal perception (perception-fusion)</p>
 <h2>What it does</h2>
 <p>Talk2Radar lets a robot or car find a specific object in 3D space using spoken or typed descriptions (&quot;find the car to my left&quot;) by processing 4D millimeter-wave radar point clouds combined with natural language. It is a multimodal perception system that performs 3D Referring Expression Comprehension, bridging language and radar data for interactive scene understanding—a sub-approach of perception-fusion, where two sensor modalities (text and radar) are fused to ground language in 3D geometry.</p>
@@ -613,6 +641,10 @@ python render.py --ply output_scene.ply --camera_path novel_trajectory.json
 </ul>
 <p><strong>Verdict</strong>: <strong>GPU-required</strong>; not runnable on CPU. Requires dataset access and familiarity with PyTorch and mmdetection3D to productively modify or debug.</p></article>
 <article class="page" id="gp6"><h1>HeRCULES: Heterogeneous Radar Dataset in Complex Urban Environment for Multi-Session Radar SLAM</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Different radars have different strengths: spinning mechanical radars scan sharply but struggle with velocity; 4D phased-array radars give rich height and speed but sparse angles. No single radar is enough, and no public dataset compares them side-by-side across weather and time.</p>
+<p><b>The approach.</b> Mount both radar types on a car with lidar, camera, IMU, and GPS; drive the same urban routes repeatedly through daytime, nighttime, rain, and fog; record everything with accurate ground-truth poses aligned across all sensors.</p>
+<p><b>What's unique.</b> First dataset pairing spinning and 4D phased-array radars simultaneously. Multi-session revisits (same route different days/weather) enable place-recognition benchmarks. Complementary strengths become measurable—which modality excels where, and whether fusing both beats either alone.</p></div>
 <p>ICRA 2025 · 7 citations · dataset family</p>
 <h2>What it does</h2>
 <p>HeRCULES is the first dataset to pair two different types of radars—a spinning mechanical radar and a newer 4D phased-array radar—together with FMCW LiDAR, IMU, GPS, and cameras for autonomous driving research. It captures complex urban driving across multiple revisits to the same routes in varied weather and lighting, enabling comparative radar studies and place-recognition benchmarks that no single-radar dataset could support.</p>
@@ -709,6 +741,10 @@ python render.py --ply output_scene.ply --camera_path novel_trajectory.json
 </ul>
 <p><strong>Verdict: This is a self-contained, CPU-friendly dataset player. Download, point it at sequences, and feed data to your algorithm. No GPU, no simulator, no cloud API required.</strong></p></article>
 <article class="page" id="gp7"><h1>MCTrack: A Unified 3D Multi-Object Tracking Framework for Autonomous Driving</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A tracker needs to link detected objects across frames—but linking boxes based on distance works poorly when depth estimation is wrong. Most trackers struggle across datasets (KITTI, nuScenes, Waymo), each requiring dataset-specific tuning.</p>
+<p><b>The approach.</b> Use three separate Kalman filters instead of one: position tracking handles (x, y, z) with motion model; size tracking watches (width, length) without drift; heading tracking blends perceived angle with velocity direction. Link detections to tracks using a hybrid cost that combines overlap (IoU) and heading alignment, then refine mismatches in two passes (bird's-eye-view first, then depth-refiner second).</p>
+<p><b>What's unique.</b> Decoupling the Kalman filters prevents numerical instability when mixing different units and scales. Two-stage matching (BEV then range view) catches depth errors that single-pass linking misses. One format (BaseVersion) unifies all datasets, so the algorithm works unchanged on KITTI, nuScenes, and Waymo.</p></div>
 <p>IROS 2025 · 7 citations · detection-tracking approach</p>
 <h2>What it does</h2>
 <p>MCTrack is a 3D object tracking system that follows cars, pedestrians, and cyclists across multiple video frames in autonomous driving scenes. Instead of building separate tracking solutions for each dataset (KITTI, nuScenes, Waymo), it uses one unified pipeline that works equally well on all three, and it introduces new metrics to measure whether the estimated motion (speed and direction) is correct for downstream planning tasks.</p>
@@ -797,6 +833,10 @@ python main.py --dataset kitti -e -p 4  # -e = evaluate, -p = 4 parallel process
 </ul>
 <p><strong>Verdict</strong>: CPU-runnable for KITTI and nuScenes. Waymo is doable but needs Bazel setup.</p></article>
 <article class="page" id="gp8"><h1>MonoCT: Overcoming Monocular 3D Detection Domain Shift with Consistent Teacher Models</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A single-camera 3D detector trained in one environment (highway, city) fails when deployed in another (traffic camera, drone, rain), because depth-from-2D is brittle. Retraining on new data is expensive, and labels from a new domain are unreliable.</p>
+<p><b>The approach.</b> Train five independent teachers on the source domain, each predicting 3D boxes with 48 different depth estimates per object. Merge those noisy depth guesses using kernel density estimation to get one robust depth per object. Score candidate boxes on a new domain using depth confidence, network class confidence, and 3D overlap; keep only consistent pseudo labels. Train a student on the high-confidence pseudo labels.</p>
+<p><b>What's unique.</b> Merging 48 independent depth signals (from corners, 2D box geometry, projection) produces robust depth that survives domain shift. Rotating predictions are upweighted for diversity—preventing collapse to axis-aligned boxes—by geodesic distance on rotation manifolds. No target-domain labels needed.</p></div>
 <p>ICRA 2025 · 6 citations · detection-tracking</p>
 <h2>What it does</h2>
 <p>MonoCT solves the problem of monocular 3D object detection breaking when switched between different cameras, environments, or viewpoints (cars vs. traffic cameras vs. drones). It uses an unsupervised domain adaptation approach where multiple teacher models vote on high-quality pseudo labels to train a student detector, ensuring the network generalizes across domain shifts without needing labeled target data. This is a detection-tracking sub-approach that focuses on robust 3D object detection across heterogeneous camera setups.</p>
@@ -866,6 +906,10 @@ python eval.py --model checkpoints/monoct_best.pth --dataset kitti
 <p><strong>Public code</strong>: Not available. To run this, you would need to reimplement or wait for official release. Estimated implementation effort: 3–4 weeks for an experienced 3D detection researcher.</p>
 <p><strong>Verdict</strong>: GPU required (A40 or better), datasets mandatory, code not public. Runnable only with re-implementation or future official release. Not beginner-friendly due to SO(3) geometry and ensemble complexity.</p></article>
 <article class="page" id="gp9"><h1>UniBEVFusion: Unified Radar-Vision Bevfusion for 3D Object Detection</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Cameras misjudge distance, especially far away. Radar sees through weather but is sparse and lacks texture. Most fusion methods treat radar as fake lidar and drop it into a sparse point cloud; this wastes radar's actual strength—direct millimeter-wave ranging and material properties (RCS).</p>
+<p><b>The approach.</b> Encode camera and radar separately into features. Feed radar's range and RCS (radar cross-section) directly into the camera's depth prediction, enriching what the camera "thinks" it sees. Lift that radar-guided depth into bird's-eye-view, then fuse both modalities adaptively with learned per-channel weights.</p>
+<p><b>What's unique.</b> Early fusion—injecting radar range into depth estimation before lifting to BEV—lets radar guide camera depth everywhere it's weak, rather than competing in a dense grid later. RCS (radar's native material/shape signature) becomes a learned feature, not treated as noise. Tests robustness by adding noise to the camera stream, measuring graceful degradation.</p></div>
 <p>ICRA · 6 citations · perception-fusion</p>
 <h2>What it does</h2>
 <p>UniBEVFusion combines radar and camera data to detect and locate 3D objects in autonomous driving scenes. Instead of treating radar like a sparse version of laser scanning, it uses radar&#x27;s natural depth measurements (millimeter-wave ranging) to improve how camera images are converted into a flat bird&#x27;s-eye-view (BEV) map of the scene. This is a <strong>perception-fusion</strong> approach: it fuses multimodal sensor data (camera + 4D radar) into a unified spatial representation for object detection.</p>

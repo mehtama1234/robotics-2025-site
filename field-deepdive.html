@@ -38,6 +38,10 @@
  .appr b{color:var(--ink)}
  .payoff{font-size:15px;color:var(--graphite);border-top:1px dashed var(--line);padding-top:9px;margin-top:12px}
  .payoff::before{content:"\2192  ";color:var(--accent);font-weight:700}
+ .bigidea{background:linear-gradient(180deg,rgba(14,124,134,.07),rgba(14,124,134,.01));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0 16px}
+ .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
+ .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
+ .bigidea b{color:var(--ink)}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -119,6 +123,10 @@
 <tr><td class="tt">MARVEL: Multi-Agent Reinforcement Learning for Constrained F</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr></tbody></table></div>
   </div>
   <div id="papers"><div class="eyebrow">Paper by paper — the method</div><article class="page" id="gp0"><h1>UAV-DETR: Efficient End-to-End Object Detection for Unmanned Aerial Vehicle Imagery</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Standard object detectors trained on ground-level photos fail on drone footage because small distant objects get blurred and lost during the detection process, leaving drones unable to see obstacles or targets that are visible to human eyes in the same image.</p>
+<p><b>The approach.</b> Enhance the detection backbone by combining features at multiple scales using frequency-domain tricks, keep sharp detail during downsampling, and connect features across different processing paths so nothing gets lost.</p>
+<p><b>What's unique.</b> Frequency-domain feature fusion preserves small-object detail where standard methods lose it — the 3-4% boost comes from keeping information alive during downsampling, not from richer training data.</p></div>
 <h2>What it solves</h2>
 <p>A standard object detection method designed for regular photos doesn&#x27;t work well on drone pictures because small objects get lost and detail gets blurred.</p>
 <h2>How it works</h2>
@@ -126,6 +134,10 @@
 <h2>Why it matters</h2>
 <p>A DETR-based UAV object detection framework with frequency-domain feature enhancement that improves AP by 3.1% and AP50 by 4.2% over baseline on the VisDrone dataset.</p></article>
 <article class="page" id="gp1"><h1>Vision Transformers for End-to-End Vision-Based Quadrotor Obstacle Avoidance</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Flying a drone fast through clutter using only a camera requires reacting in milliseconds; convolutional networks learn to navigate but fail at high speeds because they process the image as a fixed grid and miss spatial relationships that matter when timing is tight.</p>
+<p><b>The approach.</b> Use vision transformers — which split the image into patches and learn which patches relate to each other — to map camera frames directly to flight commands, letting the network discover the relationships that matter at speed.</p>
+<p><b>What's unique.</b> Transformers generalize to unseen environments without retraining where CNNs overfit; they also work better at 7 m/s flight speed because they learn global relationships first, not local features.</p></div>
 <h2>What it solves</h2>
 <p>Flying a drone fast through cluttered spaces using only a camera feed requires a controller that reacts quickly and still works in places it has never seen, which standard convolutional camera-to-control networks fail to do at high speeds.</p>
 <h2>How it works</h2>
@@ -133,6 +145,10 @@
 <h2>Why it matters</h2>
 <p>First use of vision transformers for end-to-end vision-based quadrotor control, showing ViT outperforms CNNs at high speeds and generalizes better to unseen environments, with recurrence further reducing energy cost.</p></article>
 <article class="page" id="gp2"><h1>Whole-Body Control Through Narrow Gaps from Pixels to Action</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Squeezing a drone through a gap barely wider than itself requires precise body tilting, which is a hard geometry problem; learning this from camera images alone is nearly impossible because there are so few successful paths the learning algorithm can stumble into.</p>
+<p><b>The approach.</b> Train two policies: first on point clouds (which are easier to reason about geometrically), then transfer that knowledge to camera images by having the camera policy learn to mimic the point-cloud policy during flight; seed the learning with trajectories from a physics planner so it starts near solutions.</p>
+<p><b>What's unique.</b> Combining model-based initialization (a planner-generated seed trajectory) with RL-to-pixel distillation avoids hand-crafted reward shaping that's normally needed for such a constrained problem.</p></div>
 <h2>What it solves</h2>
 <p>Flying a drone through a gap just barely wider than itself requires precise tilting of the whole body, and learning this from raw camera images is very hard because there are very few successful paths for the learning algorithm to discover.</p>
 <h2>How it works</h2>
@@ -140,6 +156,10 @@
 <h2>Why it matters</h2>
 <p>Combines model-based trajectory initialization with RL-to-pixel distillation to learn whole-body narrow-gap traversal entirely from pixels without hand-crafted reward shaping.</p></article>
 <article class="page" id="gp3"><h1>NDOB-Based Control of a UAV with Delta-Arm Considering Manipulator Dynamics</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Mounting a robot arm on a flying drone creates bidirectional chaos: the arm's motion shakes the drone off course, and the drone's motion jerks the arm, so their controllers fight each other and both fail.</p>
+<p><b>The approach.</b> A disturbance observer watches the coupling forces between arm and drone in real time and sends corrective commands to cancel them; a high-pass filter simultaneously amplifies fast arm commands so the arm can move quickly without the main controller fighting it.</p>
+<p><b>What's unique.</b> Coupling-aware compensation lets a delta-arm achieve millimeter-level end-effector accuracy despite being mounted on a flying platform — decoupling the two control loops post-hoc rather than redesigning the hardware.</p></div>
 <h2>What it solves</h2>
 <p>When a robot arm is mounted on a flying drone, the arm&#x27;s motion shakes the drone and the drone&#x27;s motion disturbs the arm, making precise arm positioning very difficult.</p>
 <h2>How it works</h2>
@@ -147,6 +167,10 @@
 <h2>Why it matters</h2>
 <p>Achieves millimeter-level end-effector accuracy on a fully autonomous delta-arm aerial manipulator by jointly compensating for dynamic coupling and selectively amplifying fast manipulator motions.</p></article>
 <article class="page" id="gp4"><h1>Learning Quadrotor Control from Visual Features Using Differentiable Simulation</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Training a drone to fly from camera images using standard trial-and-error learning requires billions of simulated flight steps and hours of compute because the learning algorithm explores blindly, with no information about which direction improves the policy.</p>
+<p><b>The approach.</b> A physics simulator that computes exact gradients lets the learning algorithm flow backward through the physics equations to see how each pixel change affects the final flight outcome, then follow those gradients directly to better policies.</p>
+<p><b>What's unique.</b> Differentiable simulation collapses training from hours to minutes by giving the learner a gradient signal through the physics — it's the difference between blind search and mathematically guided optimization.</p></div>
 <h2>What it solves</h2>
 <p>Training a drone to fly using only camera images with standard trial-and-error (reinforcement learning) requires enormous amounts of simulated flight time and takes hours or days.</p>
 <h2>How it works</h2>
@@ -154,6 +178,10 @@
 <h2>Why it matters</h2>
 <p>Demonstrates that differentiable simulation with a surrogate model trains vision-based quadrotor control orders of magnitude faster than model-free RL, bridging from state-based (seconds) to vision-based (minutes) learning.</p></article>
 <article class="page" id="gp5"><h1>Robust Self-Reconfiguration for Fault-Tolerant Control of Modular Aerial Robot Systems</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> When a modular drone loses a rotor or motor, it needs to physically rearrange itself — detach failed modules and reattach working ones — but the wrong order can leave it in a shape that it cannot fly or control at all.</p>
+<p><b>The approach.</b> A planner works out a step-by-step disassembly and reassembly order, checking after each step whether the craft in its current configuration is still controllable before proceeding to the next step.</p>
+<p><b>What's unique.</b> Maximizing controllability margin at every intermediate stage prevents getting stuck in an uncontrollable configuration — safety first, rather than optimizing for speed and hoping.</p></div>
 <h2>What it solves</h2>
 <p>When a drone made of detachable modules loses a rotor or a module, it needs to rearrange itself, but the steps taken during that rearrangement can put the craft in a shape it cannot actually fly in.</p>
 <h2>How it works</h2>
@@ -161,6 +189,10 @@
 <h2>Why it matters</h2>
 <p>A reconfiguration planning algorithm that maximizes controllability margin at every intermediate stage, enabling fault-tolerant self-reconfiguration with improved trajectory tracking and fewer assembly steps.</p></article>
 <article class="page" id="gp6"><h1>ProxFly: Robust Control for Close Proximity Quadcopter Flight Via Residual Reinforcement Learning</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> When drones fly within arm's length of each other, the downwash air from one's rotors destabilizes the others, a disturbance that standard controllers cannot predict or handle because it depends on positions the controller never trained on.</p>
+<p><b>The approach.</b> Add a small learned module on top of a conventional controller that watches only the drone's own motion (no radio between drones) and sends corrective impulses to cancel the destabilizing effects of nearby rotorwash.</p>
+<p><b>What's unique.</b> Residual RL avoids exploration from scratch by building on a working controller as a baseline — the add-on learns only the correction signal, not the entire flight policy.</p></div>
 <h2>What it solves</h2>
 <p>When multiple drones fly very close together, the downward air pushed by one drone&#x27;s rotors disrupts the others, causing instability that standard controllers cannot correct.</p>
 <h2>How it works</h2>
@@ -168,6 +200,10 @@
 <h2>Why it matters</h2>
 <p>ProxFly enables stable close-proximity multi-quadcopter flight and midair docking by residual RL that skips exploration from scratch via baseline controller guidance.</p></article>
 <article class="page" id="gp7"><h1>Multi-UAV Formation Control with Static and Dynamic Obstacle Avoidance via Reinforcement Learning</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Training a flock of drones to fly in formation while dodging obstacles fails to transfer from simulation to real flight because the simulator cannot capture all the wind and sensor errors the real world will throw at it.</p>
+<p><b>The approach.</b> Use curriculum learning (progressively harder scenarios) plus automated reward search to figure out which objectives matter most, then train an attention-based encoder that learns to focus on the right parts of the scene.</p>
+<p><b>What's unique.</b> Zero-shot sim-to-real transfer works because the curriculum and attention mechanism together let the policy learn what's actually important, not what the simulator prioritizes.</p></div>
 <h2>What it solves</h2>
 <p>A flock of drones has to fly in tight formation while dodging both fixed walls and moving objects, and the training setup does not transfer to real flight.</p>
 <h2>How it works</h2>
@@ -175,6 +211,10 @@
 <h2>Why it matters</h2>
 <p>Automated reward search combined with curriculum learning and attention-based encoding achieves zero-shot sim-to-real transfer for multi-UAV formation flight that outperforms planning and RL baselines in collision-free rates.</p></article>
 <article class="page" id="gp8"><h1>A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A learned planner or controller can steer a robot into a wall even though it's being built live in real time; you need a safety filter that watches the planned motion and blocks unsafe commands, but doing this on a map made of hundreds of thousands of live 3D blobs is computationally brutal.</p>
+<p><b>The approach.</b> A control barrier function reads the Gaussian splat map directly and computes which motor commands would cause a collision, blocking only those commands while letting everything else through, all at 15 Hz on a GPU.</p>
+<p><b>What's unique.</b> Processing live GSplat maps directly is 20-50x faster than converting to dense grids or NeRF occupancy — the map's native representation is the safety filter's native computation.</p></div>
 <h2>What it solves</h2>
 <p>Keeping a robot safely away from obstacles is hard when the map is built from hundreds of thousands of tiny 3D blobs (Gaussian splats) that are still being updated in real time.</p>
 <h2>How it works</h2>
@@ -182,6 +222,10 @@
 <h2>Why it matters</h2>
 <p>First CBF-based safety filter operating over live GSplat maps, 20-50x faster and less conservative than NeRF-based safety methods, validated on a drone with only onboard perception.</p></article>
 <article class="page" id="gp9"><h1>MARVEL: Multi-Agent Reinforcement Learning for Constrained Field-of-View Multi-Robot Exploration in Large-Scale Environments</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A team of robots mapping a large unknown space must choose both where to move and where to point their cameras (the field-of-view is narrow); the number of possible direction choices explodes as the space grows, making decision-making computationally intractable.</p>
+<p><b>The approach.</b> Each robot runs a learned policy that reads a graph of nearby teammates and unexplored frontiers, then action pruning cuts down the possible viewing directions to a manageable set before making a decision.</p>
+<p><b>What's unique.</b> Orientation-aware action pruning keeps decisions tractable across 90m x 90m environments; the policy generalizes without retraining even on much larger maps.</p></div>
 <h2>What it solves</h2>
 <p>Getting a team of robots to map a large unknown space efficiently is harder when each robot&#x27;s camera or sensor only sees in one direction, because the robots must also choose where to point their sensors.</p>
 <h2>How it works</h2>

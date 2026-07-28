@@ -38,6 +38,10 @@
  .appr b{color:var(--ink)}
  .payoff{font-size:15px;color:var(--graphite);border-top:1px dashed var(--line);padding-top:9px;margin-top:12px}
  .payoff::before{content:"\2192  ";color:var(--accent);font-weight:700}
+ .bigidea{background:linear-gradient(180deg,rgba(14,124,134,.07),rgba(14,124,134,.01));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0 16px}
+ .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
+ .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
+ .bigidea b{color:var(--ink)}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -123,6 +127,10 @@
 <tr><td class="tt">A Unified End-to-End Network for Category-Level and Instance</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr></tbody></table></div>
   </div>
   <div id="papers"><div class="eyebrow">Paper by paper — the method</div><article class="page" id="gp0"><h1>NeuFlow-V2: Push High-Efficiency Optical Flow To the Limit</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Measuring motion between video frames — optical flow — is either accurate or fast, but not both on cheap robot hardware. Standard networks are too large and too slow to run 20+ times per second on edge chips.</p>
+<p><b>The approach.</b> Redesign the math model itself to eliminate computation that doesn't actually change the answer. Cut out redundant pathways and operations until the network is lean enough to hit 20+ fps on cheap embedded hardware without sacrificing accuracy.</p>
+<p><b>What's unique.</b> Achieves 10x–70x speedup over prior methods with matching accuracy by reworking the network architecture for efficiency, not just compressing an existing one.</p></div>
 <h2>What it solves</h2>
 <p>Measuring motion between video frames is either accurate or fast, but not both on cheap robot hardware.</p>
 <h2>How it works</h2>
@@ -130,6 +138,10 @@
 <h2>Why it matters</h2>
 <p>Lightweight optical flow network achieving 10x-70x speedup over SOTA accuracy-matched methods while generalizing to real-world datasets, validated on embedded robotic hardware.</p></article>
 <article class="page" id="gp1"><h1>Estimating User Engagement in Human Robot Interaction Using a Dynamic Bayesian Network</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Telling whether a person is genuinely engaged with a robot is hard because the signals are scattered across different sensors and shift over time — eye contact, head tilt, facial expression, and even skin temperature — and no single cue is reliable alone.</p>
+<p><b>The approach.</b> Fuse a color camera and a thermal camera into a single Dynamic Bayesian Network that tracks how engagement evolves moment by moment, not just reads a snapshot.</p>
+<p><b>What's unique.</b> Combines thermal and visual modalities in a temporal model that handles multiple unreliable cues at once, each covering the gaps in the others.</p></div>
 <h2>What it solves</h2>
 <p>Figuring out whether a person talking to a robot is genuinely engaged is hard because the relevant signals — eye contact, head position, facial expression, body heat — come from different sensors and shift over time.</p>
 <h2>How it works</h2>
@@ -137,6 +149,10 @@
 <h2>Why it matters</h2>
 <p>Achieves 0.83 accuracy and 0.82 AUC for binary engagement classification in HRI by combining thermal and visual modalities within a DBN framework.</p></article>
 <article class="page" id="gp2"><h1>YO-CSA-T: A Real-time Badminton Tracking System Utilizing YOLO Based on Contextual and Spatial Attention</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A shuttlecock moves so fast it blurs and disappears into the court background, making it nearly impossible to track in real time from a single camera view.</p>
+<p><b>The approach.</b> Use two cameras to recover 3D position, pay attention to the region where the object is expected to be based on context, predict where it will move next, and fill in frames where motion blur makes it vanish.</p>
+<p><b>What's unique.</b> Combines stereo 3D mapping, attention-weighted detection, trajectory prediction, and frame interpolation into one end-to-end system for fast-moving small objects.</p></div>
 <h2>What it solves</h2>
 <p>Tracking a fast shuttlecock in real time is hard because it moves so fast it blurs and blends into the court lines.</p>
 <h2>How it works</h2>
@@ -144,6 +160,10 @@
 <h2>Why it matters</h2>
 <p>A real-time shuttlecock 3D tracking system achieving 90.43% mAP@0.75 at &gt;130 fps by integrating attention-enhanced YOLO detection, stereo 3D mapping, trajectory prediction, and frame compensation.</p></article>
 <article class="page" id="gp3"><h1>Unified Human Localization and Trajectory Prediction with Monocular Vision</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Predicting where a person will walk next from a single camera normally requires first finding where they are in real-world coordinates, then predicting their path — but prediction models break down when position estimates are noisy.</p>
+<p><b>The approach.</b> Train a single Transformer-based network to estimate ground position and predict future path together, end-to-end, so both tasks help each other become more robust.</p>
+<p><b>What's unique.</b> Folds localization and prediction into one joint task with a directional loss, letting the two branches share information and improve robustness over sequential pipelines.</p></div>
 <h2>What it solves</h2>
 <p>Predicting where a person will walk next using only one ordinary camera requires first knowing exactly where they are in the real world, and current prediction models break down when that position estimate is noisy.</p>
 <h2>How it works</h2>
@@ -151,6 +171,10 @@
 <h2>Why it matters</h2>
 <p>Joint monocular BEV localization and trajectory prediction framework that improves robustness to noisy inputs through multi-task training with a directional loss, achieving ~12% improvement over baselines.</p></article>
 <article class="page" id="gp4"><h1>mmDEAR: mmWave Point Cloud Density Enhancement for Accurate Human Body Reconstruction</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Radar sensors work through walls and in darkness, but they return only a sparse scatter of points — far too sparse to reconstruct a human body's shape and pose.</p>
+<p><b>The approach.</b> First, train a network using camera images as a guide to fill in the missing radar points and densify the cloud. Second, read the denser cloud to estimate body pose. At test time, no camera is needed.</p>
+<p><b>What's unique.</b> Learns to densify radar-only data by borrowing camera supervision during training, then discards the camera at inference for privacy-preserving operation.</p></div>
 <h2>What it solves</h2>
 <p>Radar sensors that work through walls give only a very sparse scatter of points, which is not enough to reconstruct the shape and pose of a human body.</p>
 <h2>How it works</h2>
@@ -158,6 +182,10 @@
 <h2>Why it matters</h2>
 <p>A privacy-preserving mmWave-only inference pipeline that improves human body reconstruction accuracy by densifying point clouds with image-supervised training while avoiding image use at test time.</p></article>
 <article class="page" id="gp5"><h1>Context-aware Sparse Spatiotemporal Learning for Event-based Vision</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Neuromorphic chips give spiking networks high sparsity but low accuracy. Deep learning gives accuracy but wastes power and cannot run on spiking neuromorphic hardware.</p>
+<p><b>The approach.</b> Set activation thresholds per neuron based on local input statistics, not global rules. The network itself learns what sparsity level each location needs — no hand-tuning required.</p>
+<p><b>What's unique.</b> Context-aware thresholding simultaneously achieves high neuronal sparsity and competitive task accuracy without manual sparsity tuning.</p></div>
 <h2>What it solves</h2>
 <p>Neuromorphic chips give spiking vision networks high sparsity but low accuracy, while deep learning gets accuracy but wastes power and can&#x27;t run on neuromorphic chips.</p>
 <h2>How it works</h2>
@@ -165,6 +193,10 @@
 <h2>Why it matters</h2>
 <p>A context-aware thresholding mechanism that simultaneously achieves high neuronal sparsity and competitive task accuracy in event-based object detection and optical flow without manual sparsity tuning.</p></article>
 <article class="page" id="gp6"><h1>Depth Estimation Through Translucent Surfaces</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Depth sensors and stereo cameras cannot measure distance through or behind glass and other semi-transparent materials because light mixes: some bounces off the surface, some passes through, confusing the reading.</p>
+<p><b>The approach.</b> Adapt a learning-based depth model to handle the specific mixed signal pattern that translucent surfaces produce — neither pure reflection nor pure transmission, but both at once.</p>
+<p><b>What's unique.</b> Directly targets a known failure mode of depth sensors by learning to interpret the ambiguous signals that glass and similar surfaces generate.</p></div>
 <h2>What it solves</h2>
 <p>Depth sensors and stereo cameras cannot measure distance through or behind translucent materials because the mixed light signals confuse them.</p>
 <h2>How it works</h2>
@@ -172,6 +204,10 @@
 <h2>Why it matters</h2>
 <p>Addresses depth estimation specifically for translucent surfaces, a known failure mode of conventional RGB-D and LiDAR sensors.</p></article>
 <article class="page" id="gp7"><h1>Seeing Eye to Eye: Design and Evaluation of a Custom Expressive Eye Display Module for the Stretch Mobile Manipulator</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Mobile robots have no way to signal to nearby people where they are looking or what state they are in, making it hard for people to work alongside them safely and naturally.</p>
+<p><b>The approach.</b> Add a custom LED panel shaped like eyes to the robot and program it to show gaze direction and simple expressions so people can read the robot's intent.</p>
+<p><b>What's unique.</b> Demonstrates through user study that expressive eyes improve both task performance and perceived social closeness in human-robot collaboration.</p></div>
 <h2>What it solves</h2>
 <p>Mobile robots have no good way to signal to nearby people where they are looking or what state they are in, making it hard for people to work alongside them.</p>
 <h2>How it works</h2>
@@ -179,6 +215,10 @@
 <h2>Why it matters</h2>
 <p>An LED expressive eye module for mobile manipulators shown in controlled study to improve task performance and social closeness ratings compared to no-eye baseline.</p></article>
 <article class="page" id="gp8"><h1>Robotic 3D Flower Pose Estimation for Small-Scale Urban Farms</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot that pollinates strawberry plants must know exactly where each small flower is and which way it faces, but raw 3D sensor data is too noisy and complex to extract this directly.</p>
+<p><b>The approach.</b> Project the 3D point cloud into six flat 2D images from different angles, detect flowers in those images with a 2D detector, map detections back to 3D, then fit a shape model to each flower cluster to extract position and orientation.</p>
+<p><b>What's unique.</b> Reduces high-dimensional 3D detection to multiple 2D views and shape fitting, which is simpler and more reliable than direct 3D point-cloud analysis.</p></div>
 <h2>What it solves</h2>
 <p>A robot that pollinates strawberry plants needs to know exactly where each small flower is and which way it faces, which is hard from raw 3D sensor data.</p>
 <h2>How it works</h2>
@@ -186,6 +226,10 @@
 <h2>Why it matters</h2>
 <p>A 3D flower pose estimation pipeline achieving ~80% detection rate and 7.7-degree mean pose error on a FarmBot platform, sufficient for robotic pollination.</p></article>
 <article class="page" id="gp9"><h1>A Unified End-to-End Network for Category-Level and Instance-Level Object Pose Estimation from RGB Images</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Figuring out an object's exact position and rotation from a plain color photo with no depth sensor is hard, and most methods work for either a specific object or a category of objects, not both.</p>
+<p><b>The approach.</b> Treat pose estimation as a set prediction task: learn a rotation representation that works in 3D Euclidean space and merge learned shape features with bounding-box detections to estimate pose directly from the color image.</p>
+<p><b>What's unique.</b> Unified network handles both category-level and instance-level pose in a single model using a novel 3D rotation representation and prior-query fusion.</p></div>
 <h2>What it solves</h2>
 <p>Figuring out the exact position and orientation of an object from a plain color photo — with no depth sensor — is hard, and most methods work for either a specific object or a category of objects, not both.</p>
 <h2>How it works</h2>

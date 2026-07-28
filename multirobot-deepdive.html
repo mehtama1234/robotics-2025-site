@@ -38,6 +38,10 @@
  .appr b{color:var(--ink)}
  .payoff{font-size:15px;color:var(--graphite);border-top:1px dashed var(--line);padding-top:9px;margin-top:12px}
  .payoff::before{content:"\2192  ";color:var(--accent);font-weight:700}
+ .bigidea{background:linear-gradient(180deg,rgba(14,124,134,.07),rgba(14,124,134,.01));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0 16px}
+ .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
+ .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
+ .bigidea b{color:var(--ink)}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -140,6 +144,10 @@
 <tr><td class="tt">SIGMA: Sheaf-Informed Geometric Multi-Agent Pathfinding</td><td>ICRA 2025</td><td><a href="https://github.com/marmotlab/SIGMA" target="_blank" rel="noopener">marmotlab/SIGMA</a></td><td class="mono">model.py</td><td><span class="run">gpu</span></td></tr></tbody></table></div>
   </div>
   <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>COHERENT: Collaboration of Heterogeneous Multi-Robot System with Large Language Models</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A team of different robot types (drone, legged robot, arm) must split a complex task into pieces, but each piece only certain robots can do. Asking an LLM to plan the whole thing at once produces infeasible steps; asking humans is slow.</p>
+<p><b>The approach.</b> Have an LLM propose one layer of subtasks and assign each to the right robot type, then watch each robot act and feed failures back to the model. The LLM revises and loops until the job is done.</p>
+<p><b>What's unique.</b> Instead of planning every action upfront, COHERENT uses a tight feedback loop where the LLM stays at the task-assignment level and each robot reports what actually broke. This keeps the LLM focused on where it is strong (reasoning about task structure) and away from low-level action hallucinations.</p></div>
 <p>ICRA 2025 · 14 citations · llm-task-allocation</p>
 <h2>What it does</h2>
 <p>A language model breaks down a complex task into subtasks and assigns each to the right robot type (drone, legged robot, or arm), then watches as each robot acts and reports back, adjusting the plan in a loop until the task is done. This solves the problem that simpler LLM planners only work on teams of identical robots doing simple tasks.</p>
@@ -194,6 +202,10 @@ python mcts_agent.py --env env0 --task 2 --rounds 1  # for MCTS variant
 </ul>
 <p><strong>Realistic scenario:</strong> You can run simple validation experiments (1-2 task scenarios) in under 1 hour if you have the hardware. Full evaluation on all 100 benchmark tasks takes many hours and costs hundreds of dollars in OpenAI API calls.</p></article>
 <article class="page" id="gp1"><h1>DELTA: Decomposed Efficient Long-Term Robot Task Planning Using Large Language Models</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Long robot tasks like "clear the table" require many steps in order. Pure LLM planning hallucinates infeasible action sequences. Pure classical planning is rigid and cannot reason about task structure from natural language.</p>
+<p><b>The approach.</b> Use the LLM to break the task into ordered sub-goals, and use a classical planner (PDDL + FastDownward) to find provably feasible action sequences for each sub-goal one at a time.</p>
+<p><b>What's unique.</b> DELTA separates the LLM's strength (flexible reasoning about task intent from language) from the planner's strength (guaranteed collision-free, physics-respecting execution). The scene graph grounds the LLM so it cannot make unfounded assumptions about the environment.</p></div>
 <p>ICRA 2025 · 12 citations · LLM-based task decomposition and sequential planning</p>
 <h2>What it does</h2>
 <p>DELTA solves the problem of long-horizon robot planning by having an LLM break a complex task into a sequence of simpler sub-goals, which are then solved one at a time by a traditional automated planner. Instead of asking the LLM to generate every single action (which causes hallucinations), DELTA uses the LLM only for high-level reasoning and delegates low-level action sequencing to a formal planner. This is the <strong>llm-task-allocation</strong> sub-approach: the LLM decomposes and allocates sub-tasks, leaving the planner to handle the details.</p>
@@ -239,6 +251,10 @@ python mcts_agent.py --env env0 --task 2 --rounds 1  # for MCTS variant
 </ul>
 <p><strong>Feasibility:</strong> The method is runnable on CPU-only if you accept network calls to GPT (+ cost) or if you run a small Llama model locally. For full reproduction of the 100-task benchmark, having a GPU for scene rendering would speed things up, but the core pipeline works without one.</p></article>
 <article class="page" id="gp2"><h1>LaMMA-P: Generalizable Multi-Agent Long-Horizon Task Allocation and Planning with LM-Driven PDDL Planner</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Heterogeneous robot teams must break down household tasks, assign each piece to the right robot (based on its capabilities), and execute collision-free. LLMs are flexible but hallucinate; classical planners are correct but rigid.</p>
+<p><b>The approach.</b> Use the LLM to identify preconditions and decompose tasks into PDDL-shaped subtasks; match each subtask to robots by capability; then run the classical planner to generate verified action sequences for each robot.</p>
+<p><b>What's unique.</b> LaMMA-P structures LLM outputs so they fit exactly into PDDL format, gaining both LLM flexibility for reasoning and classical planner correctness. The system loops—if a plan fails validation, the LLM regenerates it with corrected preconditions.</p></div>
 <p>ICRA · 10 citations · llm-task-allocation</p>
 <h2>What it does</h2>
 <p>LaMMA-P combines a large language model with a classical logic planner (PDDL) to break down complex, multi-step household tasks and automatically assign each piece to the right robot in a heterogeneous team. The LLM handles high-level reasoning about what needs to happen; the logic planner converts those decisions into concrete, verifiable action sequences each robot can execute. This is a hybrid approach that avoids the hallucinations of pure LLM planning while keeping the flexibility LLMs bring to natural language understanding.</p>
@@ -306,6 +322,10 @@ python mcts_agent.py --env env0 --task 2 --rounds 1  # for MCTS variant
 </ul>
 <p><strong>Verdict:</strong> Can *technically* run on CPU, but you need internet (for OpenAI API), patience (simulator is slow), and the compilation toolchain. For serious experimentation, a GPU and a fast internet connection make a huge difference. Cost: ~$5–50 depending on how many LLM calls you make.</p></article>
 <article class="page" id="gp3"><h1>Enhancing Multi-Agent Systems via Reinforcement Learning with LLM-Based Planner and Graph-Based Policy</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Multi-agent RL on complex tasks is slow because agents must learn everything from scratch. LLM planning is flexible but runs slowly on every robot at every step.</p>
+<p><b>The approach.</b> An LLM planner breaks down the task once and builds a dependency graph showing which agents must coordinate with which. Each robot then runs a learned graph-aware policy that reads this shared graph and coordinates implicitly without calling the LLM again.</p>
+<p><b>What's unique.</b> The dependency graph is the bridge between LLM reasoning (done once, offline) and learned execution (done at full speed, distributed). The policy inherits structure from the LLM's decomposition, so agents learn faster than from raw observations alone.</p></div>
 <p>ICRA 2025 · 5 citations · multi-agent-rl</p>
 <h2>What it does</h2>
 <p>LGC-MARL (LLM-based Graph Collaboration MARL) teaches a team of robots to split up complex tasks and coordinate in real time by combining an LLM planner with a graph neural network policy. The LLM breaks down high-level instructions into executable subtasks and maps which agents must work together, then each robot uses a graph-aware policy to decide its own actions without constant LLM queries. This is multi-agent reinforcement learning that inherits reasoning from LLMs but scales faster than pure LLM-based methods.</p>
@@ -338,6 +358,10 @@ python mcts_agent.py --env env0 --task 2 --rounds 1  # for MCTS variant
 <p><strong>CPU-only</strong>: Very unlikely. AI2-THOR requires modern GPU for rendering and the GNN policy inference. RL training of multiple agents with experience replay will thrash on CPU. GPT-4 API calls (not local inference) mean internet dependency, but API calls themselves are not the bottleneck.</p>
 <p><strong>Feasible setup</strong>: GPU machine (NVIDIA A40 or better recommended), GPU RAM ≥16 GB for multi-agent batch training, GPT-4 API key, and local install of AI2-THOR. Training a single task likely takes hours to a few days depending on agent count and environment complexity.</p></article>
 <article class="page" id="gp4"><h1>Generalized Mission Planning for Heterogeneous Multi-Robot Teams via LLM-Constructed Hierarchical Trees</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Heterogeneous robot teams (quadrotor, legged robot, arm) must split long-horizon missions, but LLMs producing infeasible plans for tasks they don't fully understand.</p>
+<p><b>The approach.</b> Expose robot capabilities as API tools to the LLM, so it can only propose feasible subtasks. Assign each subtask to robots by capability. Execute and collect feedback from real robots when tasks fail, then replan via LLM.</p>
+<p><b>What's unique.</b> The LLM reasons at the subtask level using capability-checking APIs as guardrails, keeping it away from low-level action details. The real robot feedback (e.g., "my arm can't reach that shelf") feeds back into replanning, enabling adaptation to real robot limits.</p></div>
 <p><strong>ICRA 2025 · 4 citations · Mission-planning via LLM hierarchical task decomposition</strong></p>
 <h2>What it does</h2>
 <p>This work solves the problem of planning complex, long-horizon missions for teams that mix different robot types—quadrotors, legged robots, and arms. Unlike prior LLM-based planners that assume robots are all identical or handle simple tasks, this method grounds the LLM&#x27;s reasoning in the actual constraints and action spaces of each robot type. It uses an LLM to decompose the overall mission into subtasks, assigns each subtask to the robot best suited for it, and then refines the plan as robots report back what actually worked during execution. This is a <strong>mission-planning</strong> approach: the LLM stays at the high level, deciding *what* each robot should do given its capabilities, while a scheduler ensures each assignment respects robot constraints.</p>
@@ -393,6 +417,10 @@ python mcts_agent.py --env env0 --task 2 --rounds 1  # for MCTS variant
 <li>[Semantic Scholar Paper](<a href="https://www.semanticscholar.org/paper/Generalized-Mission-Planning-for-Heterogeneous-via-Gupta-Isele/16b2312a084254f71a8c87f6953b43687dcb420b" target="_blank" rel="noopener">https://www.semanticscholar.org/paper/Generalized-Mission-Planning-for-Heterogeneous-via-Gupta-Isele/16b2312a084254f71a8c87f6953b43687dcb420b</a>)</li>
 </ul></article>
 <article class="page" id="gp5"><h1>Escaping Local Minima: Hybrid Artificial Potential Field with Wall-Follower for Decentralized Multi-Robot Navigation</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Robots using simple force-field navigation (pushed away from obstacles, pulled toward goal) get stuck in dead-ends because attractive and repulsive forces cancel exactly, creating a local minimum.</p>
+<p><b>The approach.</b> Detect when a robot is trapped by checking if the net force drops near zero. When trapped, switch to wall-following mode (trace obstacle boundaries) while gradually rotating the goal direction. Once the way clears, return to force-field mode.</p>
+<p><b>What's unique.</b> The system remembers "Hit" and "Leave" points so robots never loop back to the same dead-end. A learned neural network decides when switching to wall-following helps, avoiding false switches when other robots are nearby.</p></div>
 <p>ICRA 2025 · 4 citations · pathfinding sub-approach</p>
 <h2>What it does — 2-3 plain sentences</h2>
 <p>A team of robots each uses only its own sensors (no shared map, no central planner) to navigate together without collisions in complex spaces full of weird-shaped obstacles. The catch: when using simple force-field navigation (each robot is pushed away from obstacles and pulled toward its goal), robots get stuck in dead-ends or corners. This paper solves that by switching to wall-following mode when a robot detects it is trapped. The system learns when to switch using either simple rules or a trained neural network (pathfinding sub-approach: decentralized multi-agent pathfinding with collision avoidance).</p>
@@ -501,6 +529,10 @@ python mcts_agent.py --env env0 --task 2 --rounds 1  # for MCTS variant
 <li>arXiv: 2409.10332 (preprint Sept 2024)</li>
 </ul></article>
 <article class="page" id="gp6"><h1>Adaptive Task Allocation in Multi-Human Multi-Robot Teams Under Team Heterogeneity and Dynamic Information Uncertainty</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Mixed teams of humans and robots have incomplete information: human fatigue is estimated noisily, robot health arrives late, and team members have different strengths. Assigning tasks once at the start fails as conditions change mid-mission.</p>
+<p><b>The approach.</b> Train two coupled learning layers: one decides the initial assignment before work starts; the other watches during execution and decides whether to reshuffle tasks when someone slows down or becomes unavailable.</p>
+<p><b>What's unique.</b> The system uses auxiliary learning (a conditional VAE + GRU) to reconstruct true state from noisy and delayed observations. This lets the policy reason about actual conditions, not just raw sensor noise, and decide when reallocation is worth the disruption.</p></div>
 <p>*ICRA 2025 · 4 citations · mission-planning (task allocation)*</p>
 <h2>What it does</h2>
 <p>Assigns tasks to a mixed team of humans and robots when team members have different strengths, operational conditions change during a mission, and the system has incomplete or delayed state information. Uses two levels of learning: one to make the initial assignment at mission start, another to decide whether and how to reshuffle tasks as the mission unfolds.</p>
@@ -596,6 +628,10 @@ python mcts_agent.py --env env0 --task 2 --rounds 1  # for MCTS variant
 <p><strong>Could it run end-to-end on CPU?</strong> For small teams (6 humans, 8 robots, 60 POIs), yes, but training would take days. For large teams (12 humans, 16 robots, 130 POIs), training would be prohibitively slow without a GPU.</p>
 <p><strong>Practical deployment</strong>: Once trained, ATA-HRL runs on CPU; latency is sub-second per reallocation decision, suitable for a real multi-human multi-robot mission where decisions are made every few seconds or minutes.</p></article>
 <article class="page" id="gp7"><h1>Realizing Emergent Collective Behaviors Through Robotic Swarmalators</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Swarms of oscillators synchronize (Kuramoto model). Swarms of particles aggregate (Vicsek model). But a robot swarm must do both: coordinate internal states and move as a group.</p>
+<p><b>The approach.</b> Couple each robot's position to neighbors' phase differences (moving toward synchronized neighbors, away from unsynchronized ones) and couple each robot's phase to neighbors' positions (synchronizing with nearby robots). This bidirectional coupling produces emergent collective patterns.</p>
+<p><b>What's unique.</b> This is the first real-robot realization of swarmalator theory. The team demonstrates rotating phase waves, synchronized clusters, and chimera states—patterns that exist purely on theory until now. Decentralized control means each robot runs its own control law with only local neighbor sensing.</p></div>
 <p>ICRA 2025 · 3 citations · swarm emergent collective behavior</p>
 <h2>What it does</h2>
 <p>This paper physically realizes swarmalator theory on real robots for the first time, building a 15-robot platform where each agent couples its internal phase (oscillator state) to neighbors&#x27; positions and couples its motion to neighbors&#x27; phase differences. The robots demonstrate the full range of emergent collective patterns that theory predicts—phase waves, synchronized clusters, and chimera states—in both chiral (rotational) and non-chiral (translational) modes.</p>
@@ -721,6 +757,10 @@ python mcts_agent.py --env env0 --task 2 --rounds 1  # for MCTS variant
 <li>Observe chimera or sync states emerging.</li>
 </ul></article>
 <article class="page" id="gp8"><h1>Deploying Ten Thousand Robots: Scalable Imitation Learning for Lifelong Multi-Agent Path Finding</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Classical search-based planning moves many robots collision-free but is too slow for thousands. Pure learning is fast but unsupervised learning on massive multi-agent spaces is prohibitively sample-heavy.</p>
+<p><b>The approach.</b> Train a neural network by imitating an expert search planner (PIBT). The network learns the planner's one-step decisions from local observations. Add a communication module so nearby robots share state, and a collision shield for hard safety. Run it on GPU for massive parallelism.</p>
+<p><b>What's unique.</b> Imitation learning avoids sampling complexity—the network inherits the expert's heuristics instantly, so training is fast. The same trained model handles 1,000 to 10,000 agents without retraining because it operates on local information and parallelizes perfectly on GPU.</p></div>
 <p>ICRA 2025 · 3 citations · pathfinding</p>
 <h2>What it does</h2>
 <p>SILLM trains a neural network to learn from pre-computed plans made by a classical search-based algorithm, adds a communication module so nearby robots share local information, and runs the whole system on a GPU to move thousands of robots through a warehouse or warehouse-like space without collisions. This solves the problem that pure learning-based methods are too slow at scale and pure search methods don&#x27;t scale to ten thousand agents.</p>
@@ -815,6 +855,10 @@ bash eval_ltf.sh
 <li><strong>Evaluation on full benchmark:</strong> ~30 minutes on GPU with 4× parallelism.</li>
 </ul></article>
 <article class="page" id="gp9"><h1>SIGMA: Sheaf-Informed Geometric Multi-Agent Pathfinding</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Each robot has a narrow field of view and no global map. Naive independent decisions lead to deadlock. Communicating everything to everyone is wasteful and slow.</p>
+<p><b>The approach.</b> Use sheaf theory (a topology framework) to prove that global consensus is achievable through purely local communication. Train a neural network to learn this consensus in a hidden layer, so each robot can decide as if it sees the full picture using only local observations from neighbors.</p>
+<p><b>What's unique.</b> Sheaf theory mathematically guarantees that the learned consensus layer is consistent across all robots without explicit global coordination. Each robot runs the same network but computes agreement implicitly—this is coordination without messages.</p></div>
 <p>ICRA 2025 · 3 citations · multi-agent pathfinding</p>
 <h2>What it does</h2>
 <p>SIGMA tackles the problem of moving many robots through tight spaces without collisions when each robot can only see a limited area around itself. It combines deep reinforcement learning with sheaf theory—a mathematical framework from topology—to let robots learn a &quot;consensus view&quot; from their local observations, so each robot can act as if it sees the full picture. This is a <strong>multi-agent pathfinding</strong> approach: it solves coordinated collision-free routing at scale.</p>

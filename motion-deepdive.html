@@ -38,6 +38,10 @@
  .appr b{color:var(--ink)}
  .payoff{font-size:15px;color:var(--graphite);border-top:1px dashed var(--line);padding-top:9px;margin-top:12px}
  .payoff::before{content:"\2192  ";color:var(--accent);font-weight:700}
+ .bigidea{background:linear-gradient(180deg,rgba(14,124,134,.07),rgba(14,124,134,.01));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0 16px}
+ .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
+ .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
+ .bigidea b{color:var(--ink)}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -126,6 +130,10 @@
 <tr><td class="tt">Vision-Based Movement Primitives for Lunar Hazard Avoidance</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">sim</span></td></tr></tbody></table></div>
   </div>
   <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>Safe Leaf Manipulation for Accurate Shape and Pose Estimation of Occluded Fruits</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot must find and measure fruit hidden under leaves. Pushing leaves risks tearing the plant, but without clearing them the robot cannot see what it is grasping. The system cannot know in advance how each leaf will move under gentle pressure.</p>
+<p><b>The approach.</b> Predict how leaves will deform before pushing them by building a physical model of the plant, then simulate each candidate push to see how much fruit it would reveal, and choose the sequence of pushes that exposes the fruit with minimal damage.</p>
+<p><b>What's unique.</b> Earlier work predicted leaf deformation in isolation or estimated visibility in isolation; here they are unified: the planner chooses each push by jointly simulating deformation and visibility to find moves that reveal the fruit while keeping deformations small.</p></div>
 <p>ICRA 2025 · 6 citations · mobile-manipulation</p>
 <h2>What it does</h2>
 <p>A robot equipped with a gripper and camera must find and grasp fruit hidden under leaves. This method plans a sequence of gentle leaf-pushing moves to expose the fruit for clear viewing and measurement, without tearing the plant. It is a <strong>mobile-manipulation</strong> approach: the robot moves its base to reach the fruit, then coordinates careful arm motions with predictions of how each leaf will deform under pressure.</p>
@@ -223,6 +231,10 @@ python scripts/plant_simulate_action.py \
 <p><strong>Blocker: None.</strong> No simulator or robot required. No external API keys. The only hard requirement is test data (the <code>test<em>obj</em>100</code> folder), which is downloadable from the project page but not in the GitHub repo itself. You can also skip GroundedSAM re-segmentation if you use pre-segmented test data.</p>
 <p><strong>Recommendation:</strong> Bring a GPU if you want real-time shape completion; otherwise, expect ~10 seconds per full pipeline run on CPU. The code will run on a mid-range laptop given enough RAM (the embedded deformation graph is memory-efficient).</p></article>
 <article class="page" id="gp1"><h1>EHC-MM: Embodied Holistic Control for Mobile Manipulation</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot with a moving base and an arm must decide whether to drive forward or carefully manipulate. Older systems switched abruptly between these modes—drive hard until close, then switch to gentle arm motion—causing jerky, inefficient movement.</p>
+<p><b>The approach.</b> Encode both base and arm control into one Quadratic Programming optimization that solves all at once. A smooth weighting function shifts the system's attention from base mobility to arm precision as the target gets closer, avoiding mode switches.</p>
+<p><b>What's unique.</b> The "Distant Mobility, Close Grasping" principle is not new, but encoding it as a single smooth blending function in the optimizer (not multiple separate controllers) means base and arm motion never fight each other—they collaborate within one unified step.</p></div>
 <p>ICRA 2025 · 4 citations · mobile-manipulation unified control</p>
 <h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
 <p>A robot with a moving base and an articulated arm needs to decide when to prioritize driving forward versus carefully manipulating an object. EHC-MM is a unified controller that seamlessly blends base motion and arm control into a single optimization step, using a smooth weighting function that shifts the robot&#x27;s focus based on how close it is to its target and how hard it would be to reach. This is the <strong>mobile-manipulation</strong> sub-approach: whole-body control coordinating a mobile base + arm + camera perception into one real-time decision loop.</p>
@@ -321,6 +333,10 @@ ros2 topic echo /ehc_mm/control_output
 <li><strong>Review:</strong> [<a href="https://www.themoonlight.io/en/review/ehc-mm-embodied-holistic-control-for-mobile-manipulation](https://www.themoonlight.io/en/review/ehc-mm-embodied-holistic-control-for-mobile-manipulation" target="_blank" rel="noopener">https://www.themoonlight.io/en/review/ehc-mm-embodied-holistic-control-for-mobile-manipulation](https://www.themoonlight.io/en/review/ehc-mm-embodied-holistic-control-for-mobile-manipulation</a>)</li>
 </ul></article>
 <article class="page" id="gp2"><h1>CNSv2: Probabilistic Correspondence Encoded Neural Image Servo</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot arm watching a camera must move the end-effector to match a target pose. Older visual-servoing picks the single best feature match, which breaks entirely when lighting is bad or the object has no texture—the match just disappears.</p>
+<p><b>The approach.</b> Instead of picking one definite match, represent each possible feature match as a probability spread. Convert those soft matches into a canonical spatial grid, then feed that to a neural network that predicts both the speed and direction to move.</p>
+<p><b>What's unique.</b> Standard methods make a binary choice (match found / not found); this treats matching as inherently uncertain and builds that uncertainty into the representation itself, so the network learns to servo robustly even when the best match is ambiguous or missing.</p></div>
 <p>ICRA · 3 citations · visual-servoing</p>
 <h2>What it does</h2>
 <p>CNSv2 controls a robot arm by watching a camera and dynamically computing motor commands to move the end-effector toward a goal pose. Unlike older methods that fail when lighting is bad or objects have no visible texture, CNSv2 represents each possible feature match as a probability spread rather than picking a single definite match—then feeds those soft match scores into a neural control policy. It&#x27;s a <strong>visual-servoing</strong> approach: driving motion from camera error signals.</p>
@@ -359,6 +375,10 @@ python train_cns.py --batch-size=64 --epochs=50 --init-lr=1e-3
 <p><strong>CPU-only: No.</strong> Training absolutely requires a GPU (tested on A100s in the paper). Inference might run slowly on CPU but is possible for small batch sizes. <strong>Simulator: Yes.</strong> PyBullet and IsaacSim both supported. <strong>Real robot: Yes, if you have a UR5 arm + calibrated camera.</strong> <strong>Dataset: Yes, included</strong> (GSO + OmniObject3D, 6,852 models used). <strong>API keys: None.</strong> <strong>Code maturity: Baseline (CNS) released and maintained; CNSv2 code not yet released publicly</strong> (as of March 2025, only the arXiv paper exists).</p>
 <p>In summary: if you have access to a GPU cluster and IsaacSim, you can retrain from scratch. If you just want to test, use the simulator demos. Real execution requires a UR5 or similar arm.</p></article>
 <article class="page" id="gp3"><h1>Take Your Best Shot: Sampling-Based Planning for Autonomous Photography</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A camera robot must choose where to move next to capture the most informative photo of a partially hidden target. Computing the optimal full trajectory is too slow. Greedily choosing the closest viewpoint is fast but wastes shots on redundant angles.</p>
+<p><b>The approach.</b> Sample many candidate viewpoints, simulate camera rays from each one to predict how much new information it would reveal, and move to the viewpoint with the highest information gain. Repeat at each step.</p>
+<p><b>What's unique.</b> Rather than planning a full path first, this method evaluates only candidate *next locations* and scores each by actual information (rays cast through 3D space), making fast local decisions that naturally lead to efficient coverage without global trajectory optimization.</p></div>
 <p>ICRA 2025 · 3 citations · sampling-based path planning</p>
 <h2>What it does — 2-3 plain sentences</h2>
 <p>A mobile robot equipped with a camera autonomously chooses where to drive next to capture the most informative photograph of a partially hidden target, then decides to move there. This is a <strong>sampling-based path planning</strong> approach: instead of computing a full trajectory first, the system proposes many candidate viewpoints and picks the best one based on how much new information it would reveal.</p>
@@ -397,6 +417,10 @@ python train_cns.py --batch-size=64 --epochs=50 --init-lr=1e-3
 <p><strong>CPU-only box: YES, it will run.</strong> MATLAB is installed on most labs/universities, and the code requires only CPU time for simulation and ray-casting. The MEX binaries are platform-specific (Windows <code>.mexw64</code> included), but MATLAB can recompile or run the pure MATLAB versions. No GPU needed, no external simulator (everything is synthetic), no robotics hardware required. Total runtime: seconds to minutes depending on grid resolution.</p>
 <p><strong>Caution</strong>: The <code>.mexw64</code> binary is Windows-only; if running on Linux or macOS, you may need to rebuild the MEX file or run pure MATLAB code without it (slower but still feasible).</p></article>
 <article class="page" id="gp4"><h1>Narrow Passage Path Planning Using Collision Constraint Interpolation</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Optimization-based path planners fail in tight spaces. The solver starts at a point buried in obstacles and tries to satisfy collision constraints from all obstacles at once. The linear approximation violates so many rules immediately that no progress is possible—the solver stalls.</p>
+<p><b>The approach.</b> Instead of including all obstacle constraints from the start, add them gradually. Solve for a subset of nearby obstacles first, then add the next group and re-solve using the previous answer as the warm start, continuing until all obstacles are included.</p>
+<p><b>What's unique.</b> The gradual constraint introduction mimics moving *through* the tight space itself—the solver never faces an infeasible jump because constraints appear in spatial order as the path progresses through the passage.</p></div>
 <p>ICRA 2025 · 3 citations · path-planning</p>
 <h2>What it does — 2-3 plain sentences</h2>
 <p>This paper tackles the hard problem of finding robot paths through tight, constrained spaces where existing optimization-based planners get stuck. The method works by decomposing obstacles into simple convex shapes and feeding collision rules to the solver one at a time instead of all at once. This is a <strong>path-planning</strong> approach: it computes collision-free trajectories offline using math optimization, not sampling or reactive steering.</p>
@@ -444,6 +468,10 @@ python train_cns.py --batch-size=64 --epochs=50 --init-lr=1e-3
 <p><strong>Difficulty:</strong> High. Without released code, reproducibility is limited to understanding the algorithm and re-implementing it. The paper is clear enough for that, but no shortcuts are provided.</p>
 <p><strong>Verdict:</strong> *Not runnable without significant engineering effort.* If code were released, this would be a straightforward CPU-only solver. For now, treat it as a method to study and reimplement, not a tool to immediately apply.</p></article>
 <article class="page" id="gp5"><h1>Context-Aware Collaborative Pushing of Heavy Objects Using Skeleton-Based Intention Prediction</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A person and robot push a heavy object together. The robot has no force sensor on the object, so it cannot tell if the human wants to push, pull, or stop. It will either lag behind or fight the human's motion.</p>
+<p><b>The approach.</b> Read the human's body pose (joints, spine orientation, weight shift) from wearable IMUs and predict their intent 250 milliseconds ahead—will they push, pull, or stop? Adjust the robot's assistance strength in real time based on the prediction.</p>
+<p><b>What's unique.</b> Older methods looked at force sensors or contact. Here the skeleton itself reveals intent: the directed graph of how joints activate (shoulder drives elbow) encodes the biomechanics, and lookahead prediction gives the robot time to respond smoothly without fighting the human.</p></div>
 <p><strong>ICRA 2025 · 3 citations · human-robot-interaction + control · Solak, Lahr, Ozdamar, Ajoudani</strong></p>
 <h2>What it does — 2-3 plain sentences</h2>
 <p>A robot learns to predict what a human intends to do next—push, pull, or stop—by reading their body pose in real time, then adapts its own pushing assistance without needing force sensors on the object. This solves the problem when you can&#x27;t install sensors on a heavy industrial object but the human&#x27;s body tells you everything: the way they lean, how they shift weight, what their arms and spine do. The sub-approach is <strong>whole-body control for mobile manipulation</strong> (predicting intent to coordinate base and arm actions).</p>
@@ -508,6 +536,10 @@ collaborative-pushing-intention/
 <p><strong>API keys / licensing</strong>: Xsens has proprietary drivers; ROS is open-source. UR robots require UR+ SDK (free for registered developers).</p>
 <p><strong>Verdict</strong>: Runnable on CPU for inference and real-time deployment. Training requires GPU. Fully reproducible only if the authors release the code and dataset; currently, neither is public. A researcher could reconstruct the method (DGNN + UR16 + Xsens) but would need to re-collect or synthesize training data.</p></article>
 <article class="page" id="gp6"><h1>Dual-BEV Nav: Dual-Layer BEV-Based Heuristic Path Planning for Robotic Navigation in Unstructured Outdoor Environments</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot crossing rough outdoor terrain sees immediate detail through its camera or LiDAR (rocks, ditches, slopes) but cannot see whether the wider landscape ahead is passable—a locally safe path may lead to a dead-end or dangerously steep slope further out.</p>
+<p><b>The approach.</b> Build two overhead maps: a detailed local one showing immediate obstacles and ground safety, and a coarser global one estimating traversability across 50+ meters. Score candidate waypoints against both maps and move to the one that is locally safe and globally viable.</p>
+<p><b>What's unique.</b> Local detail prevents collisions, global probability prevents bad long-term routes. Neither alone is enough—a patch may be locally flat but globally isolated (dead-end), or locally rough but globally the only way through. Scoring both prevents greedy local decisions from trapping the robot.</p></div>
 <p><strong>ICRA 2025 · 3 citations · path-planning (heuristic dual-layer BEV)</strong></p>
 <h2>What it does — 2-3 plain sentences</h2>
 <p>Dual-BEV Nav builds two overhead terrain maps from sensor data and uses them together to guide a robot across rough outdoor ground. A detailed local map proposes safe nearby paths; a coarser global map rates how passable the whole landscape is. The planner picks the route that satisfies both, allowing robots to navigate successfully even when GPS is poor and terrain is unstructured.</p>
@@ -571,6 +603,10 @@ collaborative-pushing-intention/
 </ul>
 <p><strong>Verdict:</strong> CPU-runnable for planning logic only; not for the full real-time BEV pipeline unless model size is heavily optimized. Assume GPU for the intended deployment.</p></article>
 <article class="page" id="gp7"><h1>Inverse Kinematics on Guiding Vector Fields for Robot Path Following</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot must follow a predefined path but older steering methods (pure pursuit, carrot-following) rely on ad-hoc tuning that cannot be predicted—the robot may overshoot, oscillate, or respond slowly depending on how the gain was chosen.</p>
+<p><b>The approach.</b> Represent the path as a level set (the zero-contour of a smooth function) and treat the robot's distance from that contour as a "virtual joint." Use inverse kinematics on this virtual joint to guarantee the error behaves like a linear system with predictable, controllable transient response.</p>
+<p><b>What's unique.</b> Instead of ad-hoc steering gains, this method connects path-following to classical control theory (pole placement, damping ratios), letting designers specify exactly how fast and smoothly the robot converges to the path—then guarantee it will happen that way.</p></div>
 <p>ICRA 2025 · 3 citations · inverse-kinematics sub-approach</p>
 <h2>What it does</h2>
 <p>The paper borrows a technique from robot arm control—inverse kinematics—and applies it to path-following problems in autonomous mobile robots. Instead of solving for joint angles (as in arms), it treats the distance from a target path as a &quot;virtual joint&quot; and uses that to give designers fine control over how quickly and smoothly a robot converges onto a path. The core idea is that by treating path-following as an inverse kinematics problem, the designer can inject precise transient behavior (how the robot approaches the path) and feed-forward commands (acceleration signals) that existing steering methods cannot offer. This is a <strong>inverse-kinematics</strong> sub-approach, not path-planning; it solves *how to drive toward a path that is already defined* with predictable control dynamics.</p>
@@ -651,6 +687,10 @@ collaborative-pushing-intention/
 </ul>
 <p><strong>Practical caveat:</strong> The paper validates only on drones (fixed-wing aircraft) in simulation. Before deploying to a real robot, you&#x27;d need to tune the gain functions $k<em>N$ and $k</em>T$ for your specific platform and handle edge cases (e.g., when the path has sharp turns or the robot gets very far from the path).</p></article>
 <article class="page" id="gp8"><h1>SEB-Naver: A SE(2)-based Local Navigation Framework for Car-like Robots on Uneven Terrain</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A wheeled robot must drive across hills, slopes, and rough terrain. Older planners treat the ground as flat or pre-mapped, or they compute full 6D pose optimization which is too slow for real-time control. The robot also risks tipping over on steep slopes if the planner ignores pitch and roll.</p>
+<p><b>The approach.</b> Reduce planning to 2D (position + heading only); automatically infer the robot's full 3D pose (pitch, roll, height) from terrain geometry. Rate each terrain cell for safety by measuring slope and roughness. Solve a smooth trajectory that avoids obstacles, respects steering limits, and keeps the robot from tipping.</p>
+<p><b>What's unique.</b> SE(2) parameterization cuts the search space drastically (3D instead of 6D), and terrain-aware risk scoring prevents oversimplified path-planning that ignores the actual physics of driving on slopes—the optimizer sees pitch/roll constraints and avoids them automatically.</p></div>
 <p>IROS · 3 citations · reactive-nav + mobile-manipulation</p>
 <h2>What it does</h2>
 <p>A navigation system for wheeled robots that drives over hills, slopes, and rough terrain by constantly assessing which ground is safe to cross and then computing steering commands that respect both the terrain&#x27;s slope and the robot&#x27;s steering limits. This is a reactive-nav system that blends traversability assessment with real-time trajectory optimization: it evaluates terrain risk across a local overhead map, then solves a smooth path that avoids obstacles, stays within steering and speed bounds, and keeps the robot from tipping over.</p>
@@ -708,6 +748,10 @@ roslaunch plan_manage multi_sim.launch
 <p><strong>CPU-only: Probably, but slow.</strong> The system was designed to run on a real car-like robot (not a simulator), so a CPU is sufficient for the optimization solver. However, the GPU-accelerated traversability grid (972K cells in ~50ms) is the speed trick; on CPU alone, the traversability step would be much slower, likely dropping below 20 Hz real-time. No external API keys, no dataset download, no special hardware required—just ROS Noetic on Linux (Ubuntu 20.04) and a C++ build environment.</p>
 <p><strong>Summary:</strong> A production-ready navigation stack for off-road mobile robots. The code is open-source and publicly available. Running the full stack on CPU is possible but trades speed for accessibility.</p></article>
 <article class="page" id="gp9"><h1>Vision-Based Movement Primitives for Lunar Hazard Avoidance</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A lunar rover must execute pre-planned driving routines (circles, raster scans, pickup-and-return) while dodging rocks it did not expect. Re-planning from scratch is slow; purely reactive steering can loop forever or veer off mission. The rover cannot wait for Earth-based commands.</p>
+<p><b>The approach.</b> Encode mission patterns as dynamic movement primitives (smooth, learnable trajectory templates). As the rover drives, a vision system watches for rocks. When one appears, inject a deflection into the DMP's attractor dynamics to bend the path around it without halting or replanning.</p>
+<p><b>What's unique.</b> DMPs naturally absorb small perturbations; their attractor structure means local obstacle corrections do not break global mission coherence—the rover stays on mission while reacting to surprises as fast as vision can detect them.</p></div>
 <p>ICRA 2025 · 2 citations · reactive-nav</p>
 <h2>What it does</h2>
 <p>This work enables an autonomous lunar excavator (IPEx) to follow engineered driving patterns while detecting and dodging rocks in real time. It combines parameterized trajectory templates (dynamic movement primitives, or DMPs—smooth pre-designed motion patterns with adjustable parameters) with a vision module that spots hazards and locally warps the planned path around them. This is a <strong>reactive-nav</strong> approach: the robot commits to a high-level mission pattern, then reflexively avoids obstacles it sees, without replanning from scratch.</p>

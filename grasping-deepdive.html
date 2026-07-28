@@ -38,6 +38,10 @@
  .appr b{color:var(--ink)}
  .payoff{font-size:15px;color:var(--graphite);border-top:1px dashed var(--line);padding-top:9px;margin-top:12px}
  .payoff::before{content:"\2192  ";color:var(--accent);font-weight:700}
+ .bigidea{background:linear-gradient(180deg,rgba(14,124,134,.07),rgba(14,124,134,.01));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0 16px}
+ .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
+ .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
+ .bigidea b{color:var(--ink)}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -127,6 +131,10 @@
 <tr><td class="tt">General-Purpose Clothes Manipulation with Semantic Keypoints</td><td>ICRA</td><td><a href="https://github.com/dengyh16code/CLASP" target="_blank" rel="noopener">dengyh16code/CLASP</a></td><td class="mono">semantic_keypoints/semantic_keypoints.py</td><td><span class="run">gpu</span></td></tr></tbody></table></div>
   </div>
   <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>Bunny-VisionPro: Real-Time Bimanual Dexterous Teleoperation for Imitation Learning</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Teaching robots to manipulate with two multi-fingered hands requires collecting thousands of human demonstrations, but controlling two separate hands with many joints each through teleoperation is exhausting and error-prone. The human operator struggles to see and feel what the robot is actually doing.</p>
+<p><b>The approach.</b> Let the operator see through a VR headset and feel through vibration motors on their own hands, so the robot mirrors exactly what the human does. The headset tracks the human's hand motions, IK converts them to robot poses, and tactile feedback loops back from the robot's touch sensors.</p>
+<p><b>What's unique.</b> Haptic feedback closes the sensorimotor loop—the operator feels the robot's contacts in real time, not from video alone. This dramatically improves demonstration quality and reduces failed teleoperated trials that corrupt training data.</p></div>
 <p>IROS 2025 · 11 citations · learn-from-human (bimanual teleoperation)</p>
 <h2>What it does</h2>
 <p>This is a VR-based teleoperation system that lets a human operator control a robot with two dexterous hands—each with multiple fingers—in real time. The operator wears an Apple Vision Pro headset which tracks their hands and fingers, and these poses are instantly mapped onto the robot&#x27;s hands. The system gives the operator haptic (touch) feedback through low-cost vibration motors, and it automatically stops the robot if it&#x27;s about to collide or reach an unstable position. The high-quality demonstrations collected this way are then used to train imitation learning policies for complex, long-horizon bimanual dexterous tasks—a sub-approach called <strong>learn-from-human</strong> (specifically bimanual teleoperation, which is a variant combining learning from human video/teleoperation with two-arm coordination).</p>
@@ -200,6 +208,10 @@
 </ul>
 <p><strong>Realistic assessment:</strong> You can study the code and run simulated teleoperation on a CPU desktop. But to actually use the system as intended—collecting demonstrations with VR and a real robot—you need $3,500+ hardware investment and a collaborative robot arm + dexterous hand ($5,000–$15,000). The imitation learning training also requires a GPU (a modest one is fine, e.g., NVIDIA RTX 3090 or better). If you have that hardware, the code is well-documented and should work out of the box (as of July 2024).</p></article>
 <article class="page" id="gp1"><h1>EgoMimic: Scaling Imitation Learning via Egocentric Video</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Robots learn to manipulate by watching demonstrations, but robots and humans have different bodies—different arm lengths, gripper shapes, and sensing. Teaching from human video is wasteful because you have to manually record robot-specific data anyway.</p>
+<p><b>The approach.</b> Build a robot whose arms are shaped like human arms, then train a single neural network on both human and robot demonstrations side-by-side. The network learns shared motor patterns that work for both embodiments.</p>
+<p><b>What's unique.</b> Rather than treating human video as high-level intent to be abstracted away, it treats human and robot trajectories as equivalent. This lets the policy absorb richer motion diversity from humans while staying grounded in real robot kinematics.</p></div>
 <p>ICRA 2025 · 9 citations · learn-from-human</p>
 <h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
 <p>EgoMimic teaches a robot to perform long-horizon bimanual manipulation tasks by learning from egocentric (first-person) human videos paired with robot demonstrations. Instead of extracting high-level intent from human video, it treats human hand motion and robot arm motion as equivalent embodied demonstrations and trains a single policy on both simultaneously. This is the <strong>learn-from-human</strong> sub-approach: the system learns manipulation from human videos captured with Project Aria glasses, then transfers that knowledge to control a bimanual robot arm.</p>
@@ -293,6 +305,10 @@ python egomimic/scripts/latent_inspector.py
 <li>ROS 2 Humble + Interbotix dependencies only needed if interfacing with physical hardware or teleoperation; training code is independent.</li>
 </ul></article>
 <article class="page" id="gp2"><h1>Monocular Depth Estimation and Segmentation for Transparent Object with Iterative Semantic and Geometric Fusion</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Depth cameras bounce light off surfaces to measure distance. Glass and clear plastic let light through or bend it, so the robot cannot see where transparent objects actually are in 3D. It reaches out and hits empty air or a distorted position.</p>
+<p><b>The approach.</b> Run shape prediction (semantic) and depth prediction (geometric) as two separate branches that correct each other. Shape estimation finds the object's outline; depth estimation gets its distance. Pass the results back through the network a few more times to refine both.</p>
+<p><b>What's unique.</b> Earlier work tried to merge these signals once. Here they iteratively bounce between branches—each helping the other converge on the right answer—so the final depth map respects both the object's geometry and the camera data.</p></div>
 <p>ICRA · 9 citations · grasp-detection: perception layer</p>
 <h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
 <p>This paper tackles the perception challenge in robotic grasping of transparent objects—glass, plastic, acrylic—by estimating both their 3D shape (depth) and exact boundaries (segmentation) from a single RGB camera image. The novel contribution is that it does both tasks at once using a neural network that learns semantic (shape-classification) and geometric (depth-boundary) features jointly, refining the predictions iteratively to handle the hard cases where standard methods fail on transparent materials. <strong>Sub-approach: grasp-detection</strong> (the perception layer that identifies where and what shape an object is before a gripper approaches).</p>
@@ -364,6 +380,10 @@ python inference.py --image path/to/image.jpg --model checkpoints/best_model.pth
 </ul>
 <p><strong>Summary:</strong> Runnable with the code and pre-trained weights on a machine with a modern NVIDIA GPU, internet for dataset download, and patience for environment setup. Not runnable on a basic laptop or CPU-only server.</p></article>
 <article class="page" id="gp3"><h1>DexMimicGen: Automated Data Generation for Bimanual Dexterous Manipulation via Imitation Learning</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Robots need thousands of demonstrations to learn dexterous two-arm manipulation, but collecting that many teleoperated examples is prohibitively expensive—each one requires a human sitting down to drive two arms with many fingers at once for minutes.</p>
+<p><b>The approach.</b> Take a small set of human demos (60) and algorithmically expand each into hundreds of variants by moving objects around and adapting the hand trajectory to each new position using inverse kinematics. Teach the robot from the synthetic expansion.</p>
+<p><b>What's unique.</b> The key insight is that trajectory variation comes from *object placement*, not fundamental changes to how fingers move. Reuse the core motion; only retarget the gripper positions—350× amplification from simple retargeting.</p></div>
 <p>ICRA 2025 · 8 citations · data-generation</p>
 <h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
 <p>DexMimicGen automatically generates large training datasets for humanoid robots with two dexterous hands by expanding a small set of human demonstrations (60 source videos) into 21,000 synthetic training trajectories. This is a <strong>data-generation</strong> approach: it solves the bottleneck of expensive human teleoperation by synthesizing diverse trajectories in simulation that can then be used to train imitation-learning policies. The system includes a real-to-sim-to-real pipeline that successfully deploys trained policies to real humanoid robots performing complex two-arm manipulation tasks like can sorting and coffee preparation.</p>
@@ -478,6 +498,10 @@ python scripts/real_robot_eval.py --checkpoint models/policy.pth --env can_sorti
 </ul>
 <p><strong>Bottom line for CPU-only box:</strong> Yes, it will run and you can test the demo and replay data, but you cannot meaningfully generate or train without a GPU. Budget 3-5x GPU time for a realistic development workflow.</p></article>
 <article class="page" id="gp4"><h1>ViViDex: Learning Vision-Based Dexterous Manipulation from Human Videos</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Extracting hand motion from human video is noisy—hand tracking jitters, occlusions, and artifacts. Training a robot directly on that noise produces shaky, unphysical motions that fail on a real robot.</p>
+<p><b>The approach.</b> Use reinforcement learning as a denoiser: train a policy to follow the noisy trajectory while obeying physics. Successful rollouts become clean, physically plausible demonstrations. Then train a vision-based policy that only sees cameras, not ground-truth state.</p>
+<p><b>What's unique.</b> Two-stage pipeline bridges human video (inherently noisy) and robot control (requires smoothness). The intermediate RL stage cleans the data; the final stage adds vision, so the robot works with its onboard cameras.</p></div>
 <p>ICRA 2025 · 7 citations · learn-from-human</p>
 <h2>What it does</h2>
 <p>ViViDex trains a multi-fingered robot hand to manipulate objects by learning directly from human video demonstrations. Instead of relying on noisy hand-tracking estimates or ground-truth object positions, it first uses reinforcement learning to &quot;clean up&quot; the human motion in simulation, then trains a vision-based policy that works on the real robot using only RGB-D camera input. This is a <strong>learn-from-human</strong> approach—it bridges the gap between how humans move their hands and how robots must move their arms and fingers to accomplish the same manipulation goals.</p>
@@ -541,6 +565,10 @@ python tools/dist_bc_train.py policy.name=bc_policy
 <p><strong>API keys:</strong> None.</p>
 <p><strong>Verdict:</strong> Could it run? With GPU + simulator + DexYCB data + PyTorch 2.4.1 + CUDA 12.1, yes, training is feasible (weeks of compute for the full benchmark). Inference on a real robot (Allegro hand + UR5 arm + RealSense camera) is demonstrated in the paper and should work if you have compatible hardware and a pre-trained checkpoint. On a CPU-only box with no GPU or simulator: <strong>cannot run</strong>.</p></article>
 <article class="page" id="gp5"><h1>RTAGrasp: Learning Task-Oriented Grasping from Human Videos via Retrieval, Transfer, and Alignment</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot must choose where to grip an object to accomplish a task, not just find any graspable point. But every object looks different, every task has subtle requirements, and training a system that handles both is expensive.</p>
+<p><b>The approach.</b> Store human demonstration videos in memory. When faced with a new object and task, find the most similar stored example, then use vision foundation models to identify corresponding points on the new object and map the grasp there—no retraining.</p>
+<p><b>What's unique.</b> Pure in-context learning via similarity—retrieval handles task and object novelty at once. Foundation models (CLIP for retrieval, SAM for correspondence) do the heavy lifting with no task-specific training.</p></div>
 <p>ICRA · 6 citations · task-oriented grasping (learn-from-human)</p>
 <h2>What it does</h2>
 <p>RTAGrasp learns where and how to grasp an object to accomplish a specific manipulation task by studying human demonstration videos. It retrieves the most similar grasping example from a memory of human videos, then transfers that grasp pose to a new target object without any task-specific training, making it a pure learn-from-human approach that uses foundation vision models to bridge the gap between human and robot hands.</p>
@@ -593,6 +621,10 @@ RTAGrasp/
 <li>[Paper on ResearchGate](<a href="https://www.researchgate.net/publication/384295111" target="_blank" rel="noopener">https://www.researchgate.net/publication/384295111</a><em>RTAGrasp</em>Learning<em>Task-Oriented</em>Grasping<em>from</em>Human<em>Videos</em>via<em>Retrieval</em>Transfer<em>and</em>Alignment)</li>
 </ul></article>
 <article class="page" id="gp6"><h1>GraspSAM: When Segment Anything Model Meets Grasp Detection</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Training grasp detectors requires thousands of labeled images per object type. A robot that works on only trained objects is useless; you need generalization.</p>
+<p><b>The approach.</b> Start with SAM, a massive foundation model already trained on millions of segmentation tasks across all objects. Freeze it and add only small adapter layers that learn to predict grasp angles and widths alongside segmentation masks. Train only on existing grasp datasets (Jacquard, Grasp-Anything).</p>
+<p><b>What's unique.</b> SAM's prior is so strong that minimal fine-tuning (via adapters, not full retraining) teaches grasp prediction. The model generalizes to unseen object types with almost no performance drop—the broad foundation does the heavy lifting.</p></div>
 <p>ICRA · 6 citations · grasp-detection</p>
 <h2>What it does</h2>
 <p>GraspSAM predicts where and how a robot gripper should grasp an object by extending the Segment Anything Model (SAM) — a large vision model trained on millions of image segmentation tasks — to also output per-pixel grasp quality, angle, and width. It takes prompts (a point you tap, a bounding box, or text description) and outputs where to grip and what angle to use, without needing task-specific training data. This is <strong>grasp-detection</strong> — predicting grasp positions and directions on novel objects without expensive per-object labeling.</p>
@@ -662,6 +694,10 @@ python eval.py \
 <p><strong>Runnable from scratch?</strong> Yes, with caveats: (1) Download Jacquard (~10 GB), (2) Have a GPU with ≥24 GB VRAM, (3) Install CUDA 11.7. The pretrained SAM weights are fetched automatically by the code. After 24 hours, you have a trained grasp detector that works on novel objects without retraining.</p>
 <p>Real-world deployment: The paper shows live robot experiments on a UR5 arm with a parallel-jaw gripper, taking point/box prompts and executing grasps in &lt;200 ms (including planning). The code ships training-ready; deploying to a robot requires only inference code (already provided in <code>eval.py</code>).</p></article>
 <article class="page" id="gp7"><h1>RL-GSBridge: 3D Gaussian Splatting Based Real2Sim2Real Method for Robotic Manipulation Learning</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Training RL policies in simulation breaks when you move to the real world because simulated images look too fake—pixelated, flat, wrong lighting. The policy learned on fake-looking scenes fails on real cameras.</p>
+<p><b>The approach.</b> Capture the real scene on video, reconstruct it as a photorealistic 3D Gaussian model (not blocky like traditional 3D), and train RL inside that reconstruction. The policy never sees synthetic-looking images, only renderings of the captured reality.</p>
+<p><b>What's unique.</b> 3D Gaussian Splatting renders photorealistically in real time, unlike slow NeRF-based methods. Train once in the captured sim, deploy directly to the real robot with zero fine-tuning—no domain randomization needed.</p></div>
 <p>ICRA 2025 · 6 citations · sim-to-real transfer via photorealistic simulation</p>
 <h2>What it does</h2>
 <p>A method that takes video of a real robot scene, converts it into a photorealistic 3D model (using a technique called 3D Gaussian Splatting), trains a reinforcement learning policy to control a robot arm for grasping and pick-and-place tasks <strong>entirely inside that replica</strong>, and then runs that exact trained policy on the real robot without any fine-tuning. This is <strong>data-generation</strong> (synthetic demonstration via photorealistic sim) and <strong>sim-to-real transfer</strong> — it solves the core problem that simulated scenes look too fake for visual RL to work: the policy learns on renderings that match reality pixel-for-pixel.</p>
@@ -759,6 +795,10 @@ python RLGS-bridge-pub/deploy.py --checkpoint ./checkpoints/policy_final.pt --ro
 <p><strong>Real-robot deployment:</strong> Possible but requires (1) a calibrated UR or ABB arm with gripper, (2) sensor calibration (camera-to-robot), and (3) object mesh models. The paper demonstrates on UR5e and ShadowHand; assumes you have the hardware.</p>
 <p><strong>Summary:</strong> The code is mature, documented, and runs on standard research GPUs. Start with the banana example on a single GPU; no special hardware or datasets beyond PyBullet. Real-world transfer depends entirely on your robot setup.</p></article>
 <article class="page" id="gp8"><h1>Catch It! Learning to Catch in Flight with Mobile Dexterous Hands</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Static grasping is hard enough. Catching a moving object in mid-air with a 20-joint robot (base, arm, dexterous hand) is far harder—you must predict the trajectory, intercept it in time, and close the right fingers at the right moment.</p>
+<p><b>The approach.</b> Break catching into two stages. First, train the robot to track a falling object by moving the base and arm to center it. Second, train the hand to close and intercept. Heavy randomization of throw speed, angle, and object shape ensures the learned policies generalize.</p>
+<p><b>What's unique.</b> Splitting tracking and catching into stages makes the problem tractable. Extensive simulation-based randomization gets the trained policy to work directly on the real robot with no real-world data collection.</p></div>
 <p>ICRA 2025 · 6 citations · dexterous-manipulation</p>
 <h2>What it does</h2>
 <p>The system teaches a whole-body mobile robot—with a wheeled base, a six-joint arm, and a twelve-joint multi-fingered hand—to catch thrown objects out of the air in real time. This is dexterous-manipulation because it requires precise, coordinated control of the multi-fingered hand while the entire robot body moves to intercept a moving target. Unlike static manipulation, catching demands predicting where an object will be, positioning the arm in time, and grasping with the fingers in a fraction of a second.</p>
@@ -796,6 +836,10 @@ python RLGS-bridge-pub/deploy.py --checkpoint ./checkpoints/policy_final.pt --ro
 <p><strong>Entry point:</strong> <code>python train_DCMM.py test=True task=Catching</code> to run inference with the pre-trained catching model in simulation.</p>
 <p>In summary: The code is runnable on a machine with GPU and MuJoCo installed, and you can validate the pre-trained policies in simulation without owning the physical robot. But full training requires sustained GPU+compute, and real-world deployment requires the complete hardware platform.</p></article>
 <article class="page" id="gp9"><h1>General-Purpose Clothes Manipulation with Semantic Keypoints</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Cloth is deformable and looks different every time. Training separate models for each clothing type (t-shirts, pants, dresses) and task (fold, hang, flatten) is impractical. The robot needs one system that handles diverse garments.</p>
+<p><b>The approach.</b> Identify semantic points on the garment (left sleeve, hem, neckline) using frozen vision-language models. Pass these keypoints and the task instruction to an LLM to plan sub-steps. Execute pre-built skills (grasp, fold) conditioned on the keypoints. Replan after each action.</p>
+<p><b>What's unique.</b> Semantic keypoints decouple perception (naming parts) from planning (deciding what to do) from control (reaching those parts). New clothing types inherit keypoint names; new tasks need only new LLM prompts; robot skills stay unchanged.</p></div>
 <p>ICRA · 5 citations · bimanual manipulation with semantic keypoints</p>
 <h2>What it does</h2>
 <p>CLASP learns to manipulate diverse clothing items (t-shirts, sweaters, skirts, dresses, pants) with a dual-arm robot, handling tasks like folding, flattening, hanging, and placing. Instead of training separate systems per task or clothing type, it identifies named points on the garment—such as &quot;right shoulder,&quot; &quot;left cuff,&quot; &quot;hem&quot;—and uses those sparse spatial-semantic landmarks to bridge LLM task planning and low-level robot control. This is <strong>bimanual manipulation</strong> with a semantic intermediate representation: the robot&#x27;s two arms move to reach the keypoints, guided by a vision-language model that interprets the task instruction.</p>

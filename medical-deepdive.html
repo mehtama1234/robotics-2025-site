@@ -38,6 +38,10 @@
  .appr b{color:var(--ink)}
  .payoff{font-size:15px;color:var(--graphite);border-top:1px dashed var(--line);padding-top:9px;margin-top:12px}
  .payoff::before{content:"\2192  ";color:var(--accent);font-weight:700}
+ .bigidea{background:linear-gradient(180deg,rgba(14,124,134,.07),rgba(14,124,134,.01));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0 16px}
+ .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
+ .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
+ .bigidea b{color:var(--ink)}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -123,6 +127,10 @@
 <tr><td class="tt">Robust and Accurate Multi-View 2D/3D Image Registration with</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr></tbody></table></div>
   </div>
   <div id="papers"><div class="eyebrow">Paper by paper — the method</div><article class="page" id="gp0"><h1>Real-Time Deformation-Aware Control for Autonomous Robotic Subretinal Injection Under iOCT Guidance</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> When inserting a needle into the retina of the eye for injection, the tissue deforms and shifts with the heartbeat and eye motion, so a needle aimed at a fixed depth will penetrate the wrong layer and miss the therapeutic target.</p>
+<p><b>The approach.</b> Scan the retina continuously using OCT (optical coherence tomography), segment the layers in 3D in real time, track where the target layer has moved to, and adjust the needle depth automatically to follow it.</p>
+<p><b>What's unique.</b> Instead of a fixed surgical plan, the robot adapts the needle depth in real time to match moving tissue, turning a static targeting problem into a dynamic tracking problem that raises success from 35% to 90%.</p></div>
 <h2>What it solves</h2>
 <p>When a robot needle is inserted into the eye for a subretinal injection, the tissue deforms and moves, so a fixed insertion depth will miss the target layer.</p>
 <h2>How it works</h2>
@@ -130,6 +138,10 @@
 <h2>Why it matters</h2>
 <p>A deformation-aware autonomous injection controller using dense iOCT 3D reconstruction that raises subretinal bleb generation success from 35% to 90% ex-vivo.</p></article>
 <article class="page" id="gp1"><h1>Advancing Dense Endoscopic Reconstruction with Gaussian Splatting-Driven Surface Normal-Aware Tracking and Mapping</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Building a 3D map of the inside of a patient during surgery from camera video alone is hard because the tissue stretches and moves, so depth estimates are inconsistent between frames and create a blurry, broken-up 3D model.</p>
+<p><b>The approach.</b> Represent the scene as flat discs in 3D space (2D Gaussian Splatting) and force them all to agree on which way the surface is facing across consecutive video frames, plus periodically refine the camera position to fix drift.</p>
+<p><b>What's unique.</b> Most SLAM systems use point clouds or mesh patches; here the constraint that neighboring surface elements must agree on their orientation keeps the 3D model coherent through large deformations, enabling sub-2mm depth accuracy in moving surgical tissue.</p></div>
 
 <div style="background:var(--ink);color:#E7ECED;border-radius:12px;padding:20px 22px;margin:10px 0 6px;border:1px solid #000">
   <div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-lite);margin-bottom:6px">Live run · we actually ran it</div>
@@ -150,6 +162,10 @@
 <h2>Why it matters</h2>
 <p>Applies 2D Gaussian Splatting with surface normal constraints to endoscopic SLAM, achieving sub-2mm RMSE depth reconstruction in surgical scenes with real-time rendering.</p></article>
 <article class="page" id="gp2"><h1>Polyp-Gen: Realistic and Diverse Polyp Image Generation for Endoscopic Dataset Expansion</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Training AI to detect polyps in endoscopy images requires labeled data, but collecting real endoscopy images is slow and expensive, and synthetic images from older tools have blurry polyp boundaries that fool learning models.</p>
+<p><b>The approach.</b> Use a diffusion model (a generative AI) that can create new images, but train it with a loss function that penalizes soft or blurry polyp edges, forcing it to paint sharp boundaries where real polyps would have them.</p>
+<p><b>What's unique.</b> Earlier synthetic-image methods required humans to manually specify where each polyp should be; this method finds plausible polyp locations automatically from the image's own spatial features, eliminating human annotation entirely.</p></div>
 <h2>What it solves</h2>
 <p>Generating realistic fake endoscopy images to expand training data is hard because existing tools cannot produce accurate polyp edges without a human drawing where the polyp should go.</p>
 <h2>How it works</h2>
@@ -157,6 +173,10 @@
 <h2>Why it matters</h2>
 <p>First fully automatic diffusion-based framework for endoscopic polyp image generation that requires no manual priors, achieving state-of-the-art realism and zero-shot generalization to new datasets.</p></article>
 <article class="page" id="gp3"><h1>RoboNurse-VLA: Robotic Scrub Nurse System based on Vision-Language-Action Model</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A surgical robot assistant must pick up and hand over the right tool when the surgeon asks, but surgical instruments vary widely in shape and appearance, and the robot may never have seen the exact one before.</p>
+<p><b>The approach.</b> When the surgeon names a tool, a vision model finds it in the camera image, and a language model figures out the best grip point and handover angle based on the tool's identity and shape, linking language reasoning directly to robotic action.</p>
+<p><b>What's unique.</b> Rather than training a separate model per tool, the system leverages a general-purpose vision model (SAM 2) and language model (Llama 2) that work zero-shot on previously unseen instruments, transferring knowledge from generic images to novel surgical tools.</p></div>
 <h2>What it solves</h2>
 <p>A robot surgical assistant needs to pick up and hand over the right surgical tool when the surgeon asks, but tools vary widely in shape and the robot may never have seen the exact one before.</p>
 <h2>How it works</h2>
@@ -164,6 +184,10 @@
 <h2>Why it matters</h2>
 <p>A VLA system combining SAM 2 and Llama 2 for surgical scrub nurse robotics that achieves high handover success rates on previously unseen instruments.</p></article>
 <article class="page" id="gp4"><h1>SurgPose: a Dataset for Articulated Robotic Surgical Tool Pose Estimation and Tracking</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Teaching a vision system to track the exact 3D position and angle of jointed surgical instruments is hard because getting labeled training data requires expensive geometric calibration of the robot arm.</p>
+<p><b>The approach.</b> Paint surgical instruments with UV-reactive marker dots invisible under normal light, then film them under both normal and UV light to get perfectly aligned label pairs, and use stereo cameras (two views) to convert 2D dot positions into 3D.</p>
+<p><b>What's unique.</b> UV-reactive markers solve the labeling bottleneck—the method gets perfect 3D annotations without manual calibration, yielding 120K instances across 6 instrument categories with instance-aware keypoint precision.</p></div>
 <h2>What it solves</h2>
 <p>Teaching a computer to track the exact position and angle of jointed surgical tools is hard because getting labeled training data requires expensive and tedious geometric calibration of the robot arm.</p>
 <h2>How it works</h2>
@@ -171,6 +195,10 @@
 <h2>Why it matters</h2>
 <p>SurgPose: a 120K-instance stereo dataset with instance-aware UV-keypoint annotations for 6 surgical instrument categories, enabling 3D pose estimation without relying on kinematic calibration.</p></article>
 <article class="page" id="gp5"><h1>To Ask or not to Ask: Human-in-the-loop Contextual Bandits with Applications in Robot-Assisted Feeding</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A robot that helps people eat will sometimes encounter food it cannot reliably pick up on its own, so it needs to ask the user for help—but asking too often is cognitively tiring, especially for people with severe mobility limits.</p>
+<p><b>The approach.</b> Use a decision-making algorithm (contextual bandit) that learns to predict how much cognitive effort a particular question would place on a particular user, then only asks when the benefit of solving the problem outweighs the user's fatigue cost.</p>
+<p><b>What's unique.</b> Most assistive robots ask whenever uncertain; this method personalizes when to ask based on individual user workload and effort, validated with users who have severe mobility limitations.</p></div>
 <h2>What it solves</h2>
 <p>A robot that helps people eat sometimes meets food it cannot handle on its own, but asking the user for help too often is tiring—especially for people who cannot move their arms.</p>
 <h2>How it works</h2>
@@ -178,6 +206,10 @@
 <h2>Why it matters</h2>
 <p>LINUCB-QG framework that adapts querying frequency to individual user workload in robot-assisted feeding, validated in a user study including participants with severe mobility limitations.</p></article>
 <article class="page" id="gp6"><h1>Variable-Stiffness Nasotracheal Intubation Robot with Passive Buffering: A Modular Platform in Mannequin Studies</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Inserting a breathing tube through the nose into the airway requires the tool to bend and navigate tight curves with precisely controlled force—something rigid robot arms with fixed stiffness cannot do safely.</p>
+<p><b>The approach.</b> Build a robot whose stiffness can be adjusted during the procedure and that includes built-in shock-absorbing sections, so it adapts its rigidity to each phase and cushions any unexpected contact with tissue.</p>
+<p><b>What's unique.</b> Most intubation robots are either flexible throughout or rigid throughout; this modular design changes stiffness mid-procedure and adds passive buffering, so the tool is rigid enough to navigate but soft enough to prevent injury on contact.</p></div>
 <h2>What it solves</h2>
 <p>Inserting a breathing tube through the nose into the airway requires bending through tight curves with carefully limited force — something stiff, fixed-shape robotic tools struggle to do safely.</p>
 <h2>How it works</h2>
@@ -185,6 +217,10 @@
 <h2>Why it matters</h2>
 <p>Presents a modular robotic platform with variable stiffness and passive buffering specifically designed and validated for nasotracheal intubation procedures.</p></article>
 <article class="page" id="gp7"><h1>Deformable Gaussian Splatting for Efficient and High-Fidelity Reconstruction of Surgical Scenes</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Reconstructing 3D video of soft tissue during surgery is hard because tissue stretches, tears, and deforms in irreversible ways, causing existing methods to either run slowly or produce blurry, ghosted results.</p>
+<p><b>The approach.</b> Track the full life cycle of each 3D point—adding new points where tissue appears, removing them where it disappears—and separate still parts from moving parts so the representation stays compact and fast.</p>
+<p><b>What's unique.</b> Rather than trying to map a single deformation field across the whole scene, this method explicitly manages each point's birth and death, and splits the model into static and dynamic layers, improving both reconstruction clarity and rendering speed simultaneously.</p></div>
 <h2>What it solves</h2>
 <p>Reconstructing video of soft tissue during surgery in 3D is hard when the tissue stretches or tears in ways that cannot be undone, and existing methods are either slow or produce blurry results.</p>
 <h2>How it works</h2>
@@ -192,6 +228,10 @@
 <h2>Why it matters</h2>
 <p>A Gaussian splatting method with life-cycle-aware deformation modeling and adaptive motion hierarchy that simultaneously improves reconstruction quality and rendering speed for surgical scenes.</p></article>
 <article class="page" id="gp8"><h1>Intraoperative 3D Shape Estimation of Magnetic Soft Guidewire</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> During an endovascular procedure, surgeons cannot see the full 3D shape of a flexible magnetic-tipped wire inside a blood vessel without adding extra sensors to the wire or adding extra imaging hardware.</p>
+<p><b>The approach.</b> Use physics: the magnetized tip produces a magnetic field in the surrounding space; read that field from outside the body, and invert the physics equations to work backward and reconstruct the wire's complete 3D curve.</p>
+<p><b>What's unique.</b> No extra hardware or sensors are needed—the method extracts the 3D shape from the magnetic field alone, with below-1mm accuracy, using only physics and existing fluoroscopy equipment.</p></div>
 <h2>What it solves</h2>
 <p>Doctors cannot see the full 3D curve of a flexible magnetic-tipped wire inside a blood vessel during a procedure without adding sensors to the wire or extra imaging hardware.</p>
 <h2>How it works</h2>
@@ -199,6 +239,10 @@
 <h2>Why it matters</h2>
 <p>Sensor-free, fluoroscopy-compatible 3D guidewire shape reconstruction using magnetic field measurements with below-1mm accuracy, applicable to standard clinical workflows.</p></article>
 <article class="page" id="gp9"><h1>Robust and Accurate Multi-View 2D/3D Image Registration with Differentiable X-Ray Rendering and Dual Cross-View Constraints</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> During surgery, aligning a pre-op 3D scan of a patient's anatomy to live X-ray images taken from multiple angles is difficult and error-prone, and small misalignments cause surgical errors.</p>
+<p><b>The approach.</b> Train a model to match poses by simulating what an X-ray would look like if the patient were in that pose, then comparing those rendered X-rays to real ones, with penalties for disagreements both within and across views simultaneously.</p>
+<p><b>What's unique.</b> Most methods optimize each view independently; this method enforces that all views must be geometrically consistent with a single 3D pose, both during training and at test time, achieving sub-1mm alignment error.</p></div>
 <h2>What it solves</h2>
 <p>During surgery, aligning a pre-op 3D scan of a patient&#x27;s anatomy to live X-ray images from multiple angles is difficult and error-prone.</p>
 <h2>How it works</h2>

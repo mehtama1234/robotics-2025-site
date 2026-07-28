@@ -38,6 +38,10 @@
  .appr b{color:var(--ink)}
  .payoff{font-size:15px;color:var(--graphite);border-top:1px dashed var(--line);padding-top:9px;margin-top:12px}
  .payoff::before{content:"\2192  ";color:var(--accent);font-weight:700}
+ .bigidea{background:linear-gradient(180deg,rgba(14,124,134,.07),rgba(14,124,134,.01));border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0 16px}
+ .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
+ .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
+ .bigidea b{color:var(--ink)}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -124,6 +128,10 @@
 <tr><td class="tt">Leader-Follower Formation Enabled by Pressure Sensing in Fre</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr></tbody></table></div>
   </div>
   <div id="papers"><div class="eyebrow">Paper by paper — the method</div><article class="page" id="gp0"><h1>Individual and Collective Behaviors in Soft Robot Worms Inspired by Living Worm Blobs</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Real worms move as tangled blobs, but there's no controlled robot platform to test how they coordinate and move as a group.</p>
+<p><b>The approach.</b> Build soft air-powered robots shaped like worms, then vary air pressure to control how tightly they tangle and measure what the group does in air and water.</p>
+<p><b>What's unique.</b> First soft robot platform that replicates collective worm behavior through physical entanglement, not simulation — making it a testbed for studying emergent group locomotion directly.</p></div>
 <h2>What it solves</h2>
 <p>Scientists do not fully understand how real worms move as a tangled group, and there has been no robot platform that can replicate and test that group behavior in a controlled way.</p>
 <h2>How it works</h2>
@@ -131,6 +139,10 @@
 <h2>Why it matters</h2>
 <p>First soft-robot platform that faithfully replicates worm-blob collective behaviors through physical entanglement, providing a tunable testbed for studying emergent collective locomotion.</p></article>
 <article class="page" id="gp1"><h1>D3-ARM: High-Dynamic, Dexterous and Fully Decoupled Cable-Driven Robotic Arm</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Cable-driven arms can keep heavy motors at the base, but cables that share paths through joints accidentally move multiple joints at once, breaking precision.</p>
+<p><b>The approach.</b> Redesign cable routing so each motor drives exactly one joint with no cross-talk, add tensioning to keep cables taut, and move all electronics to the base.</p>
+<p><b>What's unique.</b> First fully decoupled cable routing removes crosstalk at the design stage rather than fighting it in control — achieving 1.29 mm positioning error with base-mounted actuators.</p></div>
 <h2>What it solves</h2>
 <p>Robot arms that use cables to transmit force have a problem where moving one joint accidentally moves others, making precise control hard.</p>
 <h2>How it works</h2>
@@ -138,6 +150,10 @@
 <h2>Why it matters</h2>
 <p>First fully decoupled cable-driven arm design achieving 1.29 mm average positioning error and 2.0 kg payload at 776 mm reach with all actuators base-mounted.</p></article>
 <article class="page" id="gp2"><h1>A Piezoresistive Printable Strain Sensor for Monitoring and Control of Soft Robotic Links</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Adding rigid sensors to soft arms makes them stiff and weak, yet sensing arm bend is needed for control.</p>
+<p><b>The approach.</b> Print the sensor directly into the arm: melt a soft rubbery base (TPU) via 3D printing, then draw conductive silver ink onto it as traces that change resistance when bent.</p>
+<p><b>What's unique.</b> Sensor is fully printable and built into the arm during fabrication — no assembly, no added stiffness, integrated from the start rather than bolted on.</p></div>
 <h2>What it solves</h2>
 <p>Putting a flexible bend sensor inside a soft robot arm without making it stiff or weak is hard to do with standard manufacturing.</p>
 <h2>How it works</h2>
@@ -145,6 +161,10 @@
 <h2>Why it matters</h2>
 <p>Demonstrates a fully printable, piezoresistive strain sensor with a gauge factor of 0.24 and stable repeatability in the 3–8% flexure strain range, integrated into a functional soft robotic link.</p></article>
 <article class="page" id="gp3"><h1>Stretchable Electrohydraulic Artificial Muscle for Full Motion Ranges in Musculoskeletal Antagonistic Joints</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Artificial muscles can only pull or push, so pairing two against each other for full range motion fails — one side prevents the other from working.</p>
+<p><b>The approach.</b> Pair hydraulic soft actuators (HASELs) with electric clutches and a controller that coordinates both sides, so one can disengage while the other moves.</p>
+<p><b>What's unique.</b> Clutches decouple the two sides of an antagonistic joint, letting each muscle fully contract and extend — three cycles per second — instead of fighting each other.</p></div>
 <h2>What it solves</h2>
 <p>Existing artificial muscles can only pull or only push, so robotic joints that pair two muscles against each other cannot move through their full range.</p>
 <h2>How it works</h2>
@@ -152,6 +172,10 @@
 <h2>Why it matters</h2>
 <p>A muscle-clutch architecture that enables full contraction-and-extension range of motion in antagonistic joints using non-stretchable artificial muscles, demonstrated on HASEL actuators.</p></article>
 <article class="page" id="gp4"><h1>Portable, High-Frequency, and High-Voltage Control Circuits for Untethered Miniature Robots Driven by Dielectric Elastomer Actuators</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Stretchy electrical muscles need 1,800 volts to work, but the electronics that deliver that voltage are usually too heavy for a tiny untethered robot to carry.</p>
+<p><b>The approach.</b> Stack many low-voltage circuits in series to reach high voltage on a tiny board — all in 2.5 grams with a power converter and camera onboard.</p>
+<p><b>What's unique.</b> Fits working high-voltage control in 2.5 grams without specialized chips — using basic series resistors to step voltage up for untethered miniature robots.</p></div>
 <h2>What it solves</h2>
 <p>Artificial muscles made from stretchy electrical material need very high voltage to work, but the electronics that deliver that voltage are usually too heavy for a small untethered robot.</p>
 <h2>How it works</h2>
@@ -159,6 +183,10 @@
 <h2>Why it matters</h2>
 <p>A 2.5 g, series-resistor-based high-voltage circuit enabling untethered DEA-driven miniature robots at up to 1 kHz without specialized HV control ICs.</p></article>
 <article class="page" id="gp5"><h1>Mathematical Modeling and Rolling Motion Generation of Planar Seven-link Robot That Forms Passive Closed and Active Open Chains</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> A seven-link robot can roll along a surface either passively (gravity) or actively (motors), but there was no unified math to describe both modes or how they interact.</p>
+<p><b>The approach.</b> Build separate models for closed-loop passive rolling and open-chain active rolling, then parametrize both in one framework that handles collisions and shape changes.</p>
+<p><b>What's unique.</b> First math that unifies passive-dynamic and active rolling in a single model — treating the same robot morphology as either a passive roller or an actively driven leaning octagon.</p></div>
 <h2>What it solves</h2>
 <p>A seven-link robot needs to roll along a surface, but there was no clear math to describe how it rolls—either by letting gravity do the work or by using its own motors.</p>
 <h2>How it works</h2>
@@ -166,6 +194,10 @@
 <h2>Why it matters</h2>
 <p>First mathematical formulation of rolling motion and collision dynamics for a planar seven-link robot that unifies passive-dynamic and actively controlled rolling in a single parametric framework.</p></article>
 <article class="page" id="gp6"><h1>CAFEs: Cable-Driven Collaborative Floating End-Effectors for Agriculture Applications</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Scaling farm automation to multiple robot arms over wide areas is expensive — each arm needs its own motors and cables, and they don't share infrastructure.</p>
+<p><b>The approach.</b> Multiple arms clip onto a single shared cable set and can attach or detach without stopping the system; spring-mass models and position control keep each arm stable while moving.</p>
+<p><b>What's unique.</b> Arms share one cable backbone and can hot-swap without individual cable actuators — scaling farms becomes modular and doesn't replicate actuators for each arm.</p></div>
 <h2>What it solves</h2>
 <p>Automating large-scale farm tasks like picking and placing fruit across wide areas with multiple robot arms is hard when each arm needs its own motors and cables.</p>
 <h2>How it works</h2>
@@ -173,6 +205,10 @@
 <h2>Why it matters</h2>
 <p>A scalable multi-arm cable-driven system where arms share a single cable set and can hot-attach/detach without individual actuators for cable motion, enabling large-workspace agricultural automation.</p></article>
 <article class="page" id="gp7"><h1>A Synergistic Framework for Learning Shape Estimation and Shape-Aware Whole-Body Control Policy for Continuum Robots</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Flexible tube-like robots are hard to control because tracking their exact shape and moving them happen at the same time, and their physics are complex and messy.</p>
+<p><b>The approach.</b> Train two neural networks together: one estimates the robot's current shape, the other uses that shape to decide how to move, and each helps the other improve.</p>
+<p><b>What's unique.</b> Co-learning decouples shape estimation from control — instead of one network fighting both problems, each solves its own piece and they bootstrap each other to better performance.</p></div>
 <h2>What it solves</h2>
 <p>Flexible tube-like robots are hard to control because you must track their exact shape and move them at the same time, and their physics are messy and hard to model.</p>
 <h2>How it works</h2>
@@ -180,6 +216,10 @@
 <h2>Why it matters</h2>
 <p>A synergistic dual-NODE architecture that co-learns shape estimation and shape-aware control for continuum robots, overcoming the shape-awareness gap in prior data-driven methods.</p></article>
 <article class="page" id="gp8"><h1>An Ultra-Light Seedling Planting Mechanism for Use in Aerial Reforestation</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Drones planting trees need a mechanism strong enough to push seedlings into soil, but it must be light enough for a medium or large drone to carry.</p>
+<p><b>The approach.</b> Build a two-stage telescoping tube powered by compressed air that fires the seedling into the ground with enough force, all weighing only 8 kg.</p>
+<p><b>What's unique.</b> Ultra-light pneumatic planter at 8 kg works on drones without GPS — tuned to both clear-cut and selectively-harvested forests in a single design.</p></div>
 <h2>What it solves</h2>
 <p>Drones that plant trees need a mechanism strong enough to push a seedling into soil but light enough to fit within what a medium or large drone can carry.</p>
 <h2>How it works</h2>
@@ -187,6 +227,10 @@
 <h2>Why it matters</h2>
 <p>A novel ultralight (8 kg) double-telescoping pneumatic tree-planting mechanism validated for aerial deployment, enabling GPS-independent reforestation in both clear-cut and selectively-harvested forests.</p></article>
 <article class="page" id="gp9"><h1>Leader-Follower Formation Enabled by Pressure Sensing in Free-Swimming Undulatory Robotic Fish</h1>
+<div class="bigidea"><span class="lbl">The big idea — first principles</span>
+<p><b>The problem.</b> Getting one swimming fish to follow another in tight formation with no camera or external tracking — only onboard body sensors — is hard.</p>
+<p><b>The approach.</b> Train a small neural network (LSTM) using recorded demonstrations and DAgger correction that reads just two water-pressure sensors on the follower's sides plus motor state and tilt.</p>
+<p><b>What's unique.</b> Formation swimming uses only pressure sensing and one hour of training data — no vision, no external tracking, no dense model — yet maintains tight leader-follower formation.</p></div>
 <h2>What it solves</h2>
 <p>Getting one swimming fish robot to follow another in tight formation is hard when the follower has no camera or external tracking — only its own body sensors.</p>
 <h2>How it works</h2>
