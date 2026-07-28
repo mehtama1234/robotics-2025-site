@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin:10px 0 14px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.55}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -79,18 +83,21 @@
 <p>The 293 papers in this topic do not propose a single new idea. They adapt what already works — learned control, safety filters, path planning, object detection — to the specific ways each environment breaks it. That is what makes field robotics a distinct research area: not a new theory, but the disciplined work of making existing methods survive contact with the real world.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>Learning to fly without hand-coded rules</h3>
+<div class="plain"><b>In plain terms</b>A hand-written physics model works in the lab but breaks the moment real wind shows up or the drone's weight changes. Instead, let the drone learn how to fly by actually flying and watching what happens — it adapts instantly when conditions shift.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Hand-coded physics models work in the lab but fail when reality diverges — a gust of wind, unexpected payload, or a rotor slightly off specs breaks the model entirely. The only way to adapt is to let the controller learn from real data instead.</div>
 <div class="appr"><b>Probabilistic motion model — DroneDiffusion.</b> Learns the drone's motion as a range of possible futures rather than a single fixed prediction, staying useful across different payloads and variable wind.</div>
 <div class="appr"><b>Differentiable simulation — Learning Quadrotor Control from Visual Features Using Differentiable Simulation.</b> A simulator computes exact gradients of flight outcome back through the physics, cutting training from hours to minutes by letting the policy follow gradients directly.</div>
 <div class="appr"><b>Visual navigation with differentiable rendering — GRaD-Nav.</b> Combines differentiable physics with photorealistic image rendering to teach a drone to fly through gates using only a camera, proven on real hardware.</div>
 <p class="payoff">When the real world does not match your model, let the controller learn from data instead of being written by hand.</p>
 <h3>Designing controllers that resist outside forces</h3>
+<div class="plain"><b>In plain terms</b>You can't predict every gust of wind or bump. So add a second brain that watches the drone's actual motion in real time and sends quick fixes to cancel out whatever is pushing it off course — like a copilot who only fixes problems, not plans the route.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Even a well-trained controller fails when something pushes on the drone unexpectedly. Rather than try to predict all disturbances, measure them in real time and cancel them out on the fly.</div>
 <div class="appr"><b>Residual learning for proximity — ProxFly: Robust Control for Close Proximity Quadcopter Flight Via Residual Reinforcement Learning (ICRA).</b> When multiple drones fly very close together, rotor downwash disrupts neighbors; an add-on module trained through trial and error sits on top of the main controller, sending corrective commands based only on the drone's own motion, no wireless needed.</div>
 <div class="appr"><b>Disturbance observer for arm coupling — NDOB-Based Control of a UAV with Delta-Arm Considering Manipulator Dynamics (ICRA).</b> Measures and cancels unwanted coupling forces between a mounted arm and the drone body in real time.</div>
 <div class="appr"><b>Model predictive control with state estimation — DR-MPC.</b> For pipeline inspection, a planner looks ahead while a state estimator measures wind forces and feeds corrections back to the plan before drift occurs.</div>
 <p class="payoff">A main controller for calm conditions, plus a real-time watchdog that estimates disturbances and adjusts on the fly.</p>
 <h3>Flying through clutter using only cameras</h3>
+<div class="plain"><b>In plain terms</b>A camera sees the whole scene at once and reacts faster than a laser scanner can spin — but it's blind to tiny distant objects until it learns to see the whole picture, not just edges. Teach the camera-brain to spot the entire clutter pattern and steer away before the drone gets close.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A lightweight camera-only drone must navigate dense clutter safely and fast, but camera images are noisy, small objects vanish easily, and the time between seeing an obstacle and hitting it is measured in milliseconds.</div>
 <div class="appr"><b>Vision transformers for end-to-end control — Vision Transformers for End-to-End Vision-Based Quadrotor Obstacle Avoidance (ICRA).</b> Splits camera frames into patches and learns relationships across the whole image at once, mapping directly to flight commands; learns in simulation, transfers to unseen environments without retraining.</div>
 <div class="appr"><b>Direct control from point clouds — Flying on Point Clouds with Reinforcement Learning.</b> Simplifies 3D laser scans enough to run at 50 commands per second, enabling forest flight with no separate path planner.</div>
@@ -98,12 +105,14 @@
 <div class="appr"><b>Drone-specific object detection — UAV-DETR: Efficient End-to-End Object Detection for Unmanned Aerial Vehicle Imagery (IROS).</b> Standard detectors miss small objects in drone photos because they were designed for ground-level images; combines features at many scales, keeps fine detail during downsampling, and connects features across processing paths to fix this for aerial imagery.</div>
 <p class="payoff">A camera-only drone that learns to navigate clutter at high speed by splitting the problem into control, detection, and precise body alignment.</p>
 <h3>Saving power and extending mission time</h3>
+<div class="plain"><b>In plain terms</b>Hovering in the air is exhausting — the battery dies in minutes. But if the drone lands and grips a branch like a hawk on a perch, it burns almost no power, just holds on. The trick is a claw that locks tight without electricity.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Drones drain batteries in minutes, capping how far they can go, how long they can monitor, and what work they can do. The only way to extend a mission is to stop flying and perch somewhere, using power only to grip, not to stay aloft.</div>
 <div class="appr"><b>Single-motor three-fingered claw — Adaptive Perching and Grasping by Aerial Robot with Light-Weight and High Grip-Force Tendon-Driven Three-Fingered Hand Using Single Actuator.</b> A three-fingered gripper driven by one motor can grab objects from any approach angle and lock tight with no power once latched.</div>
 <div class="appr"><b>Tendon-based branch perching — Tendon-driven Grasper Design for Aerial Robot Perching on Tree Branches.</b> Grips a tree branch and locks in place using tendons with no power needed to stay on; a camera finds and guides the drone to land on good perches.</div>
 <div class="appr"><b>Wire-crawling solar recharging — RaccoonBot.</b> A wire-monitoring robot grips without power (cannot fall), then crawls along the wire to find sunlit spots and recharge on the move.</div>
 <p class="payoff">Engineering solutions to the power-budget problem that no amount of smarter learning can fully solve — the physics of flight costs energy, but perching costs almost none.</p>
 <h3>Building safer flight with real-time safety filters</h3>
+<div class="plain"><b>In plain terms</b>The main brain can make a bad call and aim straight at a wall. So put a separate safety layer that watches every move and blocks commands that would crash, like a copilot who can always override an unsafe command — no questions asked.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A learned or planned trajectory can still steer the drone into a wall or obstacle. You need a separate layer that watches all motion in real time and blocks unsafe commands, regardless of what the main controller says.</div>
 <div class="appr"><b>Safety filter over live 3D blobs — A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps (ICRA).</b> Runs a control barrier function at 15 times per second directly on a map made of hundreds of thousands of tiny 3D blobs (Gaussian splats) that are still being built in real time.</div>
 <div class="appr"><b>Motor thrust safety for manipulation — Safety-Critical Control for Aerial Physical Interaction in Uncertain Environment.</b> Applies the same idea to a flying robot arm: the safety filter tracks estimation errors and adjusts arm motion just enough to keep all motor thrusts inside safe bounds.</div>

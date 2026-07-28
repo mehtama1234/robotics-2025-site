@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin:10px 0 14px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.55}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -77,18 +81,21 @@
 <p>These problems connect to the one big challenge every robot faces. A robot must take in an unclear, changing world, decide what to do, move a real body, and do it fast, cheap, safe, and general. Motion planning sits right at the junction of decide and move. A plan that arrives too late is useless. A plan that ignores the body&#x27;s limits cannot be followed. A plan that ignores disturbances will drift. The 115 papers in this topic are all trying to close that gap.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>Trying many paths in parallel and scoring them</h3>
+<div class="plain"><b>In plain terms</b> Instead of finding one perfect route, the robot tries thousands of possibilities at once and picks the fastest-and-safest one—like rolling dice rapidly and keeping the winning roll.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Finding the one perfect path is too slow to compute in real time, but scoring many candidate short paths in parallel and picking the best one is fast. The challenge is making sure the planner can re-solve this fast enough when the world changes.</div>
 <div class="appr"><b>Time-based planning via sampling — Trajectory Planning with Signal Temporal Logic Costs Using Deterministic Path Integral Optimization.</b> Uses sampling to plan paths that satisfy time-based rules (like "be in zone A between seconds 3 and 7") without rewriting those rules for standard solvers.</div>
 <div class="appr"><b>Reactive swing planning — High Speed Robotic Table Tennis Swinging Using Model Predictive Control.</b> Re-solves the best swing from scratch every time the robot gets a new estimate of where the ball will land.</div>
 <div class="appr"><b>Viewpoint sampling for photography — Take Your Best Shot: Sampling-Based Planning for Autonomous Photography.</b> A camera robot samples many candidate viewpoints and picks the one that reveals the most new information about the scene.</div>
 <p class="payoff">A planner sampling thousands of candidate paths in parallel on fast hardware can re-plan every few milliseconds, fast enough to track a moving target or react to sudden changes.</p>
 <h3>Handling tight spaces by breaking them into simpler pieces</h3>
+<div class="plain"><b>In plain terms</b> When a space is packed tight, don't solve it all at once—solve it one obstacle at a time, or chain simple moves together, so the solver makes actual progress instead of getting jammed.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>In narrow or cluttered spaces, most candidate paths hit something, so the planner gets stuck. The trick is to decompose the hard problem into easier pieces so the solver can make progress one step at a time.</div>
 <div class="appr"><b>Incremental collision rules — Narrow Passage Path Planning Using Collision Constraint Interpolation.</b> Splits the environment into convex regions and feeds collision rules to the solver one at a time instead of all at once, keeping the solver from getting stuck at the start.</div>
 <div class="appr"><b>Tangent-line decomposition — Improving Efficiency in Path Planning: Tangent Line Decomposition Algorithm.</b> Breaks the full multi-obstacle problem into a chain of single-obstacle steps, each solved by a simple tangent line, shrinking the search space dramatically.</div>
 <div class="appr"><b>Focused search among movables — Search-Based Path Planning in Interactive Environments Among Movable Obstacles.</b> Ignores most objects that are far from the path and focuses attention only on obstacles actually in the way.</div>
 <p class="payoff">When the planner works through the environment one obstacle at a time or chains simple solutions together, it finds paths through tight spaces that a global solver would miss.</p>
 <h3>Building a model of how the body and world behave — and using it</h3>
+<div class="plain"><b>In plain terms</b> Instead of planning in fantasy-land and hoping it works, bake the actual robot's limits and how the real world pushes back into the planner itself—so bad ideas get rejected before they're even tried.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A plan that ignores how the robot's body actually moves or how the world responds to commands will fail when executed. Encoding the real physics and geometry into the planner from the start means no invalid paths are ever proposed.</div>
 <div class="appr"><b>Neural planning with kinematic constraints — iKap: Kinematics-Aware Planning with Imperative Learning.</b> Bakes the math of joint-to-motion into neural network training so the network never proposes a path the hardware cannot follow.</div>
 <div class="appr"><b>Steering geometry on slopes — SEB-Naver: A SE(2)-based Local Navigation Framework for Car-like Robots on Uneven Terrain.</b> Derives the math for how a car-like robot steers on sloped ground and uses it to plan smooth paths that respect real steering limits.</div>
@@ -96,12 +103,14 @@
 <div class="appr"><b>Hydraulic flow limits in cranes — Near Time-Optimal Hybrid Motion Planning for Timber Cranes.</b> Models the hydraulic pump's flow limits and uses that model to plan fast motions that the pump can actually supply.</div>
 <p class="payoff">When the planner knows how the robot's body and the world actually behave, it can plan faster and safer because it never proposes something the hardware cannot execute.</p>
 <h3>Canceling disturbances and model errors directly</h3>
+<div class="plain"><b>In plain terms</b> The world never matches the plan exactly—wind pushes, objects are heavier than expected. Instead of replanning everything, a fast watchdog catches the drift and corrects it on the fly.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>The best plan drifts when the real world does not match the model. Rather than waiting for the planner to generate a new path, a separate loop detects drift and corrects it in real time.</div>
 <div class="appr"><b>Velocity-damped collision avoidance — Collision Avoidance in Model Predictive Control Using Velocity Damper.</b> Adds a safety rule that considers not just how far the robot is from an obstacle but how fast it is closing in, catching unsafe situations a distance-only rule would miss.</div>
 <div class="appr"><b>3D rotation disturbance rejection — Robust Orientation Control of Robot Manipulator Using Orientation Disturbance Observer.</b> Rebuilds a standard disturbance-canceling tool to work directly with 3D rotation math, letting the arm resist outside forces trying to knock its tip off direction.</div>
 <div class="appr"><b>Robust transport under model error — Robust Nonprehensile Dynamic Object Transportation.</b> Plans a path by minimizing how sensitive the outcome is to errors in the object model, so the chosen path stays safe even when the model is wrong.</div>
 <p class="payoff">When a controller detects and corrects drift in real time, it can work safely even when the model does not match reality exactly.</p>
 <h3>Adapting to the task's structure — sequential steps, coverage, and multi-body systems</h3>
+<div class="plain"><b>In plain terms</b> Different jobs have their own rhythm: mowing a lawn doesn't need backtracking, coordinating two arms matters, assembly needs strict order. Build that rhythm into the planner and the whole thing gets simpler and faster.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Different tasks have their own structure — coverage requires no backtracking, multi-arm systems need coordination, sequential assembly demands one step at a time. Baking task-specific structure into planning makes the controller simpler and faster.</div>
 <div class="appr"><b>Energy surface for step-by-step tasks — No Plan but Everything Under Control.</b> Builds a mathematical energy surface that changes as the task progresses, so the robot follows it downhill without an explicit plan — the surface itself encodes what to do next.</div>
 <div class="appr"><b>Coverage with adaptive footprint — Improving Coverage Performance of a Size-Reconfigurable Robot.</b> Plans a sweep path for a robot that can change its own size, adding penalties for retracing and unnecessary resizing.</div>

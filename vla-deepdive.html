@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin:10px 0 14px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.55}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -79,29 +83,34 @@
 <p>The 85 papers in this topic are all working on that crossing. They differ in which part of the gap they attack and how.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>1. Rewiring the model's outputs to produce movements, not words</h3>
+<div class="plain"><b>In plain terms</b>A chatbot was trained to say the next word; a robot needs the next number. Swap the output decoder so the model produces joint angles and finger positions instead of text.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Models trained on words don't naturally output motor commands. Add a new layer that produces robot joint angles and end-effector positions instead of — or alongside — text.</div>
 <div class="appr"><b>Cycling imitation and experience — Improving Vision-Language-Action Model with Online Reinforcement Learning (ICRA).</b> The robot alternates between collecting experience by trying and learning from that experience to stay stable, then repeats.</div>
 <div class="appr"><b>Parallel action decoding — PD-VLA: Accelerating Vision-Language-Action Model Integrated with Action Chunking via Parallel Decoding (ICRA).</b> Treats action-block prediction as a parallel math problem instead of sequential, so the robot arm gets commands at the speed it needs without retraining.</div>
 <p class="payoff">A model that outputs movements directly, backed by either continuous self-improvement or faster inference, turns perception-to-action into a real-time loop.</p>
 <h3>2. Teaching the model to understand 3D space</h3>
+<div class="plain"><b>In plain terms</b>A flat photo tells you what's there, but not how far away it is or whether you can reach it. Feed the model depth images too — the distance to each pixel — so it learns to reason about real 3D distance like your eyes do.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Flat 2D images have no reliable depth. A model trained only on internet photos cannot tell if something is reachable, if one object blocks another, or which direction to approach from. Depth must become a first-class skill, not an afterthought.</div>
 <div class="appr"><b>Depth-grounded Q&amp;A finetuning — SpatialBot: Precise Spatial Understanding with Vision Language Models (ICRA).</b> Finetunes a VLM on both RGB and depth images, trained on spatial questions (SpatialQA) that force genuine reasoning about distance and 3D layout.</div>
 <div class="appr"><b>3D object positions as input — Towards Generalizable Vision-Language Robotic Manipulation: A Benchmark and LLM-Guided 3D Policy (ICRA).</b> Reads the actual 3D positions of objects instead of flat pixels, pairs that with language planning and open-vocabulary grounding, and includes GemBench for testing generalization.</div>
 <div class="appr"><b>Shape-aware collision avoidance — Language-Guided Object-Centric Diffusion Policy for Generalizable and Collision-Aware Manipulation (ICRA).</b> Extracts an object's full 3D shape from point clouds, trains movement generation on it, and adds collision penalties during inference so the robot avoids obstacles without task-specific retraining.</div>
 <p class="payoff">When a model learns to reason about depth, object positions, and 3D geometry, it can reach accurately, avoid collisions, and understand spatial relationships the camera alone cannot provide.</p>
 <h3>3. Splitting planning and acting into two separate jobs</h3>
+<div class="plain"><b>In plain terms</b>Asking one model to think *and* move at the same time is like asking someone to do calculus while juggling. Split it: one thinks ("get the fork"), another does (moves the arm). When it gets stuck, they talk and replan.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>One model doing both "what to do" and "how to move" is asked to master two different problems at once. Split them: a high-level reasoner plans sub-steps, a motion controller executes each one.</div>
 <div class="appr"><b>Symbolic planning with feasibility feedback — Guiding Long-Horizon Task and Motion Planning with Vision Language Models (ICRA).</b> A language model generates sub-steps in plain words, a motion planner executes each, and when a step is impossible the planner reports why and the language model replans.</div>
 <div class="appr"><b>Skill picking across long tasks — BUMBLE: Unifying Reasoning and Acting with Vision-Language Models for Building-wide Mobile Manipulation (ICRA).</b> A VLM reads the scene, picks from a library of pre-built skills, and uses two-layer memory to recall past observations during tasks that can last fifteen minutes across multi-floor buildings.</div>
 <div class="appr"><b>Object-relative skill coordination — Local Policies Enable Zero-Shot Long-Horizon Manipulation (ICRA).</b> Each skill works in coordinates relative to the object, not the room, so a skill trained in one place works in any other location; a large model chains them in sequence.</div>
 <p class="payoff">Splitting reasoning from motion execution lets each piece specialize: the language model focuses on task logic, the motion planner focuses on geometry and kinematics, and they negotiate when one's plan is impossible.</p>
 <h3>4. Letting the robot recover when things go wrong</h3>
+<div class="plain"><b>In plain terms</b>You trained the robot on videos where everything works. But in real life, a gripper slips or a door is stuck. Teach the robot to notice when something's off and figure out a new plan instead of crashing.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Real robots fail: objects are not where expected, grippers slip, doors jam. Training data shows only success. A model must learn to detect failure and replan, turning crashes into recoverable mistakes.</div>
 <div class="appr"><b>Closed-loop verification and hierarchical recovery — Closed-Loop Open-Vocabulary Mobile Manipulation with GPT-4V (ICRA).</b> After each action, a verifier checks success; if it fails, the system traces back to find where things went wrong and replans from that point using hierarchical recovery (object-level retry, local reobservation, global re-navigation).</div>
 <div class="appr"><b>Augmented training data with recovery moves — RACER: Rich Language-Guided Failure Recovery Policies for Imitation Learning (ICRA).</b> Takes expert demonstrations, adds synthetic mistakes and the corrective moves to fix them, attaches plain-language failure descriptions, and at runtime a VLM watches and gives correction instructions in speech.</div>
 <div class="appr"><b>Visual feedback replanning — LERa: Replanning with Visual Feedback in Instruction Following (ICRA).</b> When something goes wrong, the system observes the camera, forms a plain-language explanation of what happened, and rebuilds the plan from that state.</div>
 <p class="payoff">When a robot can detect failure, understand why, and replan, setbacks become normal handled events instead of system crashes.</p>
 <h3>5. Learning from humans without requiring robot-specific data</h3>
+<div class="plain"><b>In plain terms</b>Filming a human doing a task is free and easy; filming a thousand robot runs costs money and time. Use human videos to teach the main idea, then fine-tune on a handful of real robot runs.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Robot demonstrations are expensive to collect; human video is free. Bridge the gap so a model trained mostly on humans can execute on a robot with only a few real examples.</div>
 <div class="appr"><b>Pixel tracks as a common format — Motion Tracks: A Unified Representation for Human-Robot Transfer in Few-Shot Imitation Learning (ICRA).</b> Represents both human hand and robot end-effector motion as 2D pixel-position sequences over time, so a policy trained on human video plus a few robot demos can convert those tracks to real 3D movements at runtime.</div>
 <div class="appr"><b>Video retrieval and imitation — R+X: Retrieval and Execution from Everyday Human Videos (ICRA).</b> Given a task instruction, a VLM searches unlabeled first-person human videos, pulls out the most relevant clips, and the robot imitates the key moves with no additional robot training.</div>

@@ -146,6 +146,21 @@
 <div class="appr"><b>Continuous uncertainty — Ground-Optimized Radar-Inertial Odometry (ICRA).</b> Uses Gaussian-Process regression to blend noisy sensor streams smoothly rather than at fixed time steps, so uncertainty propagates continuously.</div>
 <p class="payoff">Knowing what you don&#x27;t know is what lets a car be careful in exactly the right places.</p>
 <h3>Generate data to fill gaps in training</h3>
+<div class="subdiag">
+<svg viewBox="0 0 620 130" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,Menlo,monospace" font-size="11">
+<defs><pattern id="tl" width="30" height="30" patternUnits="userSpaceOnUse"><rect x="3" y="3" width="24" height="24" rx="3" fill="#DCE8E7" stroke="#BcD3D0" transform="rotate(4 15 15)"/></pattern></defs>
+<text x="72" y="16" fill="#59656A" text-anchor="middle">a few real drives</text>
+<rect x="46" y="34" width="30" height="18" rx="3" fill="#8EC9CE"/><rect x="46" y="58" width="30" height="18" rx="3" fill="#8EC9CE"/><rect x="46" y="82" width="30" height="18" rx="3" fill="#8EC9CE"/>
+<line x1="86" y1="67" x2="132" y2="67" stroke="#0E7C86" stroke-width="2"/><polygon points="132,67 122,62 122,72" fill="#0E7C86"/>
+<rect x="138" y="46" width="120" height="42" rx="8" fill="#F5EBD8" stroke="#B37A1E"/>
+<text x="198" y="63" text-anchor="middle" fill="#8a5e18" font-size="10">make realistic</text>
+<text x="198" y="77" text-anchor="middle" fill="#8a5e18" font-size="10">fakes on a computer</text>
+<line x1="262" y1="67" x2="306" y2="67" stroke="#0E7C86" stroke-width="2"/><polygon points="306,67 296,62 296,72" fill="#0E7C86"/>
+<text x="465" y="16" fill="#0A5A62" text-anchor="middle">many hard cases (crashes, snow…)</text>
+<rect x="316" y="26" width="294" height="86" fill="url(#tl)" stroke="#CBD3D0"/>
+</svg>
+<div class="plain"><b>In plain terms</b>You can't crash a thousand real cars to teach a robot about crashes — so you make believable fake ones on a computer, including the rare, dangerous cases you'd never want to stage for real.</div>
+</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Learning systems need mountains of labeled data, real driving data is expensive to collect, and the situations that matter most — crashes, heavy snow — are the rarest of all. You cannot collect your way to those, so generate them.</div>
 <div class="appr"><b>Text → lidar scenes — LidarDM (ICRA).</b> Generates a whole driving scene from a text description, then simulates what a real lidar scanner would see inside it — realistic data without driving anywhere.</div>
 <div class="appr"><b>Synthetic crashes — AVD2 (ICRA).</b> Generates realistic accident videos from written descriptions, so systems can train on crashes without any real crash footage.</div>
@@ -153,6 +168,21 @@
 <div class="appr"><b>Complete the scene — DiffSSC (IROS).</b> Starts from a sparse lidar scan and fills in the hidden geometry and object types the scanner missed.</div>
 <p class="payoff">Shift the cost from collecting the world to generating it — far cheaper, and you can make exactly the hard cases you need.</p>
 <h3>Connect vehicles so each one sees more</h3>
+<div class="subdiag">
+<svg viewBox="0 0 620 132" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,Menlo,monospace" font-size="11">
+<rect x="12" y="44" width="596" height="60" rx="6" fill="#F7F8F6" stroke="#CBD3D0"/>
+<line x1="12" y1="74" x2="608" y2="74" stroke="#D7DCD9" stroke-dasharray="8 8"/>
+<rect x="285" y="54" width="66" height="40" rx="4" fill="#B9C2C0"/><text x="318" y="78" text-anchor="middle" fill="#41484a" font-size="9">truck</text>
+<rect x="40" y="66" width="46" height="22" rx="4" fill="#0E7C86"/><text x="63" y="81" text-anchor="middle" fill="#fff" font-size="10">A</text>
+<circle cx="372" cy="86" r="6" fill="#B37A1E"/><text x="372" y="112" text-anchor="middle" fill="#B37A1E" font-size="9">hidden person</text>
+<rect x="536" y="66" width="46" height="22" rx="3.5" fill="#F5F6F4" stroke="#0E7C86"/><text x="559" y="81" text-anchor="middle" fill="#0A5A62" font-size="10">B</text>
+<line x1="536" y1="80" x2="384" y2="86" stroke="#B37A1E" stroke-width="1.4" stroke-dasharray="4 4"/>
+<path d="M 540 66 C 470 20, 130 20, 82 64" fill="none" stroke="#0E7C86" stroke-width="1.4" stroke-dasharray="4 4"/>
+<polygon points="82,64 90,58 92,68" fill="#0E7C86"/>
+<text x="310" y="16" text-anchor="middle" fill="#59656A">B can see the person; A cannot — so B tells A</text>
+</svg>
+<div class="plain"><b>In plain terms</b>One car can only see what's in front of it. Two cars that share what they see can spot the kid stepping out from behind a parked truck that neither could have seen alone.</div>
+</div>
 <div class="subq"><span class="lbl">The sub-problem</span>One car only sees what its own sensors reach. Two cars sharing views can together see around corners and past obstructions — but sending data between cars has to be fast and lightweight or it creates new problems of its own.</div>
 <div class="appr"><b>Share only what helps — CoCMT (IROS).</b> Instead of sending full sensor streams, it identifies the small set of features most useful to share and sends only those.</div>
 <div class="appr"><b>Share predictions too — Co-MTP (ICRA).</b> Over a vehicle-to-everything (V2X) network, shares not just what each car currently sees but where it predicts nearby vehicles are going — improving everyone&#x27;s forecasts.</div>

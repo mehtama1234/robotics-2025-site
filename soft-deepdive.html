@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin:10px 0 14px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.55}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -79,18 +83,21 @@
 <p>The field is not one idea. It is a loose collection of groups — engineers, biologists, materials scientists, and control theorists — each attacking a different piece of the same goal: bodies that handle the world&#x27;s messiness instead of demanding the world be clean.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>1. Muscles made from electricity, air, and fluid</h3>
+<div class="plain"><b>In plain terms</b>Living bodies get their power from muscles that shrink and pull instantly. Robots need electrical or air-powered muscles that react as fast and pull as hard, but weigh almost nothing so the robot can move on its own.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Living muscles contract instantly when triggered; artificial muscles need to match that speed and power while staying light enough for untethered robots to carry.</div>
 <div class="appr"><b>High-voltage power in a tiny package — Portable, High-Frequency, and High-Voltage Control Circuits for Untethered Miniature Robots Driven by Dielectric Elastomer Actuators (ICRA).</b> Reaches 1,800 volts on a 2.5-gram board by stacking low-voltage steps in series, powering crawling robots at 15 pulses per second.</div>
 <div class="appr"><b>Full-range joint motion — Stretchable Electrohydraulic Artificial Muscle for Full Motion Ranges in Musculoskeletal Antagonistic Joints (ICRA).</b> Pairs two hydraulic muscles on opposite sides of a joint with electric clutches so the joint can both contract and extend at over three cycles per second.</div>
 <div class="appr"><b>Tunable stiffness via air — Anisotropic Stiffness and Programmable Actuation for Soft Robots Enabled by an Inflated Rotational Joint (ICRA).</b> Shapes an inflatable tube so only part wrinkles when pressurized; the bend direction and stiffness can be tuned by controlling which region wrinkles.</div>
 <p class="payoff">Artificial muscles now come in three flavors — voltage, fluid, and air — each trading off weight, speed, and range.</p>
 <h3>2. Cables and tendons pulling through a body</h3>
+<div class="plain"><b>In plain terms</b>Think of your arm — muscles at the shoulder pull cables through your arm to move your fingers. If you route those cables badly, pulling one finger accidentally moves another. Route them right and everything moves clean and precise.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Cables can route motors to the base and keep robots light, but if cables share paths through joints, pulling one accidentally moves others. Clean routing is the difference between precise control and messy crosstalk.</div>
 <div class="appr"><b>One motor, one joint, no drag — D3-ARM: High-Dynamic, Dexterous and Fully Decoupled Cable-Driven Robotic Arm (ICRA).</b> Re-routes cables so each motor connects to exactly one joint with no cross-talk, then adds tensioning to keep cables taut, achieving 1.29 mm positioning error.</div>
 <div class="appr"><b>Pulleys beat friction — A Comparative Study of Pulley and Bowden Transmissions in a Novel Cable-Driven Exosuit, the Stillsuit (ICRA).</b> Measures energy loss through cable friction; pulleys reduce wasted energy to near zero, while flexible tubes waste 40–60 percent of motor power.</div>
 <div class="appr"><b>Program how hard to grip — Dexterous Assembly Using a Planar Hand Having Programmable Passive Compliance (ICRA).</b> Uses opposing tendons on each finger; tightening one tendon before a task sets the direction the finger will yield, needing no sensors during contact.</div>
 <p class="payoff">Clean cable routing solves both dexterity and efficiency: precise joints and light, wearable exoskeletons that waste almost no energy.</p>
 <h3>3. Bodies that move like animals</h3>
+<div class="plain"><b>In plain terms</b>A snake slithers through tight tunnels by sending waves down its whole body. A wheeled robot gets stuck. By copying how animals bend and flow through space, soft robots can go where wheels and legs simply cannot fit.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Wheels and legs fail on uneven ground, through pipes, and in dense vegetation; animals solve these by moving their whole body — sending waves down their shape to squeeze into spaces robots with rigid joints cannot reach.</div>
 <div class="appr"><b>Swimming by shape waves — AquaMILR+ (ICRA).</b> Sends wave-like bends down a limbless body to swim; can stiffen or soften on command to deform around obstacles, and uses an internal screw to change buoyancy like a fish&#x27;s air bladder.</div>
 <div class="appr"><b>Swim in formation from water pressure alone — Leader-Follower Formation Enabled by Pressure Sensing in Free-Swimming Undulatory Robotic Fish (ICRA).</b> Trains a neural network to steer using only water-pressure sensors on the sides, with no camera; learned from one hour of human demonstrations via DAgger.</div>
@@ -98,12 +105,14 @@
 <div class="appr"><b>Microscale swimmer — Feedback Control of a Single-Tail Bioinspired 59-mg Swimmer (ICRA).</b> A robot lighter than a grain of rice uses a shape-memory alloy tail that bends when heated and springs back when cooled.</div>
 <p class="payoff">Undulatory motion lets robots flow through gaps, dense spaces, and water where wheels and legs are useless.</p>
 <h3>4. Sensing inside a soft body</h3>
+<div class="plain"><b>In plain terms</b>Your skin feels touch without being stiff or hard. If you bolt a rigid camera or metal sensor onto a soft robot arm, the arm gets stiff and weak. The trick is to sense what you need — touch, bend, pressure — using soft materials so nothing breaks.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Most sensors are rigid or bulky; putting them inside soft robots makes them stiffer and weaker. The real need is to sense shape and touch without compromising the softness that makes the robot useful.</div>
 <div class="appr"><b>Print sensors into the arm — A Piezoresistive Printable Strain Sensor for Monitoring and Control of Soft Robotic Links (ICRA).</b> Prints a rubber base, then draws conductive silver ink onto it; the sensor is built into the arm and changes resistance when bent.</div>
 <div class="appr"><b>Touch from sound pitch alone — Milli-Scale AcousTac Sensing Using Soft Helmholtz Resonators (ICRA).</b> A tiny air-filled soft pocket on the fingertip shifts its pitch when pressed; a microphone elsewhere hears the change — no wires at the touch point.</div>
 <div class="appr"><b>Whiskers that see touch — A Magnetic-Actuated Vision-Based Whisker Array for Contact Perception and Grasping (ICRA).</b> Eight thin flexible whiskers around a soft pad are moved by magnets; a camera watches how they bend, and a neural network reads the patterns to identify objects and choose a grip.</div>
 <p class="payoff">Sensors can now be printable, acoustic, or optical — all ways to sense without making the robot stiffer.</p>
 <h3>5. Simulation and math that keeps pace with soft physics</h3>
+<div class="plain"><b>In plain terms</b>A rigid arm's math is simple — each joint either bends or doesn't. A soft arm can curve in infinite ways, so you have to know exactly how it bends at every moment to control it. The math doesn't exist yet, so researchers mix hand-tuned physics with machine learning to get close enough.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Soft bodies have infinite ways to bend; you cannot predict what they will do without knowing their exact shape at every instant. Standard math does not scale, and pure machine learning wastes data. Bridging this gap is the bottleneck.</div>
 <div class="appr"><b>Physics baked into the model — Physics-Informed Split Koopman Operators for Data-Efficient Soft Robotic Simulation (ICRA).</b> Builds a linear model by combining two kinds of observations and baking in known physical laws; stays accurate with far less data than a purely learned model.</div>
 <div class="appr"><b>Shape and control teach each other — A Synergistic Framework for Learning Shape Estimation and Shape-Aware Whole-Body Control Policy for Continuum Robots (ICRA).</b> Trains two neural networks together: one estimates shape, the other decides how to move; each improves as it learns from the other's output.</div>

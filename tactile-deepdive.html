@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin:10px 0 14px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.55}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -77,12 +81,14 @@
 <p>This connects directly to the one big challenge every robot faces: taking in an unclear, changing world, deciding what to do, and moving a real body — all fast, cheap, safe, and general. Touch and force close the loop between the body and the world in a way that vision cannot. Without them, the &quot;move&quot; part of the loop is open: the robot acts but does not truly feel what is happening. With them, the robot has a signal it can react to, a way to detect when something is going wrong, and a basis for deciding whether to push harder, ease off, or stop.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>1. Recording force during human demonstrations, then teaching the robot to replay it</h3>
+<div class="plain"><b>In plain terms</b>When a person peels a carrot, their hand knows exactly how hard to press — capture that force, not just the motion, and the robot can copy it instead of guessing and either crushing the carrot or dropping it.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Standard motion-capture systems record where the hand moves but not how hard it presses, so a robot copying the recording moves to the right place but applies the wrong force — pressing too hard or too lightly. Capturing both motion and force is key to learning tasks like peeling or handling delicate parts.</div>
 <div class="appr"><b>Force capture via wearable device — ForceMimic.</b> A person wears a glove-like device (ForceCapture) while doing the task without a robot present, recording both motion and force; a controller (HybridIL) then trains the robot to output both target position and target force at each step.</div>
 <div class="appr"><b>Bimanual visuotactile imitation — Learning Visuotactile Skills With Two Multifingered Hands.</b> Built a low-cost remote-control system (HATO) from off-the-shelf parts and touch-sensing prosthetic hands, then recorded human operators and trained the robot to replay both visual and touch signals.</div>
 <div class="appr"><b>Diffusion policy conditioned on force — Force-Conditioned Diffusion Policies for Compliant Sheet Separation Tasks.</b> Trains on expert recordings that include force data, then uses a diffusion policy to produce actions that respond to live force readings at run time.</div>
 <p class="payoff">A robot trained on human force patterns can now handle contact-heavy tasks like vegetable peeling with 54.5% higher success than vision-only control.</p>
 <h3>2. Building sensors that are cheap, robust, and easy to replace</h3>
+<div class="plain"><b>In plain terms</b>Touch sensors wear out like phone screens — swap a broken one for a fresh one and the robot should keep using all the skills it learned, not start from scratch because the new sensor feels slightly different.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Touch sensors wear out quickly, and when they do, replacing them usually breaks the learned skills that were tuned to that specific sensor's characteristics. Sensors must be cheap to replace and durable enough to survive thousands of repeated contacts without recalibration.</div>
 <div class="appr"><b>Separable skin sensing — AnySkin.</b> The soft sensing skin peels off and snaps back on without tools or recalibration, so skills trained on one skin instance still work on a fresh replacement.</div>
 <div class="appr"><b>Multi-modal finger sensor — PolyTouch.</b> Packs a camera-based touch surface, microphone, and small outward-facing camera into one finger-shaped unit with 20x the lifespan of commercial sensors.</div>
@@ -90,6 +96,7 @@
 <div class="appr"><b>Humanoid-scale tactile fingertip — HumanFT.</b> Fits a tiny camera, pressure circuit, and vibration circuit into a fingertip-sized soft shell small enough for humanoid hands.</div>
 <p class="payoff">Robots can now swap sensors and hands without losing learned skills or requiring expensive recalibration.</p>
 <h3>3. Blending touch with vision so each fills the other's gaps</h3>
+<div class="plain"><b>In plain terms</b>Your eyes go blind inside a dark pocket but your fingers work fine; use both at once and you find keys anywhere. Same for robots — cameras see shape, touch finds exactly where to grip and how much the object is bending.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Cameras cannot see where the hand is touching or how much the object is deforming; touch sensors only measure what is already in contact and miss the big picture. Neither is sufficient alone, so combining them lets each cover the other's blind spots.</div>
 <div class="appr"><b>Touch-refined pose estimation — ViTa-Zero.</b> Starts from a camera-only pose estimate of a held object, then uses touch readings to pull the estimate toward the actual contact point and joint angles to eliminate impossible positions.</div>
 <div class="appr"><b>Adaptive sensor weighting — Adaptive Visuo-Tactile Fusion with Predictive Force Attention.</b> Automatically shifts weight between sensors moment to moment by watching force readings as the task unfolds, without needing human labels.</div>
@@ -97,12 +104,14 @@
 <div class="appr"><b>Language grounding for multimodal sensing — Beyond Sight (FuSe).</b> Takes a pretrained robot policy trained mostly on cameras and fine-tunes it to use touch and sound by training it to describe what each sensor is reading in plain language.</div>
 <p class="payoff">A robot using both vision and touch can handle tasks where vision alone is blocked or ambiguous, with zero-shot reasoning across sensing modes.</p>
 <h3>4. Learning to control force and softness directly</h3>
+<div class="plain"><b>In plain terms</b>Reach for a doorknob gently; grab a sports ball with more grip; pick up a egg with extreme care. A smart robot learns when to be stiff for power and when to be soft so it does not break things.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A robot that only controls position will push with full stiffness until it hits something, then either cause damage or get stuck. Instead, the robot should learn to be soft (compliance) at the right moments — giving way when needed, pushing firm when safe — so contact never breaks things.</div>
 <div class="appr"><b>Compliance profile via diffusion — Adaptive Compliance Policy.</b> Learns from human demonstrations how much the arm should give at each point in space and time, then uses a diffusion policy to convert that into smooth motions that avoid large contact forces.</div>
 <div class="appr"><b>Force-domain generative model — TacDiffusion.</b> Trains a generative model on recordings of the 3D forces and torques felt during successful peg insertions, so it learns to generate good force sequences for new insertions and new part shapes the robot has never seen.</div>
 <div class="appr"><b>Real-time online force learning — Efficient Online Learning of Contact Force Models.</b> Fits a simple force model to sensor data in real time on a GPU, updating it during the task itself, which matters for precise connector insertion where even small model errors cause failure.</div>
 <p class="payoff">A robot controlling both position and compliance achieves 95.7% success on high-precision insertions it has never practiced.</p>
 <h3>5. Sharing knowledge across sensors and making pre-trained features</h3>
+<div class="plain"><b>In plain terms</b>Your sense of touch works the same whether you bought brand-name gloves or generic ones — a robot's touch skills should work the same way, moving to a new sensor without losing everything learned on the old one.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Different labs use different touch sensor types, so datasets built for one sensor are useless on another. A skill trained on an old sensor breaks when that sensor is discontinued. Sensors need a shared language so data and skills transfer across hardware types.</div>
 <div class="appr"><b>Sensor normalization via 3D shape — ACROSS.</b> Converts each sensor's signals into a shared 3D shape (a mesh showing how the sensor surface bends under contact) so old data from a discontinued sensor can be reused to train models for a newer one.</div>
 <div class="appr"><b>Contrastive pretraining across sensors — Contrastive Touch-to-Touch Pretraining.</b> Trains a model on two different sensors touching the same objects, teaching it to map both sensors' signals to the same shared internal space.</div>

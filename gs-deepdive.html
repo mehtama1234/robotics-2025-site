@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin:10px 0 14px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.55}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -80,12 +84,14 @@
 <p>All of this connects to the central challenge every robot faces: take in an unclear, changing world, decide what to do, move a real body, and do it fast, cheap, safe, and general. A scene representation sits at the very start of that chain. If the stored picture of the world is wrong, noisy, too slow to build, or too large to fit in memory, every step after it — the decisions, the movements — goes wrong too. Getting the representation right is not a detail; it is the foundation.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>Building the scene from tiny colored blobs</h3>
+<div class="plain"><b>In plain terms</b>Instead of forcing the robot to keep the world in three different languages — one for drawing pictures, one for knowing where it is, one for making decisions — you build it once as colored blobs and all three jobs read from the same source.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A robot needs one shared format to simultaneously render photorealistic views for training, map the scene, and reason about objects — not three separate silos with seams that leak bugs.</div>
 <div class="appr"><b>Blob-based rendering — SplatSim (ICRA).</b> Scan a real workspace, build a Gaussian Splat model, drop it into a physics simulator, and train manipulation skills in photorealistic synthetic images that transfer directly to the real robot without retraining.</div>
 <div class="appr"><b>Physics-consistent meshes tied to blobs — Robo-GS (ICRA).</b> Each blob is bound to a mesh vertex, so when the robot moves, both the visual appearance and physical geometry update together in the sim.</div>
 <div class="appr"><b>Semantic labels on blobs — SemGauss-SLAM (IROS).</b> Bakes object labels directly into the blob data so the map understands what things are, not just what they look like.</div>
 <p class="payoff">One captured scene feeds mapping, training, and reasoning at once.</p>
 <h3>Making maps while moving — and staying on track</h3>
+<div class="plain"><b>In plain terms</b>When you're walking through a crowd mapping a room, people move and temporary blur shouldn't become permanent walls in your map. Clean out the noise without losing the real furniture, and prune blobs you don't need so the map stays small enough to track quickly.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Blob maps grow huge instantly because the system keeps placing new blobs everywhere, and moving objects corrupt the map as permanent structure. You need both a small map and a clean one to track accurately while building it.</div>
 <div class="appr"><b>Pruning and geometric compression — CGS-SLAM (IROS).</b> Discard unseen blobs and compress the rest by sharing shape data across groups, cutting memory 2x without losing visual quality.</div>
 <div class="appr"><b>Mask dynamic pixels via optical flow — GARAD-SLAM (ICRA).</b> Detects movement by checking which pixels flow against expected camera motion and masks them out before map updates.</div>
@@ -93,12 +99,14 @@
 <div class="appr"><b>Skip the depth sensor entirely — RGB-Only Gaussian Splatting SLAM (ICRA).</b> Builds blob maps from color images alone by learning consistent 3D positions across frames, removing a hardware constraint.</div>
 <p class="payoff">A compact, clean blob map lets the tracker stay locked on even when people and objects move through the scene.</p>
 <h3>Shrinking and speeding up for real hardware</h3>
+<div class="plain"><b>In plain terms</b>The mapping and tracking have to run live on the robot itself — on a laptop or phone-sized chip with no server connection — or it doesn't work in the real world. Kill the expensive parts and run everything at video speed on ordinary hardware.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A map that lives on a server GPU is useless on a battery-powered robot. Making blob-based SLAM cheap and live enough for modest edge hardware is essential.</div>
 <div class="appr"><b>Parallel tracking and masking — NGD-SLAM.</b> Achieves 60 frames per second on a regular laptop (no GPU) by running camera tracking and dynamic masking as concurrent threads so neither blocks the other.</div>
 <div class="appr"><b>Motion priors as hard constraints — Kinematic-ICP.</b> Uses laser-scan alignment (ICP) plus the robot's known motion model as hard limits on pose estimates, cutting drift with no extra memory.</div>
 <div class="appr"><b>Fast feature matching via sequence models — MambaGlue.</b> Replaces standard attention (which slows down with feature count) with Mamba, a newer sequence model that scales better.</div>
 <p class="payoff">Blob-based maps that run live on modest laptops and embedded systems, not just servers.</p>
 <h3>Handling hard environments and long time scales</h3>
+<div class="plain"><b>In plain terms</b>A map made once doesn't stay good forever, and some places are just hard to see — pitch-black underwater, blank white hallways with no features. Learn to undo the trick light is playing, survive where normal cameras fail, and keep the map fresh as months and revisits pile up.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Blob maps built once go stale, and harsh conditions (underwater light scatter, featureless walls) give the optimizer nothing to anchor on. The representation needs to adapt to time and survive where standard methods fail.</div>
 <div class="appr"><b>Undo light scatter to recover true color — SeaSplat (ICRA).</b> Learns how water absorbs and scatters light at different depths alongside 3D reconstruction, then reverses those effects to show true object color underwater.</div>
 <div class="appr"><b>Geometry model guides blob placement — GaussianRoom (ICRA).</b> Trains a second model to estimate surface geometry and tells blobs where they can grow, anchoring optimization on textureless walls.</div>
@@ -106,6 +114,7 @@
 <div class="appr"><b>Master map absorbs new visits — LiLoc.</b> Keeps one persistent map, updates it with laser/motion/inertial data from each new visit, stays accurate over months.</div>
 <p class="payoff">Blob maps that survive extreme environments and stay current as the world changes.</p>
 <h3>Giving maps meaning so robots can reason about them</h3>
+<div class="plain"><b>In plain terms</b>Blobs alone are just shapes — the robot can't answer "where's the coffee mug?" or "what was on the shelf yesterday?" Add language and memory so the map becomes a living notebook the robot can talk to and ask real questions about the space it's seen.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A map is only useful if it can answer semantic questions: "find the cup near the red bowl" or "what did you see an hour ago?" Raw surface geometry alone cannot do this.</div>
 <div class="appr"><b>Semantic nodes with language reasoning — Beyond Bare Queries (BBQ).</b> Builds a map where each object is a node with a text description; an LLM reasons over the spatial relationships to answer plain-language queries.</div>
 <div class="appr"><b>Searchable memory of past observations — ReMEmbR.</b> Stores past observations (times, positions, image descriptions) in a searchable database; retrieves and reasons over relevant entries to answer questions about what the robot saw earlier.</div>

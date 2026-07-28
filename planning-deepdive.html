@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin:10px 0 14px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.55}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -78,17 +82,20 @@
 <p>These problems matter because they sit at the exact center of what makes robots hard. A robot must take in an unclear, changing world, decide what to do, move a real body, and do all of that fast, cheap, safe, and across many situations — not just the ones it was trained on. The decide step is where the plan either holds together or falls apart. If the plan is wrong, everything downstream — every move the robot makes — is wrong too.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>Giving the language model a memory of the world</h3>
+<div class="plain"><b>In plain terms</b>The robot keeps a running diary of the room—what's where, what moved—so when the AI needs to plan the next step, it's working from facts instead of guessing.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A language model knows language but not the specific room the robot is in right now. It needs a structured record of what the robot has seen so it can make plans grounded in real places, not hallucinations.</div>
 <div class="appr"><b>Memory logging — KARMA (ICRA).</b> Maintains two separate logs: a persistent 3D map of the whole space that does not reset between tasks, and a short-term log of recent changes (an object moved, a drawer opened) that updates constantly.</div>
 <div class="appr"><b>Experience map with emotion — E2Map (ICRA).</b> Tags every location in the robot's map with a score recording how well the robot's own past attempts there went, so the language model plans around places where things failed before.</div>
 <div class="appr"><b>Knowledge graph for task planning — L3M+P (ICRA).</b> Stores everything the robot knows in a structured web of facts that updates whenever the robot sees or hears something new; when a task arrives, the language model reads the relevant parts and a separate classical planner turns that into executable steps.</div>
 <p class="payoff">The language model supplies flexible understanding of the goal, while the structured memory supplies the grounding the model lacks on its own.</p>
 <h3>Checking that each step is actually possible before acting</h3>
+<div class="plain"><b>In plain terms</b>Before the robot actually moves, someone checks whether the plan makes physical sense—kind of like reviewing a checklist for "is there a cup there?" before asking the robot to grab it.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A language model can write steps that look plausible but cannot be carried out in the real world. You need a checking layer that tests each planned step against actual physical conditions before the robot moves.</div>
 <div class="appr"><b>Tree search with precondition checking — ConceptAgent (ICRA).</b> Pairs the language model with a tree search process (Monte Carlo Tree Search) that tries many possible action sequences and checks at each node whether the required conditions are actually present; if a step is impossible, the search backtracks and tries a different path.</div>
 <div class="appr"><b>Real-time step verification — Enhancing Robustness in Language-Driven Robotics (IROS).</b> Wraps a smaller on-board language model in a checking system that tests each step for feasibility before the robot commits to it, then detects and corrects mistakes on the fly when they occur anyway.</div>
 <p class="payoff">The language model acts as a first-draft generator, not a trusted authority—the checking layer catches what the model gets wrong before the robot moves.</p>
 <h3>Writing plans in a form that can be verified and executed reliably</h3>
+<div class="plain"><b>In plain terms</b>Instead of the AI writing freeform sentences, push it to write in a simple code-like format that a computer can read and check for mistakes automatically—no ambiguity, no reinterpretation needed.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Make the language model produce plans in a structured, checkable form from the start — not free text, but code or formal logic that a separate system can test for correctness without depending on the model being right.</div>
 <div class="appr"><b>Rule-grounded planning — SayComply (ICRA).</b> Organizes a site's operations manuals and safety rules into a tree-shaped database and retrieves relevant passages before the language model writes each step, so the plan is grounded in actual written rules.</div>
 <div class="appr"><b>Syntactically correct code generation — LTLCodeGen (ICRA).</b> Sidesteps the language model's tendency to write incorrect formal logic by using code generation rules that guarantee the output is syntactically correct; that correct code feeds directly into a motion planner.</div>
@@ -96,12 +103,14 @@
 <div class="appr"><b>Preference maps — Path Planning Using Instruction-Guided Probabilistic Roadmaps (ICRA).</b> Uses a language model to convert stated travel preferences into a cost map (a number assigned to every location indicating how much the robot should prefer or avoid it), which the path planner reads directly.</div>
 <p class="payoff">Get the output of the language step into a form that can be checked or executed mechanically, without depending on the model's judgment.</p>
 <h3>Adapting the plan to the specific robot and environment</h3>
+<div class="plain"><b>In plain terms</b>A plan that works in theory might not work in this kitchen, with this robot, on this Tuesday. Constantly check the plan against what's actually here and ask a human for help if something doesn't fit.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A general plan written by a language model may be fine in the abstract but wrong for this robot in this room with these constraints. Ground plans against the actual setup instead of the model's generic knowledge.</div>
 <div class="appr"><b>Knowledge graph grounding — AdaptBot (ICRA).</b> Generates a general plan with a language model, then checks every step against a structured knowledge graph of known facts about the specific environment; when a step doesn't fit, the robot asks a targeted question to a nearby human and stores the answer.</div>
 <div class="appr"><b>Multi-floor reasoning — Multi-Floor Zero-Shot Object Navigation Policy (ICRA).</b> Extends single-floor visual search to reason about when to switch floors in a multi-story building, using visual and language-based understanding to guess which floor likely has the target without task-specific training.</div>
 <div class="appr"><b>Contextual object relationships — Language-Guided Object Search in Agricultural Environments (ICRA).</b> Asks a language model which objects tend to appear near which other objects, then uses those relationships to plan a search route covering the most probable spots first in an unfamiliar setting.</div>
 <p class="payoff">Robot can adapt a general plan to the specific constraints and layout it actually faces, not just what the model assumes.</p>
 <h3>Planning ahead across many tasks, not just the current one</h3>
+<div class="plain"><b>In plain terms</b>Instead of just finishing this job as fast as possible, the robot thinks ahead: "If I put this here now, will the kitchen be a mess for the next task?" It trades speed today for ease tomorrow.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Most planners optimize for the task in front of them. But a robot used all day needs to make choices that keep future tasks easy too—trading off finishing now against leaving the space ready for what comes next.</div>
 <div class="appr"><b>Anticipatory state estimation — Anticipatory Planning for Performant Long-Lived Robot in Large-Scale Home-Like Environments (ICRA).</b> Uses a graph neural network to estimate how hard future tasks are likely to be given the current state of the room, then chooses actions balancing task completion with keeping the space in a state where future tasks stay easy.</div>
 <p class="payoff">Robot plans for a long day, not just the next step, making choices that leave the space ready for tasks to come.</p>

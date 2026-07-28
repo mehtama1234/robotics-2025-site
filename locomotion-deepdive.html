@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin:10px 0 14px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.55}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -80,29 +84,34 @@
 <p>All of this connects to the one big problem every robot has: take in an unclear, changing world, decide what to do, move a real body, and do it fast, cheap, safe, and general. Legged locomotion sits squarely at the &quot;move&quot; part of that loop, but it reaches back into sensing (the robot must read its own body and the terrain) and forward into decisions (which skill to use, when to switch, how to combine walking with arm work). A robot that cannot walk reliably cannot do anything else reliably either.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>Training in simulation, then moving to the real robot</h3>
+<div class="plain"><b>In plain terms</b>Build a robot that's easy to simulate accurately, train it in a computer thousands of times with slightly different conditions each time, so the one approach that survives all of them also survives the messy real world.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A controller trained in a perfect simulator—where friction is predictable, motors obey commands instantly, and the floor never surprises—fails the moment it meets real hardware. The solution is to vary the training conditions so widely that the one controller that survives all of them also survives reality.</div>
 <div class="appr"><b>Domain randomization on a well-designed robot — Berkeley Humanoid (ICRA).</b> Built a mid-size humanoid with simple joints accurate to simulate, trained a walking controller in Isaac Gym, applied only mild condition randomization, and transferred directly to the real robot with no extra tuning.</div>
 <div class="appr"><b>Morphology co-design for grip — Robust Ladder Climbing with a Quadrupedal Robot (IROS).</b> Added custom hooked feet, trained on a wide range of ladder angles and rung sizes in simulation, then moved to real hardware without retraining.</div>
 <p class="payoff">When the robot hardware is designed to be easy to simulate, the transfer gap becomes much cleaner.</p>
 <h3>Building one controller for many tasks</h3>
+<div class="plain"><b>In plain terms</b>Instead of writing separate instructions for "walk," "reach," and "climb," teach the robot one big set of movement patterns from real human video, then compress that down into a single brain that can flip between any of them mid-step.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A separate hand-coded controller for each task becomes impossible to maintain. The field wants one controller that can handle many behaviors—walking, reaching, climbing—without retraining for each one.</div>
 <div class="appr"><b>Motion imitation with mode masking — HOVER (ICRA).</b> Trains a teacher policy on a large library of full-body movements, then distills a single student policy that accepts different command types (velocity, position, joint angles) and can switch between them mid-episode.</div>
 <div class="appr"><b>Central pattern generator with modulation — AllGaits (ICRA).</b> A single network controls a rhythm generator whose settings select among nine different leg-beat patterns, so one policy spans all known walking styles.</div>
 <div class="appr"><b>Vision and proprioception fusion — MOVE (ICRA).</b> Trains a single network to handle climbing, jumping, crawling, and stair-climbing using both camera images and body-sensor data, with contrastive learning to infer what the camera cannot directly see.</div>
 <p class="payoff">One controller spanning many behaviors reduces training burden and lets the robot adapt without redeploying.</p>
 <h3>Closing the sim-to-real gap by modeling real hardware</h3>
+<div class="plain"><b>In plain terms</b>Stop guessing how real motors, joints, and feet behave—measure them, build a model of their quirks, and plug that model into the simulator so it's no longer a guess.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Instead of papering over inaccuracy with randomization, make the simulator match real hardware by explicitly modeling the physics that matters—motor response, state estimation under uncertainty, true mass and inertia.</div>
 <div class="appr"><b>Learned motor model — Cycloidal Quasi-Direct Drive Actuator Designs (ICRA).</b> Trained a small neural network to learn the actual input-output behavior of cycloidal-gear motors from real data, then embedded that learned model inside the simulator.</div>
 <div class="appr"><b>Neural state estimation — Legged Robot State Estimation with Invariant Extended Kalman Filter Using Neural Measurement Network (ICRA).</b> A small neural network estimates the robot's speed and foot contact from sensor readings on slippery ground, feeding those estimates into a mathematical tracking filter.</div>
 <div class="appr"><b>Hardware identification without force sensors — Physically-Consistent Parameter Identification of Robots in Contact (ICRA).</b> Figures out the true mass and inertia values using only motor data, by mathematically canceling out the effects of floor contact.</div>
 <p class="payoff">Explicit modeling of real hardware physics makes the simulator faithful enough to transfer policies directly.</p>
 <h3>Using natural motion and passive physics to save energy</h3>
+<div class="plain"><b>In plain terms</b>Legs have a natural swing to them, like a pendulum, that wants to move freely. Let the controller ride that swing instead of fighting it, and the robot walks longer on less battery.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Legs, when built right, want to swing at a certain rhythm for free. Fighting that rhythm costs energy; using it saves energy. The controller should ride the body's natural pendulum rather than override it.</div>
 <div class="appr"><b>Hardware designed for natural swing — The Duke Humanoid (ICRA).</b> Designed the leg proportions so the natural pendulum swing matches a useful walking speed, then trained the controller to ride that swing rather than fight it.</div>
 <div class="appr"><b>Energy reward for gait discovery — Adaptive Energy Regularization for Autonomous Gait Transition (ICRA).</b> Added a single reward term during training that penalizes energy used per meter traveled, and let the robot discover on its own when to switch between walking and trotting.</div>
 <div class="appr"><b>Passive dynamics without feedback — Zippy (ICRA).</b> The smallest known power-autonomous two-legged robot uses rounded feet and one motor, relying entirely on physical shape to stay balanced with no sensors and no feedback.</div>
 <p class="payoff">Exploiting the body's natural physics saves energy and lets simpler hardware succeed.</p>
 <h3>Combining walking with arm work</h3>
+<div class="plain"><b>In plain terms</b>A humanoid can't walk smoothly and reach precisely at the same time if you train them together—they compete for the same body. So train legs and arms separately, then merge them at runtime so each does its job without stealing energy from the other.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Humanoid robots need to walk and use their arms at the same time, but legs and arms share the body's balance. Training one policy to handle both tends to hurt arm precision, so the controller must somehow do both without sacrifice.</div>
 <div class="appr"><b>Separate leg and arm policies, combined at runtime — Mobile-TeleVision (ICRA).</b> Trained the legs and arms separately: a model trained on human teleoperation data learns arm motion patterns, and a separate walking policy stays balanced while those patterns play out. The two are merged at run time.</div>
 <div class="appr"><b>Real-time sampling over thousands of futures — Real-Time Whole-Body Control of Legged Robots with Model-Predictive Path Integral Control (ICRA).</b> Runs thousands of random action sequences in a simulator on multiple processor cores in parallel, scores them by goal achievement, and picks the best—all fast enough to run on the real robot in real time.</div>

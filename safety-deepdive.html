@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin:10px 0 14px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.55}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -78,6 +82,7 @@
 <p>There is also a second, less obvious problem: even when you write down safety rules, making sure the robot actually follows them at every step — not just most of the time — is extremely difficult. A robot doing a ten-step task has to stay safe at every step. One unsafe step is enough.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>Hard math limits that block unsafe actions</h3>
+<div class="plain"><b>In plain terms</b>Imagine a fence made of pure math: a robot's planner can ask for anything, but a safety formula at ground level says no if it's dangerous. Once you write the rule down, it cannot be overridden.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A robot's controller can be overridden or given bad goals, but a mathematical safety barrier cannot be crossed — once you write the rule, enforce it below the planner's layer.</div>
 <div class="appr"><b>CBFs for multi-robot avoidance — Multi-Agent Obstacle Avoidance Using Velocity Obstacles and Control Barrier Functions.</b> Applies control barrier functions to groups of robots moving in shared space, adding formal guarantees to older heuristic obstacle-avoidance methods.</div>
 <div class="appr"><b>Safe learning from the start — Certificated Actor-Critic.</b> Shapes how a learning agent is trained by baking CBF constraints into the training loop, so the agent never learns to explore unsafe regions.</div>
@@ -86,12 +91,14 @@
 <div class="appr"><b>Barrier adaptation via reinforcement — Soft Actor-Critic-Based Control Barrier Adaptation for Robust Autonomous Navigation.</b> Uses reinforcement learning to tune the barrier's tightness in real time as the robot moves and observes its surroundings.</div>
 <p class="payoff">A mathematical barrier baked below the planner level stays hard no matter what the higher layers want — rigid safety under flexible control.</p>
 <h3>Translating plain-language rules into formal checks</h3>
+<div class="plain"><b>In plain terms</b>A person says "don't touch the stove"—a machine hears just words, not danger. Convert that sentence into a math rule the robot's brain has to obey, same as a lock on a door.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Language models understand words but not consequences — converting "do not enter the kitchen before the stove is off" from text into a mathematical rule the robot cannot violate, no matter what the planner does.</div>
 <div class="appr"><b>Constrained decoding with temporal logic — SELP: Generating Safe and Efficient Task Plans for Robot Agents with Large Language Models (ICRA).</b> Translates safety rules into Linear Temporal Logic, then masks the language model's token outputs to prevent it from ever generating a plan that violates those rules.</div>
 <div class="appr"><b>Formal grounding of instructions — Verifiably Following Complex Robot Instructions with Foundation Models (ICRA).</b> Converts spoken instructions into a formal logical spec, grounds object names in 3D space, and generates a motion plan that provably satisfies the spec.</div>
 <div class="appr"><b>Layered checking plus barriers — Safety Aware Task Planning via Large Language Models in Robotics (IROS).</b> A Safety Agent LLM watches the planner's output and flags unsafe steps; simultaneously, control barrier functions enforce hard limits at the motor level below.</div>
 <p class="payoff">Plain-language safety rules become mathematical constraints that the robot cannot violate, enforced both by filtering the planner's outputs and by hard barriers at the hardware level.</p>
 <h3>Testing by deliberately trying to break the system</h3>
+<div class="plain"><b>In plain terms</b>Before you ship a robot to the real world, hire someone to attack it. Safety gaps only show up when you look for them on purpose—like a crash test, but for software.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>You cannot find the failure modes in a real system without looking for them deliberately — attack surfaces show up only when someone tries.</div>
 <div class="appr"><b>Jailbreak search for LLM robots — Jailbreaking LLM-Controlled Robots (ICRA).</b> ROBOPAIR algorithm automatically finds adversarial text prompts that make language-model-controlled robots ignore safety rules and take physical action; achieved 100% attack success on three real platforms.</div>
 <div class="appr"><b>Generate edge-case driving scenes — Generating Out-of-Distribution Scenarios Using Language Models (ICRA).</b> LLM writes unusual driving scenarios (overturned trucks, fog-drenched intersections) that real data never contains, then simulates them to find what autonomous vehicles cannot handle.</div>
@@ -99,12 +106,14 @@
 <div class="appr"><b>Learn and attack fragile inputs — Robust Deep Reinforcement Learning in Robotics via Adaptive Gradient-Masked Adversarial Attacks (IROS).</b> Learns which input dimensions of a robot controller matter most, then concentrates attacks there — revealing exactly where the controller is brittle.</div>
 <p class="payoff">Adversarial testing finds failures that passive evaluation misses — a safety release requires trying hard to break it first.</p>
 <h3>Knowing when you do not know</h3>
+<div class="plain"><b>In plain terms</b>A robot that admits "I'm not sure where that obstacle is" and slows down is safer than one that guesses with false confidence. Track uncertainty and act cautiously when visibility drops.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A robot acting confidently on uncertain information is more dangerous than one that slows down — safety requires knowing when you do not know and acting conservatively.</div>
 <div class="appr"><b>Reject uncertain map regions — UncAD: Towards Safe End-to-end Autonomous Driving via Online Map Uncertainty.</b> Tracks confidence in each part of the predicted map and rejects path options that depend on uncertain regions.</div>
 <div class="appr"><b>Predict confidence alongside trajectories — Evidential Uncertainty Estimation for Multi-Modal Trajectory Prediction.</b> Outputs a confidence number alongside each predicted path for other vehicles, learning to be well-calibrated by weighting hard training cases more.</div>
 <div class="appr"><b>Learn real-world drift margins — Dynamic Tube MPC: Learning Tube Dynamics with Massively Parallel Simulation for Robust Safety in Practice.</b> Simulates thousands of rollouts to learn how much real robots drift from their planned paths, then bakes that learned drift into safety margins at planning time.</div>
 <p class="payoff">Uncertainty-aware planning — reject paths that depend on uncertain information, and expand safety margins to account for real-world drift — keeps the robot safe when the world does not match expectations.</p>
 <h3>Faults, crowds, and multi-robot coordination</h3>
+<div class="plain"><b>In plain terms</b>When one robot's sensor gets hacked or goes offline, the others can't rely on it. Each robot keeps itself safe locally, trusting no one else's data blindly—like a driver who ignores texted directions and watches the road anyway.</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Multiple robots introduce new failure modes: one robot's bad sensor can mislead the whole team, a robot going offline leaves gaps, and corruption in shared data breaks coordination — safety must work even when teammates fail.</div>
 <div class="appr"><b>Localization under sensor attacks — Distributed Fault-Tolerant Multi-Robot Cooperative Localization in Adversarial Environments.</b> Provably keeps working when some robots' sensors are hacked or radio signals jammed.</div>
 <div class="appr"><b>Weight late-arriving data — CoDynTrust: Robust Asynchronous Collaborative Perception via Dynamic Feature Trust Modulus.</b> Estimates uncertainty in each piece of shared sensor data and weighs it accordingly, handling out-of-order or delayed messages.</div>
