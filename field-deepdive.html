@@ -1,0 +1,176 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flying, underwater &amp; outdoor field robots — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive</div>
+  <h1>Flying, underwater &amp; outdoor field robots</h1>
+  <p>Robots that fly, swim, and cross rough outdoor terrain — where each setting (air, water, wild ground) breaks a different part of the standard robot loop. This page: the core problem, the approaches, and the key 2025 papers with their methods.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Flying, underwater, and outdoor field robots</h1>
+<p><em>293 papers · a rule across everything: the same core sense-decide-move loop, but each setting breaks a different part of it</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">Every robot does three things: take in the world, decide what to do, and move its body to execute that decision. In a clean lab, each step is hard; in the real world — the air, underwater, or rough outdoor ground — each step breaks in a different way, and often all at once. A drone flying through trees faces wind gusts and gaps barely wider than itself, with a camera that sees tiny objects it has never trained on and batteries that last minutes. Underwater robots battle murky water that eats light and signal alike, with almost no training data to learn from. Outdoor ground robots traverse terrain that shifts under them while carrying gear and constraints from the physical world that planning algorithms never see. The hard core problem uniting all three: <strong>how do you make robots that work reliably in the field — fast enough, safe enough, robust enough to the real world's mess — when the conditions that break your system are the ones you cannot control or even fully predict?</strong></p>
+<p style="margin:0 0 8px"><strong>Five moves the field is making:</strong></p>
+<ul style="margin:0 0 12px">
+<li style="margin:0 0 6px"><strong>① Replace hand-coded physics models with learned ones.</strong> The old way to fly a drone is to write out the physics by hand — rotors spin, creating lift, wind pushes the body — and this works until reality diverges. <em>Learning Quadrotor Control from Visual Features Using Differentiable Simulation</em> and <em>Robust Self-Reconfiguration for Fault-Tolerant Control of Modular Aerial Robot Systems</em> replace parts of the hand-coded model with learned policies trained in minutes instead of hours, so the drone adapts when conditions shift.</li>
+<li style="margin:0 0 6px"><strong>② Measure and cancel disturbances in real time.</strong> Even a well-trained controller fails when something pushes on the robot unexpectedly. <em>ProxFly: Robust Control for Close Proximity Quadcopter Flight Via Residual Reinforcement Learning</em> sits on top of the main controller and sends corrective commands based only on the drone's own motion, with no wireless signals between drones. <em>NDOB-Based Control of a UAV with Delta-Arm Considering Manipulator Dynamics</em> measures the unwanted coupling forces between an arm and drone body and cancels them in real time.</li>
+<li style="margin:0 0 6px"><strong>③ Fly or navigate through clutter using only cameras.</strong> A drone that can only carry a small camera — no heavy laser scanner — must navigate dense spaces safely at high speed. <em>Vision Transformers for End-to-End Vision-Based Quadrotor Obstacle Avoidance</em> maps camera images directly to flight commands by learning relationships across the whole image at once. <em>UAV-DETR: Efficient End-to-End Object Detection for Unmanned Aerial Vehicle Imagery</em> fixes a different failure: standard detectors miss small objects in drone photos because they were designed for ground-level images.</li>
+<li style="margin:0 0 6px"><strong>④ Fit through tight gaps, and perch to save power.</strong> Two physical realities shape flight in the wild: openings barely wider than the drone, and batteries that drain in minutes. <em>Whole-Body Control Through Narrow Gaps from Pixels to Action</em> learns precise body-tilting to squeeze through gaps a naive controller would clip. And because the only way to stretch a mission is to stop flying, several papers design graspers that latch onto a branch or wire with no power once closed, letting the drone perch and rest.</li>
+<li style="margin:0"><strong>⑤ Add safety layers that watch what the planner decides and block unsafe moves.</strong> A learned or planned trajectory can still steer the robot into a wall, so safety filters read the motion in real time and block commands that would cause a collision. <em>A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps</em> runs this filter 15 times per second directly on a map made of hundreds of thousands of tiny 3D blobs that are still being built in real time.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> field robotics is not about discovering new theory — it is the work of taking methods that work in the lab (learned control, sensor fusion, obstacle avoidance, path planning) and making them survive contact with the real world. The specific challenge depends on the setting: air robots fight physics (wind, gravity, rotor coupling) and perception (fast-moving, distant, never-seen-before objects); underwater robots fight the medium itself (light attenuation, zero training data, fragile electronics) and the gaps in sensing; ground robots fight terrain that shifts and sensor noise that planning ignores. <strong>Still open:</strong> a controller trained for calm air fails in high wind; a grasper designed for tree branches may not handle pipes or wires; a detection network tuned for daytime drone imagery breaks at night. Most work evaluates on narrow benchmarks with code not yet released. Whether these single-problem solutions compose into a full perception and control stack that stays robust across the mess of the real world remains unsettled.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>Every robot must do three things: take in what is around it, decide what to do, and move its body to do it. In a lab, that is hard enough. Put the robot in the air, underwater, or out in a field, and each of those three steps gets harder in its own way — often all at once.</p>
+<p>A drone flying through a forest faces wind that shoves it off course and gaps between trees that are barely wider than itself. Its camera picks up small objects at odd angles and distances that a network trained on regular photos has never seen. Its battery lasts minutes, not hours. GPS stops working inside buildings or under thick canopy. And if the drone hits anything, it falls.</p>
+<p>Underwater robots face murky water that eats light and sonar signal both. The water itself pushes back. Depth makes electronics fragile. There are almost no large training sets of underwater images, so learning-based methods that depend on massive data fall apart before they start.</p>
+<p>Outdoor ground robots deal with rough, unpredictable terrain. They carry science gear, or pull cables, or inspect pipelines, and must do all of that with limited power in places where no one can quickly come to fix them.</p>
+<p>All of these settings connect to the same core problem every robot faces: how do you take in a world that is unclear and changing, figure out what to do, move a real body, and do it fast, cheap, safe, and reliably enough to be useful? In the lab you can control some of these — good lighting, flat floors, reliable networks. In the field, none of that holds. The field is the hardest test of whether robots actually work.</p>
+<p>The 293 papers in this topic do not propose a single new idea. They adapt what already works — learned control, safety filters, path planning, object detection — to the specific ways each environment breaks it. That is what makes field robotics a distinct research area: not a new theory, but the disciplined work of making existing methods survive contact with the real world.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Learning to fly without hand-coded rules</h3>
+<p>The old way to control a drone is to write out the physics by hand: how fast the rotors spin, how that creates lift, how wind shifts the body, and so on. This works when everything matches the model. When reality diverges — a gust of wind, a heavier-than-expected payload, a rotor that is slightly off — the hand-coded model falls apart.</p>
+<p>Several papers replace part or all of that hand-coded model with a learned one. In &quot;DroneDiffusion,&quot; a model learns the drone&#x27;s motion as a range of possible futures rather than a single fixed prediction, which means it stays useful even when the drone is loaded with different payloads or flying in variable wind. In &quot;Learning Quadrotor Control from Visual Features Using Differentiable Simulation,&quot; a simulator is built so that the effect of each decision on the final flight outcome can be computed exactly and used to update the learned policy — a technique called differentiable simulation — cutting training from hours to minutes. &quot;GRaD-Nav&quot; uses the same differentiable-physics trick combined with photorealistic image rendering to teach a drone to fly through gates using only a camera, without falling apart on real hardware.</p>
+<p>The common thread: when the real world does not match your model, let the model learn from data instead of being written by hand.</p>
+<h3>Designing controllers that resist outside forces</h3>
+<p>Even a well-trained drone goes wrong when something pushes on it unexpectedly. The papers here do not try to learn a better model of the disturbance — they measure it in real time and subtract it out.</p>
+<p>&quot;ProxFly&quot; deals with a specific problem: when multiple drones fly very close together, the downward air from one rotor disturbs the others. A small add-on module trained through trial and error sits on top of the main controller and sends tiny corrective commands based only on what the drone&#x27;s own body is doing — no wireless signals between drones needed. &quot;NDOB-Based Control of a UAV with Delta-Arm&quot; handles the shaking that happens when a robot arm is mounted on a drone: a disturbance observer measures the unwanted coupling forces between the arm and the drone body and cancels them in real time. &quot;DR-MPC&quot; does the same for pipeline inspection: a planner looks a short time ahead, and a state estimator inside it continuously measures outside wind forces and feeds the correction back into the plan before the drone goes off course.</p>
+<p>These approaches all share a structure: a main controller that works in calm conditions, plus a watchdog that estimates what is going wrong right now and adjusts.</p>
+<h3>Flying through clutter using only cameras</h3>
+<p>A drone that can only carry a small camera — no heavy laser scanner — must still navigate dense spaces safely and quickly. This is a hard problem because camera images are noisy, small objects are easy to miss, and the time between seeing an obstacle and hitting it is very short at high speed.</p>
+<p>&quot;Vision Transformers for End-to-End Vision-Based Quadrotor Obstacle Avoidance&quot; trains a model that splits each camera frame into patches and learns relationships across the whole image at once (this class of model is called a vision transformer), then maps those images directly to flight commands. The drone learns in simulation and transfers to new environments without retraining. &quot;Flying on Point Clouds with Reinforcement Learning&quot; uses 3D laser scans instead, simplified enough to run at 50 commands per second, so the drone can fly through a forest with no path planner in the loop at all. &quot;Whole-Body Control Through Narrow Gaps from Pixels to Action&quot; adds another layer: the drone must tilt its whole body to squeeze through a gap barely wider than itself, and the learning algorithm is started from positions along known good paths so it can actually find solutions to this very hard problem.</p>
+<p>&quot;UAV-DETR&quot; addresses a related but distinct failure mode: standard object-detection networks miss small objects in drone photos because they were designed for regular, ground-level images. Three targeted upgrades — combining features at many scales, keeping fine detail during downsampling, and connecting features across processing paths — fix this for drone imagery specifically.</p>
+<h3>Saving power and extending mission time</h3>
+<p>Drones drain their batteries in minutes. This limits how far they can go, how long they can monitor, and what tasks they can carry out. Several papers address this directly by giving drones ways to stop flying temporarily.</p>
+<p>&quot;Adaptive Perching and Grasping by Aerial Robot with Light-Weight and High Grip-Force Tendon-Driven Three-Fingered Hand Using Single Actuator&quot; designs a three-fingered claw driven by one motor that can grab objects from any approach angle and hold on with no power once latched. &quot;Tendon-driven Grasper Design for Aerial Robot Perching on Tree Branches&quot; builds a claw that grips a tree branch and locks in place using tendons — no power needed to stay on. A camera finds a good branch and guides the drone to land. &quot;RaccoonBot&quot; solves the same problem for a wire-crawling robot that monitors forests: it grips the wire without power so it cannot fall, then moves along the wire to wherever the sun hits best, recharging as it goes.</p>
+<p>All three are engineering solutions to a power-budget problem that no amount of better learning or planning can fully solve — the physics of flight just cost energy.</p>
+<h3>Building safer flight with real-time safety filters</h3>
+<p>A learned or planned trajectory can still steer the drone into a wall. Safety filters (the technical term is control barrier functions, or CBFs) add a layer that watches the planned motion and blocks any command that would bring the drone too close to an obstacle, regardless of what the main controller decided.</p>
+<p>&quot;A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps&quot; runs this filter at 15 times per second directly on a map made of hundreds of thousands of tiny 3D blobs (Gaussian splats) that are still being built in real time. &quot;Safety-Critical Control for Aerial Physical Interaction in Uncertain Environment&quot; applies the same idea to a flying robot arm: the safety filter tracks estimation errors in real time and adjusts the arm&#x27;s motion just enough to keep all motor thrusts inside safe bounds.</p>
+<h2>Where it stands</h2>
+<p>Drone flight in controlled or semi-controlled conditions — racing, gate navigation, indoor obstacle avoidance — is now good enough to demonstrate reliably in research settings. Perching and battery extension hardware has been proven on real robots. What remains hard is generalizing across conditions: a controller trained for calm air fails in high wind; a grasper designed for tree branches may not handle pipes or wires; a detection network tuned for daytime drone imagery breaks at night. Underwater and outdoor ground field robots are still limited mainly by the lack of large training datasets and the difficulty of testing in the field at scale. The core challenge has not changed — surviving the gap between what was trained and what the real world delivers.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their methods</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">UAV-DETR: Efficient End-to-End Object Detection for Unmanned</td><td>IROS 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Vision Transformers for End-to-End Vision-Based Quadrotor Ob</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Whole-Body Control Through Narrow Gaps from Pixels to Action</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">NDOB-Based Control of a UAV with Delta-Arm Considering Manip</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Learning Quadrotor Control from Visual Features Using Differ</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Robust Self-Reconfiguration for Fault-Tolerant Control of Mo</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">ProxFly: Robust Control for Close Proximity Quadcopter Fligh</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Multi-UAV Formation Control with Static and Dynamic Obstacle</td><td>IROS 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">A Control Barrier Function for Safe Navigation with Online G</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">MARVEL: Multi-Agent Reinforcement Learning for Constrained F</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — the method</div><article class="page" id="gp0"><h1>UAV-DETR: Efficient End-to-End Object Detection for Unmanned Aerial Vehicle Imagery</h1>
+<h2>What it solves</h2>
+<p>A standard object detection method designed for regular photos doesn&#x27;t work well on drone pictures because small objects get lost and detail gets blurred.</p>
+<h2>How it works</h2>
+<p>They enhance the standard method with three upgrades: a module that combines features at many sizes using frequency tricks, a downsampling step that keeps details sharp, and a module that glues features together across different paths.</p>
+<h2>Why it matters</h2>
+<p>A DETR-based UAV object detection framework with frequency-domain feature enhancement that improves AP by 3.1% and AP50 by 4.2% over baseline on the VisDrone dataset.</p></article>
+<article class="page" id="gp1"><h1>Vision Transformers for End-to-End Vision-Based Quadrotor Obstacle Avoidance</h1>
+<h2>What it solves</h2>
+<p>Flying a drone fast through cluttered spaces using only a camera feed requires a controller that reacts quickly and still works in places it has never seen, which standard convolutional camera-to-control networks fail to do at high speeds.</p>
+<h2>How it works</h2>
+<p>They train vision transformer models (ViT) — which split images into patches and learn relationships across the whole image at once — to map depth camera images directly to flight commands, testing speeds up to 7 m/s in simulation.</p>
+<h2>Why it matters</h2>
+<p>First use of vision transformers for end-to-end vision-based quadrotor control, showing ViT outperforms CNNs at high speeds and generalizes better to unseen environments, with recurrence further reducing energy cost.</p></article>
+<article class="page" id="gp2"><h1>Whole-Body Control Through Narrow Gaps from Pixels to Action</h1>
+<h2>What it solves</h2>
+<p>Flying a drone through a gap just barely wider than itself requires precise tilting of the whole body, and learning this from raw camera images is very hard because there are very few successful paths for the learning algorithm to discover.</p>
+<h2>How it works</h2>
+<p>They first train a control policy using 3D point-cloud inputs (which are easier to learn from), then transfer that knowledge to a camera-image policy by having the camera policy mimic the point-cloud policy&#x27;s behavior during flight; to help the learner find good paths, it is reset to positions along trajectories generated by a physics-based planner.</p>
+<h2>Why it matters</h2>
+<p>Combines model-based trajectory initialization with RL-to-pixel distillation to learn whole-body narrow-gap traversal entirely from pixels without hand-crafted reward shaping.</p></article>
+<article class="page" id="gp3"><h1>NDOB-Based Control of a UAV with Delta-Arm Considering Manipulator Dynamics</h1>
+<h2>What it solves</h2>
+<p>When a robot arm is mounted on a flying drone, the arm&#x27;s motion shakes the drone and the drone&#x27;s motion disturbs the arm, making precise arm positioning very difficult.</p>
+<h2>How it works</h2>
+<p>A disturbance observer (NDOB) measures and cancels the unwanted coupling forces between the arm and drone in real time, while a high-pass filter separately boosts fast arm commands so the arm can move quickly without fighting the drone controller.</p>
+<h2>Why it matters</h2>
+<p>Achieves millimeter-level end-effector accuracy on a fully autonomous delta-arm aerial manipulator by jointly compensating for dynamic coupling and selectively amplifying fast manipulator motions.</p></article>
+<article class="page" id="gp4"><h1>Learning Quadrotor Control from Visual Features Using Differentiable Simulation</h1>
+<h2>What it solves</h2>
+<p>Training a drone to fly using only camera images with standard trial-and-error (reinforcement learning) requires enormous amounts of simulated flight time and takes hours or days.</p>
+<h2>How it works</h2>
+<p>A differentiable simulator lets the learning algorithm compute exact gradients of the flight outcome back through the physics model to the policy. The drone learns to fly from raw visual features in minutes instead of hours by following these gradients directly.</p>
+<h2>Why it matters</h2>
+<p>Demonstrates that differentiable simulation with a surrogate model trains vision-based quadrotor control orders of magnitude faster than model-free RL, bridging from state-based (seconds) to vision-based (minutes) learning.</p></article>
+<article class="page" id="gp5"><h1>Robust Self-Reconfiguration for Fault-Tolerant Control of Modular Aerial Robot Systems</h1>
+<h2>What it solves</h2>
+<p>When a drone made of detachable modules loses a rotor or a module, it needs to rearrange itself, but the steps taken during that rearrangement can put the craft in a shape it cannot actually fly in.</p>
+<h2>How it works</h2>
+<p>A planning algorithm works out a step-by-step order to detach and reattach modules, checking after each step whether the craft in its current shape can still be controlled and flown stably before moving on.</p>
+<h2>Why it matters</h2>
+<p>A reconfiguration planning algorithm that maximizes controllability margin at every intermediate stage, enabling fault-tolerant self-reconfiguration with improved trajectory tracking and fewer assembly steps.</p></article>
+<article class="page" id="gp6"><h1>ProxFly: Robust Control for Close Proximity Quadcopter Flight Via Residual Reinforcement Learning</h1>
+<h2>What it solves</h2>
+<p>When multiple drones fly very close together, the downward air pushed by one drone&#x27;s rotors disrupts the others, causing instability that standard controllers cannot correct.</p>
+<h2>How it works</h2>
+<p>A small add-on AI module trained through trial and error (residual reinforcement learning) sits on top of a conventional controller and sends small corrective commands based only on the drone&#x27;s own motion data, with no wireless messages needed between drones.</p>
+<h2>Why it matters</h2>
+<p>ProxFly enables stable close-proximity multi-quadcopter flight and midair docking by residual RL that skips exploration from scratch via baseline controller guidance.</p></article>
+<article class="page" id="gp7"><h1>Multi-UAV Formation Control with Static and Dynamic Obstacle Avoidance via Reinforcement Learning</h1>
+<h2>What it solves</h2>
+<p>A flock of drones has to fly in tight formation while dodging both fixed walls and moving objects, and the training setup does not transfer to real flight.</p>
+<h2>How it works</h2>
+<p>The system first learns which rewards matter most for flying straight, avoiding hits, and staying together. Then it practices on harder and harder scenarios. A smart encoder learns to pay attention to the important parts of the scene.</p>
+<h2>Why it matters</h2>
+<p>Automated reward search combined with curriculum learning and attention-based encoding achieves zero-shot sim-to-real transfer for multi-UAV formation flight that outperforms planning and RL baselines in collision-free rates.</p></article>
+<article class="page" id="gp8"><h1>A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps</h1>
+<h2>What it solves</h2>
+<p>Keeping a robot safely away from obstacles is hard when the map is built from hundreds of thousands of tiny 3D blobs (Gaussian splats) that are still being updated in real time.</p>
+<h2>How it works</h2>
+<p>They built a safety filter (called a Control Barrier Function) that reads all the Gaussian blobs directly and blocks unsafe moves, running at 15 times per second on a GPU while the map keeps updating in the background.</p>
+<h2>Why it matters</h2>
+<p>First CBF-based safety filter operating over live GSplat maps, 20-50x faster and less conservative than NeRF-based safety methods, validated on a drone with only onboard perception.</p></article>
+<article class="page" id="gp9"><h1>MARVEL: Multi-Agent Reinforcement Learning for Constrained Field-of-View Multi-Robot Exploration in Large-Scale Environments</h1>
+<h2>What it solves</h2>
+<p>Getting a team of robots to map a large unknown space efficiently is harder when each robot&#x27;s camera or sensor only sees in one direction, because the robots must also choose where to point their sensors.</p>
+<h2>How it works</h2>
+<p>Each robot runs a learned policy (MARVEL) that reads a graph of nearby robots and unexplored frontiers, and a pruning step cuts down the possible directions to look at so the decision stays manageable even in large areas.</p>
+<h2>Why it matters</h2>
+<p>Introduces constrained-FoV multi-robot exploration as a MARL problem with orientation-aware action pruning, achieving generalization to 90x90 m environments and real drone deployment without retraining.</p></article></div>
+  <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

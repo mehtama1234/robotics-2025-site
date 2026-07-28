@@ -1,0 +1,170 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Handling things by feel — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive</div>
+  <h1>Handling things by feel</h1>
+  <p>Sensing the world through touch and force — reading contact, pressure, and slip so a robot can grip, insert, and manipulate objects it cannot fully see. This page: the core problem, the approaches, and the key 2025 papers with their methods.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Handling things by feel, not just by looking</h1>
+<p><em>112 papers · move — how the robot controls its body and hands during contact with the world</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">Every robot in the world relies on one broken assumption: that if it knows where its hand is in space, it can do the task. That assumption fails the moment anything in the world pushes back. A key press goes unfinished because the robot does not feel the resistance. A robot peeling an apple gouges too deep or fails to grip because force control is missing. A connector that should click into place stays loose because the insertion force is not measured. This is the core problem: real contact work is defined not by target position but by target force — and that force changes moment to moment as geometry, friction, and compliance shift in ways impossible to predict ahead of time.</p>
+<p style="margin:0 0 8px"><strong>Five moves the field is making:</strong></p>
+<ul style="margin:0 0 12px">
+<li style="margin:0 0 6px"><strong>① Record force in human demonstrations, then teach the robot to replay it.</strong> Capture what a person does — including how hard they press — and train the robot to copy it. <em>ForceMimic</em> uses a wearable device (ForceCapture) to record both motion and force without a robot present, then trains a controller (HybridIL) to output both target position and target force at each step. <em>Learning Visuotactile Skills With Two Multifingered Hands</em> builds a low-cost remote-control system (HATO) from prosthetic hands with touch sensors and records human operators doing two-handed tasks.</li>
+<li style="margin:0 0 6px"><strong>② Build sensors that are cheap, robust, and easy to swap.</strong> Touch sensors that work and hold up under use are the foundation. <em>AnySkin</em> separates the soft sensing skin from electronics so the skin peels off and snaps back on without tools or recalibration — skills trained on one skin work on a fresh one. <em>PolyTouch</em> packs a camera-based touch surface, microphone, and small outward-facing camera into one finger-shaped unit with 20x the lifespan of commercial sensors. <em>ORCA</em> is an open-source tendon-driven hand with 17 joints and built-in touch sensors that self-tighten and automatically tension cables to survive long training runs.</li>
+<li style="margin:0 0 6px"><strong>③ Blend touch with vision so each fills the other's gaps.</strong> Cameras are blocked by the robot's own hand; touch sensors only measure what is already in contact. Combining them lets each cover the other's weak spots. <em>ViTa-Zero</em> figures out the exact pose of a held object without any touch training data by starting from a camera estimate and using touch readings to pull it toward the contact point. <em>Adaptive Visuo-Tactile Fusion with Predictive Force Attention</em> automatically shifts weight between sensors moment to moment — it watches force readings unfold and rebalances without any human labels.</li>
+<li style="margin:0 0 6px"><strong>④ Learn to control force and softness directly.</strong> Rather than just sense force, teach the controller to actively manage compliance — how much the arm should give way when pushed. <em>Adaptive Compliance Policy</em> learns from human demonstrations how much the arm should give at each point in space and time, then uses a diffusion policy to turn that into smooth motions that avoid large contact forces. <em>TacDiffusion</em> trains a generative model on recordings of the three-dimensional forces felt during successful peg insertions so it can generate good force sequences for new insertions and new part shapes.</li>
+<li style="margin:0"><strong>⑤ Share knowledge across sensors and make transfer work.</strong> Labs use different touch sensors, so data from one cannot be used in another. <em>ACROSS</em> converts each sensor's signals into a shared 3D shape mesh, so old data from a discontinued sensor can be reused on a newer one. <em>Contrastive Touch-to-Touch Pretraining</em> trains on two different sensors touching the same objects to map both into a shared internal space. <em>Canonical Representation and Force-Based Pretraining of 3D Tactile</em> converts raw 3D touch data to a standard form and pre-trains a feature extractor using force prediction before fine-tuning on specific tasks.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> this theme is the field closing the gap between what a robot knows (where its hand is) and what it needs to know (how much the world is pushing back). Vision cannot fill this gap — contact happens at sub-millimeter scales and faster than vision loops can react. Force and touch let the robot detect slip, measure real-time pressure, and decide whether to push harder, ease off, or stop. The papers here show how to record human force patterns, build durable sensors, fuse touch with sight, and transfer learned skills across different hardware. <strong>Still open:</strong> reliability over thousands of repeated contacts, generalization to surfaces and objects very different from training data, and making touch signals transfer cleanly across sensor types and robot hands — progress on all three is active but not yet bulletproof.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>When you press a key on a keyboard, your fingers feel resistance and stop pushing before you break anything. When you peel a carrot, your hand adjusts grip strength ten times a second in response to how the peel pulls back. A robot that only tracks where its hand is in space — without any sense of how hard it is pressing — cannot do either of those things. It will snap the key, gouge the carrot, or fumble the peel entirely. This is the core problem: many real tasks are defined not by where you move but by how much force you apply, and the force changes in ways you cannot predict ahead of time.</p>
+<p>This matters because the gap between robots that work in labs and robots that work in homes or factories is largely a gap in contact handling. Lab demos pick up objects sitting still on clean tables. Real jobs — plugging in a cable, wiping a counter, screwing a cap, separating stuck panels, caring for a person — all require the robot to push, slide, peel, or press against objects that push back. The object&#x27;s resistance changes as the task goes on. A pure position controller (one that only tracks &quot;move hand to point X&quot;) has no way to respond to that feedback. It either pushes too hard and breaks something, or not hard enough and fails.</p>
+<p>The deeper issue is that vision alone cannot fill this gap. A camera can tell you roughly where an object is, but it cannot tell you whether the grip is slipping, how much a part is flexing, or whether a connector is seated. The hand itself blocks the view. Contact happens at sub-millimeter scales that cameras cannot resolve. And contact events happen faster than any vision-based loop can respond.</p>
+<p>This connects directly to the one big challenge every robot faces: taking in an unclear, changing world, deciding what to do, and moving a real body — all fast, cheap, safe, and general. Touch and force close the loop between the body and the world in a way that vision cannot. Without them, the &quot;move&quot; part of the loop is open: the robot acts but does not truly feel what is happening. With them, the robot has a signal it can react to, a way to detect when something is going wrong, and a basis for deciding whether to push harder, ease off, or stop.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>1. Recording force during human demonstrations, then teaching the robot to replay it</h3>
+<p>The most direct fix is to capture what a person does — including how hard they press — and train the robot to copy it. The key challenge is that standard motion-capture setups record where the hand goes but not the forces involved.</p>
+<p>ForceMimic solves this with a wearable glove-like device (ForceCapture) that a person wears while doing the task, recording both motion and force without a robot present. A controller (HybridIL) then trains the robot to produce both a target position and a target force at each step. Learning Visuotactile Skills With Two Multifingered Hands (HATO) takes a similar path for two-handed dexterous tasks: they built a low-cost system from off-the-shelf parts and touch-sensing prosthetic hands, recorded human operators, and trained the robot to replay both the visual and touch signals. Force-Conditioned Diffusion Policies for Compliant Sheet Separation Tasks trains on expert recordings that include force data, then uses a generative model called a diffusion policy — a model that learns to build up actions step by step from noise — to produce actions that respond to live force readings at run time.</p>
+<h3>2. Building sensors that are cheap, robust, and easy to replace</h3>
+<p>A second major thread is hardware: making touch sensors that work at all, hold up to repeated use, and do not require a complete software overhaul when they wear out.</p>
+<p>AnySkin separates the soft sensing skin from the electronics so the skin peels off and snaps back on without tools or recalibration, and skills trained on one skin still work on a fresh one. PolyTouch packs a camera-based touch surface, a microphone, and a small outward-facing camera into one finger-shaped unit, feeding all three signals into a single control policy. ORCA is an open-source, tendon-driven hand with 17 joints and built-in touch sensors, with self-tightening joints and automatic cable tensioning so it survives long training runs without breaking — designs and instructions are fully public. HumanFT fits a tiny camera, pressure circuit, and vibration circuit into a fingertip-sized soft shell small enough for humanoid hands.</p>
+<h3>3. Blending touch with vision so each fills the other&#x27;s gaps</h3>
+<p>Neither cameras nor touch sensors are sufficient alone. Cameras are blocked by the robot&#x27;s own hand; touch sensors only measure what is already in contact. Combining them lets each cover the other&#x27;s weak spots.</p>
+<p>ViTa-Zero figures out the exact position and angle (pose) of a held object without any touch training data: it starts from a camera-only pose estimate, then uses touch sensor readings to pull the estimate toward the contact point and joint angle readings to push it away from impossible positions. Adaptive Visuo-Tactile Fusion with Predictive Force Attention automatically turns up the weight on whichever sensor is more useful at each moment — it watches force readings as the task unfolds and shifts attention without any human labels. FusionSense rebuilds the 3D shape of transparent or very dark objects — things cameras cannot see well — by first building a rough shape from images, then using touch readings to fix the fine surface details. Beyond Sight (FuSe) takes a general robot AI trained mostly on camera data and fine-tunes it to also use touch and sound by training it to describe what each sensor is reading in plain language.</p>
+<h3>4. Learning to control force and softness directly</h3>
+<p>Rather than just sensing force, some work teaches the robot controller to actively manage how firm or soft it should be at each moment — a property called compliance (how much the arm gives way when pushed).</p>
+<p>Adaptive Compliance Policy learns from human demonstrations how much the arm should give at each point in space and time — a compliance profile — then uses a diffusion policy to turn that profile into smooth motions that avoid large contact forces. TacDiffusion trains a generative model on recordings of the three-dimensional forces and torques felt during successful peg insertions, so the model learns to generate good force sequences for new insertions the robot has never seen, including new part shapes. Efficient Online Learning of Contact Force Models fits a simple force model to sensor data in real time on a GPU, fast enough to update during the task itself, which matters for precise connector insertion where even small errors in the force model cause failure.</p>
+<h3>5. Sharing knowledge across sensors and making pre-trained features</h3>
+<p>Many labs use different touch sensors, which means data collected in one lab cannot be used in another. Several papers tackle this transfer problem directly.</p>
+<p>ACROSS converts each sensor&#x27;s signals into a shared 3D shape — a mesh showing how the sensor surface bends under contact — so old data from a discontinued sensor can be reused to train models for a newer one. Contrastive Touch-to-Touch Pretraining trains a model on two different sensors touching the same objects, teaching it to map both sensors&#x27; signals to the same shared internal space. Canonical Representation and Force-Based Pretraining of 3D Tactile for Dexterous Visuo-Tactile Policy Learning takes raw 3D touch data, converts it to a simpler standard form, then pre-trains a feature extractor by teaching it to predict forces from touch data alone before fine-tuning on specific tasks — reducing the number of demonstrations needed.</p>
+<h2>Where it stands</h2>
+<p>Force and touch sensing in robots has moved from a mostly hardware question to a mostly learning question. Researchers can now build usable, low-cost touch sensors and record human demonstrations that include force. Diffusion-based policies that condition on force have shown clear results on precise tasks like peg insertion and connector plugging that pure position control cannot handle. The remaining hard parts are reliability over long runs, generalization to surfaces and objects very different from training, and making touch signals transfer cleanly across sensor types and robot hands — progress on all three is active but not complete.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their methods</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">Learning Visuotactile Skills With Two Multifingered Hands</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">ForceMimic: Force-Centric Imitation Learning with Force-Moti</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Adaptive Compliance Policy: Learning Approximate Compliance </td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">TacDiffusion: Force-Domain Diffusion Policy for Precise Tact</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">PolyTouch: A Robust Multi-Modal Tactile Sensor for Contact-R</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Beyond Sight: Finetuning Generalist Robot Policies with Hete</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Canonical Representation and Force-Based Pretraining of 3D T</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">AnySkin: Plug-and-Play Skin Sensing for Robotic Touch</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">TransForce: Transferable Force Prediction for Vision-Based T</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">VITaL Pretraining: Visuo-Tactile Pretraining for Tactile and</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — the method</div><article class="page" id="gp0"><h1>Learning Visuotactile Skills With Two Multifingered Hands</h1>
+<h2>What it solves</h2>
+<p>Teaching a two-handed robot with many fingers to do precise tasks using both sight and touch is expensive because the needed hardware and controllers do not exist at low cost.</p>
+<h2>How it works</h2>
+<p>They built a cheap remote-control system (HATO) using off-the-shelf parts and modified prosthetic hands that have touch sensors, then recorded human demonstrations and trained the robot to copy those actions using both camera images and touch data.</p>
+<h2>Why it matters</h2>
+<p>End-to-end system enabling bimanual multifingered visuotactile imitation learning with an empirical study of dataset size, sensing modality, and visual preprocessing effects on policy performance.</p></article>
+<article class="page" id="gp1"><h1>ForceMimic: Force-Centric Imitation Learning with Force-Motion Capture System for Contact-Rich Manipulation</h1>
+<h2>What it solves</h2>
+<p>Robots learning to do contact-heavy tasks like peeling vegetables by copying human demonstrations fail because the recordings capture where the hand moves but not how hard it presses.</p>
+<h2>How it works</h2>
+<p>ForceCapture is a wearable glove-like device a person wears while doing the task without a robot present, recording both motion and force. HybridIL then learns a policy that outputs both a target force and a target position, and a controller applies them together.</p>
+<h2>Why it matters</h2>
+<p>An end-to-end force-centric demonstration and learning system that captures human force profiles without a robot and trains a hybrid force-position controller, increasing peeling task success by 54.5% over vision-only baselines.</p></article>
+<article class="page" id="gp2"><h1>Adaptive Compliance Policy: Learning Approximate Compliance for Diffusion Guided Control</h1>
+<h2>What it solves</h2>
+<p>Robots that only control position push too hard when they make contact with objects, causing failures in tasks that require careful force management.</p>
+<h2>How it works</h2>
+<p>The system learns from human demonstrations how much the arm should &quot;give&quot; at each point in space and time — called a compliance profile — then uses a diffusion policy (a type of generative model) to turn that profile into smooth motions that avoid large contact forces.</p>
+<h2>Why it matters</h2>
+<p>A demonstration-driven framework that learns task-specific spatiotemporal compliance profiles to condition diffusion-based visuomotor control, achieving &gt;50% improvement over position-only baselines.</p></article>
+<article class="page" id="gp3"><h1>TacDiffusion: Force-Domain Diffusion Policy for Precise Tactile Manipulation</h1>
+<h2>What it solves</h2>
+<p>Robots need to insert pegs or small parts into tight holes with very high precision, and a skill learned for one part shape must also work on new shapes it has never seen.</p>
+<h2>How it works</h2>
+<p>They train a generative model (diffusion policy) on recordings of the 3D forces and torques felt during successful insertions, so the model learns to generate good force sequences for new insertions; a filter smooths out timing mismatches between the slow generative model and the fast control loop.</p>
+<h2>Why it matters</h2>
+<p>Achieves 95.7% zero-shot transfer success across diverse high-precision insertion tasks by applying diffusion policy in the force/wrench domain rather than Cartesian action space.</p></article>
+<article class="page" id="gp4"><h1>PolyTouch: A Robust Multi-Modal Tactile Sensor for Contact-Rich Manipulation Using Tactile-Diffusion Policies</h1>
+<h2>What it solves</h2>
+<p>Tasks like inserting a peg or fastening a clip require precise touch feedback, but camera-only robot policies fail because the hand blocks the view, and existing touch sensors wear out quickly.</p>
+<h2>How it works</h2>
+<p>PolyTouch is a finger-shaped sensor that combines a camera-based touch surface, a microphone for sound, and a small outward-facing camera into one unit; the signals from all three are fed together with arm position data into a diffusion-based control policy trained from human demonstrations.</p>
+<h2>Why it matters</h2>
+<p>A durable multi-modal tactile finger (20x commercial sensor lifespan) paired with tactile-diffusion policies that significantly outperform haptic-oblivious baselines on contact-rich tasks.</p></article>
+<article class="page" id="gp5"><h1>Beyond Sight: Finetuning Generalist Robot Policies with Heterogeneous Sensors via Language Grounding</h1>
+<h2>What it solves</h2>
+<p>General-purpose robot AI trained mostly on camera data cannot use touch or sound sensors, which are needed when vision is blocked or not enough on its own.</p>
+<h2>How it works</h2>
+<p>FuSe takes a pretrained robot policy and fine-tunes it on tasks that include touch and sound by training two extra losses: one that pulls sensor readings from different modalities closer together in a shared space, and one that trains the model to describe what each sensor is reading in plain language.</p>
+<h2>Why it matters</h2>
+<p>A finetuning recipe that extends any generalist policy to heterogeneous sensing modalities via language grounding, enabling zero-shot multimodal prompting and cross-modal reasoning without large multimodal datasets.</p></article>
+<article class="page" id="gp6"><h1>Canonical Representation and Force-Based Pretraining of 3D Tactile for Dexterous Visuo-Tactile Policy Learning</h1>
+<h2>What it solves</h2>
+<p>Learning useful features from the high-dimensional touch data produced by 3D tactile sensors on multi-fingered hands is hard because there is no large labeled dataset and no pretrained model to start from.</p>
+<h2>How it works</h2>
+<p>They first convert raw 3D touch data into a simpler standard form (canonical representation) to reduce geometric complexity, then pre-train a feature extractor by teaching it to predict both local and total forces from the touch data alone, before fine-tuning on specific hand manipulation tasks.</p>
+<h2>Why it matters</h2>
+<p>Proposes canonical 3D tactile representations with force-based self-supervised pretraining, achieving 78% average success rate across four contact-rich dexterous manipulation tasks without large labeled datasets.</p></article>
+<article class="page" id="gp7"><h1>AnySkin: Plug-and-Play Skin Sensing for Robotic Touch</h1>
+<h2>What it solves</h2>
+<p>Touch sensors on robot hands are hard to swap or repair because the sensing element and the electronics are combined, and replacing a worn skin usually breaks the learned manipulation skills that were tuned to that specific sensor.</p>
+<h2>How it works</h2>
+<p>They separate the magnetic sensing skin from the electronics so the skin peels off and snaps back on without tools or recalibration, and they show that manipulation skills trained on one skin instance still work on a fresh replacement.</p>
+<h2>Why it matters</h2>
+<p>First uncalibrated tactile sensor demonstrating zero-shot cross-instance generalization of manipulation policies, with a streamlined fabrication process enabling plug-and-play replacement without recalibration.</p></article>
+<article class="page" id="gp8"><h1>TransForce: Transferable Force Prediction for Vision-Based Tactile Sensors with Sequential Image Translation</h1>
+<h2>What it solves</h2>
+<p>When you buy a new touch sensor with different colors or marker patterns, you have to collect a large new set of force-labeled images from scratch before it can predict forces.</p>
+<h2>How it works</h2>
+<p>A neural network first converts images from the old sensor to look like images from the new sensor, then a second network reads those converted image sequences to estimate forces in all three directions.</p>
+<h2>Why it matters</h2>
+<p>Demonstrates that domain transfer via sequential image translation enables accurate shear-direction force prediction on unseen sensor configurations without re-labeling.</p></article>
+<article class="page" id="gp9"><h1>VITaL Pretraining: Visuo-Tactile Pretraining for Tactile and Non-Tactile Manipulation Policies</h1>
+<h2>What it solves</h2>
+<p>Teaching a robot to handle objects through touch requires a lot of demonstrations, and a robot without touch sensors at test time cannot use what was learned from touch.</p>
+<h2>How it works</h2>
+<p>The robot is first trained on paired camera and touch-sensor data to learn a shared visual-tactile representation. That representation is then used to initialize a policy that runs at test time using only the camera, with no touch sensor.</p>
+<h2>Why it matters</h2>
+<p>Demonstrates that visuo-tactile pretraining improves non-tactile policy performance to near-tactile-agent levels, including a USB-plugging task where accuracy rises from 20% to 85%.</p></article></div>
+  <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

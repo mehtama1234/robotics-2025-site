@@ -1,0 +1,182 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Soft and body-inspired machines — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive</div>
+  <h1>Soft and body-inspired machines</h1>
+  <p>Robots built from soft, deformable, body-inspired materials — where the body&#x27;s own shape and compliance do part of the sensing and control, instead of rigid links and stiff motors. This page: the core problem, the approaches, and the key 2025 papers with their methods.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Soft and body-inspired machines</h1>
+<p><em>250 papers · a rule across everything — how the body itself is built shapes what the robot can sense, decide, and do</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">Rigid robots are built for factories, where every part sits still and the job never changes. When a robot meets the real world — uneven ground, fragile objects, a living body, or a narrow gap — rigidity becomes a liability. The problem is not whether to be soft or stiff, but how a body can shift between them on demand: soft when it needs to give, firm when it needs to push. This connects to the one core constraint all robots face: taking an unclear, changing world, deciding fast, moving a real body, doing it safely, cheaply, and generally. Soft body research touches every piece of that — a soft fingertip with a built-in sensor solves sensing and safety at once; a body that changes shape solves motion in constrained spaces; a printable, modular design lowers cost and raises generality.</p>
+<p style="margin:0 0 8px"><strong>Five moves the field is making:</strong></p>
+<ul style="margin:0 0 12px">
+<li style="margin:0 0 6px"><strong>① Build artificial muscles from electricity, air, and fluid.</strong> Living muscles contract when a nerve fires; researchers build artificial muscles using voltage, air pressure, or pressurized fluid. <em>Portable, High-Frequency, and High-Voltage Control Circuits for Untethered Miniature Robots Driven by Dielectric Elastomer Actuators</em> reached 1,800 volts on a 2.5-gram board to power crawling robots. <em>Stretchable Electrohydraulic Artificial Muscle for Full Motion Ranges in Musculoskeletal Antagonistic Joints</em> paired electric muscles with clutches to get full contraction-and-extension range.</li>
+<li style="margin:0 0 6px"><strong>② Route cables and tendons to avoid cross-talk and friction.</strong> Many soft robots use cables run through the body like tendons, keeping heavy motors at the base. <em>D3-ARM: High-Dynamic, Dexterous and Fully Decoupled Cable-Driven Robotic Arm</em> re-routed cables so each motor connects to one joint with no accidental drag. <em>A Comparative Study of Pulley and Bowden Transmissions in a Novel Cable-Driven Exosuit, the Stillsuit</em> measured energy loss through friction and found pulleys far more efficient than tubes.</li>
+<li style="margin:0 0 6px"><strong>③ Copy animal bodies and motion to handle real spaces.</strong> Worms, fish, and snakes move by sending bends along their body, squeezing through gaps that wheeled robots cannot enter. <em>Leader-Follower Formation Enabled by Pressure Sensing in Free-Swimming Undulatory Robotic Fish</em> trained a small neural network to steer a robot fish using only water-pressure readings on its sides, with no camera. <em>Adaptive Concertina Locomotion of a Robotic Snake Through Narrow Uncertain Channels</em> mimics how a snake grips tunnel walls and adjusts its wave pattern by reading motor effort.</li>
+<li style="margin:0 0 6px"><strong>④ Sense inside a soft body without making it stiffer.</strong> Most sensors are rigid or bulky; putting them inside a soft body often weakens it. <em>A Piezoresistive Printable Strain Sensor for Monitoring and Control of Soft Robotic Links</em> printed a sensor directly into a soft arm by drawing silver ink onto a rubber base. <em>Milli-Scale AcousTac Sensing Using Soft Helmholtz Resonators</em> uses an air-filled soft pocket on the fingertip that shifts pitch when pressed, read by a microphone elsewhere.</li>
+<li style="margin:0"><strong>⑤ Build math and simulation that keeps pace with soft physics.</strong> Soft bodies have nearly infinite ways to bend, making them very hard to control. <em>A Synergistic Framework for Learning Shape Estimation and Shape-Aware Whole-Body Control Policy for Continuum Robots</em> trains two linked neural networks together — one estimates shape, the other decides how to move — so each helps the other improve.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> the field is learning that a body&#x27;s shape and compliance are not obstacles to control — they are the control. A soft fingertip senses touch while it grips. A bendable cable-driven arm stays light at the tip. A body that changes stiffness handles both delicate and forceful tasks. Soft research pays off most when it solves two problems at once — safety and sensing, or generality and weight — instead of pretending either one is optional. <strong>Still open:</strong> full artificial muscles that match living muscle in strength, speed, and efficiency are not yet there. Controlling soft bodies reliably remains hard — the math is complex, sensors are limited, and simulation is slow. The gap between a lab proof-of-concept and a robot that works outside the lab without careful tuning stays large.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>Every robot body is a bargain. Make it rigid and you get strength, repeatability, and easy math. Make it soft and you get something else: the ability to squeeze through gaps, cushion a fall, stretch around odd shapes, and touch a person or a piece of fruit without leaving a bruise.</p>
+<p>The hard bargain is that the real world does not care which choice you made. A robot sent to pull weeds in a greenhouse must bend between plant stems. A robot helping a surgeon must navigate slippery, shifting tissue without tearing it. A search robot squeezed into rubble must change its shape as the gap changes. A robot arm helping a person who has lost muscle strength must push and pull without ever pressing too hard.</p>
+<p>Rigid metal arms and legs, which almost all industrial robots have used for decades, were designed for factories where every part sits in a fixed spot and the job never changes. When the space is uneven, the object is fragile, or the task demands contact with a living body, rigid machines either break what they touch or cannot reach it at all.</p>
+<p>The deeper problem is that stiffness is not always good or bad — it depends on the moment. When you pick up a coffee cup, your hand is soft enough to wrap around the glass but stiff enough not to drop it. When you grip a door handle, you stiffen up more. Living muscles do this automatically. A rigid robot joint cannot. A fully soft joint cannot either, because it has no stiffness at all. The real target is a body that can change how stiff it is on demand — soft when it needs to give, firm when it needs to push.</p>
+<p>This connects to the one big problem all robots face: taking in an unclear, changing world, deciding what to do, moving a real body, and doing it fast, cheap, safe, and general. Soft body research touches every one of those pieces. A soft fingertip with a built-in sensor solves sensing and safety at once. A robot that grows from its tip through a narrow pipe (called a vine robot, though none of these papers are on that specific design) solves motion in constrained spaces. A body that cushions contact makes the robot safer near people. A body that can be printed or assembled from modules lowers cost and raises generality.</p>
+<p>The field is not one idea. It is a loose collection of groups — engineers, biologists, materials scientists, and control theorists — each attacking a different piece of the same goal: bodies that handle the world&#x27;s messiness instead of demanding the world be clean.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>1. Muscles made from electricity, air, and fluid</h3>
+<p>Living muscles contract when a nerve fires. Researchers are building artificial muscles that do something similar using electricity, air pressure, or pressurized fluid.</p>
+<p>One line of work uses a material that stretches when you apply voltage — called a dielectric elastomer (a stretchy electrical insulator that squishes when charged). The problem is that these need very high voltage, far more than a battery can give directly. &quot;Portable, High-Frequency, and High-Voltage Control Circuits for Untethered Miniature Robots Driven by Dielectric Elastomer Actuators&quot; solved this by stacking many small voltage steps in series to reach 1,800 volts on a board weighing only 2.5 grams — light enough for a crawling robot to carry itself.</p>
+<p>A second type of artificial muscle pairs electricity with fluid. Called HASEL (hydraulically amplified self-healing electrostatic) actuators, these squeeze a pouch of fluid using electric charge, generating force. The catch is that one such muscle can only pull, not push. &quot;Stretchable Electrohydraulic Artificial Muscle for Full Motion Ranges in Musculoskeletal Antagonistic Joints&quot; dealt with this by pairing two of these muscles on opposite sides of a joint — one to pull, one to let go — plus electric clutches to coordinate the pair, reaching over three full cycles per second.</p>
+<p>Air pressure is the oldest approach: pump air into a bendable tube and it curves or stiffens. &quot;Anisotropic Stiffness and Programmable Actuation for Soft Robots Enabled by an Inflated Rotational Joint&quot; used a clever geometry: an inflatable tube is shaped so that only part of it wrinkles when pressurized. The wrinkled region is softer than the smooth region, so the tube bends toward the wrinkled side, and the bend direction and stiffness can both be tuned by controlling which part wrinkles.</p>
+<h3>2. Cables and tendons pulling through a body</h3>
+<p>Many soft or semi-soft robots use cables — thin wires or cords run through the body and pulled by motors — the same way tendons work in a hand. The advantage is that motors can sit at the base, keeping the moving parts light.</p>
+<p>The main challenge is that when cables share a path through multiple joints, pulling one joint can accidentally drag on another. &quot;D3-ARM: High-Dynamic, Dexterous and Fully Decoupled Cable-Driven Robotic Arm&quot; re-routed the cables so each motor connects to exactly one joint with no cross-talk, then added a tensioning mechanism to keep cables from going slack. This is a basic but hard engineering problem — the geometry of how cables run determines whether control is clean or messy.</p>
+<p>For exosuits (soft, wearable frames that add muscle power to a person&#x27;s limbs), cable routing is even more important because the cables bend as the person moves, and bending wastes energy through friction. &quot;A Comparative Study of Pulley and Bowden Transmissions in a Novel Cable-Driven Exosuit, the Stillsuit&quot; measured exactly how much energy is lost when cables run through flexible tubes versus over pulleys, finding that tubes waste 40 to 60 percent of the motor&#x27;s energy just to friction. Routing over pulleys instead dramatically reduces that waste.</p>
+<p>Cables also let you program how a gripper gives way. &quot;Dexterous Assembly Using a Planar Hand Having Programmable Passive Compliance&quot; uses opposing tendons on each finger so that the direction in which the finger yields can be set before a task by adjusting how tight each tendon is, with no sensors needed during contact.</p>
+<h3>3. Bodies that move like animals</h3>
+<p>Several papers take direct shape or motion ideas from living creatures and build robots around them.</p>
+<p>Worms, fish, and snakes all move by sending a wave of bends along their body, which lets them push through dense or narrow spaces that a wheeled or legged robot cannot enter. &quot;AquaMILR+&quot; sends wave-like bends down a limbless body to swim in open water, and can stiffen or soften on command so it deforms around obstacles rather than getting stuck. A built-in buoyancy system — a syringe-screw that changes the robot&#x27;s density — controls depth the way a fish&#x27;s air bladder does.</p>
+<p>&quot;Leader-Follower Formation Enabled by Pressure Sensing in Free-Swimming Undulatory Robotic Fish&quot; takes a swimming fish body and trains a small neural network (a type of learned controller) to steer just using water-pressure readings on the sides of the follower fish, with no camera. The network was trained by recording what a human controller did and then correcting the network each time it drifted — a training method called DAgger.</p>
+<p>&quot;Adaptive Concertina Locomotion of a Robotic Snake Through Narrow Uncertain Channels&quot; mimics how a snake grips the sides of a tunnel to inch forward (concertina motion) and adjusts the wave pattern in real time by reading how hard the motors are working — a proxy for how tight the tunnel is.</p>
+<p>At even smaller scales, &quot;Feedback Control of a Single-Tail Bioinspired 59-mg Swimmer&quot; built a robot lighter than a grain of rice that uses a shape-memory alloy tail — metal that bends when heated and springs back when cooled — to swim and steer itself.</p>
+<h3>4. Sensing inside a soft body</h3>
+<p>A soft robot that cannot sense what it is touching or how it is bent cannot be controlled precisely. This is a hard problem because most sensors are rigid or bulky, and putting them inside a soft body often makes that body stiffer or weaker.</p>
+<p>&quot;A Piezoresistive Printable Strain Sensor for Monitoring and Control of Soft Robotic Links&quot; printed a sensor directly into a soft robot arm: a rubber base is printed, then silver ink is drawn onto it to make conductive traces that change electrical resistance when bent. The sensor is part of the arm, not glued to it.</p>
+<p>&quot;Milli-Scale AcousTac Sensing Using Soft Helmholtz Resonators&quot; avoids electronics at the fingertip entirely. A tiny air-filled soft pocket on the fingertip shifts the pitch of a sound when pressed. A microphone elsewhere on the robot hears the pitch change — no wires at the contact point.</p>
+<p>&quot;A Magnetic-Actuated Vision-Based Whisker Array for Contact Perception and Grasping&quot; uses eight thin flexible whiskers around a soft pad, moved by magnets. A camera watches how each whisker bends, and a small neural network reads those bend patterns to identify objects and choose a grip.</p>
+<h3>5. Simulation and math that keeps pace with soft physics</h3>
+<p>Controlling a soft robot requires knowing its shape at every moment, but soft bodies have nearly infinite ways to bend and compress, making them very hard to simulate. Two papers address this from different angles.</p>
+<p>&quot;Physics-Informed Split Koopman Operators for Data-Efficient Soft Robotic Simulation&quot; builds a linear (straight-line math) model of a soft robot&#x27;s behavior by combining two kinds of observations and baking in known physical laws, so the model stays accurate while needing far less data than a purely learned model.</p>
+<p>&quot;A Synergistic Framework for Learning Shape Estimation and Shape-Aware Whole-Body Control Policy for Continuum Robots&quot; trains two neural networks together: one estimates the current shape of a flexible tube-like robot, the other uses that shape to decide how to move. Each network trains using the other&#x27;s output, letting them improve together.</p>
+<h2>Where it stands</h2>
+<p>Soft and body-inspired robots can now move through narrow spaces, sense touch without rigid electronics, and change their stiffness on command — things rigid machines cannot do. Cable-driven arms and printable sensors are close to practical use. Full artificial muscles that match the strength, speed, and efficiency of living muscle are not yet there. Controlling soft bodies reliably is still the central open problem: the math is hard, the sensors are limited, and simulation is slow. The gap between a proof-of-concept lab robot and one that works outside the lab, without careful tuning, remains large.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their methods</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">Individual and Collective Behaviors in Soft Robot Worms Insp</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">D3-ARM: High-Dynamic, Dexterous and Fully Decoupled Cable-Dr</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">A Piezoresistive Printable Strain Sensor for Monitoring and </td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Stretchable Electrohydraulic Artificial Muscle for Full Moti</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Portable, High-Frequency, and High-Voltage Control Circuits </td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Mathematical Modeling and Rolling Motion Generation of Plana</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">CAFEs: Cable-Driven Collaborative Floating End-Effectors for</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">A Synergistic Framework for Learning Shape Estimation and Sh</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">An Ultra-Light Seedling Planting Mechanism for Use in Aerial</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Leader-Follower Formation Enabled by Pressure Sensing in Fre</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — the method</div><article class="page" id="gp0"><h1>Individual and Collective Behaviors in Soft Robot Worms Inspired by Living Worm Blobs</h1>
+<h2>What it solves</h2>
+<p>Scientists do not fully understand how real worms move as a tangled group, and there has been no robot platform that can replicate and test that group behavior in a controlled way.</p>
+<h2>How it works</h2>
+<p>They built thin, air-powered soft robots shaped like worms with a very long and narrow body, similar to California blackworms. By changing how much air pressure the robots use, the researchers can control how tightly the robots tangle together and then measure how the group moves in air and water.</p>
+<h2>Why it matters</h2>
+<p>First soft-robot platform that faithfully replicates worm-blob collective behaviors through physical entanglement, providing a tunable testbed for studying emergent collective locomotion.</p></article>
+<article class="page" id="gp1"><h1>D3-ARM: High-Dynamic, Dexterous and Fully Decoupled Cable-Driven Robotic Arm</h1>
+<h2>What it solves</h2>
+<p>Robot arms that use cables to transmit force have a problem where moving one joint accidentally moves others, making precise control hard.</p>
+<h2>How it works</h2>
+<p>They redesigned how cables run through each joint so each motor drives exactly one joint and nothing else. They also added a mechanism to keep cables taut over long runs, and moved all electronics to the base of the arm.</p>
+<h2>Why it matters</h2>
+<p>First fully decoupled cable-driven arm design achieving 1.29 mm average positioning error and 2.0 kg payload at 776 mm reach with all actuators base-mounted.</p></article>
+<article class="page" id="gp2"><h1>A Piezoresistive Printable Strain Sensor for Monitoring and Control of Soft Robotic Links</h1>
+<h2>What it solves</h2>
+<p>Putting a flexible bend sensor inside a soft robot arm without making it stiff or weak is hard to do with standard manufacturing.</p>
+<h2>How it works</h2>
+<p>A sensor is printed in two steps: a soft rubbery base (TPU) is printed by melting plastic filament, then silver ink is written onto it to form conductive traces; the result is a sensor that changes electrical resistance when bent and can be built into the arm during printing.</p>
+<h2>Why it matters</h2>
+<p>Demonstrates a fully printable, piezoresistive strain sensor with a gauge factor of 0.24 and stable repeatability in the 3–8% flexure strain range, integrated into a functional soft robotic link.</p></article>
+<article class="page" id="gp3"><h1>Stretchable Electrohydraulic Artificial Muscle for Full Motion Ranges in Musculoskeletal Antagonistic Joints</h1>
+<h2>What it solves</h2>
+<p>Existing artificial muscles can only pull or only push, so robotic joints that pair two muscles against each other cannot move through their full range.</p>
+<h2>How it works</h2>
+<p>They pair electrically-driven hydraulic soft actuators (called HASELs) with electric clutches and add a controller that coordinates the two sides so the joint can both contract and extend, cycling up to 3.2 times per second.</p>
+<h2>Why it matters</h2>
+<p>A muscle-clutch architecture that enables full contraction-and-extension range of motion in antagonistic joints using non-stretchable artificial muscles, demonstrated on HASEL actuators.</p></article>
+<article class="page" id="gp4"><h1>Portable, High-Frequency, and High-Voltage Control Circuits for Untethered Miniature Robots Driven by Dielectric Elastomer Actuators</h1>
+<h2>What it solves</h2>
+<p>Artificial muscles made from stretchy electrical material need very high voltage to work, but the electronics that deliver that voltage are usually too heavy for a small untethered robot.</p>
+<h2>How it works</h2>
+<p>The circuit connects many low-voltage parts in series to reach 1,800 volts and fits on a board weighing only 2.5 grams; paired with a tiny power converter, it drives a crawling robot at 15 pulses per second with onboard video.</p>
+<h2>Why it matters</h2>
+<p>A 2.5 g, series-resistor-based high-voltage circuit enabling untethered DEA-driven miniature robots at up to 1 kHz without specialized HV control ICs.</p></article>
+<article class="page" id="gp5"><h1>Mathematical Modeling and Rolling Motion Generation of Planar Seven-link Robot That Forms Passive Closed and Active Open Chains</h1>
+<h2>What it solves</h2>
+<p>A seven-link robot needs to roll along a surface, but there was no clear math to describe how it rolls—either by letting gravity do the work or by using its own motors.</p>
+<h2>How it works</h2>
+<p>The researchers built two separate math models: one for when all the links form a closed loop and roll downhill on their own, and one for when the links act as an open chain and motors drive the roll by holding a leaning octagon shape.</p>
+<h2>Why it matters</h2>
+<p>First mathematical formulation of rolling motion and collision dynamics for a planar seven-link robot that unifies passive-dynamic and actively controlled rolling in a single parametric framework.</p></article>
+<article class="page" id="gp6"><h1>CAFEs: Cable-Driven Collaborative Floating End-Effectors for Agriculture Applications</h1>
+<h2>What it solves</h2>
+<p>Automating large-scale farm tasks like picking and placing fruit across wide areas with multiple robot arms is hard when each arm needs its own motors and cables.</p>
+<h2>How it works</h2>
+<p>Multiple robot arms share a single set of moving cables and can clip on or detach quickly without stopping the system. A spring-mass model and position control keep each arm stable while it moves.</p>
+<h2>Why it matters</h2>
+<p>A scalable multi-arm cable-driven system where arms share a single cable set and can hot-attach/detach without individual actuators for cable motion, enabling large-workspace agricultural automation.</p></article>
+<article class="page" id="gp7"><h1>A Synergistic Framework for Learning Shape Estimation and Shape-Aware Whole-Body Control Policy for Continuum Robots</h1>
+<h2>What it solves</h2>
+<p>Flexible tube-like robots are hard to control because you must track their exact shape and move them at the same time, and their physics are messy and hard to model.</p>
+<h2>How it works</h2>
+<p>Two linked neural networks are trained together: one figures out the robot&#x27;s current shape, and the other uses that shape to decide how to move the whole robot, with each network helping the other improve.</p>
+<h2>Why it matters</h2>
+<p>A synergistic dual-NODE architecture that co-learns shape estimation and shape-aware control for continuum robots, overcoming the shape-awareness gap in prior data-driven methods.</p></article>
+<article class="page" id="gp8"><h1>An Ultra-Light Seedling Planting Mechanism for Use in Aerial Reforestation</h1>
+<h2>What it solves</h2>
+<p>Drones that plant trees need a mechanism strong enough to push a seedling into soil but light enough to fit within what a medium or large drone can carry.</p>
+<h2>How it works</h2>
+<p>A two-stage telescoping tube powered by compressed air fires the seedling into the ground with enough force, while the whole device weighs only 8 kg so it can be carried by a drone.</p>
+<h2>Why it matters</h2>
+<p>A novel ultralight (8 kg) double-telescoping pneumatic tree-planting mechanism validated for aerial deployment, enabling GPS-independent reforestation in both clear-cut and selectively-harvested forests.</p></article>
+<article class="page" id="gp9"><h1>Leader-Follower Formation Enabled by Pressure Sensing in Free-Swimming Undulatory Robotic Fish</h1>
+<h2>What it solves</h2>
+<p>Getting one swimming fish robot to follow another in tight formation is hard when the follower has no camera or external tracking — only its own body sensors.</p>
+<h2>How it works</h2>
+<p>They train a small neural network (LSTM) using recorded demonstrations and a method called DAgger that corrects the network when it drifts — the network reads just two water-pressure sensors on the follower&#x27;s sides plus the motor state and tilt, and outputs steering commands to stay behind the leader.</p>
+<h2>Why it matters</h2>
+<p>First demonstration of leader-follower formation swimming in free-swimming undulatory robotic fish using only two bilateral pressure sensors and less than one hour of training data.</p></article></div>
+  <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>
