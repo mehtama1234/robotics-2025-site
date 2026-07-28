@@ -90,6 +90,11 @@
     <img src="assets/papers/arcap_system.png" alt="ARCap augmented-reality demonstration capture system" style="width:100%;max-width:560px;display:block;padding:10px 16px 4px;margin:0 auto">
     <figcaption style="font-size:13.5px;color:var(--graphite);padding:2px 16px 14px;line-height:1.55"><strong style="color:var(--ink)">ARCap's capture rig.</strong> An AR headset + RGB-D camera + motion-capture gloves let a person demonstrate a task in augmented reality; a laptop turns the wrist pose, finger joints and point cloud into robot-ready data. Making high-quality demonstrations cheap to collect &mdash; the bottleneck this theme attacks.<span style="display:block;margin-top:7px;font-family:var(--mono);font-size:11px;color:var(--accent-deep)">Figure &copy; the authors · ARCap (MIT) · <a href="https://github.com/Ericcsr/ARCap" target="_blank" rel="noopener" style="color:var(--accent-deep)">github.com/Ericcsr/ARCap</a></span></figcaption>
   </figure>
+  <figure style="margin:26px 0 8px;background:#0A0E13;border:1px solid #1D2A34;border-radius:14px;padding:10px 10px 4px;background-image:linear-gradient(#141E27 1px,transparent 1px),linear-gradient(90deg,#141E27 1px,transparent 1px);background-size:34px 34px">
+    <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#38E1CF;padding:6px 8px 2px">Mechanism &middot; animated</div>
+    <canvas data-viz="cheapdata" height="280" style="display:block;width:100%;height:auto;border-radius:8px"></canvas>
+    <figcaption style="font-family:var(--sans);font-size:13.5px;line-height:1.5;color:#8B9BA2;padding:9px 10px 10px">A few human demonstrations are multiplied into a mountain of varied training data via sim + generative augmentation. <a href="techniques.html" style="color:#38E1CF;white-space:nowrap">See all mechanisms &rarr;</a></figcaption>
+  </figure>
   <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
     <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">ARCap: Collecting High-Quality Human Demonstrations for Robo</td><td>ICRA</td><td><a href="https://github.com/Ericcsr/ARCap" target="_blank" rel="noopener">Ericcsr/ARCap</a></td><td class="mono">data_processing/data_collection_server.py</td><td><span class="run">robot</span></td></tr>
 <tr><td class="tt">How to Train Your Robots? The Impact of Demonstration Modali</td><td>ICRA</td><td>—</td><td class="mono">diffusion_policy/policy/diffusion_policy.py</td><td><span class="run">gpu</span></td></tr>
@@ -1564,4 +1569,5 @@ def get_action(self, nobs: torch.Tensor) -&gt; torch.Tensor:
 </ul></article></div>
   <footer>Repos cloned under analysis/detail/cheapdata/code/ (gitignored — GPU/CUDA needed to run) · method detail from arXiv · code structure read from the real repos.</footer>
 </div>
+<script src="assets/viz.js"></script>
 </body></html>

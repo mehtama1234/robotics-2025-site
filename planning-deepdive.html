@@ -92,6 +92,11 @@
     <img src="assets/papers/e2map_concept.png" alt="E2Map experience-and-emotion map concept" style="width:100%;display:block;padding:10px 16px 4px">
     <figcaption style="font-size:13.5px;color:var(--graphite);padding:2px 16px 14px;line-height:1.55"><strong style="color:var(--ink)">E2Map's concept.</strong> An &ldquo;experience-and-emotion map&rdquo;: when something goes wrong, the robot writes it into a spatial memory and revises its plan, with a language model in the loop. Language turned into grounded, self-correcting behavior &mdash; the planning loop our diagram animates.<span style="display:block;margin-top:7px;font-family:var(--mono);font-size:11px;color:var(--accent-deep)">Figure &copy; the authors · E2Map (MIT) · <a href="https://github.com/knwoo/e2map" target="_blank" rel="noopener" style="color:var(--accent-deep)">github.com/knwoo/e2map</a></span></figcaption>
   </figure>
+  <figure style="margin:26px 0 8px;background:#0A0E13;border:1px solid #1D2A34;border-radius:14px;padding:10px 10px 4px;background-image:linear-gradient(#141E27 1px,transparent 1px),linear-gradient(90deg,#141E27 1px,transparent 1px);background-size:34px 34px">
+    <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#38E1CF;padding:6px 8px 2px">Mechanism &middot; animated</div>
+    <canvas data-viz="planning" height="280" style="display:block;width:100%;height:auto;border-radius:8px"></canvas>
+    <figcaption style="font-family:var(--sans);font-size:13.5px;line-height:1.5;color:#8B9BA2;padding:9px 10px 10px">An LLM decomposes a plain-language goal into grounded steps and re-plans the instant a precondition check fails. <a href="techniques.html" style="color:#38E1CF;white-space:nowrap">See all mechanisms &rarr;</a></figcaption>
+  </figure>
   <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
     <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">KARMA: Augmenting Embodied AI Agents with Long-and-Short Ter</td><td>ICRA</td><td><a href="https://github.com/WZX0Swarm0Robotics/KARMA/tree/master" target="_blank" rel="noopener">WZX0Swarm0Robotics/KARMA/tree/master</a></td><td class="mono">scripts/llm_as_planner.py</td><td><span class="run">api</span></td></tr>
 <tr><td class="tt">Multi-Floor Zero-Shot Object Navigation Policy</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
@@ -1796,4 +1801,5 @@ Updated ontology persists for the next task
 </code></pre></article></div>
   <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
 </div>
+<script src="assets/viz.js"></script>
 </body></html>

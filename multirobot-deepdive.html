@@ -95,6 +95,11 @@
     <img src="assets/papers/coherent.jpg" alt="COHERENT heterogeneous multi-robot coordination framework" style="width:100%;display:block;padding:10px 16px 4px">
     <figcaption style="font-size:13.5px;color:var(--graphite);padding:2px 16px 14px;line-height:1.55"><strong style="color:var(--ink)">COHERENT's coordination loop.</strong> A Task-Assigner LLM proposes a subtask for each heterogeneous robot (quadrotor, arm, dog) from a plain-language goal; a Robot-Executor LLM validates and runs each action, and failures feed back into a revised plan. LLM-driven task allocation across different robot bodies &mdash; the coordination this theme is about.<span style="display:block;margin-top:7px;font-family:var(--mono);font-size:11px;color:var(--accent-deep)">Figure &copy; the authors · COHERENT · <a href="https://github.com/MrKeee/COHERENT" target="_blank" rel="noopener" style="color:var(--accent-deep)">github.com/MrKeee/COHERENT</a></span></figcaption>
   </figure>
+  <figure style="margin:26px 0 8px;background:#0A0E13;border:1px solid #1D2A34;border-radius:14px;padding:10px 10px 4px;background-image:linear-gradient(#141E27 1px,transparent 1px),linear-gradient(90deg,#141E27 1px,transparent 1px);background-size:34px 34px">
+    <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#38E1CF;padding:6px 8px 2px">Mechanism &middot; animated</div>
+    <canvas data-viz="multirobot" height="280" style="display:block;width:100%;height:auto;border-radius:8px"></canvas>
+    <figcaption style="font-family:var(--sans);font-size:13.5px;line-height:1.5;color:#8B9BA2;padding:9px 10px 10px">Robots divide the work by bidding &mdash; each task goes to the cheapest bidder, coordination with no central boss. <a href="techniques.html" style="color:#38E1CF;white-space:nowrap">See all mechanisms &rarr;</a></figcaption>
+  </figure>
   <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
     <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">COHERENT: Collaboration of Heterogeneous Multi-Robot System </td><td>ICRA</td><td><a href="https://github.com/MrKeee/COHERENT" target="_blank" rel="noopener">MrKeee/COHERENT</a></td><td class="mono">main.py</td><td><span class="run">gpu</span></td></tr>
 <tr><td class="tt">DELTA: Decomposed Efficient Long-Term Robot Task Planning Us</td><td>ICRA 2025</td><td><a href="https://github.com/boschresearch/DELTA" target="_blank" rel="noopener">boschresearch/DELTA</a></td><td class="mono">prompt.py</td><td><span class="run">cpu</span></td></tr>
@@ -1650,4 +1655,5 @@ def sample_batch(self, batch_size: int) -&gt; Tuple:
 <p><strong>Time investment</strong>: ~2 hours to read + understand all code. ~1 week to meaningfully modify (e.g., swap sheaf loss for a different consensus mechanism, or change network architecture).</p></article></div>
   <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
 </div>
+<script src="assets/viz.js"></script>
 </body></html>
