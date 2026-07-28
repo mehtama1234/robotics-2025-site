@@ -42,6 +42,10 @@
  .bigidea .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);display:block;margin-bottom:6px}
  .bigidea p{margin:5px 0;font-size:15px;color:#23302C;line-height:1.6}
  .bigidea b{color:var(--ink)}
+ .subdiag{margin:12px 0;padding:14px 14px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+ .subdiag svg{max-width:100%;height:auto;display:block;margin:0 auto}
+ .plain{font-size:14.5px;color:#23302C;margin-top:10px;background:var(--tint);border-radius:7px;padding:9px 13px;line-height:1.5}
+ .plain b{color:var(--accent-deep);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:3px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -80,11 +84,43 @@
 <p>All of these problems connect back to the same big challenge every robot faces: the world is unclear and always changing, computing is limited, and the cost of getting it wrong is a real crash with real people. The research in this topic is about making sensing cheaper to run, more accurate in bad conditions, more honest about what it does not know, and better connected to the decisions the car needs to make.</p>
 <h2>The approaches — how the field actually tackles it</h2>
 <h3>Drop the dense map; track only what matters</h3>
+<div class="subdiag">
+<svg viewBox="0 0 620 130" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,Menlo,monospace" font-size="11">
+<defs><pattern id="dg" width="26" height="26" patternUnits="userSpaceOnUse"><rect x="1.5" y="1.5" width="23" height="23" fill="#E4ECEB" stroke="#CBD3D0"/></pattern></defs>
+<text x="111" y="16" fill="#59656A" text-anchor="middle">DENSE — fill in every cell</text>
+<rect x="20" y="26" width="182" height="86" fill="url(#dg)" stroke="#CBD3D0"/>
+<line x1="230" y1="69" x2="292" y2="69" stroke="#0E7C86" stroke-width="2"/>
+<polygon points="292,69 282,64 282,74" fill="#0E7C86"/>
+<text x="463" y="16" fill="#0A5A62" text-anchor="middle">SPARSE — tag only what matters</text>
+<rect x="318" y="26" width="292" height="86" rx="6" fill="#F7F8F6" stroke="#CBD3D0"/>
+<line x1="318" y1="69" x2="610" y2="69" stroke="#D7DCD9" stroke-dasharray="7 7"/>
+<rect x="360" y="42" width="36" height="20" rx="3" fill="#CFE0DF"/><circle cx="378" cy="52" r="5.5" fill="#0E7C86"/>
+<rect x="430" y="60" width="22" height="13" rx="2" fill="#CFE0DF"/><circle cx="441" cy="66" r="4.5" fill="#0E7C86"/>
+<rect x="505" y="80" width="36" height="20" rx="3" fill="#CFE0DF"/><circle cx="523" cy="90" r="5.5" fill="#0E7C86"/>
+</svg>
+<div class="plain"><b>In plain terms</b>Instead of describing every inch of the street, the car keeps a sticky note only on each thing that actually matters — this car, that lane — and ignores all the empty space in between.</div>
+</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Understanding a whole street means representing everything around the car — but filling a dense grid of every cell of space is far too slow to run live. So how do you understand the scene without paying for all the empty road and sky?</div>
 <div class="appr"><b>Sparse tokens — SparseDrive (ICRA).</b> Represent the scene as a small set of tokens, one per object or piece of road rather than one per grid cell, and detect, track, and map them in a single pass. Because it never fills a huge grid, it runs fast enough for real roads.</div>
 <div class="appr"><b>Symbolic fast-paths — Chameleon (ICRA).</b> Takes one narrow sub-problem — how lanes connect at an intersection — and runs cheap symbolic rules for the common cases, only calling a heavier model when the situation is unusual.</div>
 <p class="payoff">Work only with what matters and the computation shrinks enough to run live on the car, not just in a lab.</p>
 <h3>Mix radar with cameras to work in bad weather</h3>
+<div class="subdiag">
+<svg viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,Menlo,monospace" font-size="11">
+<rect x="18" y="20" width="176" height="42" rx="8" fill="#F7F8F6" stroke="#CBD3D0"/>
+<text x="106" y="38" text-anchor="middle" fill="#23302C" font-size="12">camera</text>
+<text x="106" y="53" text-anchor="middle" fill="#B37A1E" font-size="10">sharp — but blind in fog</text>
+<rect x="18" y="80" width="176" height="42" rx="8" fill="#F7F8F6" stroke="#CBD3D0"/>
+<text x="106" y="98" text-anchor="middle" fill="#23302C" font-size="12">radar</text>
+<text x="106" y="113" text-anchor="middle" fill="#2F7A4F" font-size="10">blurry — but sees through fog</text>
+<line x1="196" y1="41" x2="356" y2="60" stroke="#0E7C86" stroke-width="1.8"/>
+<line x1="196" y1="101" x2="356" y2="80" stroke="#0E7C86" stroke-width="1.8"/>
+<rect x="358" y="46" width="244" height="48" rx="10" fill="#E4ECEB" stroke="#0E7C86"/>
+<text x="480" y="66" text-anchor="middle" fill="#0A5A62" font-size="12">use both together</text>
+<text x="480" y="83" text-anchor="middle" fill="#23302C" font-size="10">clear vision that still works in fog &amp; rain</text>
+</svg>
+<div class="plain"><b>In plain terms</b>The camera sees clearly on a good day; radar sees through fog and rain. Use both and the car is covered whichever way the weather turns.</div>
+</div>
 <div class="subq"><span class="lbl">The sub-problem</span>Cameras can&#x27;t judge distance well, especially far away; lidar is precise but expensive and struggles in heavy rain; radar is cheap and sees through weather but returns a sparse cloud of dots, not a sharp image. No single sensor is enough exactly when conditions turn bad — so combine them.</div>
 <div class="appr"><b>Two-stage fusion — HyDRa (ICRA).</b> First uses radar depth readings to help the camera estimate depth from its own image, then merges both streams again in a flat top-down bird&#x27;s-eye-view map of the surroundings.</div>
 <div class="appr"><b>Fusion tested under failure — UniBEVFusion (ICRA).</b> The same two-stage idea, but it explicitly tests what happens when the camera fails — the case that matters most for safety.</div>
@@ -92,6 +128,18 @@
 <div class="appr"><b>A shared testbed — HeRCULES dataset (ICRA).</b> Lets researchers test radar systems across weather, time of day, and two different radar types together.</div>
 <p class="payoff">A car fusing radar with cameras and lidar keeps sensing accurately in exactly the conditions where it most needs to.</p>
 <h3>Keep track of uncertainty — know what you do not know</h3>
+<div class="subdiag">
+<svg viewBox="0 0 620 132" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,Menlo,monospace" font-size="11">
+<text x="310" y="16" fill="#59656A" text-anchor="middle">the ring = how unsure the car is about where something is</text>
+<circle cx="150" cy="72" r="9" fill="#0E7C86"/>
+<circle cx="150" cy="72" r="15" fill="none" stroke="#0E7C86" stroke-width="1.5"/>
+<text x="150" y="108" text-anchor="middle" fill="#2F7A4F">sure → drive normally</text>
+<circle cx="450" cy="72" r="9" fill="#B37A1E"/>
+<circle cx="450" cy="72" r="34" fill="none" stroke="#B37A1E" stroke-width="1.5" stroke-dasharray="5 5"/>
+<text x="450" y="122" text-anchor="middle" fill="#B37A1E">unsure → slow down, give it room</text>
+</svg>
+<div class="plain"><b>In plain terms</b>The car doesn't just guess where things are — it also keeps track of how sure it is, and drives extra carefully exactly where it's least sure.</div>
+</div>
 <div class="subq"><span class="lbl">The sub-problem</span>A car that is unsure where something is should drive more carefully near that spot — but most systems output a single answer (&quot;this object is here&quot;) with no signal of how sure they are, so when they&#x27;re wrong the car never knows to slow down.</div>
 <div class="appr"><b>Trust-scored labels — MonoCT (ICRA).</b> Single-camera 3D detection loses accuracy in unfamiliar settings; MonoCT has a teacher label the new setting but scores how consistent those labels are, keeping only the ones it trusts.</div>
 <div class="appr"><b>Correct only the uncertain part — learned MPC (ICRA).</b> Splits the car&#x27;s motion model into the well-understood parts and the uncertain parts, using a small network to fix only the uncertain bits.</div>
