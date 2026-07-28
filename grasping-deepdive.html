@@ -1,0 +1,1459 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grasping and dexterous hands — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive · with code</div>
+  <h1>Grasping and dexterous hands</h1>
+  <p>Picking up and manipulating objects — from where-to-grasp detection to multi-finger dexterity, two-arm coordination, and learning it all from human video. This page: the idea, the key 2025 papers with their real code, and hands-on walkthroughs of two cloned codebases.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Grasping and dexterous hands</h1>
+<p><em>242 papers · move — the physical act of touching, gripping, and handling objects</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">A robot needs to pick up things—thousands of different objects, in cluttered piles, with materials ranging from cloth to glass to fragile ceramics. The core problem: every object is different. Shape, weight, texture, transparency all change where and how the hand should grip. For decades, grippers were crude tools (two fingers pinching or a suction cup) that only worked in factories where every item is identical. The deeper challenge is that the robot must grip not just anything, but the <strong>right part of the thing for the job ahead</strong> — gripping a knife by its blade is mechanically possible but wrong. Multi-fingered hands that can do fine work like humans exist in labs but break often, cost far more, and require expert engineering. Training robots to manipulate with those complex hands also means collecting thousands of demonstrations—and getting humans to teleoperate two hands with dozens of joints simultaneously at high quality is brutally hard.</p>
+<p style="margin:0 0 8px"><strong>Three intertwined obstacles the 2025 papers are attacking:</strong></p>
+<ul style="margin:0 0 12px">
+<li><strong>① Seeing the object clearly enough to grip it.</strong> Transparent materials — glass, plastic — break depth sensors. The robot sees the glass but not where it actually is in 3D space. <em>Monocular Depth Estimation and Segmentation for Transparent Objects with Iterative Semantic and Geometric Fusion</em> solves this by running shape and depth estimation in parallel and letting each branch correct the other. Cluttered bins are another visibility trap; <em>GraspSAM</em> borrows from image segmentation and adds a prompt-based interface so users can say &quot;grab the thing in the red box&quot; without retraining.</li>
+<li><strong>② Collecting enough training data without burning out humans.</strong> Fine manipulation is too complex to program by hand — it must be learned from demonstrations. But teleoperation of two multi-finger hands is punishing. <em>EgoMimic</em> and <em>Bunny-VisionPro</em> both solve this by bridging human and robot: one uses egocentric glasses to capture human hand motion, the other uses VR+haptics to make controlling two robot hands real and tactile. <em>DexMimicGen</em> goes further — it takes a handful of human demos and generates a large synthetic set by moving objects around and retargeting the motion, amplifying one person's effort many times over.</li>
+<li><strong>③ Choosing the grip that serves the task, not just any grasp.</strong> A robot that only asks &quot;where can I close my fingers?&quot; picks the wrong grip. <em>Catch It!</em> trains a full whole-body controller in simulation for catching tasks, <em>General-Purpose Clothes Manipulation with Semantic Keypoints</em> learns semantic points on garments so a language model can plan multi-step folding and handling, and <em>ViViDex</em> learns task-aware grasping from ordinary human video — no special equipment, no labels — by inferring reward from how the object moves.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> the field is converging on systems that see objects accurately (especially hard ones like transparent or cluttered items), collect and generate training data at human-affordable scale, and make grasping choices that respect both the object and the job ahead. The 2025 work is moving away from hand-coded grippers and task-specific training toward unified models — like <em>GraspSAM</em> — that generalize to new objects and prompt types, and toward learning systems — like <em>ViViDex</em> and <em>EgoMimic</em> — that can absorb diverse human demonstrations without frame-by-frame labels. <strong>Still open:</strong> hands that are cheap, durable, and practical enough for deployment outside research labs; the integration of all three pieces (seeing, learning, reasoning) into one robust pipeline; and the inverse problem: making robots understand what humans intend when they ask for an unfamiliar grasp of an object never seen before.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>Pick up a mug. Your hand knows, without thinking, where to close around it, how hard to squeeze so it doesn&#x27;t slip, and how to hold it if you are about to drink versus about to hand it to someone. You do this in a pile of dishes, for mugs you have never seen before, for ceramic or plastic or paper cups, and you adjust the moment the mug starts sliding. A robot does none of this naturally.</p>
+<p>The core difficulty is that every object in the world is different. Shape, weight, slipperiness, and fragility all change how the hand should close. Most robot hands today use simple two-finger grippers that either pinch or suction. They work in warehouses, where every item is the same, in the same place, every time. Move them to a kitchen, a hospital, or a grocery aisle and they fail constantly. Objects are piled on each other, tucked behind other things, or made of glass, cloth, or foam that the sensors cannot read clearly.</p>
+<p>Transparent objects — glass bottles, plastic cups — are a special trap. The cameras that measure depth do so by bouncing light off surfaces. Glass and clear plastic let light through or bend it in unpredictable ways. The robot sees the object but gets a wrong or missing measurement of where it actually sits in space. It reaches, and misses, or crushes.</p>
+<p>Then there is the question of intent. Picking up a knife by the blade is wrong even if it is technically graspable. The right grip depends on what comes next — cutting, passing to a person, storing. A robot that only asks &quot;where can I close my fingers?&quot; will choose the wrong grip for the job. This connects to the deep problem every robot faces: it is not enough to move the body; the movement must serve a purpose that the robot understands.</p>
+<p>Multi-fingered hands, which look like human hands and can do the fine work humans do, have existed in labs for decades. The mechanical design is hard, the control is harder, and they break often. They cost far more than simple grippers and require engineers to maintain them. This is why they almost never leave the lab, even though fine tasks — folding clothes, peeling vegetables, opening jars — require them.</p>
+<p>Collecting training data is its own problem. You cannot program a multi-fingered hand to fold a shirt by writing down the exact finger positions step by step. The motion is too complex and too sensitive to small differences in the shirt&#x27;s shape. Researchers instead have humans perform tasks and record the motions so the robot can learn from the recordings. But teleoperation of two hands with many fingers at once is very hard to do well, and getting thousands of recordings takes months.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Reasoning about purpose to choose the right grip</h3>
+<p>A robot that only looks at shape will pick a grip that is easy to reach but wrong for the job. Several papers here teach the robot to first ask &quot;what is this object for, and what is the task?&quot; and use that answer to pick where and how to grasp.</p>
+<p><strong>AffordGrasp</strong> uses a large language model to work out what the user wants, then finds the right part of the object to grip before computing the hand position. <strong>RTAGrasp</strong> stores a memory of how humans grip objects in video, finds the most similar stored example for the given task, and maps that grip onto the new object — all without any task-specific training. <strong>Task-Oriented 6-DoF Grasp Pose Detection in Clutters</strong> built a large labeled dataset of over 2 million grasps across 6 task types and 198 objects, and shows that when you train with task labels, the robot picks hand positions that actually serve what comes next. <strong>PhyGrasp</strong> goes a step further and adds material properties — weight, slipperiness — as text alongside the object&#x27;s 3D shape, so the grip accounts for physics, not just geometry.</p>
+<h3>Seeing through clutter and transparent materials</h3>
+<p>Before a hand can go anywhere, the robot needs to know exactly where the object is. In messy bins and with see-through materials, that is far harder than it sounds.</p>
+<p><strong>DA-Fusion</strong> runs color and depth images through separate processing streams, then a flexible attention step (a part of the network that learns to weight each pixel by how useful it is) merges the two streams automatically. This beats either channel alone for pulling objects out of cluttered bins. <strong>TransDiff</strong> takes the noisy depth that a sensor gives for a transparent object, combines it with edges, surface shapes, and outlines extracted from the color image, and feeds the whole thing to a model that gradually fills in a correct depth map. <strong>Monocular Depth Estimation and Segmentation for Transparent Objects with Iterative Semantic and Geometric Fusion</strong> runs two branches — one for shape, one for depth — that correct each other in several passes, rather than making one prediction and stopping. <strong>vMF-Contact</strong> adds a confidence score to every predicted grasp point and distinguishes between &quot;I am uncertain because the sensor was noisy&quot; and &quot;I am uncertain because I have never seen this type of object,&quot; which helps the robot know when to trust itself and when to ask for help.</p>
+<h3>Learning from human demonstrations at scale</h3>
+<p>The motions needed for fine grasping are too complex to write by hand. The field&#x27;s answer is: watch humans do it and learn. But getting enough recordings is the bottleneck.</p>
+<p><strong>EgoMimic</strong> has a person wear glasses with built-in cameras, records that person doing tasks, aligns the person&#x27;s hand motion to the robot&#x27;s arm geometry, and mixes those recordings with a small set of actual robot recordings — dramatically increasing training data at low cost. <strong>DexMimicGen</strong> starts with just 60 human demonstrations and automatically generates 21,000 synthetic variants in simulation by moving objects around and adapting the motion to each new position. <strong>Bunny-VisionPro</strong> lets an operator use a VR headset to control two robot hands in real time, with touch feedback through small haptic devices, making the collection of two-handed demonstrations safer and more precise. <strong>ViViDex</strong> watches ordinary human video (no special equipment), tracks the object being handled, builds a reward signal from how the object moves, and uses trial-and-error learning (reinforcement learning) to train the robot hand without ever needing exact finger-position labels.</p>
+<h3>Unified models that work across objects and hand types</h3>
+<p>Training a separate model for each object, each task, or each robot hand does not scale. Several papers here build single systems that generalize.</p>
+<p><strong>D(R,O) Grasp</strong> learns one model that takes the hand&#x27;s joint layout and the object&#x27;s 3D shape as inputs and outputs where and how to grip — the same model then runs on hands with different numbers of fingers without retraining. <strong>GraspSAM</strong> takes a large image-segmentation model, adds small extra layers, and turns it into a grasp predictor that accepts a point, a box, or a word as a user prompt and works on objects it was never trained on. <strong>UniAff</strong> builds one system that covers both tools and jointed objects (drawers, scissors), using a large multimodal model to read images and say where to touch and how to move — replacing two separate, incompatible pipelines with one. <strong>Robot Utility Models</strong> trains five manipulation skills on large, high-quality demonstration sets, then deploys them in new homes without any retraining, using a language model to watch the robot and call for a retry when something goes wrong.</p>
+<h3>Fine multi-step manipulation with multi-fingered hands</h3>
+<p>Some tasks require more than a single grip: repositioning an object between the fingers, peeling, folding, catching.</p>
+<p><strong>Vegetable Peeling</strong> designs the repositioning step and the final holding step together, so the hand ends in a grip suitable for the next action rather than any stable grip. <strong>DROP</strong> skips pre-training entirely and searches for good finger movements in real time at each step, guided by a camera estimate of the object&#x27;s current pose. <strong>Catch It!</strong> trains a whole-body controller — moving base, arm, and twelve-finger hand — in simulation across many thrown object shapes and throw angles, then moves it directly to a real robot. <strong>General-Purpose Clothes Manipulation with Semantic Keypoints</strong> identifies named points on garments from a depth camera and lets a language model plan what sequence of steps to take, reaching well beyond fixed-shape objects to soft, deformable ones.</p>
+<h2>Where it stands</h2>
+<p>The field has made real progress on several hard pieces: robots can now pick unfamiliar objects from cluttered bins more reliably, transparent objects are no longer invisible to the pipeline, and task-aware grasping is moving out of theory into working systems. The biggest remaining gaps are in hands that are cheap and tough enough for real use outside a lab, in collecting enough training data for complex two-handed fine tasks without enormous human effort, and in combining all the pieces — seeing, reasoning about purpose, and executing precise finger motion — into one system that handles the full range of objects a person deals with every day.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">Bunny-VisionPro: Real-Time Bimanual Dexterous Teleoperation </td><td>IROS</td><td><a href="https://github.com/Dingry/BunnyVisionPro" target="_blank" rel="noopener">Dingry/BunnyVisionPro</a></td><td class="mono">bunny_teleop/retargeting.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">EgoMimic: Scaling Imitation Learning via Egocentric Video</td><td>ICRA</td><td><a href="https://github.com/GaTech-RL2/EgoVerse" target="_blank" rel="noopener">GaTech-RL2/EgoVerse</a></td><td class="mono">egomimic/trainHydra.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Monocular Depth Estimation and Segmentation for Transparent </td><td>ICRA</td><td><a href="https://github.com/L-J-Yuan/MODEST" target="_blank" rel="noopener">L-J-Yuan/MODEST</a></td><td class="mono">models/</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">DexMimicGen: Automated Data Generation for Bimanual Dexterou</td><td>ICRA</td><td><a href="https://github.com/NVlabs/dexmimicgen" target="_blank" rel="noopener">NVlabs/dexmimicgen</a></td><td class="mono">scripts/demo_random_action.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">ViViDex: Learning Vision-Based Dexterous Manipulation from H</td><td>ICRA</td><td><a href="https://github.com/zerchen/vividex_mujoco" target="_blank" rel="noopener">zerchen/vividex_mujoco</a></td><td class="mono">tools/train.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">RTAGrasp: Learning Task-Oriented Grasping from Human Videos </td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">GraspSAM: When Segment Anything Model Meets Grasp Detection</td><td>ICRA</td><td><a href="https://github.com/gist-ailab/GraspSAM" target="_blank" rel="noopener">gist-ailab/GraspSAM</a></td><td class="mono">train.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">RL-GSBridge: 3D Gaussian Splatting Based Real2Sim2Real Metho</td><td>ICRA 2025</td><td><a href="https://github.com/IRMV-Manipulation-Group/RL-GSBridge" target="_blank" rel="noopener">IRMV-Manipulation-Group/RL-GSBridge</a></td><td class="mono">soft-gaussian-mesh-splatting/gs_train.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Catch It! Learning to Catch in Flight with Mobile Dexterous </td><td>ICRA</td><td><a href="https://github.com/hang0610/Catch_It" target="_blank" rel="noopener">hang0610/Catch_It</a></td><td class="mono">train_DCMM.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">General-Purpose Clothes Manipulation with Semantic Keypoints</td><td>ICRA</td><td><a href="https://github.com/dengyh16code/CLASP" target="_blank" rel="noopener">dengyh16code/CLASP</a></td><td class="mono">semantic_keypoints/semantic_keypoints.py</td><td><span class="run">gpu</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>Bunny-VisionPro: Real-Time Bimanual Dexterous Teleoperation for Imitation Learning</h1>
+<p>IROS 2025 · 11 citations · learn-from-human (bimanual teleoperation)</p>
+<h2>What it does</h2>
+<p>This is a VR-based teleoperation system that lets a human operator control a robot with two dexterous hands—each with multiple fingers—in real time. The operator wears an Apple Vision Pro headset which tracks their hands and fingers, and these poses are instantly mapped onto the robot&#x27;s hands. The system gives the operator haptic (touch) feedback through low-cost vibration motors, and it automatically stops the robot if it&#x27;s about to collide or reach an unstable position. The high-quality demonstrations collected this way are then used to train imitation learning policies for complex, long-horizon bimanual dexterous tasks—a sub-approach called <strong>learn-from-human</strong> (specifically bimanual teleoperation, which is a variant combining learning from human video/teleoperation with two-arm coordination).</p>
+<h2>The method, in detail</h2>
+<p>The system operates in a closed loop:</p>
+<p><strong>Input:</strong> The Apple Vision Pro headset tracks 26 hand keypoints per hand (finger joints, palm, wrist) at 90 Hz using visual hand pose estimation.</p>
+<p><strong>Retargeting:</strong> These human hand poses are not directly sent to the robot. Instead, a retargeting algorithm (using the dex-retargeting library) maps the human hand configuration into the robot&#x27;s hand configuration. This is necessary because the robot hands have different finger lengths, joint ranges, and kinematic structures than human hands. The retargeting optimizes for hand-object compatibility (grasp quality) while staying within the robot&#x27;s joint limits.</p>
+<p><strong>Safety layer:</strong> Before executing any motion, the system checks two things: (1) collision detection—will the robot arms or hands hit the object or environment?—and (2) singularity detection—is the arm configuration unstable or unreachable? If either check fails, the motion is blocked and the operator is notified.</p>
+<p><strong>Haptic feedback:</strong> Tactile sensors on the robot hands (force/touch feedback) are read continuously. These signals are processed and mapped to vibration motor patterns on the operator&#x27;s hands (using ERM—eccentric rotating mass—actuators), creating a tactile loop so the human feels when the robot touches something.</p>
+<p><strong>Real-time constraint:</strong> All of this—hand pose capture, retargeting, collision/singularity checking, haptic mapping, and robot motor commands—happens at 10 Hz for the teleoperation control loop, with hand pose estimation running at 90 Hz.</p>
+<p><strong>Data collection:</strong> When the operator performs a task (e.g., pick-and-place or in-hand manipulation), the entire trajectory—robot arm and hand joint angles, camera images, object poses—is recorded as a demonstration.</p>
+<p><strong>Imitation learning:</strong> After collecting demonstrations (from ~60 human teleoperated trials), these are used to train a policy using methods like ACT (Action Chunking with Transformers), Diffusion Policy, or DP3. The policy learns to execute the same task from visual input (depth camera) without needing the VR headset or teleoperation.</p>
+<p>The key trick that makes this work: <strong>haptic feedback eliminates the disconnect between what the operator intends and what the robot actually does</strong>, reducing task failure rates during teleoperation. And the safety layer ensures that the human does not accidentally command the robot into a crash, which would corrupt the demonstration.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> <a href="https://github.com/Dingry/BunnyVisionPro" target="_blank" rel="noopener">https://github.com/Dingry/BunnyVisionPro</a></p>
+<p><strong>Language:</strong> Python</p>
+<p><strong>Framework:</strong> PyTorch (inferred from imitation learning components); integrates with simulation environments (sim-web-visualizer) and real robots (XArm7 + Ability Hand).</p>
+<p><strong>Repository structure:</strong></p>
+<ul>
+<li><code>bunny_teleop/</code> — Core teleoperation module: hand pose tracking, retargeting, collision/singularity checking, haptic feedback mapping.</li>
+<li><code>real_control/</code> — Control code for real robot platforms: XArm7 (collaborative arm) and Ability Hand (multi-finger dexterous hand).</li>
+<li><code>examples/</code> — Usage examples for teleoperation and policy training.</li>
+<li><code>docs/</code> — Markdown documentation and setup instructions.</li>
+</ul>
+<p><strong>Key files to open first:</strong></p>
+<ul>
+<li><code>bunny_teleop/retargeting.py</code> — The hand retargeting algorithm (human pose → robot pose).</li>
+<li><code>bunny_teleop/safety.py</code> — Collision and singularity avoidance logic.</li>
+<li><code>real_control/controller.py</code> — Real robot motion execution.</li>
+<li>Setup: follow <code>pyproject.toml</code> and the README for installation.</li>
+</ul>
+<p><strong>Core dependencies:</strong></p>
+<ul>
+<li><code>visionpro-teleop</code> — Apple Vision Pro hand tracking integration.</li>
+<li><code>dex-retargeting</code> — Hand pose retargeting from human to robot.</li>
+<li><code>sim-web-visualizer</code> — Browser-based visualization of robot state.</li>
+<li>Standard: PyTorch, NumPy, ROS (likely, for real robot control).</li>
+</ul>
+<p><strong>To run it:</strong></p>
+<ul>
+<li>For <strong>simulation:</strong> Set up the sim-web-visualizer, run teleoperation script, and record demonstrations. No hardware needed.</li>
+<li>For <strong>real robot:</strong> Connect XArm7 and Ability Hand via ROS, wear Vision Pro, run the real_control scripts. Requires the physical hardware and a Vision Pro headset.</li>
+<li><strong>Dataset:</strong> Demonstrations are stored as HDF5 files (standard for imitation learning). You can replay and visualize them with the examples scripts.</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start here:</strong> Read the project README to understand the hardware setup (Vision Pro, robot platform, haptic devices). Then read the paper (arxiv 2407.03162) for the full motivation and results.</p>
+<p><strong>For code understanding:</strong></p>
+<ul>
+<li>Skim <code>bunny_teleop/retargeting.py</code> to see how hand poses are mapped (a few hundred lines, heavy on linear algebra).</li>
+<li>Look at <code>bunny_teleop/safety.py</code> to understand collision avoidance (should be geometric—checking if joint angles violate limits or if end-effector is too close to obstacles).</li>
+<li>Check <code>real_control/controller.py</code> to see how commands are sent to the actual robot (will use ROS topics or direct serial/API calls).</li>
+<li>The imitation learning side (ACT, Diffusion Policy training) is likely in a separate module; search for policy training scripts in <code>examples/</code>.</li>
+</ul>
+<p><strong>Difficulty:</strong> Medium. The retargeting algorithm uses quaternion math and IK (inverse kinematics), which is standard robotics. The safety layer is straightforward collision checking. The hardest part is understanding the Vision Pro API and the specific robot APIs (XArm7 and Ability Hand). No novel deep learning; mostly signal processing and geometry.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box:</strong></p>
+<ul>
+<li><strong>Teleoperation component:</strong> Cannot run without an Apple Vision Pro headset and the real robot hardware (XArm7 + Ability Hand + haptic devices). The Vision Pro is expensive ($3,500) and proprietary.</li>
+<li><strong>Simulation component:</strong> Likely can run on CPU (the sim-web-visualizer is web-based). You could simulate hand pose → retargeting → safety checking in software.</li>
+<li><strong>Policy training:</strong> Requires a GPU (standard for imitation learning with transformers). Also needs the demonstration datasets.</li>
+<li><strong>Policy inference:</strong> Can run on CPU, but slow.</li>
+</ul>
+<p><strong>Specifics:</strong></p>
+<ul>
+<li>GPU: Required for imitation learning.</li>
+<li>Simulator: Yes—the project includes sim-web-visualizer and likely links to MuJoCo or a similar simulator for validation.</li>
+<li>Real robot: Required for the teleoperation system. Simulation-only demonstrations would need to come from somewhere else (e.g., synthetic data or manual animation).</li>
+<li>Dataset: Not bundled; you must collect via teleoperation or provide your own.</li>
+<li>Vision Pro: Required for the core teleoperation interface (no substitute).</li>
+<li>API keys: None mentioned.</li>
+</ul>
+<p><strong>Realistic assessment:</strong> You can study the code and run simulated teleoperation on a CPU desktop. But to actually use the system as intended—collecting demonstrations with VR and a real robot—you need $3,500+ hardware investment and a collaborative robot arm + dexterous hand ($5,000–$15,000). The imitation learning training also requires a GPU (a modest one is fine, e.g., NVIDIA RTX 3090 or better). If you have that hardware, the code is well-documented and should work out of the box (as of July 2024).</p></article>
+<article class="page" id="gp1"><h1>EgoMimic: Scaling Imitation Learning via Egocentric Video</h1>
+<p>ICRA 2025 · 9 citations · learn-from-human</p>
+<h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
+<p>EgoMimic teaches a robot to perform long-horizon bimanual manipulation tasks by learning from egocentric (first-person) human videos paired with robot demonstrations. Instead of extracting high-level intent from human video, it treats human hand motion and robot arm motion as equivalent embodied demonstrations and trains a single policy on both simultaneously. This is the <strong>learn-from-human</strong> sub-approach: the system learns manipulation from human videos captured with Project Aria glasses, then transfers that knowledge to control a bimanual robot arm.</p>
+<h2>The method, in detail — step by step, plain words but technical</h2>
+<p><strong>Data capture</strong>: Operators wear Meta Project Aria glasses (smart glasses with wide egocentric cameras and hand tracking) while performing manipulation tasks. The glasses record the operator&#x27;s viewpoint and automatically track their hand poses in 3D. Separately, a low-cost bimanual robot (called Eve, with two 6-DoF ViperX arms) is teleoperated to perform the same tasks, and its arm joint angles, wrist camera images, and gripper states are recorded.</p>
+<p><strong>Robot design</strong>: The bimanual manipulator is purpose-built to minimize the kinematic gap between human arm morphology and robot kinematics. This means the arm lengths, joint ranges, and gripper design are tuned to match human hand capabilities, making the task dynamics similar for both.</p>
+<p><strong>Cross-domain alignment</strong>: A technical pipeline aligns the human hand trajectories with the robot arm trajectories. This involves computing the 3D hand poses from Aria glasses, projecting them into the robot&#x27;s coordinate frame, and matching them to robot joint actions. The system handles the mismatch in appearance (human skin vs. robot metal) by learning a shared visual representation that ignores superficial differences.</p>
+<p><strong>Co-training architecture</strong>: A single neural network backbone (a shared vision encoder + policy network) processes both human and robot data. For human data, the network predicts the original 3D hand poses (pose prediction task). For robot data, it predicts both hand poses and robot joint actions (dual output). This forces the network to learn representations that work for both embodiments. The key trick: masked images during training hide irrelevant visual differences (human vs. robot appearance) and encourage the network to focus on the manipulation semantics—the actual motion and strategy.</p>
+<p><strong>Training</strong>: The policy is trained end-to-end with supervised learning on the aligned trajectory data. The scaling effect emerges: 1 hour of human hand data provides richer motion diversity than 1 hour of robot data (because human hands move continuously and expressively), so human data is weighted more heavily during training. After training, only the robot data branch is used for inference.</p>
+<p><strong>Key insight</strong>: Treating human and robot data symmetrically (rather than as intent-only guidance) allows the network to learn richer motor primitives and generalizes better to unseen objects and scenes. The system achieves zero-shot generalization to new task variations without task-specific retraining.</p>
+<h2>The code — repo URL; language/framework; the repo STRUCTURE (top folders + key files); the specific file/function to open FIRST; dependencies; whether it needs a simulator, dataset, or GPU; how you&#x27;d run it</h2>
+<p><strong>Repo URL</strong>: <a href="https://github.com/GaTech-RL2/EgoVerse" target="_blank" rel="noopener">https://github.com/GaTech-RL2/EgoVerse</a> (algorithm/training code) and <a href="https://github.com/SimarKareer/EgoMimic-Eve" target="_blank" rel="noopener">https://github.com/SimarKareer/EgoMimic-Eve</a> (hardware/teleoperation)</p>
+<p><strong>Language/Framework</strong>: Python, PyTorch, PyTorch Lightning, Hydra (configuration)</p>
+<p><strong>Repository structure</strong> (EgoVerse):</p>
+<ul>
+<li><code>egomimic/</code> — main package</li>
+</ul>
+<p>  - <code>algo/</code> — algorithm implementations (ACT, EgoMimic, Pi)</p>
+<p>  - <code>hydra_configs/</code> — Hydra YAML configs for training runs</p>
+<p>  - <code>scripts/</code> — data processing and conversion utilities (Aria to Zarr, ALOHA to Zarr)</p>
+<p>  - <code>trainHydra.py</code> — main training entry point</p>
+<ul>
+<li><code>external/</code> — external dependencies (e.g., ACT model from robotics literature)</li>
+<li><code>requirements.txt</code>, <code>environment.yaml</code> — dependency specs</li>
+<li><code>setup.py</code> — package installation</li>
+</ul>
+<p><strong>Key file to open FIRST</strong>: <code>egomimic/trainHydra.py</code> — this is the main training script; it loads a Hydra config, instantiates the model and datasets, and runs distributed training via PyTorch Lightning.</p>
+<p><strong>Secondary</strong>: <code>egomimic/hydra<em>configs/train</em>zarr_cartesian.yaml</code> — shows the configuration for training EgoMimic on Zarr-format datasets (human + robot data).</p>
+<p><strong>Dependencies</strong>:</p>
+<ul>
+<li>PyTorch (GPU-accelerated deep learning)</li>
+<li>PyTorch Lightning (training loop boilerplate)</li>
+<li>Hydra (configuration management; DDP distributed training)</li>
+<li>AWS CLI (to download datasets from S3)</li>
+<li>Zarr (for efficient multi-gigabyte dataset I/O)</li>
+<li>Interbotix SDK (for ViperX arm control, in hardware repo)</li>
+<li>RealSense camera drivers (RGB-D vision for robot wrist)</li>
+<li>Project Aria SDK (<code>projectaria<em>client</em>sdk</code>) for Aria glasses data</li>
+</ul>
+<p><strong>Simulator</strong>: No simulator required for training; all training is on recorded demonstrations (Zarr dataset). However, real-world eval uses the physical Eve robot.</p>
+<p><strong>Dataset</strong>: EgoVerse dataset (egocentric human + robot pairs). Downloaded via <code>sync_s3.py</code> or accessed via the web interface at <code>partners.mecka.ai/egoverse</code>. Data is in Zarr format (columnar HDF5-like format for fast streaming).</p>
+<p><strong>GPU</strong>: Required for training (PyTorch Lightning with GPU acceleration). Inference can run on a single GPU or CPU with reduced throughput.</p>
+<p><strong>How to run</strong>:</p>
+<pre><code>
+# Install
+pip install -e .  # or use UV
+
+# Download dataset
+python egomimic/scripts/sync_s3.py
+
+# Train
+python egomimic/trainHydra.py --config-name=train_zarr_cartesian
+
+# Inspect dataset interactively
+python egomimic/scripts/latent_inspector.py
+# or visit https://partners.mecka.ai/egoverse
+</code></pre>
+<h2>Reviewing it yourself — what to read first, and how hard the code is to follow</h2>
+<p><strong>What to read first</strong>:</p>
+<ul>
+<li><code>trainHydra.py</code> — entry point; shows how Hydra configs are loaded and what the training loop does</li>
+<li><code>egomimic/algo/</code> folder — look for the EgoMimic class to see the network architecture and forward pass</li>
+<li><code>egomimic/scripts/</code> — data loading and alignment logic; shows how human (Aria) and robot (Eva) data are paired and normalized</li>
+<li>The Hydra config YAML — shows hyperparameters, learning rate, batch size, what data sources are used</li>
+</ul>
+<p><strong>Difficulty</strong>: Moderate to moderately high.</p>
+<ul>
+<li>The code is well-structured with Hydra config management, but requires understanding:</li>
+</ul>
+<p>  - PyTorch Lightning trainer semantics (epochs, validation, checkpointing)</p>
+<p>  - Zarr dataset I/O (columnar storage; streaming large robotics data)</p>
+<p>  - Cross-domain alignment logic (how human hand poses are mapped to robot frame)</p>
+<p>  - The specific network architecture (shared vision encoder, dual heads for pose/action)</p>
+<ul>
+<li>The data processing pipeline (Aria glasses → 3D hand tracking → alignment → Zarr) is intricate but documented in scripts.</li>
+<li>No simulator complexity; it&#x27;s a pure imitation learning pipeline on recorded data.</li>
+</ul>
+<p><strong>Recommendation</strong>: Start by reading the ICRA paper (arXiv 2410.24221) for the conceptual overview, then dive into <code>trainHydra.py</code> and a Hydra config to understand the training setup, then trace through the data loading (<code>egomimic/scripts/</code>) to understand the alignment.</p>
+<h2>Run verdict — on a CPU-only box: could it actually run? Be specific about GPU / simulator / dataset / API-key needs</h2>
+<p><strong>CPU-only</strong>: No. Training requires a GPU (PyTorch is optimized for CUDA and runs very slowly on CPU for large models). Inference might run on CPU but would be unusable for real-time control.</p>
+<p><strong>GPU</strong>: Required. The network is a vision transformer + policy network; typical training requires an NVIDIA A100 or V100 (or equivalent) to handle batch sizes and training time.</p>
+<p><strong>Simulator</strong>: Not needed for training. All training is on pre-recorded human and robot demonstration data (Zarr files).</p>
+<p><strong>Dataset</strong>: Must download EgoVerse dataset (several gigabytes) from AWS S3 via <code>sync_s3.py</code>. Requires AWS CLI and S3 access (public bucket).</p>
+<p><strong>API keys</strong>: No API keys needed for training the algorithm itself.</p>
+<p><strong>Real-world robot</strong>: Not needed to run training or inference on a desktop. However, to collect new data or to deploy the trained policy, you need a physical Eve robot (two ViperX arms) with Aria glasses and RealSense cameras.</p>
+<p><strong>Verdict</strong>: On a CPU-only box, <strong>it cannot run</strong>. On a GPU workstation (single or multi-GPU) with internet access to download the EgoVerse dataset, it will run out-of-the-box. Training typically takes hours to days depending on GPU and dataset size. Inference is fast (real-time for a single episode).</p>
+<p><strong>Gotchas</strong>:</p>
+<ul>
+<li>Requires NVIDIA GPU with CUDA compute capability 7.0+ (RTX 2060 or better).</li>
+<li>Dataset is large; good internet connection or local S3-compatible storage recommended.</li>
+<li>ROS 2 Humble + Interbotix dependencies only needed if interfacing with physical hardware or teleoperation; training code is independent.</li>
+</ul></article>
+<article class="page" id="gp2"><h1>Monocular Depth Estimation and Segmentation for Transparent Object with Iterative Semantic and Geometric Fusion</h1>
+<p>ICRA · 9 citations · grasp-detection: perception layer</p>
+<h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
+<p>This paper tackles the perception challenge in robotic grasping of transparent objects—glass, plastic, acrylic—by estimating both their 3D shape (depth) and exact boundaries (segmentation) from a single RGB camera image. The novel contribution is that it does both tasks at once using a neural network that learns semantic (shape-classification) and geometric (depth-boundary) features jointly, refining the predictions iteratively to handle the hard cases where standard methods fail on transparent materials. <strong>Sub-approach: grasp-detection</strong> (the perception layer that identifies where and what shape an object is before a gripper approaches).</p>
+<h2>The method, in detail — step by step, plain words but technical</h2>
+<p><strong>Input:</strong> A single RGB image of a scene containing transparent objects (no extra depth camera, no 3D sensor, no multiple views).</p>
+<p><strong>Backbone:</strong> A Vision Transformer (ViT) extracts tokens from the RGB image by treating it as non-overlapping 16×16 patches. The model selects 4 layers of transformer blocks (out of 12 total) at different depths to capture multi-scale features, from shallow edges to deep semantic meaning.</p>
+<p><strong>Multi-scale feature pyramid:</strong> Features are reshaped from transformer tokens into two parallel feature pyramids—one branch for depth prediction, one for segmentation prediction—each with 4 levels (coarse to fine).</p>
+<p><strong>Semantic and geometric fusion module:</strong> This is the core novelty. At each scale, the two branches (depth and segmentation) are fed through channel attention and spatial attention mechanisms that compute which features matter most. The two branches then &quot;multiply&quot; their attention weights symmetrically, so that depth features benefit from the segmentation branch&#x27;s learned shape boundaries, and segmentation features benefit from the depth branch&#x27;s geometric cues. This cross-talk happens at every scale.</p>
+<p><strong>Iterative refinement strategy:</strong> Instead of one forward pass, the predictions are refined multiple times (3 iterations). After the first pass produces rough depth and segmentation maps, those results feed back into the network through lightweight gated units, allowing the model to &quot;look again&quot; and refine blurry or uncertain regions. Each iteration applies stronger supervision losses to push predictions toward ground truth.</p>
+<p><strong>Training losses:</strong> The network minimizes two objectives:</p>
+<ul>
+<li>Depth loss: L2 pixel-wise error + L1 gradient penalty (penalizing jagged edges) + surface normal error (penalizing shape inconsistency)</li>
+<li>Segmentation loss: standard cross-entropy classification loss for each pixel (transparent vs. background)</li>
+<li>Total loss: weighted sum (depth loss weight = 1.0, segmentation weight = 0.1)</li>
+</ul>
+<p><strong>Datasets for training:</strong> Syn-TODD (113,000+ synthetic RGB-depth pairs of transparent objects in 3D scenes) and ClearPose (350,000+ real-world frames with hand-annotated segmentation). The synthetic data provides scale; the real data ensures generalization.</p>
+<p><strong>Output:</strong> Depth map (per-pixel 3D distance) + segmentation map (per-pixel class label). A robotic arm&#x27;s grasp planner uses these two outputs to find the object&#x27;s 3D position, orientation, and surface normals—all needed to plan a stable grasp.</p>
+<h2>The code — repo URL; language/framework; the repo structure (top folders + key files); the specific file/function to open FIRST; dependencies; whether it needs a simulator, dataset, or GPU; how you&#x27;d run it</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/L-J-Yuan/MODEST" target="_blank" rel="noopener">https://github.com/L-J-Yuan/MODEST</a> (MIT license)</p>
+<p><strong>Language/Framework:</strong> Python 3.8, PyTorch, built on Vision Transformers (ViT) and Dense Prediction Transformers (DPT).</p>
+<p><strong>Repository structure:</strong></p>
+<ul>
+<li><code>models/</code> — network architecture definitions (ViT encoder, fusion module, iterative decoder)</li>
+<li><code>config/</code> — hyperparameter configs for training/eval</li>
+<li><code>datasets/</code> — dataset loading classes (Syn-TODD, ClearPose)</li>
+<li><code>utils/</code> — helper functions for loss computation, metrics, I/O</li>
+<li><code>train.py</code> — entry point for training</li>
+<li><code>test.py</code> — evaluation on held-out test set</li>
+<li><code>inference.py</code> — run the trained model on new images</li>
+<li><code>requirements.txt</code> — package dependencies</li>
+<li><code>README.md</code> — setup and usage guide</li>
+</ul>
+<p><strong>Key file to open first:</strong> <code>models/</code> directory to see the ViT encoder + fusion module architecture, then <code>train.py</code> to understand the training loop and loss computation.</p>
+<p><strong>Dependencies:</strong> Standard ML stack—PyTorch, torchvision, numpy, PIL, OpenCV. Full list in <code>requirements.txt</code>.</p>
+<p><strong>GPU required:</strong> Yes, trained on NVIDIA RTX 4090. Testing environment: Ubuntu 20.04, Python 3.8, CUDA 11.1.</p>
+<p><strong>Datasets required:</strong> Yes. Syn-TODD and ClearPose must be downloaded and placed in <code>datasets/</code> directory. Both datasets are publicly available through the paper&#x27;s supplementary materials (links in GitHub README).</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+# Install dependencies
+pip install -r requirements.txt
+
+# Download Syn-TODD and ClearPose datasets (follow README)
+
+# Train from scratch (optional)
+python train.py --config config/train.yaml
+
+# Evaluate on test set
+python test.py --config config/test.yaml --model checkpoints/best_model.pth
+
+# Run inference on a single image
+python inference.py --image path/to/image.jpg --model checkpoints/best_model.pth --output depth.npy seg.npy
+</code></pre>
+<h2>Reviewing it yourself — what to read first, and how hard the code is to follow</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li>The GitHub README for dataset setup and quick-start instructions</li>
+<li>Figure 2 in the arXiv paper (shows the semantic-geometric fusion module) — the architecture diagram is clearer than the prose</li>
+<li>The <code>models/</code> directory to see how ViT tokens are reshaped and how the fusion module is implemented in PyTorch</li>
+<li><code>train.py</code> to understand how the losses are computed and how iterative refinement is implemented (check for a loop over N iterations)</li>
+</ul>
+<p><strong>Code difficulty:</strong> Moderate to moderately hard. The Vision Transformer backbone is standard (you can read the DPT paper separately to understand ViT patches), but the semantic-geometric fusion module is novel and requires careful reading. The iterative refinement loop is straightforward (3 passes with gated refinement), but tracing the tensor shapes through each stage is essential. The loss computation is standard (L2 + gradient + cross-entropy), so no surprises there.</p>
+<h2>Run verdict — on a CPU-only box: could it actually run?</h2>
+<p><strong>Verdict: No, requires GPU.</strong> NVIDIA RTX 4090 is specified in the paper; inference will be very slow on CPU (likely 10-30 seconds per image vs. 1-2 seconds on GPU). Vision Transformers are compute-intensive, and the iterative refinement (3 passes) multiplies the cost. <strong>More critically, the datasets (Syn-TODD + ClearPose, ~460k images total) require ~100+ GB of disk space and significant download time.</strong></p>
+<p><strong>Must-have hardware:</strong></p>
+<ul>
+<li>GPU with ≥8 GB VRAM (RTX 4090 used in paper; RTX 3080 or RTX 4070 likely sufficient for inference)</li>
+<li>200 GB free disk for datasets + checkpoints</li>
+<li>Ubuntu 20.04, CUDA 11.1+ (Windows/macOS support not tested; likely requires WSL or Docker)</li>
+</ul>
+<p><strong>Summary:</strong> Runnable with the code and pre-trained weights on a machine with a modern NVIDIA GPU, internet for dataset download, and patience for environment setup. Not runnable on a basic laptop or CPU-only server.</p></article>
+<article class="page" id="gp3"><h1>DexMimicGen: Automated Data Generation for Bimanual Dexterous Manipulation via Imitation Learning</h1>
+<p>ICRA 2025 · 8 citations · data-generation</p>
+<h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
+<p>DexMimicGen automatically generates large training datasets for humanoid robots with two dexterous hands by expanding a small set of human demonstrations (60 source videos) into 21,000 synthetic training trajectories. This is a <strong>data-generation</strong> approach: it solves the bottleneck of expensive human teleoperation by synthesizing diverse trajectories in simulation that can then be used to train imitation-learning policies. The system includes a real-to-sim-to-real pipeline that successfully deploys trained policies to real humanoid robots performing complex two-arm manipulation tasks like can sorting and coffee preparation.</p>
+<h2>The method, in detail — step by step, plain words but technical</h2>
+<p><strong>1. Human demonstration capture:</strong> Operators collect 60 high-quality teleoperated demonstrations of bimanual dexterous manipulation tasks. These recordings capture the full trajectory of both robot arms and all finger movements needed to accomplish each task (e.g., grasping, picking, placing, assembling).</p>
+<p><strong>2. Trajectory synthesis (the core innovation):</strong> Starting from each human demo, DexMimicGen automatically generates multiple synthetic trajectories by:</p>
+<p>   - <strong>Perturbation &amp; retargeting:</strong> Applying small variations to object positions, sizes, and poses within the simulation environment. The system retargets the original demonstrated hand trajectories to work with the new object configurations, adapting gripper positions and finger joint angles to maintain task success.</p>
+<p>   - <strong>Waypoint interpolation:</strong> Generating smooth intermediate waypoints between key poses to create complete feasible trajectories that a robot arm and hand controller can follow in simulation.</p>
+<p>   - <strong>Constraint satisfaction:</strong> Using inverse kinematics (IK) solvers to ensure that retargeted trajectories remain physically valid—no self-collisions, singularities, or out-of-reach positions.</p>
+<p><strong>3. Data augmentation at scale:</strong> By systematically varying object parameters (position, orientation, size, shape, texture) across task instances, the system generates 21,000 demonstrations across 9 distinct tasks from just 60 source human videos. Each synthetic trajectory is recorded as a full state-action sequence (robot joint positions, velocities, gripper commands, object states).</p>
+<p><strong>4. Policy learning in simulation:</strong> The generated dataset trains behavioral cloning policies using imitation learning (via robomimic). Simple supervised learning directly from state observations to robot actions converges faster and more reliably than reinforcement learning for these high-DoF systems. The datasets are stored as HDF5 files containing state, action, and reward annotations.</p>
+<p><strong>5. Real-to-sim-to-real transfer:</strong> The trained policy is deployed directly onto a real humanoid robot (NVIDIA Jetson-equipped hardware) with minimal fine-tuning. Successful sim-to-real transfer occurs because:</p>
+<p>   - The policies are trained on diverse simulated trajectories, building robustness to environmental variation.</p>
+<p>   - The simulation (Robosuite/BiGym) accurately models bimanual kinematics, physics, and sensor readings (cameras, proprioception).</p>
+<p>   - Domain randomization across synthetic data reduces the visual and dynamic mismatch between simulation and reality.</p>
+<p><strong>Key trick that makes it work:</strong> Rather than require thousands of human teleoperation hours, DexMimicGen exploits the fact that most trajectory variation in manipulation tasks comes from *changes in object placement and task configuration*, not fundamental changes in hand control strategy. By reusing the core motion from each human demo and applying smart retargeting, the system gets massive data amplification (350x: 60 → 21,000 demos) while preserving the quality and physicality of demonstrated manipulation.</p>
+<h2>The code — repo URL; language/framework; the repo STRUCTURE; the specific file/function to open FIRST; dependencies; whether it needs a simulator, dataset, or GPU; how you&#x27;d run it</h2>
+<p><strong>Repository URL:</strong> <a href="https://github.com/NVlabs/dexmimicgen" target="_blank" rel="noopener">https://github.com/NVlabs/dexmimicgen</a></p>
+<p><strong>Language/Framework:</strong> Python; core dependencies are <strong>robosuite</strong> (physics simulation engine), <strong>robomimic</strong> (imitation learning trainer), and standard ML stack (PyTorch for neural nets).</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+dexmimicgen/
+├── dexmimicgen/               # Main package
+│   ├── __init__.py
+│   └── environments/          # Task environment definitions (can sorting, threading, etc.)
+├── scripts/
+│   ├── demo_random_action.py  # Quick test: run a task with random actions
+│   ├── playback_datasets.py   # Replay a recorded trajectory from HDF5
+│   ├── generate_training_config.py  # Generate robomimic config files
+│   └── ... (dataset download, utility scripts)
+├── README.md                  # Installation &amp; quick start
+├── environments.md            # Detailed task &amp; environment specs
+└── setup.py                   # Package installation
+</code></pre>
+<p><strong>Start here:</strong> <code>scripts/demo<em>random</em>action.py</code> — runs a single task (e.g., <code>--env TwoArmThreading</code>) in the simulator to verify installation and see the environment in action. Command: <code>python scripts/demo<em>random</em>action.py --env TwoArmThreading --render</code></p>
+<p><strong>Second:</strong> Review <code>dexmimicgen/environments/</code> to see how tasks are defined (object geometry, goal positions, success criteria). Each task module specifies the two-arm robot configuration and the dexterous hand degrees-of-freedom (typically 12-16 DOF per hand).</p>
+<p><strong>Third:</strong> <code>scripts/playback<em>datasets.py</code> shows how to load and inspect generated trajectories: <code>python scripts/playback</em>datasets.py --dataset /path/to/demo.hdf5 --n 5</code> plays back 5 recorded demonstrations.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>robosuite (must install from ARISE-Initiative fork first)</li>
+<li>robomimic (use branch <code>dexmimicgen</code>)</li>
+<li>PyTorch, numpy, h5py (for HDF5 dataset I/O), scipy (for IK solvers)</li>
+<li>Optional: MuJoCo license (robosuite uses MuJoCo physics; free tier available)</li>
+</ul>
+<p><strong>Simulator &amp; GPU requirements:</strong></p>
+<ul>
+<li><strong>GPU:</strong> NOT strictly required for running pre-trained policies on real robots (inference can run on CPU/Jetson), but HIGHLY RECOMMENDED for training new policies. Training behavioral cloning on 21K trajectories is 10-100x faster with a modern GPU (NVIDIA RTX A100, A6000, or even RTX 3080+).</li>
+<li><strong>Simulator:</strong> REQUIRED for generating synthetic data and training. Robosuite + MuJoCo run on CPU but are dog-slow; GPU-accelerated physics (Isaac Sim, Isaaclab) is not used here.</li>
+<li><strong>Dataset:</strong> REQUIRED. Datasets (21K demos, ~500 GB total) are downloadable from HuggingFace or must be generated fresh using the synthesis pipeline.</li>
+</ul>
+<p><strong>How to run it end-to-end:</strong></p>
+<pre><code>
+# 1. Install dependencies
+git clone https://github.com/ARISE-Initiative/robosuite &amp;&amp; pip install -e robosuite
+git clone https://github.com/NVlabs/dexmimicgen &amp;&amp; cd dexmimicgen
+pip install -e .
+
+# 2. Test the environment
+python scripts/demo_random_action.py --env TwoArmThreading --render
+
+# 3. Download or generate dataset (HF link or local synthesis)
+python scripts/download_dataset.py --task can_sorting
+
+# 4. Generate training config and train
+python scripts/generate_training_config.py --dataset_dir data/ --config_dir configs/ --output_dir models/
+# Then run robomimic training (via robomimic CLI or config file)
+
+# 5. Evaluate on real robot (with hardware connected)
+# Deploy trained policy checkpoint to real NVIDIA-powered humanoid robot
+python scripts/real_robot_eval.py --checkpoint models/policy.pth --env can_sorting
+</code></pre>
+<h2>Reviewing it yourself — what to read first, and how hard the code is to follow</h2>
+<p><strong>Read order for understanding:</strong></p>
+<ul>
+<li><strong>GitHub README + environments.md</strong> (15 min) — Get the big picture: what tasks are supported, what the input/output data looks like.</li>
+<li><strong>dexmimicgen/environments/</strong> Python files (30 min) — Understand how one task (e.g., <code>can_sorting.py</code>) defines the robot, objects, and success criteria. This is where you&#x27;ll see the two-arm kinematics and hand joint structure.</li>
+<li><strong>scripts/demo<em>random</em>action.py</strong> (20 min) — Trace through the code to see how an environment is instantiated, stepped, and rendered. This is the minimal working example.</li>
+<li><strong>scripts/playback_datasets.py</strong> (20 min) — See how HDF5 trajectory data is loaded and replayed. Understand the data format (states, actions, rewards).</li>
+<li><strong>The paper (arXiv 2410.24185), Method section</strong> (45 min) — Deep dive into trajectory retargeting, constraint satisfaction, and IK-based synthesis. This is where the magic happens but is not fully spelled out in code.</li>
+</ul>
+<p><strong>Code difficulty:</strong> Medium-to-Hard</p>
+<ul>
+<li><strong>Easy parts:</strong> Demo scripts, environment instantiation, dataset I/O are straightforward Python.</li>
+<li><strong>Hard parts:</strong> The trajectory synthesis and retargeting pipeline is NOT fully open-sourced in the repo. The paper describes it, but the actual IK solver, waypoint generation, and constraint-checking code is likely proprietary or requires custom MuJoCo plugins. You will have to reverse-engineer or reimplement key synthesis steps from the paper description.</li>
+<li><strong>Medium parts:</strong> Understanding robosuite&#x27;s API (stepping environments, getting state/action spaces) and robomimic&#x27;s training loop (data loading, model definition, gradient updates) requires reading those frameworks&#x27; docs.</li>
+</ul>
+<p><strong>Gotchas:</strong></p>
+<ul>
+<li>The repo requires a specific branch of robomimic (<code>dexmimicgen</code>), not the main branch. Mismatched versions will cause silent failures or API incompatibilities.</li>
+<li>The dataset is large (~500 GB) and not included by default. You must download or generate it.</li>
+<li>MuJoCo CPU simulation is slow; generating new synthetic data is feasible but will take hours to days even on a decent CPU.</li>
+</ul>
+<h2>Run verdict — on a CPU-only box: could it actually run? Be specific about GPU / simulator / dataset / API-key needs</h2>
+<p><strong>Short answer:</strong> Partially. You can run <strong>inference on pre-trained policies</strong> on CPU (slow but doable on a powerful CPU), but <strong>cannot efficiently generate or train without a GPU</strong>. Real-robot deployment does not require a GPU if you use an edge device like NVIDIA Jetson, but development and research workflows will be severely bottlenecked on CPU.</p>
+<p><strong>Detailed breakdown:</strong></p>
+<p>| Component | CPU-only? | GPU needed? | Notes |</p>
+<p>|-----------|-----------|------------|-------|</p>
+<p>| <strong>Install &amp; setup</strong> | ✓ Yes | No | Pure Python, no compilation or CUDA requirement for install. |</p>
+<p>| <strong>Run demo (random actions)</strong> | ✓ Yes (slow) | No | <code>demo<em>random</em>action.py</code> runs on CPU, but MuJoCo physics stepping is ~10-50x slower than GPU-accelerated. A 10-second simulation might take 5-10 minutes on CPU. |</p>
+<p>| <strong>Playback datasets</strong> | ✓ Yes | No | Loading and replaying HDF5 trajectory data is CPU-only, very fast. |</p>
+<p>| <strong>Generate synthetic data</strong> | ✗ No (impractical) | <strong>Strongly recommended</strong> | Generating 21K demos from 60 source videos requires thousands of simulation steps with IK solving. On CPU, this could take weeks. With GPU-accelerated physics (Isaac, Isaaclab), days. |</p>
+<p>| <strong>Train new policy</strong> | ✗ No (impractical) | <strong>Strongly recommended</strong> | Behavioral cloning on 21K trajectories with a neural network is feasible on CPU (~hours to days) but becomes practical (~minutes to hours) with GPU. |</p>
+<p>| <strong>Real-robot deployment</strong> | ✓ Yes (on Jetson) | No (GPU optional) | The trained policy checkpoint is just a PyTorch model, runs inference on CPU easily. Jetson (NVIDIA edge GPU) is optional for faster inference but not required. |</p>
+<p>| <strong>Dataset storage</strong> | ✓ Yes (but needs space) | No | 500 GB storage needed; not computationally intensive to read/write. |</p>
+<p><strong>Practical recommendation:</strong></p>
+<ul>
+<li><strong>For research/development:</strong> You need a GPU (RTX 3080+, A100, or better) to make progress in a reasonable timeframe. CPU-only is suitable only for one-off testing or education.</li>
+<li><strong>For inference only (deploy a trained policy):</strong> CPU is fine, even for real-time robot control on onboard hardware.</li>
+<li><strong>Simulators:</strong> The code does NOT support GPU-accelerated simulators (Isaac, Isaaclab, PyBullet GPU, etc.). It&#x27;s tied to robosuite + MuJoCo CPU. This is a hard constraint.</li>
+<li><strong>No API keys, no cloud services:</strong> All code is local; no internet dependency once installed.</li>
+<li><strong>No special hardware:</strong> Works on any Linux/macOS/Windows machine with Python 3.8+. Real robot deployment requires NVIDIA humanoid hardware (G1, Dexterity 2, etc.) but the code itself doesn&#x27;t know or care.</li>
+</ul>
+<p><strong>Bottom line for CPU-only box:</strong> Yes, it will run and you can test the demo and replay data, but you cannot meaningfully generate or train without a GPU. Budget 3-5x GPU time for a realistic development workflow.</p></article>
+<article class="page" id="gp4"><h1>ViViDex: Learning Vision-Based Dexterous Manipulation from Human Videos</h1>
+<p>ICRA 2025 · 7 citations · learn-from-human</p>
+<h2>What it does</h2>
+<p>ViViDex trains a multi-fingered robot hand to manipulate objects by learning directly from human video demonstrations. Instead of relying on noisy hand-tracking estimates or ground-truth object positions, it first uses reinforcement learning to &quot;clean up&quot; the human motion in simulation, then trains a vision-based policy that works on the real robot using only RGB-D camera input. This is a <strong>learn-from-human</strong> approach—it bridges the gap between how humans move their hands and how robots must move their arms and fingers to accomplish the same manipulation goals.</p>
+<h2>The method, in detail</h2>
+<p>ViViDex works in three stages:</p>
+<p><strong>Stage 1: Trajectory retargeting.</strong> The system extracts hand poses from human video using the MANO hand model (a standard representation of human hand geometry). These poses are then converted into robot joint angles via optimization—for each frame, the system finds robot finger positions that match the human hand&#x27;s positions as closely as possible, while also smoothing out jittery motion.</p>
+<p><strong>Stage 2: State-based policy refinement.</strong> The retargeted trajectories contain noise and artifacts. To clean them up, a reinforcement learning policy (using actor-critic with PPO) is trained per-video to follow the noisy trajectory while obeying physics (no self-collisions, realistic forces). The reward function has two modes: in the pre-grasp phase (reaching toward the object), the robot is encouraged to match the human&#x27;s hand trajectory with exponential distance penalties. In the manipulation phase (grasping and moving), rewards combine hand-motion tracking, object-motion tracking (both position and orientation), contact rewards (penalizing hand-object penetration), and lift bonuses (rewarding successful grasps). After training, successful rollouts from this policy generate clean, physically plausible demonstrations.</p>
+<p><strong>Stage 3: Vision-based policy training.</strong> Now the system discards the clean state trajectories and instead trains a final policy that takes only RGB-D point clouds as input. The key trick is <strong>coordinate transformation</strong>: the point cloud is represented in three coordinate frames simultaneously—world frame (absolute positions), target-frame (relative to the object&#x27;s current pose), and hand-frame (relative to the palm and fingertips). These three point clouds are concatenated, giving the policy dense spatial context about how the robot hand relates to the object without needing the ground-truth object state. Features are extracted using PointNet, then fed to either a behavior-cloning network (ℓ2 action regression) or a diffusion policy (a denoising generative model that is more robust to distribution shift). The diffusion approach generally outperforms behavior cloning on real-world deployment.</p>
+<p>The entire pipeline is trained end-to-end on a dataset of DexYCB human demonstrations, with trajectory augmentation (randomly varying initial object poses) improving generalization to unseen objects.</p>
+<h2>The code</h2>
+<p><strong>Repository URLs:</strong></p>
+<ul>
+<li>MuJoCo implementation: <a href="https://github.com/zerchen/vividex_mujoco" target="_blank" rel="noopener">https://github.com/zerchen/vividex_mujoco</a></li>
+<li>SAPIEN implementation: <a href="https://github.com/zerchen/vividex_sapien" target="_blank" rel="noopener">https://github.com/zerchen/vividex_sapien</a></li>
+</ul>
+<p><strong>Languages/Frameworks:</strong> Python 3.10, PyTorch 2.4.1, MuJoCo or SAPIEN simulator</p>
+<p><strong>Repository structure:</strong></p>
+<pre><code>
+vividex_mujoco/
+├── algos/                    # PPO, behavior cloning, diffusion policy implementations
+├── assets/                   # YCB object models, task trajectory files
+├── common/                   # Utility functions, data loading, visualization
+├── datasets/                 # DexYCB human demonstration videos
+├── hand_imitation/           # Environment wrapper and robot simulation code
+├── tools/                    # Main training and inference scripts
+│   ├── train.py             # Train state-based policy (PPO)
+│   ├── generate_expert_trajs.py  # Rollout policy to create clean demos
+│   └── dist_bc_train.py     # Train visual policy (behavior cloning or diffusion)
+├── openpoints/              # PointNet submodule for feature extraction
+├── requirements.txt         # Python dependencies
+└── README.md                # Installation and usage documentation
+</code></pre>
+<p><strong>Key files to open first:</strong></p>
+<ul>
+<li><code>tools/train.py</code> — Start here to understand how state-based policies are trained on retargeted human trajectories</li>
+<li><code>hand_imitation/env.py</code> — The simulation environment and reward function definitions</li>
+<li><code>tools/dist<em>bc</em>train.py</code> — The visual policy training loop</li>
+</ul>
+<p><strong>Dependencies:</strong> PyTorch with CUDA 12.1, torchvision, torchaudio, pytorch-scatter, MuJoCo, h5py, numpy, tqdm</p>
+<p><strong>Special requirements:</strong> Requires DexYCB human demonstration dataset (must be downloaded separately); MANO hand model files; YCB object model files. Runs best on a GPU (CUDA-capable). Can run training on CPU but will be extremely slow.</p>
+<p><strong>How to run it:</strong></p>
+<pre><code>
+# Train state-based policy on a specific sequence
+python tools/train.py env.name=seq_name
+
+# Generate clean expert trajectories from trained policy
+python tools/generate_expert_trajs.py checkpoint.pt
+
+# Train vision-based policy with behavior cloning
+python tools/dist_bc_train.py policy.name=bc_policy
+</code></pre>
+<p>Pre-trained checkpoints are available in the repository, though minor code adjustments may be needed for compatibility with different PyTorch/CUDA versions.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> The three-stage pipeline is clearly separated in the code—<code>train.py</code> is the entry point, followed by <code>generate<em>expert</em>trajs.py</code>, then <code>dist<em>bc</em>train.py</code>. The reward function in <code>hand<em>imitation/env.py</code> is critical to understand how motion tracking and contact penalties work. The coordinate transformation for point clouds happens in the PointNet feature extractor in <code>tools/dist</em>bc_train.py</code>.</p>
+<p><strong>Code difficulty:</strong> Moderate to high. The codebase assumes familiarity with PyTorch, RL (PPO), and vision-based control. The MANO hand retargeting step is mathematically dense (a constrained optimization problem). The diffusion policy component requires understanding denoising diffusion probabilistic models (DDPMs). However, the three-stage structure is clean and each stage can be studied independently. Good documentation in the README; config files are in YAML and human-readable.</p>
+<h2>Run verdict</h2>
+<p><strong>On CPU-only:</strong> No. This requires a CUDA-capable GPU. The PPO training loop in stage 2 involves hundreds of simulation rollouts per epoch, and CPU simulation is prohibitively slow. Even with pre-trained checkpoints, inference on point clouds with PointNet feature extraction is feasible on CPU but slow.</p>
+<p><strong>GPU required:</strong> Yes, strongly recommended. Training state-based policies takes hours on high-end GPUs (A100).</p>
+<p><strong>Simulator required:</strong> Yes, CUDA-enabled MuJoCo or SAPIEN. You cannot run this on a real robot without the pre-trained weights; you must train in simulation first.</p>
+<p><strong>Dataset required:</strong> Yes, the DexYCB human demonstration videos are essential. The system has no pre-trained &quot;off-the-shelf&quot; policy that works on arbitrary manipulation tasks without retraining.</p>
+<p><strong>API keys:</strong> None.</p>
+<p><strong>Verdict:</strong> Could it run? With GPU + simulator + DexYCB data + PyTorch 2.4.1 + CUDA 12.1, yes, training is feasible (weeks of compute for the full benchmark). Inference on a real robot (Allegro hand + UR5 arm + RealSense camera) is demonstrated in the paper and should work if you have compatible hardware and a pre-trained checkpoint. On a CPU-only box with no GPU or simulator: <strong>cannot run</strong>.</p></article>
+<article class="page" id="gp5"><h1>RTAGrasp: Learning Task-Oriented Grasping from Human Videos via Retrieval, Transfer, and Alignment</h1>
+<p>ICRA · 6 citations · task-oriented grasping (learn-from-human)</p>
+<h2>What it does</h2>
+<p>RTAGrasp learns where and how to grasp an object to accomplish a specific manipulation task by studying human demonstration videos. It retrieves the most similar grasping example from a memory of human videos, then transfers that grasp pose to a new target object without any task-specific training, making it a pure learn-from-human approach that uses foundation vision models to bridge the gap between human and robot hands.</p>
+<h2>The method, in detail</h2>
+<p><strong>Input &amp; Problem Setup:</strong> The system takes two inputs: a task instruction (e.g., &quot;pick up a mug by the handle&quot;) and a single RGB image of a target object the robot must grasp. The robot has no prior training data for this specific object or task.</p>
+<p><strong>Stage 1 — Memory Construction:</strong> First, the system builds a robot memory by ingesting human demonstration videos. From each video, it extracts two things: (1) the precise 3D position where the human grasps the object, and (2) the 3D direction (orientation) of the grasp. This extraction is done by tracking the human hand in the video, localizing the contact point on the object, and computing the grasp vector. Both position and direction constraints are stored in the memory.</p>
+<p><strong>Stage 2 — Retrieval:</strong> Given a task instruction and the target object image, the system searches its memory for the human demonstration that is most similar to the current task. Similarity is measured using semantic embeddings from vision foundation models (like CLIP), which encode both the task description and the visual appearance of objects in the stored videos. The retrieval step finds the closest match without any fine-tuning.</p>
+<p><strong>Stage 3 — Transfer:</strong> Once the most similar human grasp is retrieved, the system uses a vision foundation model (SAM-like segmentation or CLIP-based features) to establish semantic correspondence between the human-grasped object in the stored video and the current target object in the input image. This correspondence tells the system where the analogous grasp location is on the new object. For example, if a human grasped a coffee mug by its handle in the memory, and the target object is a different mug, the transfer step identifies where the handle is on the target and maps the grasp there.</p>
+<p><strong>Stage 4 — Alignment:</strong> Finally, the transferred grasp position and direction are aligned with the robot&#x27;s kinematic constraints and action space. The robot&#x27;s gripper or hand must physically be able to reach and orient itself at the transferred grasp pose. This stage performs any necessary adjustments (e.g., collision checking, singularity avoidance) to ensure the grasp is executable on the real robot.</p>
+<p><strong>Training-Free Operation:</strong> The entire pipeline requires no gradient-based training or fine-tuning. It leverages only pre-trained vision foundation models and simple geometric alignment, making it extremely fast and adaptable to new tasks immediately.</p>
+<h2>The code</h2>
+<p><strong>URL:</strong> <a href="https://sites.google.com/view/rtagrasp/home" target="_blank" rel="noopener">https://sites.google.com/view/rtagrasp/home</a> (code marked as &quot;coming soon&quot; — no public GitHub repo yet)</p>
+<p><strong>Language/Framework:</strong> Python; PyTorch likely for foundation models, ROS for robot integration</p>
+<p><strong>Key Files:</strong> Not yet available publicly; would likely include:</p>
+<ul>
+<li><code>memory_construction.py</code> — video processing and grasp extraction from human demos</li>
+<li><code>retrieval.py</code> — similarity search using CLIP/foundation model embeddings</li>
+<li><code>transfer.py</code> — semantic correspondence and grasp mapping</li>
+<li><code>alignment.py</code> — kinematic adjustment and collision checking</li>
+<li><code>benchmark_evaluation.py</code> — evaluation on TaskGrasp dataset</li>
+</ul>
+<p><strong>Repo Structure (expected):</strong> Typical layout would be:</p>
+<pre><code>
+RTAGrasp/
+├── data/
+│   ├── human_videos/          (demonstration videos)
+│   └── taskgrasp_dataset/      (benchmark)
+├── src/
+│   ├── memory_construction/
+│   ├── retrieval/
+│   ├── transfer/
+│   └── alignment/
+├── models/
+│   └── pretrained/             (foundation models: CLIP, SAM, etc.)
+├── evaluation/
+│   └── taskgrasp_eval.py
+└── README.md
+</code></pre>
+<p><strong>Starting Point:</strong> Once released, start with <code>README.md</code> for setup, then examine <code>memory_construction.py</code> to understand how human videos are parsed, followed by <code>retrieval.py</code> and <code>transfer.py</code> for the core algorithm.</p>
+<p><strong>Dependencies:</strong> Foundation models (CLIP for semantic matching, SAM for segmentation), PyTorch, ROS (for robot control), robot SDK (e.g., Panda/Franka SDK), OpenCV for image processing. The paper likely requires no GPU for inference since retrieval is embedding-based and transfer uses off-the-shelf models.</p>
+<h2>Reviewing it yourself</h2>
+<p>Start by reading the abstract and the &quot;Task-Oriented Grasp Detection&quot; section of the paper (arXiv:2409.16033) to grasp the core idea: retrieval + transfer + alignment. Then dive into the method section, paying close attention to how semantic correspondence is established using foundation models. The real implementation difficulty will be in Stage 1 (extracting accurate grasp positions from noisy hand-tracking in videos) and Stage 3 (robust semantic matching across object types). The code is reported as &quot;coming soon,&quot; so reading the paper and project videos is the best way to understand it today.</p>
+<h2>Run verdict</h2>
+<p><strong>On CPU-only:</strong> Likely yes, with caveats. Retrieval via CLIP embeddings is fast on CPU. Transfer using SAM segmentation will be slow on CPU (SAM is designed for GPU). Real-world execution requires a robot arm + gripper, so &quot;running&quot; means loading pre-trained models, feeding an image, and computing grasp poses. No simulator needed unless you want to test on sim-to-real. No special API keys needed. The main blocker is that <strong>code is not yet public</strong> — marked &quot;coming soon&quot; on the project website as of 2025. GPU (ideally) makes SAM and CLIP inference reasonable, but CPU is technically feasible for a static offline evaluation. Real robot deployment would require a Panda/Franka arm or similar with gripper control via ROS.</p>
+<hr>
+<p><strong>Sources:</strong></p>
+<ul>
+<li>[RTAGrasp arXiv paper 2409.16033](<a href="https://arxiv.org/abs/2409.16033" target="_blank" rel="noopener">https://arxiv.org/abs/2409.16033</a>)</li>
+<li>[Project website](<a href="https://sites.google.com/view/rtagrasp/home" target="_blank" rel="noopener">https://sites.google.com/view/rtagrasp/home</a>)</li>
+<li>[Paper on ResearchGate](<a href="https://www.researchgate.net/publication/384295111" target="_blank" rel="noopener">https://www.researchgate.net/publication/384295111</a><em>RTAGrasp</em>Learning<em>Task-Oriented</em>Grasping<em>from</em>Human<em>Videos</em>via<em>Retrieval</em>Transfer<em>and</em>Alignment)</li>
+</ul></article>
+<article class="page" id="gp6"><h1>GraspSAM: When Segment Anything Model Meets Grasp Detection</h1>
+<p>ICRA · 6 citations · grasp-detection</p>
+<h2>What it does</h2>
+<p>GraspSAM predicts where and how a robot gripper should grasp an object by extending the Segment Anything Model (SAM) — a large vision model trained on millions of image segmentation tasks — to also output per-pixel grasp quality, angle, and width. It takes prompts (a point you tap, a bounding box, or text description) and outputs where to grip and what angle to use, without needing task-specific training data. This is <strong>grasp-detection</strong> — predicting grasp positions and directions on novel objects without expensive per-object labeling.</p>
+<h2>The method, in detail</h2>
+<p>The architecture freezes SAM&#x27;s 2.5-billion-parameter foundation model and adds three small trainable components:</p>
+<p><strong>Input pipeline:</strong> Given an RGB image and a prompt (point, box, or natural-language text), SAM&#x27;s image encoder extracts multi-scale visual features using a Vision Transformer (ViT) backbone. The prompt encoder converts the prompt into learnable token embeddings that are fused with image features.</p>
+<p><strong>Adapter layers:</strong> Instead of retraining the entire encoder, lightweight &quot;Rein adapters&quot; are inserted into each block of the frozen image encoder. Each adapter passes the original feature map through an MLP, then adds the enhanced features back residually to the original features — this keeps the model&#x27;s general knowledge intact while teaching it task-specific grasp patterns. Only ~1/10 of total parameters are trainable.</p>
+<p><strong>Output head and grasp prediction:</strong> A modified lightweight decoder predicts four per-pixel outputs: (1) grasp confidence (quality heatmap), (2) gripper angle in radians, (3) gripper width in pixels, and (4) refined object segmentation mask (from which gripper candidates are selected). The full forward pass produces dense grasp maps — allowing the robot to choose among many candidate grasps ranked by confidence.</p>
+<p><strong>Training and fine-tuning:</strong> The system is trained on two benchmark datasets (Jacquard with 54K images, Grasp-Anything with 1.2K images and multiple object instances) for 50 epochs with batch size 8. The loss combines two terms with weights λ₁=2 and λ₂=1: (1) MSE mask loss for segmentation accuracy per prompt, (2) weighted grasp loss that penalizes foreground errors more than background (using a 10:1 weight ratio based on ground-truth masks). AdamW optimizer with learning rate 1e-5 ensures stable convergence. The method never sees task-specific labels at test time — prompts alone steer the detection.</p>
+<p>The key trick is that SAM already generalizes across millions of object types, so minimal fine-tuning with adapters teaches grasp prediction *without* overfitting to training categories. When tested on unseen object types (Grasp-Anything++), performance barely drops, proving the learned grasp patterns transfer.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/gist-ailab/GraspSAM" target="_blank" rel="noopener">https://github.com/gist-ailab/GraspSAM</a></p>
+<p><strong>Language/Framework:</strong> Python 3.8+ with PyTorch 2.0.1, torchvision, CUDA 11.7</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+GraspSAM/
+├── model/
+│   ├── segment_anything/  (frozen SAM encoder, frozen decoder)
+│   ├── adapter.py         (Rein adapter implementation)
+│   ├── mask_decoder.py    (modified lightweight decoder for grasp + segmentation)
+│   └── prompt_encoder.py  (point/box/text embedding)
+├── data/                  (preprocessing utilities)
+├── datasets/              (download Jacquard, Grasp-Anything, Grasp-Anything++)
+├── pretrained_checkpoint/ (Efficient-SAM and Mobile-SAM weights)
+├── train.py               (main training script)
+├── eval.py                (evaluation on benchmarks)
+├── utils/                 (loss functions, metrics)
+└── requirements.txt
+</code></pre>
+<p><strong>Core entry point:</strong> <code>train.py</code> — orchestrates loading SAM backbone (Efficient-SAM or Mobile-SAM), freezes it, attaches adapters, loads dataset, and trains with the MSE + grasp loss.</p>
+<p><strong>Key file to open first:</strong> <code>train.py</code> — shows hyperparameters, dataset loading, and the training loop with adapter updates.</p>
+<p><strong>Dependencies:</strong> PyTorch, torchvision, numpy, PIL, CUDA toolkit (11.7). Pre-downloaded SAM checkpoint weights (Efficient-SAM ~40 MB, Mobile-SAM ~37 MB) must sit in <code>pretrained_checkpoint/</code>.</p>
+<p><strong>Dataset/simulator needs:</strong> No simulator. Requires pre-downloaded Jacquard dataset (54K annotated RGB images of parallel-jaw grasps) or Grasp-Anything (1.2K real-world images with multi-instance annotations). Training can run on a single Titan RTX or equivalent (~24 GB GPU memory). Inference runs on CPU but is slow (~500 ms per image); GPU recommended for real-time (50–100 ms).</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+conda create -n GraspSAM python=3.8
+conda activate GraspSAM
+pip install -r requirements.txt
+
+# Download Jacquard from https://jacquard.idsia.ch/
+# Place in datasets/jacquard/
+
+python train.py \
+  --root datasets/jacquard \
+  --save \
+  --sam-encoder-type efficient \
+  --num-epochs 50 \
+  --batch-size 8
+
+python eval.py \
+  --root datasets/jacquard \
+  --ckp_path path/to/trained_checkpoint.pth
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li><code>model/adapter.py</code> — 50 lines showing the Rein adapter forward pass and how it patches each encoder block.</li>
+<li><code>model/mask_decoder.py</code> — the modified decoder that outputs grasp maps; shows how angle and width heads are separate branches.</li>
+<li><code>train.py</code> lines 100–150 — the loss computation combining mask MSE and foreground/background grasp weighting.</li>
+</ul>
+<p><strong>Difficulty:</strong> Moderate. The adapter design is simple (residual MLP patch), but understanding how SAM&#x27;s prompt encoder merges with image features requires familiarity with transformers. The grasp loss formulation (foreground vs. background weighting) is the most novel part and worth studying. Code is clean and well-commented.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only:</strong> No. Inference is technically possible (1–2 seconds per image) but impractical for robotics. Training is impossible without GPU.</p>
+<p><strong>GPU required:</strong> Yes — CUDA 11.7, Titan RTX or A100. Training (50 epochs) takes ~24 hours.</p>
+<p><strong>Simulator:</strong> None required.</p>
+<p><strong>Dataset:</strong> Mandatory — Jacquard or Grasp-Anything must be downloaded beforehand. No API keys.</p>
+<p><strong>Runnable from scratch?</strong> Yes, with caveats: (1) Download Jacquard (~10 GB), (2) Have a GPU with ≥24 GB VRAM, (3) Install CUDA 11.7. The pretrained SAM weights are fetched automatically by the code. After 24 hours, you have a trained grasp detector that works on novel objects without retraining.</p>
+<p>Real-world deployment: The paper shows live robot experiments on a UR5 arm with a parallel-jaw gripper, taking point/box prompts and executing grasps in &lt;200 ms (including planning). The code ships training-ready; deploying to a robot requires only inference code (already provided in <code>eval.py</code>).</p></article>
+<article class="page" id="gp7"><h1>RL-GSBridge: 3D Gaussian Splatting Based Real2Sim2Real Method for Robotic Manipulation Learning</h1>
+<p>ICRA 2025 · 6 citations · sim-to-real transfer via photorealistic simulation</p>
+<h2>What it does</h2>
+<p>A method that takes video of a real robot scene, converts it into a photorealistic 3D model (using a technique called 3D Gaussian Splatting), trains a reinforcement learning policy to control a robot arm for grasping and pick-and-place tasks <strong>entirely inside that replica</strong>, and then runs that exact trained policy on the real robot without any fine-tuning. This is <strong>data-generation</strong> (synthetic demonstration via photorealistic sim) and <strong>sim-to-real transfer</strong> — it solves the core problem that simulated scenes look too fake for visual RL to work: the policy learns on renderings that match reality pixel-for-pixel.</p>
+<h2>The method, in detail</h2>
+<p><strong>Input:</strong> Color-and-depth video of a real scene from multiple camera angles (or egocentric robot video).</p>
+<p><strong>Step 1: Photorealistic 3D Reconstruction</strong></p>
+<p>The pipeline captures multi-view images and depth data from the real scene. COLMAP (structure-from-motion) builds a sparse 3D point cloud and camera poses. MVS (multi-view stereo) densifies that. Then 3D Gaussian Splatting—a neural rendering technique that represents the scene as millions of tiny colored and semi-transparent 3D Gaussian ellipsoids—is optimized to match the photos. Unlike NeRF (which is slow to render), Gaussians render in real time because each tiny blob just needs a dot product and transparency multiplication.</p>
+<p><strong>Step 2: Mesh-Based Gaussian Binding</strong></p>
+<p>Standard 3D Gaussian Splatting can leave artifacts on unstructured or deformable objects (cloth, cables, loose items). The authors propose a mesh-based variant: they bind the Gaussian ellipsoids to a coarse mesh using soft constraints, anchoring them to mesh vertices but allowing local deformation. This keeps the rendering sharp when objects move or deform slightly, which is critical for a physics simulator that needs stable collision detection.</p>
+<p><strong>Step 3: Physics-Rendering Synchronization</strong></p>
+<p>The reconstructed 3D model is loaded into PyBullet (a fast physics simulator for robotics). Normally, a physics engine and a renderer are separate—the engine computes where things should be, and the renderer draws them. Here, both systems must stay synchronized: when the RL agent moves the robot arm in PyBullet, the Gaussian Splatting renderer must show the same arm position, lighting changes, shadows, and object deformations. The authors use a &quot;GS editing&quot; approach—real-time adjustments to Gaussian parameters (position, scale, rotation, opacity) as the simulation progresses—so the rendered view stays photorealistic as the scene evolves.</p>
+<p><strong>Step 4: Reinforcement Learning Training</strong></p>
+<p>A vision-based RL policy (taking RGB or depth input from the simulated renderer) is trained using a standard algorithm (DDPG with behavior cloning baseline). The agent learns to pick up objects or execute pick-and-place tasks. Because the simulated images look nearly identical to reality (not blocky or synthetic), the visual features learned by the policy&#x27;s neural network carry over to the real robot&#x27;s cameras with minimal distribution shift.</p>
+<p><strong>Step 5: Zero-Shot Deployment</strong></p>
+<p>The trained policy is directly executed on the real robot with no retraining, fine-tuning, or domain randomization tricks. The only real-world input is the robot&#x27;s onboard depth or RGB camera; the policy outputs joint velocities or gripper commands.</p>
+<p><strong>The key trick:</strong> Instead of relying on hand-crafted domain randomization (randomly rotating, texturing, and placing objects in synthetic scenes), this method captures a single real scene and renders it photorealistically. No huge augmented dataset, no domain-adaptation layer—just one believable sim, trained once, deployed as-is.</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> <a href="https://github.com/IRMV-Manipulation-Group/RL-GSBridge" target="_blank" rel="noopener">https://github.com/IRMV-Manipulation-Group/RL-GSBridge</a></p>
+<p><strong>Language/Framework:</strong> Python, PyTorch; PyBullet physics; COLMAP/MVS for reconstruction; SAM-Track for segmentation.</p>
+<p><strong>Repo Structure:</strong></p>
+<pre><code>
+RL-GSBridge/
+├── RLGS-bridge-pub/           # Main RL policy training loop
+│   ├── train.py               # Entry point for RL training (DDPG variant)
+│   ├── policy.py              # Neural network policy
+│   ├── replay_buffer.py        # Experience replay
+│   └── utils/
+├── soft-gaussian-mesh-splatting/  # Mesh-based 3D Gaussian Splatting
+│   ├── gs_train.py            # Optimize Gaussians from video
+│   ├── gaussian_model.py       # Gaussian scene representation
+│   ├── render.py              # Real-time differentiable rendering
+│   ├── scene/                 # Scene loader
+│   └── requirements.txt        # Dependencies (torch, torchvision, scipy, etc.)
+├── exp_obj_data/              # Example Banana object and masks
+│   ├── obj_trans.json         # Object pose and mass parameters
+│   └── masks/                 # Segmentation masks from SAM-Track
+├── COLMAP.sh, MVS.sh          # Multi-view reconstruction scripts
+├── gs_train.sh                # Train Gaussians from frames
+└── README.md                  # Setup and usage
+
+Key dependencies: torch, torchvision, pybullet, pillow, scipy, numpy, imageio; also diff-gaussian-rasterization (custom GPU kernel for fast Gaussian rendering).
+</code></pre>
+<p><strong>Core Files to Open First:</strong></p>
+<ul>
+<li><code>RLGS-bridge-pub/train.py</code> — RL training loop, how the policy sees Gaussian-rendered observations.</li>
+<li><code>soft-gaussian-mesh-splatting/gs_train.py</code> — How multi-view video becomes a Gaussian model.</li>
+<li><code>soft-gaussian-mesh-splatting/render.py</code> — Real-time Gaussian rendering and physics sync.</li>
+</ul>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>PyTorch (GPU strongly recommended; CUDA 11.8+).</li>
+<li>PyBullet (pip install pybullet).</li>
+<li>COLMAP (compile from source or use conda package).</li>
+<li>Custom GPU kernels: <code>diff-gaussian-rasterization</code>, <code>simple-knn</code> (pre-built wheels or compile).</li>
+</ul>
+<p><strong>Simulator &amp; Dataset:</strong></p>
+<ul>
+<li>Requires <strong>PyBullet</strong> simulator; runs sim-only on GPU.</li>
+<li>Example dataset: Banana object + grasping task (small, included).</li>
+<li>To run on your own objects: capture multi-view RGB-D video, run COLMAP.sh + gs_train.sh.</li>
+</ul>
+<p><strong>GPU/Compute:</strong></p>
+<ul>
+<li>RL training: 1 GPU (NVIDIA A100 or V100), ~2–4 hours for banana grasping.</li>
+<li>Gaussian optimization: 30–60 min per scene on 1 GPU.</li>
+<li>Rendering: Real-time at 30–60 fps during training (GPU required).</li>
+</ul>
+<p><strong>How to Run:</strong></p>
+<pre><code>
+# Reconstruct Gaussians from video
+bash COLMAP.sh path/to/video/
+bash MVS.sh
+bash gs_train.sh
+
+# Train RL policy in sim
+python RLGS-bridge-pub/train.py --task grasping --gs-model ./exp_obj_GS/banana.ply
+
+# Deploy to real robot (requires robot hardware + calibration)
+python RLGS-bridge-pub/deploy.py --checkpoint ./checkpoints/policy_final.pt --robot ur5e
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start with:</strong> <code>soft-gaussian-mesh-splatting/gs_train.py</code> — understand how video becomes 3D. Then read <code>RLGS-bridge-pub/train.py</code> to see the RL loop.</p>
+<p><strong>Hardness:</strong> Moderate to high. The Gaussian Splatting math (covariance matrices, differentiable rendering) is non-trivial; the PyBullet integration is straightforward; RL code is standard DDPG. You&#x27;ll need to understand:</p>
+<ul>
+<li>Gaussian Splatting basics (spherical harmonics, 3D covariances, alpha compositing).</li>
+<li>RL fundamentals (DDPG, experience replay, reward shaping).</li>
+<li>Physics simulation (PyBullet constraints, collision models).</li>
+<li>Multi-view geometry (COLMAP outputs, camera calibration).</li>
+</ul>
+<p>If you&#x27;re new to Gaussians, read the original 3D-GS paper (Kerbl et al., 2023) first. The mesh binding is an incremental twist—read their appendix on soft constraints.</p>
+<h2>Run verdict</h2>
+<p><strong>On CPU:</strong> <strong>Not viable.</strong> GPU required for both reconstruction (30–60 min per scene) and RL training (hours of real-time rendering at 30+ fps).</p>
+<p><strong>On single GPU (NVIDIA V100 or A100):</strong> <strong>Yes, fully runnable.</strong> Banana grasping example trains in ~2–4 hours. You can reproduce the sim results without real hardware.</p>
+<p><strong>Simulator dependency:</strong> <strong>Yes, requires PyBullet.</strong> It is open-source and installable via pip; no commercial license needed.</p>
+<p><strong>Real-robot deployment:</strong> Possible but requires (1) a calibrated UR or ABB arm with gripper, (2) sensor calibration (camera-to-robot), and (3) object mesh models. The paper demonstrates on UR5e and ShadowHand; assumes you have the hardware.</p>
+<p><strong>Summary:</strong> The code is mature, documented, and runs on standard research GPUs. Start with the banana example on a single GPU; no special hardware or datasets beyond PyBullet. Real-world transfer depends entirely on your robot setup.</p></article>
+<article class="page" id="gp8"><h1>Catch It! Learning to Catch in Flight with Mobile Dexterous Hands</h1>
+<p>ICRA 2025 · 6 citations · dexterous-manipulation</p>
+<h2>What it does</h2>
+<p>The system teaches a whole-body mobile robot—with a wheeled base, a six-joint arm, and a twelve-joint multi-fingered hand—to catch thrown objects out of the air in real time. This is dexterous-manipulation because it requires precise, coordinated control of the multi-fingered hand while the entire robot body moves to intercept a moving target. Unlike static manipulation, catching demands predicting where an object will be, positioning the arm in time, and grasping with the fingers in a fraction of a second.</p>
+<h2>The method, in detail</h2>
+<p>The system starts with a 14-degree-of-freedom mobile manipulator: a wheeled base (2 DoF for forward/turn), a six-joint robotic arm (6 DoF to reach), and a twelve-joint dexterous hand (12 DoF to grasp).</p>
+<p>The key innovation is a two-stage reinforcement learning approach. In the first stage, the policy learns to *track* a falling object—predicting its trajectory and steering the mobile base and arm to center it in the hand&#x27;s field of view. Once this tracking policy is learned, the second stage trains a catching policy that, starting from a well-positioned state, learns how to move the hand fingers to intercept and close around the object.</p>
+<p>Training happens entirely in simulation using the MuJoCo physics engine. The researchers heavily randomize the training data: they vary the object&#x27;s throw angle, throwing speed, object shape (cubes, cylinders, complex geometries), and object mass. This randomization ensures the learned policy generalizes to unfamiliar object types and throw patterns that it never saw during training.</p>
+<p>The policy is represented as a neural network trained with reinforcement learning (specifically, a PPO-style or actor-critic method). At inference time, the policy takes onboard sensor readings (likely from depth cameras and proprioceptive sensors on the robot) and outputs motor commands for the base wheels, arm joints, and hand fingers.</p>
+<p>The real-world deployment uses only onboard sensing and computation—no external cameras or communication—which is critical for a dynamic catching task where latency kills performance.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> <a href="https://github.com/hang0610/Catch_It" target="_blank" rel="noopener">https://github.com/hang0610/Catch_It</a></p>
+<p><strong>Language &amp; Framework:</strong> Python 3.8+; PyTorch for neural networks; MuJoCo 2.x physics simulator</p>
+<p><strong>Repository Structure:</strong></p>
+<ul>
+<li><code>train_DCMM.py</code> — Main training/testing script; entry point for both phases</li>
+<li><code>gym_dcmm/</code> — Custom RL environment for the mobile manipulator and catching task</li>
+<li><code>gym_dcmm/envs/DcmmVecEnv.py</code> — Vectorized environment for parallel training (16+ parallel rollouts)</li>
+<li><code>configs/</code> — Hyperparameter configurations for tracking and catching stages</li>
+<li><code>assets/models/track.pth</code> — Pre-trained tracking policy</li>
+<li><code>assets/models/catch<em>two</em>stage.pth</code> — Pre-trained full catching policy</li>
+<li><code>assets/</code> — Robot URDF files, object meshes, and media</li>
+</ul>
+<p><strong>To start:</strong> Read <code>train<em>DCMM.py</code> to understand the training loop. Then explore <code>gym</em>dcmm/envs/DcmmVecEnv.py</code> to see how the observation/action space is structured and how MuJoCo physics is integrated. The <code>configs/</code> directory shows all tunable hyperparameters.</p>
+<p><strong>Dependencies:</strong> PyTorch, MuJoCo, Weights &amp; Biases (for logging), NumPy. ROS is needed only for real-robot deployment on Ubuntu 20.04.</p>
+<p><strong>GPU &amp; compute:</strong> Trained on a single Nvidia RTX 3070 Ti GPU with 64 CPU cores. The code creates 16+ parallel simulation environments during training, so at least 12 CPU cores are recommended for realistic training speed.</p>
+<p><strong>Datasets:</strong> No external data download needed. The catching task is fully generated within simulation; randomization of objects, throws, and initial conditions happens procedurally during training.</p>
+<h2>Reviewing it yourself</h2>
+<p>Start with the README to understand the two-stage pipeline and hardware setup. Then read the paper&#x27;s main algorithm section (usually Section 3 or 4 in robotics papers) to see the exact reward structure and policy network architecture. The <code>train<em>DCMM.py</code> file is the heart of the system—it should be clear how it loads configs, creates the environment, and runs PPO or another RL algorithm. The <code>gym</em>dcmm/</code> package is where the robot dynamics live; understanding the observation and action spaces there is crucial.</p>
+<p>The code is moderately complex: it requires familiarity with PyTorch, MuJoCo physics simulation, and RL training loops (reward shaping, environment reset, vectorized rollouts). The physics-based dynamics part is the trickiest; you need to understand how MuJoCo&#x27;s contact model works and how hand-object interaction is simulated.</p>
+<h2>Run verdict</h2>
+<p><strong>On CPU only: No.</strong> The system absolutely requires a GPU. The policy network training (reinforcement learning) can technically run on CPU, but the MuJoCo physics simulation for 16+ parallel environments would be prohibitively slow without GPU acceleration of neural network inference during rollouts.</p>
+<p><strong>Simulator: Required.</strong> MuJoCo must be installed and working. The code will not run without it.</p>
+<p><strong>Real robot: Not required to test the code.</strong> You can run <code>train_DCMM.py</code> with <code>test=True</code> to load pre-trained models and test in simulation without a physical robot. However, deploying to real hardware requires the full hardware stack: mobile base, 6-DoF arm, and dexterous hand (the paper likely used a specific robot, possibly a humanoid or custom gripper).</p>
+<p><strong>Dataset: None.</strong> All training data is generated procedurally in simulation.</p>
+<p><strong>Entry point:</strong> <code>python train_DCMM.py test=True task=Catching</code> to run inference with the pre-trained catching model in simulation.</p>
+<p>In summary: The code is runnable on a machine with GPU and MuJoCo installed, and you can validate the pre-trained policies in simulation without owning the physical robot. But full training requires sustained GPU+compute, and real-world deployment requires the complete hardware platform.</p></article>
+<article class="page" id="gp9"><h1>General-Purpose Clothes Manipulation with Semantic Keypoints</h1>
+<p>ICRA · 5 citations · bimanual manipulation with semantic keypoints</p>
+<h2>What it does</h2>
+<p>CLASP learns to manipulate diverse clothing items (t-shirts, sweaters, skirts, dresses, pants) with a dual-arm robot, handling tasks like folding, flattening, hanging, and placing. Instead of training separate systems per task or clothing type, it identifies named points on the garment—such as &quot;right shoulder,&quot; &quot;left cuff,&quot; &quot;hem&quot;—and uses those sparse spatial-semantic landmarks to bridge LLM task planning and low-level robot control. This is <strong>bimanual manipulation</strong> with a semantic intermediate representation: the robot&#x27;s two arms move to reach the keypoints, guided by a vision-language model that interprets the task instruction.</p>
+<h2>The method, in detail</h2>
+<p>The system works as a two-level hierarchy:</p>
+<p><strong>Perception (keypoint extraction):</strong> The robot observes the garment with an RGB-D camera. A perception module combines three foundation models—OWL-ViT (open-vocabulary object detection), Segment Anything Model (SAM), and SD-DINO (geometric scene understanding)—to extract semantic keypoints from the image. For example, it labels &quot;left sleeve,&quot; &quot;right shoulder,&quot; &quot;neckline,&quot; &quot;hem&quot; by recognizing these anatomical parts even when the garment is crumpled, folded, or partially occluded. These keypoints are 3D coordinates in the robot&#x27;s frame.</p>
+<p><strong>Task planning (LLM):</strong> The robot receives a task instruction in natural language, e.g., &quot;fold this shirt.&quot; It packages the current RGB-D image, the extracted semantic keypoints, and the instruction into a vision-language model (VLM) prompt. The VLM outputs a sequence of sub-tasks, e.g., [grasp left sleeve, move it to center, grasp right shoulder, fold over]. This step grounds high-level intent into actionable steps.</p>
+<p><strong>Action execution (pre-built skills):</strong> The robot has a library of pre-built manipulation skills: grasp, move, reposition, fold. Each skill is conditioned on semantic keypoints: &quot;grasp left sleeve&quot; means the robot moves both arms to the 3D positions of the &quot;left sleeve&quot; keypoints, closes the gripper, and executes a learned gripper trajectory. After each action, the robot re-observes, extracts new keypoints, and asks the VLM whether the next sub-task can proceed or if replanning is needed.</p>
+<p><strong>Training:</strong> The method does not involve training a monolithic end-to-end policy. Instead: (1) Semantic keypoint extraction relies on frozen foundation models (OWL-ViT, SAM, SD-DINO); these are not fine-tuned for clothes but are prompted to recognize clothing parts via prompts like &quot;clothing parts: sleeve, shoulder, …&quot;. (2) Manipulation skills (grasp, fold) are either hand-crafted heuristics or learned from a small set of demonstrations per task. (3) The LLM is an off-the-shelf model (GPT-4 or similar) accessed via API; it is not trained on this specific domain but is prompted with examples of CLASP&#x27;s semantic keypoints and sub-task sequences.</p>
+<p>The key trick is the semantic keypoint intermediate layer: it decouples perception (naming parts) from planning (deciding what to do with those parts) from control (moving arms to those parts). This allows the system to generalize: new clothing types inherit keypoint names; new tasks require only new sub-task sequences in the LLM prompt; the robot&#x27;s grasp and reposition skills remain unchanged.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> <a href="https://github.com/dengyh16code/CLASP" target="_blank" rel="noopener">https://github.com/dengyh16code/CLASP</a></p>
+<p><strong>Language/frameworks:</strong> Python, PyTorch (implied for model inference). Uses external APIs: OpenAI GPT for LLM, Hugging Face for OWL-ViT and SAM, internal model server for SD-DINO.</p>
+<p><strong>Repository structure:</strong></p>
+<ul>
+<li><code>semantic<em>keypoints/</code> — Keypoint extraction module; main file <code>semantic</em>keypoints.py</code> orchestrates OWL-ViT, SAM, SD-DINO prompting.</li>
+<li><code>softgym/</code> — Soft-body physics simulation environment for clothes (PyFlex integration).</li>
+<li><code>cloth3d/</code> — 3D cloth mesh utilities and rendering.</li>
+<li><code>configs/</code> — Configuration files for tasks, robot parameters, keypoint names per garment type.</li>
+<li><code>cloud_services/</code> — Backend inference API for models deployed on internal servers.</li>
+<li><code>utils/</code> — Helpers for image processing, robot communication, visualization.</li>
+</ul>
+<p><strong>Key file to open first:</strong> <code>semantic<em>keypoints/semantic</em>keypoints.py</code> — the perception pipeline entry point.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>OpenAI API key (required for GPT calls).</li>
+<li>Hugging Face transformers (OWL-ViT, SAM).</li>
+<li>PyFlex/softgym (physics simulation; requires pre-built binaries).</li>
+<li>Robot SDK (Franka control for real-world experiments; simulation uses PyFlex).</li>
+</ul>
+<p><strong>How to run:</strong></p>
+<ul>
+<li>Set environment variable <code>OPENAI<em>API</em>KEY</code>.</li>
+<li>Replace <code>test.png</code> with a robot camera image of the garment.</li>
+<li>Run <code>python semantic<em>keypoints/semantic</em>keypoints.py</code>.</li>
+<li>Output: JSON with keypoint coordinates + visualization image.</li>
+</ul>
+<p>The README warns: &quot;OWL-ViT, SAM, and SD-DINO are currently deployed on our internal servers.&quot; Users must either configure their own Hugging Face/local inference servers or modify the cloud_services code to point to custom model endpoints.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li>The arXiv paper (2507.19983) for the full method and experiments.</li>
+<li><code>semantic<em>keypoints/semantic</em>keypoints.py</code> to see how OWL-ViT/SAM are chained.</li>
+<li><code>configs/</code> to see example keypoint names and task prompts.</li>
+<li>Real-world results in paper videos to understand the scope.</li>
+</ul>
+<p><strong>Code difficulty:</strong> Medium-to-hard. The perception pipeline is a compositional trick—gluing three frozen models with prompt engineering, no novel training—so the individual pieces are straightforward. The challenge is in the integration: prompt design, 3D coordinate transformation, and handling failure modes (occlusion, ambiguous keypoints). The actual policy learning (grasp and manipulation skills) is not released; the README suggests using imitation learning with kinesthetic teaching or collecting RL trajectories in PyFlex.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only:</strong> No. The foundation models (OWL-ViT, SAM, SD-DINO inference) require GPU or cloud API access. Inference is feasible on a modest GPU (4–8 GB VRAM for single-image processing), but the code relies on OpenAI API for LLM calls (requires internet).</p>
+<p><strong>Simulator:</strong> Yes. PyFlex/softgym is included for simulation; cloth physics is real. Reproduction in simulation is viable with pre-trained keypoint extraction.</p>
+<p><strong>Real-world requirements:</strong> Franka dual-arm robot, RGB-D camera (e.g., Intel RealSense), GPU compute (on-robot or tethered), and network access to OpenAI API. The paper shows deployment on real Franka with onboard NVIDIA Jetson; this is possible but non-trivial.</p>
+<p><strong>Datasets:</strong> The paper trains on a custom cloth dataset (simulation + real collected with teleoperation); this dataset is not released.</p>
+<p><strong>Overall:</strong> The method is more of an orchestration than a black-box model. Setting up the full pipeline (cloud services, robot drivers, perception servers) requires engineering; the published code is incomplete. However, the semantic keypoint *idea* can be reproduced with open-source models (Hugging Face OWL-ViT, SAM) and a local LLM if you replace the OpenAI dependency. For research purposes, expect 2–4 weeks to adapt the code to a new robot or dataset.</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div><article class="page walk"><h1>DexMimicGen — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;DexMimicGen: Automated Data Generation for Bimanual Dexterous Manipulation via Imitation Learning&quot; (ICRA 2025, NVIDIA)</p>
+<p><strong>Repo root:</strong> <code>dexmimicgen/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p>DexMimicGen is a Python package that provides 9 simulated bimanual manipulation tasks (via robosuite) and tools to playback and train on generated datasets. It does <strong>not</strong> include the synthesis/data-generation code itself—that pipeline is proprietary—but provides the task environments, dataset I/O, and training config generation for downstream imitation learning via robomimic.</p>
+<p>| Script | Role |</p>
+<p>|--------|------|</p>
+<p>| <code>scripts/demo<em>random</em>action.py</code> | <strong>Entry point</strong>: load any environment, step it with random actions, optionally render. |</p>
+<p>| <code>scripts/playback_datasets.py</code> | Load HDF5 trajectory datasets, replay them in sim (via state-loading or open-loop actions), render to video. |</p>
+<p>| <code>scripts/generate<em>training</em>config.py</code> | Scan task datasets, generate robomimic BC-RNN training configs (learning rates, epochs, action/observation keys). |</p>
+<p>| <code>scripts/download<em>hf</em>dataset.py</code> | Download pre-generated datasets from HuggingFace Hub. |</p>
+<p><strong>Dependencies:</strong> robosuite (ARISE-Initiative fork), h5py, imageio, numpy, huggingface_hub, numba, termcolor. Does NOT require GPU, but CPU simulation is ~10-50x slower.</p>
+<p><strong>Simulator:</strong> Robosuite + MuJoCo (CPU-only, no CUDA acceleration). Tasks include parallel-gripper arms (Panda, 2-DOF gripper) and dexterous-hand variants (PandaDexRH/LH, 16-DOF hand fingers, and humanoid GR1).</p>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+dexmimicgen/
+├── __init__.py                    # Environment registration: imports all task classes
+├── environments/                  # 9 task environment definitions
+│   ├── __init__.py
+│   ├── two_arm_dexmg_env.py       # BASE CLASS: TwoArmDexMGEnv (extends robosuite TwoArmEnv)
+│   ├── two_arm_threading.py       # TwoArmThreading (panda + panda, parallel grippers)
+│   ├── two_arm_can_sort.py        # TwoArmCanSortRandom (humanoid, dexterous hands)
+│   ├── two_arm_coffee.py          # TwoArmCoffee (humanoid, dexterous hands)
+│   ├── two_arm_pouring.py         # TwoArmPouring (humanoid, dexterous hands)
+│   ├── two_arm_box_cleanup.py     # TwoArmBoxCleanup (panda + dexterous, panda + dexterous)
+│   ├── two_arm_drawer_cleanup.py  # TwoArmDrawerCleanup (panda + dexterous, panda + dexterous)
+│   ├── two_arm_lift_tray.py       # TwoArmLiftTray (panda + dexterous, panda + dexterous)
+│   ├── two_arm_three_piece_assembly.py  # TwoArmThreePieceAssembly (panda + panda)
+│   └── two_arm_transport.py       # TwoArmTransport (panda + panda)
+├── models/
+│   ├── __init__.py                # Asset root pointer
+│   ├── assets/                    # MJCF XML scene files, robot URDFs, object meshes
+│   └── objects/                   # Custom robosuite object classes (NeedleObject, RingTripodObject, etc.)
+├── utils/
+│   ├── config_utils.py            # set_learning_settings_for_bc_rnn(): robomimic config builder
+│   ├── transform_utils.py         # Pose transforms (unmake_pose, pose_in_world_to_pose_in_ref, etc.)
+│   └── mjcf_utils.py              # XML/MJCF utilities
+└── scripts/
+    ├── demo_random_action.py      # Minimal working example: instantiate env, step w/ random actions
+    ├── playback_datasets.py       # Load &amp; replay HDF5 trajectories (state-loading or action-based)
+    ├── generate_training_config.py # Scan datasets, build robomimic BC-RNN training configs
+    └── download_hf_dataset.py     # Fetch pre-generated datasets from HuggingFace
+</code></pre>
+<hr>
+<h2>The core idea in code — turning a few demos into many</h2>
+<p>The actual trajectory synthesis (decomposing a demo into object-centric segments, perturbing object poses, retargeting hand trajectories via IK) <strong>is not included in this open-source repo</strong>. That pipeline is proprietary to NVIDIA. However, the repo includes the environments and infrastructure to <strong>replay</strong> generated synthetic datasets.</p>
+<p>What the repo <strong>does</strong> provide:</p>
+<ul>
+<li><strong>Task definitions</strong> (environments/) that expose a simulation state (robot joint positions, object poses) and action space.</li>
+<li><strong>State serialization</strong> (via robosuite&#x27;s <code>sim.get<em>state()</code> and <code>sim.set</em>state<em>from</em>flattened()</code>) so trajectories can be stored and replayed.</li>
+<li><strong>HDF5 dataset format</strong> with structured keys:</li>
+<pre><code>
+   # From playback_datasets.py, lines 418-423:
+   states = f[&quot;data/{}/states&quot;.format(ep)][()]  # shape: (T, state_dim)
+   initial_state = dict(states=states[0])        # first state
+   initial_state[&quot;model&quot;] = f[&quot;data/{}&quot;.format(ep)].attrs[&quot;model_file&quot;]  # XML
+   initial_state[&quot;ep_meta&quot;] = f[&quot;data/{}&quot;.format(ep)].attrs.get(&quot;ep_meta&quot;, None)
+   actions = f[&quot;data/{}/actions&quot;.format(ep)][()]  # shape: (T, action_dim)
+</code></pre>
+</ul>
+<ul>
+<li><strong>The replay mechanism</strong> (playback_datasets.py):</li>
+</ul>
+<p>   - <strong>State-loading playback</strong> (line 136): <code>reset_to(env, {&quot;states&quot;: states[i]})</code>—load each recorded state frame-by-frame.</p>
+<p>   - <strong>Action-based playback</strong> (lines 117–121): Execute stored actions open-loop, check if the resulting sim state matches recorded states (determinism check).</p>
+<h3>The synthesis concept (from paper, NOT in code):</h3>
+<p>Per the paper, the system would:</p>
+<ul>
+<li><strong>Parse a human demo</strong> → detect object-centric subtasks (e.g., &quot;grasp can at pose X&quot;, &quot;move can to bin Y&quot;).</li>
+<li><strong>Decompose into segments</strong> (object-centric blocks where only one object is manipulated).</li>
+<li><strong>Perturb object poses</strong> (XYZ position, rotation, size, texture).</li>
+<li><strong>Retarget hand trajectories</strong> using IK solvers to adapt gripper positions/finger joints to new object configs.</li>
+<li><strong>Record in simulation</strong> → store states &amp; actions to HDF5.</li>
+</ul>
+<p>The repo&#x27;s <code>generate<em>training</em>config.py</code> and <code>playback_datasets.py</code> assume this data already exists and focus on training/evaluation infrastructure.</p>
+<hr>
+<h2>The generation loop</h2>
+<p>Since trajectory synthesis is not open-sourced, the closest &quot;generation loop&quot; in the codebase is the <strong>playback + training pipeline</strong>. Here&#x27;s the flow:</p>
+<h3>1. Environment instantiation (<code>scripts/demo<em>random</em>action.py</code>, lines 58–74):</h3>
+<pre><code>
+env_kwargs = {
+    &quot;env_name&quot;: args.env,
+    &quot;robots&quot;: ENV_ROBOTS[args.env],  # e.g., [&quot;Panda&quot;, &quot;Panda&quot;] for TwoArmThreading
+    &quot;controller_configs&quot;: load_composite_controller_config(robot=ENV_ROBOTS[args.env][0]),
+    &quot;has_renderer&quot;: args.render,
+    &quot;has_offscreen_renderer&quot;: True,
+    &quot;ignore_done&quot;: True,
+    &quot;use_camera_obs&quot;: True,
+    &quot;control_freq&quot;: 20,
+}
+env = robosuite.make(**env_kwargs)
+env.reset()
+</code></pre>
+<h3>2. Stepping the environment (<code>scripts/demo<em>random</em>action.py</code>, lines 80–85):</h3>
+<pre><code>
+for i in range(1000):
+    action = np.random.randn(*env.action_spec[0].shape)
+    obs, reward, done, _ = env.step(action)
+    if args.render:
+        env.render()
+</code></pre>
+<h3>3. Trajectory replay loop (<code>scripts/playback_datasets.py</code>, lines 114–169):</h3>
+<pre><code>
+def playback_trajectory_with_env(
+    env, initial_state, states, actions=None, render=False, video_writer=None, ...
+):
+    reset_to(env, initial_state)  # Load initial state from HDF5
+    traj_len = states.shape[0]
+    
+    for i in range(traj_len):
+        if action_playback:
+            env.step(actions[i])  # Execute stored action
+            if env._check_success():
+                success = True
+            # Optionally check state divergence
+            state_playback = np.array(env.sim.get_state().flatten())
+            if not np.all(np.equal(states[i + 1], state_playback)):
+                err = np.linalg.norm(states[i + 1] - state_playback)
+                print(f&quot;warning: playback diverged by {err} at step {i}&quot;)
+        else:
+            reset_to(env, {&quot;states&quot;: states[i]})  # Frame-by-frame state loading
+        
+        if render:
+            env.viewer.update()
+        if write_video:
+            # Capture camera frames, write to video
+            im = env.sim.render(height=512, width=512, camera_name=cam_name)[::-1]
+            video_writer.append_data(im)
+</code></pre>
+<h3>4. Training config generation (<code>scripts/generate<em>training</em>config.py</code>, lines 42–275):</h3>
+<p>Scans dataset directory, extracts per-task dataset paths, and builds robomimic config via <code>ConfigGenerator</code>:</p>
+<pre><code>
+def make_generators(base_config, dataset_dir, output_dir):
+    panda_settings = [
+        dict(
+            dataset_paths=[os.path.join(dataset_dir, &quot;generated&quot;, &quot;two_arm_box_cleanup.hdf5&quot;)],
+            dataset_names=[&quot;two_arm_box_cleanup_D0&quot;],
+            image_keys=[&quot;agentview_image&quot;, &quot;robot0_eye_in_hand_image&quot;, &quot;robot1_eye_in_hand_image&quot;],
+            low_dim_keys=[
+                &quot;robot0_eef_pos&quot;, &quot;robot0_eef_quat&quot;, &quot;robot0_gripper_qpos&quot;,
+                &quot;robot1_eef_pos&quot;, &quot;robot1_eef_quat&quot;, &quot;robot1_gripper_qpos&quot;
+            ],
+            horizon=[400],
+        ),
+        # ... more tasks ...
+    ]
+    
+    ret = []
+    for setting in panda_settings:
+        generator = make_gen(os.path.expanduser(base_config), setting, output_dir)
+        generator = panda_action_config(generator)  # Set action keys (rel_pos, rel_rot_axis_angle, gripper)
+        ret.append(generator)
+    
+    return ret
+</code></pre>
+<p>Then calls <code>ConfigUtils.config<em>generator</em>to<em>script</em>lines()</code> to emit JSON config files and robomimic training commands.</p>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><strong>README.md</strong> (5 min)</li>
+</ul>
+<p>   Entry point. Lists install steps, quick-start commands. Tells you the repo depends on robosuite + robomimic branches.</p>
+<ul>
+<li><strong>scripts/demo<em>random</em>action.py</strong> (10 min)</li>
+</ul>
+<p>   Simplest working example. Shows how to:</p>
+<p>   - Map environment names to robot configurations.</p>
+<p>   - Load an env via <code>robosuite.make()</code>.</p>
+<p>   - Step the sim with random actions.</p>
+<p>   - Call <code>env.render()</code>.</p>
+<ul>
+<li><strong>dexmimicgen/environments/two<em>arm</em>threading.py</strong> (15 min)</li>
+</ul>
+<p>   Concrete task definition. Inherits from <code>TwoArmDexMGEnv</code>. See how a task:</p>
+<p>   - Defines table, objects (needle, ring tripod), and success criteria.</p>
+<p>   - Configures placement samplers for task diversity.</p>
+<p>   - Exposes observation/action spaces via robosuite API.</p>
+<ul>
+<li><strong>dexmimicgen/environments/two<em>arm</em>dexmg_env.py</strong> (10 min)</li>
+</ul>
+<p>   Base class for all tasks. Extends robosuite&#x27;s <code>TwoArmEnv</code>. Key methods:</p>
+<p>   - <code>set<em>robot</em>state(init_state)</code>: reset robot to a dict of joint values.</p>
+<p>   - <code><em>load</em>model()</code>: configure two-arm robot positioning (arms side-by-side or offset).</p>
+<ul>
+<li><strong>scripts/playback_datasets.py</strong> (20 min)</li>
+</ul>
+<p>   Understand HDF5 dataset format and replay logic:</p>
+<p>   - How states and actions are loaded from HDF5 (<code>lines 418–431</code>).</p>
+<p>   - State-loading vs. action-based playback (<code>lines 114–136</code>).</p>
+<p>   - Determinism checking and video rendering.</p>
+<ul>
+<li><strong>scripts/generate<em>training</em>config.py</strong> (15 min)</li>
+</ul>
+<p>   See how task datasets are scanned and BC-RNN configs are generated:</p>
+<p>   - Per-task image keys, low-dim keys, horizon lengths.</p>
+<p>   - Action configuration for Panda vs. humanoid robots.</p>
+<ul>
+<li><strong>Paper (arXiv 2410.24185), Method section</strong> (read independently)</li>
+</ul>
+<p>   The actual data synthesis is described here but not in code. Learn:</p>
+<p>   - How segments are extracted from human demos.</p>
+<p>   - IK-based trajectory retargeting.</p>
+<p>   - Constraint satisfaction (self-collision, singularity checking).</p>
+<hr>
+<h2>Key takeaways</h2>
+<ul>
+<li><strong>This repo is NOT a data-generation tool.</strong> It provides the environments, dataset I/O, and training harness for *downstream* learning on pre-generated data.</li>
+<li><strong>The synthesis pipeline is proprietary.</strong> You&#x27;ll have to implement the &quot;decompose demo → perturb → retarget via IK → record&quot; loop yourself if you want to generate new datasets.</li>
+<li><strong>Replaying is deterministic (mostly).</strong> Loaded states will reproduce trajectories; open-loop action playback may diverge due to floating-point or simulator differences.</li>
+<li><strong>9 tasks, 2 morphologies.</strong> Panda-based (parallel gripper) for simpler tasks; humanoid + dexterous hands (16 DOF per hand) for complex manipulation.</li>
+<li><strong>Scalable to real robots.</strong> Trained BC-RNN policies deploy to real NVIDIA humanoid hardware with minimal fine-tuning (sim-to-real transfer via domain randomization).</li>
+</ul></article>
+<article class="page walk"><h1>GraspSAM — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;GraspSAM: When Segment Anything Model Meets Grasp Detection&quot; (ICRA 2025)</p>
+<p><strong>Repo root:</strong> <code>GraspSAM/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p>GraspSAM adapts the Segment Anything Model (SAM) foundation model to predict robot grasps. The code freezes SAM&#x27;s 2.5B-parameter image encoder and adds lightweight trainable components (adapters, extra tokens, a grasp-prediction head) to output grasp position, angle, and width from prompts (points, boxes, or text).</p>
+<h3>Entry points &amp; config</h3>
+<p>| Script | Purpose | Entry args |</p>
+<p>|--------|---------|-----------|</p>
+<p>| <code>train.py</code> | Main training loop | <code>--root DATASET<em>ROOT --sam-encoder-type {eff</em>vit<em>t</em>w<em>ad, vit</em>t, ...} --epochs 200 --batch-size 4 --lr 1e-5 --save</code> |</p>
+<p>| <code>eval.py</code> | Inference &amp; evaluation | <code>--root DATASET<em>ROOT --ckp</em>path PATH/TO/CHECKPOINT.pth --dataset<em>name {jacquard, grasp</em>anything}</code> |</p>
+<h3>Environment &amp; dependencies</h3>
+<pre><code>
+conda create -n GraspSAM python=3.8
+conda activate GraspSAM
+pip install -r requirements.txt
+</code></pre>
+<p><strong>Tested:</strong> Titan RTX, PyTorch 2.0.1, torchvision 0.15.2, CUDA 11.7</p>
+<p><strong>GPU requirement:</strong> ~24 GB VRAM for training (Titan RTX); CPU inference is possible but slow (~1–2 sec/image)</p>
+<p><strong>Dataset:</strong> Jacquard (54K images) or Grasp-Anything (1.2K real-world images) must be pre-downloaded and placed in <code>datasets/</code> folder</p>
+<p><strong>Pretrained weights:</strong> SAM checkpoints (mobile<em>sam.pt, efficient</em>sam*.pt) must be placed in <code>pretrained<em>checkpoint/</code> (auto-loaded by <code>model/build</em>grasp_sam.py</code>)</p>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+GraspSAM/
+├── model/
+│   ├── planar_grasp_sam.py       [Main] PlanarGraspSAM wrapper; SamEncoder, SamDecoder, ConvGraspHeader
+│   ├── build_grasp_sam.py        [Main] build_grasp_sam() → loads frozen SAM encoder + prompt encoder + mask decoder
+│   ├── utils.py                  [Main] Utility: LayerNorm2d, MLP, masks_to_boxes, masks_sample_points, dice_loss
+│   ├── segment_anything/         SAM (frozen) — image encoder (ViT-B/L/H), prompt encoder, mask decoder
+│   │   ├── build_sam.py          load_sam_encoder(), load_sam_decoder() for standard SAM variants
+│   │   └── modeling/
+│   │       ├── image_encoder.py  Vision Transformer (ViT) backbone
+│   │       ├── prompt_encoder.py Point/box/mask → token embeddings
+│   │       ├── mask_decoder.py   Two-way transformer + hypernetworks for mask decoding
+│   │       ├── reins.py          Rein adapter implementation (lightweight residual MLP inserted into encoder blocks)
+│   │       └── sam.py            SAM core class
+│   └── efficient_sam/            Efficient SAM variant (lighter-weight for mobile/edge)
+│       ├── build_efficient_sam.py load Efficient SAM weights
+│       ├── efficient_sam.py       Efficient SAM wrapper
+│       ├── efficient_sam_decoder.py EffMaskDecoder (modified mask decoder for efficiency)
+│       └── two_way_transformer.py Efficient transformer blocks
+├── train.py                      [Entry] Training orchestration; dataset loading, loss computation, checkpointing
+├── eval.py                       [Entry] Evaluation loop; computes success rate (IoU-based grasp metric)
+├── data/
+│   ├── jacquard_data.py          JacquardDataset → loads 54K annotated grasp images
+│   ├── grasp_anything_data.py    GraspAnythingDataset → loads real-world grasp annotations
+│   ├── base_grasp_data.py        Base class for grasp datasets
+│   └── utils/
+│       ├── grasp_utils.py        GraspRectangle, detect_grasps(), IoU metric
+│       ├── transform.py          Image augmentation (rotation, zoom)
+│       └── image_utils.py        Image preprocessing
+└── utils/
+    └── utils.py                  TrainProgress logging
+</code></pre>
+<hr>
+<h2>The core idea in code — turning SAM into a grasp predictor</h2>
+<h3>1. The main wrapper: <code>PlanarGraspSAM</code></h3>
+<p>Located in <code>/model/planar<em>grasp</em>sam.py</code>, lines 375–478:</p>
+<pre><code>
+class PlanarGraspSAM(nn.Module):
+    def __init__(self, sam_encoder_type, vis=False, num_layers=0):
+        super(PlanarGraspSAM, self).__init__()
+        
+        # Load SAM encoder (frozen), prompt encoder (frozen), and mask decoder (frozen)
+        self.image_encoder, self.prompt_encoder, self.mask_decoder = build_grasp_sam(
+            sam_encoder_type, adapter=False
+        )
+        
+        # Wrap encoders
+        self.encoder = SamEncoder(self.image_encoder, self.prompt_encoder, sam_encoder_type)
+        
+        # Wrap decoder with grasp-prediction head
+        self.decoder = SamDecoder(
+            self.mask_decoder, sam_encoder_type, 
+            grasp_header_type=&quot;conv&quot;, num_layers=num_layers
+        )
+</code></pre>
+<p><strong>Key idea:</strong> SAM is split into three frozen pieces. Trainable parts are added *within* the decoder path via <code>SamDecoder</code>.</p>
+<h3>2. Building SAM: <code>build<em>grasp</em>sam()</code></h3>
+<p>From <code>/model/build<em>grasp</em>sam.py</code>, lines 106–143:</p>
+<pre><code>
+def build_grasp_sam(sam_encoder_type=&quot;vit_t&quot;, 
+                    freeze_encoder=True, freeze_decoder=True, freeze_prompt_encoder=True,
+                    adapter=False):
+    
+    checkpoint_dict = {
+        &#x27;vit_t&#x27;: &quot;pretrained_checkpoint/mobile_sam.pt&quot;,
+        &quot;vit_b&quot;:&quot;pretrained_checkpoint/sam_vit_b_01ec64.pth&quot;,
+        &quot;eff_vit_t&quot;:&quot;pretrained_checkpoints/efficient_sam/efficient_sam_vitt.pt&quot;,
+        # ... more variants
+    }
+    
+    # Load frozen encoder
+    image_encoder, prompt_encoder = load_sam_encoder(sam_encoder_type, checkpoint_dict, adapter)
+    mask_decoder = load_sam_decoder(sam_encoder_type, checkpoint_dict)
+    
+    # Freeze all SAM parameters (no gradient updates to SAM)
+    if freeze_encoder:
+        for param in image_encoder.parameters():
+            param.requires_grad = False
+    if freeze_prompt_encoder:
+        for param in prompt_encoder.parameters():
+            param.requires_grad = False
+    if freeze_decoder:
+        for param in mask_decoder.parameters():
+            param.requires_grad = False
+    
+    return image_encoder, prompt_encoder, mask_decoder
+</code></pre>
+<p><strong>Critical:</strong> All SAM components are <code>requires_grad = False</code>. Only the wrapper layers (adapters, tokens, grasp head) are trainable.</p>
+<h3>3. The grasp-prediction head: <code>ConvGraspHeader</code></h3>
+<p>From <code>/model/planar<em>grasp</em>sam.py</code>, lines 71–114:</p>
+<pre><code>
+class ConvGraspHeader(nn.Module):
+    def __init__(self, num_layers=3):
+        super(ConvGraspHeader, self).__init__()
+        
+        # Early refinement: 3 Conv2d(4→4) blocks + BatchNorm + ReLU
+        self.early_conv = nn.Sequential(
+            nn.Conv2d(4, 4, kernel_size=1),
+            nn.BatchNorm2d(4), nn.ReLU(),
+            # ... x3
+        )
+        
+        # Four separate 1x1 conv heads for grasp outputs
+        self.point_predictor = nn.Conv2d(1, 1, kernel_size=1, bias=False)    # confidence/quality
+        self.width_predictor = nn.Conv2d(1, 1, kernel_size=1, bias=False)    # gripper width
+        self.cos_predictor   = nn.Conv2d(1, 1, kernel_size=1, bias=False)    # cos(angle)
+        self.sin_predictor   = nn.Conv2d(1, 1, kernel_size=1, bias=False)    # sin(angle)
+        
+        self.fusion          = nn.Conv2d(2, 1, kernel_size=1, bias=False)
+
+    def forward(self, x):  # x: [B, 4, 256, 256]
+        if len(self.layer) &gt; 0:
+            x = self.early_conv(x)  # refine 4-channel input
+        
+        pos_out   = F.relu(self.point_predictor(x[:,0]))   # [B, 1, 256, 256]
+        width_out = F.relu(self.width_predictor(x[:,1]))
+        cos_out   = self.cos_predictor(x[:,2])
+        sin_out   = self.sin_predictor(x[:,3])
+        
+        return pos_out, cos_out, sin_out, width_out
+</code></pre>
+<p><strong>Core design:</strong> Takes 4-channel input (produced by <code>SamDecoder.predict_grasps()</code>) and outputs four dense prediction maps via separate 1×1 convolutions.</p>
+<h3>4. Grasp tokens added to the decoder: <code>SamDecoder</code></h3>
+<p>From <code>/model/planar<em>grasp</em>sam.py</code>, lines 116–289:</p>
+<pre><code>
+class SamDecoder(nn.Module):
+    def __init__(self, mask_decoder, sam_encoder_type, grasp_header_type, num_layers):
+        super(SamDecoder, self).__init__()
+        
+        self.mask_decoder = mask_decoder  # Frozen SAM mask_decoder
+        self.transformer = self.mask_decoder.transformer
+        self.iou_token = self.mask_decoder.iou_token
+        self.mask_tokens = self.mask_decoder.mask_tokens        # [4, 256]
+        
+        # NEW: Grasp-specific tokens added to decoder
+        self.hf_token = nn.Embedding(1, transformer_dim)        # HQ/quality token
+        self.grasp_token = nn.Embedding(4, transformer_dim)    # 4 grasp tokens
+        self.grasp_mlp = nn.ModuleList([
+            MLP(transformer_dim, transformer_dim, transformer_dim // 8, 3)
+            for i in range(4)  # One MLP per grasp token
+        ])
+</code></pre>
+<p><strong>Design:</strong> Extends SAM&#x27;s original token set (1 IoU token + 4 mask tokens) with 1 HQ token + 4 grasp tokens. Total: 7 learnable output tokens feed the transformer.</p>
+<h3>5. The <code>predict_grasps()</code> method: token fusion &amp; decoder</h3>
+<p>From <code>/model/planar<em>grasp</em>sam.py</code>, lines 230–289:</p>
+<pre><code>
+def predict_grasps(
+    self,
+    image_embeddings,          # [1, 256, 64, 64] from ViT
+    image_pe,                  # positional encoding
+    sparse_prompt_embeddings,  # from prompt encoder
+    dense_prompt_embeddings,   # from prompt encoder
+    hq_feature,                # extracted HQ branch features
+    grasp_feature              # extracted grasp branch features
+):
+    # Combine all output tokens: IoU + mask (4) + HQ (1) + grasp (4) = 10 total
+    output_tokens = torch.cat([
+        self.iou_token.weight,                    # [1, 256]
+        self.mask_tokens.weight,                  # [4, 256]
+        self.hf_token.weight,                     # [1, 256]
+        self.grasp_token.weight                   # [4, 256]
+    ], dim=0)
+    output_tokens = output_tokens.unsqueeze(0).expand(sparse_prompt_embeddings.size(0), -1, -1)
+    
+    # Merge with prompt tokens
+    tokens = torch.cat((output_tokens, sparse_prompt_embeddings), dim=1)  # [B, ~11, 256]
+    
+    # Run two-way transformer
+    hs, src = self.transformer(src, pos_src, tokens)  # hs: [B, 11, 256]
+    
+    # Extract token outputs
+    iou_token_out = hs[:, 0, :]                       # IoU
+    mask_tokens_out = hs[:, 1:(1+self.num_total_tokens), :]  # mask + HQ + grasp
+    
+    # Upscale and branch
+    upscaled_embedding_sam = self.output_upscaling(src)  # SAM branch
+    upscaled_embedding_hq = self.embedding_maskfeature(upscaled_embedding_sam) + hq_feature
+    upscaled_embedding_grasp = self.embedding_graspfeature(upscaled_embedding_sam) + grasp_feature
+    
+    # Hypernetwork: each output token → conv kernel for 256×256 feature map
+    hyper_in_list = []
+    for i in range(self.num_total_tokens):
+        if i &lt; 4:
+            hyper_in_list.append(self.output_hypernetworks_mlps[i](mask_tokens_out[:, i, :]))
+        elif i == 4:
+            hyper_in_list.append(self.hf_mlp(mask_tokens_out[:, i, :]))
+        elif i &gt; 4:
+            hyper_in_list.append(self.grasp_mlp[i-5](mask_tokens_out[:, i, :]))
+    
+    hyper_in = torch.stack(hyper_in_list, dim=1)  # [B, 10, ...]
+    
+    # Generate mask maps
+    masks_sam = (hyper_in[:,:4] @ upscaled_embedding_sam.view(b, c, h * w)).view(b, -1, h, w)
+    masks_ours = (hyper_in[:,4] @ upscaled_embedding_hq.view(b, c, h * w)).view(b, -1, h, w)
+    
+    # Generate grasp maps (4-channel output)
+    grasp_maps = (hyper_in[:,5:] @ upscaled_embedding_grasp.view(b, c, h * w)).view(b, -1, h, w)
+    
+    # Feed 4-channel grasp maps through ConvGraspHeader
+    grasp = self.grasp_header(grasp_maps)  # returns (pos, cos, sin, width)
+    
+    return masks, iou_pred, grasp
+</code></pre>
+<p><strong>Flow summary:</strong></p>
+<ul>
+<li>Transformer fuses image embeddings + prompt tokens + <strong>grasp tokens</strong></li>
+<li>Each grasp token → MLP → kernel for hypernetwork</li>
+<li>Hypernetwork produces 4-channel grasp feature map</li>
+<li><code>ConvGraspHeader</code> refines it → (quality, angle-cos, angle-sin, width)</li>
+</ul>
+<hr>
+<h2>Prompts &amp; the grasp output</h2>
+<h3>Prompt types and encoding</h3>
+<p>From <code>/model/planar<em>grasp</em>sam.py</code>, lines 388–447 (<code>total_forward</code> method):</p>
+<pre><code>
+def total_forward(self, imgs, targets, input_type=&quot;10point&quot;):
+    
+    # Random prompt selection per sample
+    if input_type == &#x27;10point&#x27;:
+        input_keys = [&#x27;point&#x27;]
+        k = 10  # sample 10 points on the grasp mask
+    elif input_type == &quot;box&quot;:
+        input_keys = [&#x27;box&#x27;]
+        k = 1
+    # ... other variants (1point, 3point, 5point)
+    
+    masks = targets[&quot;masks&quot;]
+    
+    # Generate point/box prompts from ground-truth mask
+    labels_box = masks_to_boxes(masks*255)              # Bounding box of object
+    labels_points = masks_sample_points(masks*255, k=k) # Random k points on mask
+    
+    batched_input = []
+    for b_i in range(len(imgs)):
+        dict_input = dict()
+        dict_input[&#x27;image&#x27;] = imgs[b_i]
+        
+        input_type = random.choice(input_keys)  # Randomly pick point or box prompt
+        
+        if input_type == &#x27;box&#x27;:
+            dict_input[&#x27;boxes&#x27;] = labels_box[b_i:b_i+1]
+            # For Efficient SAM, also provide point corners
+            if &quot;eff&quot; in self.sam_encoder_type:
+                x1, y1, x2, y2 = labels_box[b_i:b_i+1][0]
+                dict_input[&#x27;point_coords&#x27;] = torch.tensor([[x1,y1],[x2,y2]], ...)[None,:]
+                dict_input[&#x27;point_labels&#x27;] = torch.tensor([2,3], ...)[None,:]  # [2,3] = box corners
+        
+        elif input_type == &#x27;point&#x27;:
+            point_coords = labels_points[b_i:b_i+1]  # [B, k, 2]
+            dict_input[&#x27;point_coords&#x27;] = point_coords
+            dict_input[&#x27;point_labels&#x27;] = torch.ones(point_coords.shape[1], ...)[None,:]
+        
+        batched_input.append(dict_input)
+</code></pre>
+<p><strong>Prompt encoding</strong> (in <code>SamEncoder.forward()</code>, lines 25–68):</p>
+<pre><code>
+def forward(self, batched_input):
+    input_images = torch.stack([x[&quot;image&quot;] for x in batched_input], dim=0)
+    image_embeddings, interm_embeddings = self.image_encoder(input_images)
+    
+    batched_output = []
+    for image_record, curr_embedding in zip(batched_input, image_embeddings):
+        
+        if &quot;point_coords&quot; in image_record:
+            points = (image_record[&quot;point_coords&quot;], image_record[&quot;point_labels&quot;])
+        else:
+            points = None
+        
+        # Use SAM&#x27;s frozen prompt encoder
+        sparse_embeddings, dense_embeddings = self.prompt_encoder(
+            points=points,
+            boxes=image_record.get(&quot;boxes&quot;, None),
+            masks=image_record.get(&quot;mask_inputs&quot;, None),
+        )
+        
+        batched_output.append({
+            &quot;encoder_embedding&quot;: curr_embedding.unsqueeze(0),     # [1, 256, 64, 64]
+            &quot;image_pe&quot;: self.prompt_encoder.get_dense_pe(),
+            &quot;sparse_embeddings&quot;: sparse_embeddings,               # Fused point/box tokens
+            &quot;dense_embeddings&quot;: dense_embeddings,                 # Optional mask embedding
+        })
+    
+    return batched_output, interm_embeddings
+</code></pre>
+<h3>Grasp output structure</h3>
+<p>From <code>/model/planar<em>grasp</em>sam.py</code>, lines 505–553 (<code>compute_loss</code> method):</p>
+<pre><code>
+def compute_loss(self, grasp_pred, mask_pred, target, g_s, m_s, p, c, s, w):
+    # Unpack 4-channel grasp prediction
+    pos_pred, cos_pred, sin_pred, width_pred = grasp_pred
+    
+    # Unpack ground-truth grasps (also 4-channel per dataset)
+    pos, cos, sin, width = grasps_gt
+    
+    # All interpolated to 256×256
+    pos   = F.interpolate(pos, size=(256, 256), mode=&quot;bilinear&quot;).squeeze(1)    # [B, 256, 256]
+    cos   = F.interpolate(cos, size=(256, 256), mode=&quot;bilinear&quot;).squeeze(1)    # angle cos
+    sin   = F.interpolate(sin, size=(256, 256), mode=&quot;bilinear&quot;).squeeze(1)    # angle sin
+    width = F.interpolate(width, size=(256, 256), mode=&quot;bilinear&quot;).squeeze(1)  # gripper width
+    
+    # Weighted MSE loss (foreground 10× more than background)
+    p_loss = self.weighted_mse(pos_pred, pos, masks_gt, weight=0.01)      # pos loss (1.0 weight)
+    cos_loss = self.weighted_mse(cos_pred, cos, masks_gt, weight=0.01)    # cos loss (1.0 weight)
+    sin_loss = self.weighted_mse(sin_pred, sin, masks_gt, weight=0.01)    # sin loss (1.0 weight)
+    width_loss = self.weighted_mse(width_pred, width, masks_gt, weight=0.01)
+    
+    # Total grasp loss: weighted sum of components
+    grasp_loss = p*p_loss + c*cos_loss + s*sin_loss + w*width_loss  # p,c,s,w = weights
+    
+    # Mask loss (binary cross-entropy + DICE)
+    d_loss = dice_loss(mask_pred, masks_gt)
+    bce_loss = F.binary_cross_entropy_with_logits(mask_pred, masks_gt)
+    mask_loss = d_loss + bce_loss
+    
+    # Total loss combines grasp + mask (g_s, m_s = scale weights)
+    total_loss = g_s*grasp_loss + m_s*mask_loss
+</code></pre>
+<p><strong>Output structure:</strong> Four per-pixel prediction maps (all 256×256):</p>
+<ul>
+<li><strong><code>pos</code></strong> — grasp quality/confidence heatmap (ReLU-activated); higher = more confident grasp</li>
+<li><strong><code>cos</code>, <code>sin</code></strong> — angle encoded as cosine &amp; sine of doubled angle (avoids angle discontinuity at 180°)</li>
+</ul>
+<p>  - Recovered angle: <code>atan2(sin, cos) / 2.0</code></p>
+<ul>
+<li><strong><code>width</code></strong> — predicted gripper opening width in pixels</li>
+</ul>
+<h3>Inference &amp; post-processing</h3>
+<p>From <code>eval.py</code>, lines 26–56 (<code>post<em>process</em>output</code>):</p>
+<pre><code>
+def post_process_output(q_img, cos_img, sin_img, width_img):
+    # Upsample from 256×256 to 1024×1024 (match dataset resolution)
+    q_img = F.interpolate(q_img.unsqueeze(0), size=(1024, 1024))[0]
+    cos_img = F.interpolate(cos_img.unsqueeze(0), size=(1024, 1024))[0]
+    sin_img = F.interpolate(sin_img.unsqueeze(0), size=(1024, 1024))[0]
+    width_img = F.interpolate(width_img.unsqueeze(0), size=(1024, 1024))[0]
+    
+    # Convert to numpy; recover angle from cos/sin
+    q_img = q_img.data.detach().cpu().numpy().squeeze()
+    ang_img = (torch.atan2(sin_img, cos_img) / 2.0).data.detach().cpu().numpy().squeeze()
+    width_img = width_img.data.detach().cpu().numpy().squeeze() * 512  # scale factor
+    
+    # Apply Gaussian smoothing
+    q_img = gaussian(q_img, 2.0, preserve_range=True)
+    ang_img = gaussian(ang_img, 2.0, preserve_range=True)
+    width_img = gaussian(width_img, 1.0, preserve_range=True)
+    
+    return q_img, ang_img, width_img
+
+# Extract candidate grasps from predicted maps
+gs = detect_grasps(q_img, ang_img, width_img=w_out, no_grasps=1)
+
+# Check success: does grasp overlap &gt;25% IoU with ground-truth &amp; angle within 30°?
+success = g.max_iou(ground_truth_bbs) &gt; 0.25
+</code></pre>
+<p><strong>Grasp extraction:</strong> The quality heatmap is peak-detected (via <code>detect<em>grasps</code> in <code>/data/utils/grasp</em>utils.py</code>) to extract 2D grasp candidate positions, then ranked by confidence. The top grasp is evaluated against ground-truth bounding boxes using the Jacquard IoU metric (25% threshold, 30° angle tolerance).</p>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><strong><code>model/planar<em>grasp</em>sam.py</code> (lines 71–114)</strong> — <code>ConvGraspHeader</code> class</li>
+</ul>
+<p>   *Why:* See exactly how 4-channel intermediate features become (quality, cos, sin, width) predictions</p>
+<ul>
+<li><strong><code>model/build<em>grasp</em>sam.py</code> (lines 106–143)</strong> — <code>build<em>grasp</em>sam()</code> function</li>
+</ul>
+<p>   *Why:* Understand SAM loading, freezing, and checkpoint paths</p>
+<ul>
+<li><strong><code>train.py</code> (lines 134–141)</strong> — <code>setup_model()</code> and main loop (lines 214–272)</li>
+</ul>
+<p>   *Why:* See training orchestration, optimizer (AdamW), scheduler (CosineAnnealing), loss weighting (g<em>s=2.0, m</em>s=1.0)</p>
+<ul>
+<li><strong><code>model/planar<em>grasp</em>sam.py</code> (lines 375–478)</strong> — <code>PlanarGraspSAM</code> class &amp; <code>total_forward()</code></li>
+</ul>
+<p>   *Why:* Full forward pass: encoder → decoder → grasp predictions; prompt generation (point/box)</p>
+<ul>
+<li><strong><code>model/planar<em>grasp</em>sam.py</code> (lines 116–289)</strong> — <code>SamDecoder</code> class</li>
+</ul>
+<p>   *Why:* Core innovation: how grasp tokens, HQ tokens, and the two-way transformer are combined; hypernetwork mechanism</p>
+<ul>
+<li><strong><code>model/planar<em>grasp</em>sam.py</code> (lines 505–553)</strong> — <code>compute_loss()</code> method</li>
+</ul>
+<p>   *Why:* Loss function: weighted MSE (foreground 10× background), grasp + mask scales, angle encoding (cos/sin)</p>
+<ul>
+<li><strong><code>eval.py</code> (lines 81–213)</strong> — Evaluation loop &amp; post-processing</li>
+</ul>
+<p>   *Why:* Inference flow; upsampling, angle recovery from cos/sin, smoothing, IoU metric</p>
+<ul>
+<li><strong><code>data/utils/grasp<em>utils.py</code></strong> — <code>GraspRectangle</code>, <code>detect</em>grasps()</code>, IoU computation</li>
+</ul>
+<p>   *Why:* Understand the Jacquard grasp format and success metric</p>
+<hr>
+<h2>Summary: Key design choices</h2>
+<ul>
+<li><strong>Frozen SAM + trainable wrapper:</strong> SAM&#x27;s massive pre-training is preserved; only ~1/10 of parameters are trainable (adapters + new tokens + grasp head)</li>
+<li><strong>Dual-path decoder:</strong> Mask branch (from SAM) + HQ branch (added) + grasp branch (added) allow independent supervision of segmentation vs. grasp prediction</li>
+<li><strong>Angle encoding:</strong> Grasp angle is encoded as (cos, sin) of 2×angle to avoid discontinuity; recovered via <code>atan2(sin, cos) / 2</code></li>
+<li><strong>Dense grasp maps:</strong> All outputs are 256×256 per-pixel predictions, upsampled to 1024×1024 for evaluation; allows candidate selection via peak detection</li>
+<li><strong>Prompt flexibility:</strong> Point/box prompts are randomly selected during training; at test time, the user can provide either (or both)</li>
+<li><strong>Weighted loss:</strong> Foreground pixels (object) weighted 10× higher than background to focus grasp prediction on actual objects</li>
+</ul></article></div>
+  <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

@@ -1,0 +1,1563 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planning motion in real time — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive · with code</div>
+  <h1>Planning motion in real time</h1>
+  <p>Computing collision-free paths and control commands on the fly — sampling-based and heuristic planning, mobile-manipulation control, visual servoing, and reactive navigation. This page: the idea, the key 2025 papers with their real code, and hands-on walkthroughs of two cloned codebases.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Planning motion in real time</h1>
+<p><em>115 papers · move — this is the part of the loop where the robot&#x27;s decisions become actual physical movement</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">The central challenge in motion planning is a collision of two hard truths: the math to find the optimal path is too slow to compute in real time, but the robot cannot wait. For decades, this meant a choice — plan ahead and hope the world does not change, or re-plan often and accept rough, jerky movements. The papers here break this tradeoff by changing what "good enough" means. Instead of computing one perfect path, they sample thousands of candidate paths on parallel hardware and score them by safety, smoothness, and goal-reaching. Instead of planning in abstract space, they bake the robot&#x27;s actual body limits, steering geometry, and physics directly into the planner so the solver never proposes something the hardware cannot do. And instead of trusting a model, they measure the real world&#x27;s drift and cancel it in real time, mid-movement. The result is planning that works when the world changes, when you have only a few milliseconds, and when the space is tight enough that there is almost no clearance.</p>
+<p style="margin:0 0 8px"><strong>Four angles the field is attacking from:</strong></p>
+<ul style="margin:0 0 12px">
+<li><strong>① Parallel sampling with model predictive path integral control.</strong> Evaluate thousands of trajectories in parallel on a GPU; score each by safety and smoothness; pick the best or blend good ones. <em>Take Your Best Shot: Sampling-Based Planning for Autonomous Photography</em> uses this to choose viewpoint trajectories for a camera robot. <em>CNSv2: Probabilistic Correspondence Encoded Neural Image Servoing</em> combines sampling with visual feedback for manipulation.</li>
+<li><strong>② Breaking hard spaces into soft pieces.</strong> When a space is too cluttered to solve all at once, split the problem: solve for one obstacle constraint at a time, or decompose multi-obstacle spaces into tangent-line chains. <em>Narrow Passage Path Planning Using Collision Constraint Interpolation</em> feeds collision rules into the solver incrementally. <em>Context-Aware Collaborative Pushing of Heavy Objects Using Sampled Candidate Trajectories</em> handles spaces full of movable objects.</li>
+<li><strong>③ Embedding the robot&#x27;s physics and geometry into planning.</strong> Do not plan in abstract space; encode how the robot actually moves. <em>SEB-Naver: A SE(2)-based Local Navigation Framework for Car-like Robots on Uneven Terrain</em> models steering geometry on slopes. <em>Inverse Kinematics on Guiding Vector Fields for Robot Path Finding</em> ensures proposals respect joint limits. <em>EHC-MM: Embodied Holistic Control for Mobile Manipulation</em> blends base motion and arm manipulation into one QP optimization, avoiding jerky mode switches.</li>
+<li><strong>④ Predicting and canceling what will go wrong.</strong> Model the task mechanics and deformation, predict drift, reject disturbances. <em>Safe Leaf Manipulation for Accurate Shape and Pose Estimation of Occluded Fruits</em> predicts leaf deformation to plan gentle pushing moves. <em>Dual-BEV Nav: Dual-Layer BEV-Based Heuristic Path Planning for Mobile Robots</em> uses layered representations to reason about traversability. <em>Vision-Based Movement Primitives for Lunar Hazard Avoidance</em> uses learned motion primitives to navigate without a full terrain model.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> motion planning is shifting from trying to compute perfection in advance to sampling intelligently, respecting real constraints, and reacting quickly when the world does not match the model. The field can now close the control loop in milliseconds on tasks from tight-passage navigation to lunar crater avoidance, and the clearest wins come from encoding the robot&#x27;s geometry and physics directly into the optimization rather than planning in the abstract and hoping it works. <strong>Still open:</strong> reliable real-time planning in very cluttered spaces with many movable obstacles; large model-reality gaps that require no re-planning; and a unified framework that combines speed, safety, body constraints, and disturbance rejection in one system that works across different robot morphologies and tasks.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>Every robot that moves has to answer one question over and over, many times each second: given where I am right now, what should my joints do next? This sounds simple, but it is deeply hard.</p>
+<p>The right answer is to solve a precise math problem: find the exact sequence of joint commands that gets the robot to its goal as fast and safely as possible, while avoiding every obstacle and respecting every limit the hardware has. That problem, solved exactly, takes far too long to compute. A robot arm reacting to a moving ball, or a mobile robot weaving through a crowd, cannot wait. It needs an answer now, then again in a fraction of a second, then again. So the field is always chasing the same tradeoff: the more correct the answer, the slower it arrives; the faster the answer, the rougher the motion.</p>
+<p>This gets harder still because the world keeps changing in ways the robot did not expect. A person shifts direction. A crane load starts to swing. Wind pushes a drone off course. A leaf moves. An object turns out to be heavier than expected. The math the planner used a moment ago now describes a world that no longer exists.</p>
+<p>There is also a structural problem that shows up across many of these papers. A robot is not a point in space — it is a body with links and joints, and each link can collide with something. Checking whether a proposed path is safe requires testing the whole body&#x27;s shape against every nearby obstacle, and doing that for millions of candidate paths per second is expensive. In tight spaces, where nearly every path grazes something, the planner&#x27;s job is even harder: it must thread through gaps that may be barely wide enough, or find that the only way through is to move something out of the way first.</p>
+<p>These problems connect to the one big challenge every robot faces. A robot must take in an unclear, changing world, decide what to do, move a real body, and do it fast, cheap, safe, and general. Motion planning sits right at the junction of decide and move. A plan that arrives too late is useless. A plan that ignores the body&#x27;s limits cannot be followed. A plan that ignores disturbances will drift. The 115 papers in this topic are all trying to close that gap.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Trying many paths in parallel and scoring them</h3>
+<p>The most common approach is to stop trying to find the one exact best path and instead try a large number of short candidate paths very quickly, score each one, and pick the winner. This is called sampling-based control or, in its most common modern form, model predictive path integral control (MPPI).</p>
+<p>The key insight is that modern processors — especially graphics chips (GPUs) — can evaluate thousands of candidate paths at the same time. Each path is a possible short future, lasting maybe a second or two. The system scores each one by how close it gets to the goal, how safe it is, and how smooth it is. The winner, or a weighted blend of the good ones, becomes the robot&#x27;s next action. Then the whole process repeats.</p>
+<p>&quot;Trajectory Planning with Signal Temporal Logic Costs Using Deterministic Path Integral Optimization&quot; is a direct example: the team used this sampling approach to plan paths that satisfy time-based rules — such as &quot;be in zone A between seconds 3 and 7&quot; — without having to smooth or rewrite those rules into a form standard solvers can handle. &quot;High Speed Robotic Table Tennis Swinging Using Model Predictive Control&quot; shows the same idea applied to a physical task that demands fast re-planning: every time the robot gets a new estimate of where the ball will land, it re-solves the best swing from scratch. &quot;Take Your Best Shot: Sampling-Based Planning for Autonomous Photography&quot; applies it to a camera robot choosing where to stand for a good shot.</p>
+<h3>Handling tight spaces by breaking them into simpler pieces</h3>
+<p>When the space the robot must move through is narrow or cluttered, the most common approach fails because most sampled paths collide with something. Several papers tackle this by restructuring the problem so the planner never confronts a hard collision all at once.</p>
+<p>&quot;Narrow Passage Path Planning Using Collision Constraint Interpolation&quot; is the clearest example: it splits the environment into simple convex regions and feeds the collision-avoidance rules into the solver one at a time, solving an easier version of the problem before adding the next rule. This keeps the solver from getting stuck at the start. &quot;Improving Efficiency in Path Planning: Tangent Line Decomposition Algorithm&quot; takes a different angle — it breaks the full multi-obstacle problem into a chain of single-obstacle steps, each solved by a simple tangent line, so the search space shrinks dramatically. &quot;Search-Based Path Planning in Interactive Environments Among Movable Obstacles&quot; (PAMO*) deals with rooms full of objects by noticing that most objects are far from the robot&#x27;s path and can be ignored during search, focusing attention only where it matters.</p>
+<h3>Building a model of how the body and world behave — and using it</h3>
+<p>Rather than planning blindly, many systems first learn or derive a model of how the robot&#x27;s body or the world responds to commands, then use that model to make smarter guesses.</p>
+<p>&quot;iKap: Kinematics-Aware Planning with Imperative Learning&quot; bakes the math of how the robot&#x27;s joints translate into movement directly into the training of a neural network, so the network never proposes a path the hardware cannot follow. &quot;SEB-Naver: A SE(2)-based Local Navigation Framework for Car-like Robots on Uneven Terrain&quot; derives the math for how a car-like robot steers on sloped ground and uses it to plan smooth paths that respect real steering limits. &quot;Dynamic End Effector Trajectory Tracking for Small-Scale Underwater Vehicle-Manipulator Systems&quot; builds a full model of how a robot arm mounted on an underwater vehicle interacts with the water around it and uses that model to design a controller. &quot;Near Time-Optimal Hybrid Motion Planning for Timber Cranes&quot; models the hydraulic flow limits of a forestry crane and uses that model to plan fast motions that the pump can actually supply.</p>
+<h3>Canceling disturbances and model errors directly</h3>
+<p>Even the best plan drifts when the real world does not match the model. A separate family of approaches focuses on detecting that drift and correcting it in real time, without waiting for the planner to generate a new path.</p>
+<p>&quot;Collision Avoidance in Model Predictive Control Using Velocity Damper&quot; adds a safety rule to the planner that considers not just how far the robot is from an obstacle but how fast it is closing in — catching unsafe situations that a distance-only rule misses. &quot;Robust Orientation Control of Robot Manipulator Using Orientation Disturbance Observer&quot; rebuilds a standard disturbance-canceling tool so it works directly with 3D rotation math, letting the arm resist outside forces trying to knock its tip off direction. &quot;Robust Nonprehensile Dynamic Object Transportation&quot; plans a path by minimizing how sensitive the outcome is to errors in the model of the object being carried, so the chosen path stays safe even when the model is wrong.</p>
+<h3>Adapting to the task&#x27;s structure — sequential steps, coverage, and multi-body systems</h3>
+<p>Some papers exploit structure that is specific to the task at hand. &quot;No Plan but Everything Under Control&quot; builds a mathematical energy surface that changes as the task progresses through steps, so the robot follows it downhill without needing an explicit plan — the surface itself encodes what to do next. &quot;Improving Coverage Performance of a Size-Reconfigurable Robot&quot; plans a sweep path for a robot that can change its own footprint, adding penalties for retracing and unnecessary resizing. &quot;EHC-MM: Embodied Holistic Control for Mobile Manipulation&quot; uses a blending function to shift a single controller&#x27;s attention between driving and arm use depending on distance to the target, so neither mode is abrupt or separate. &quot;A Control Strategy for an Orbital Manipulator&quot; coordinates the robot arm and an end-effector thruster together so thrust always points away from the satellite being serviced.</p>
+<h2>Where it stands</h2>
+<p>The field can now plan and re-plan motion fast enough to close the loop in many real tasks — table tennis, crane operation, underwater manipulation, lunar digging. The clearest gains come from parallel sampling on fast processors and from building physical constraints directly into planners. What remains hard is planning reliably in very tight spaces with many movable objects, handling large mismatches between the model and the real world without a new plan, and combining all these ingredients — speed, safety, body constraints, disturbance rejection — in a single system that works across different robots and tasks.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">Safe Leaf Manipulation for Accurate Shape and Pose Estimatio</td><td>ICRA 2025</td><td><a href="https://github.com/ShaoxiongYao/SafeLeafManip" target="_blank" rel="noopener">ShaoxiongYao/SafeLeafManip</a></td><td class="mono">ssc_lmap/scene_consistent_deepsdf.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">EHC-MM: Embodied Holistic Control for Mobile Manipulation</td><td>ICRA 2025</td><td>—</td><td class="mono">src/ehc_mm_controller.cpp</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">CNSv2: Probabilistic Correspondence Encoded Neural Image Ser</td><td>ICRA</td><td><a href="https://github.com/hhcaz/CNS" target="_blank" rel="noopener">hhcaz/CNS</a></td><td class="mono">demo_real_ur5.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Take Your Best Shot: Sampling-Based Planning for Autonomous </td><td>ICRA</td><td><a href="https://github.com/laurenbramblett/NBV_Photography_Inspection" target="_blank" rel="noopener">laurenbramblett/NBV_Photography_Inspection</a></td><td class="mono">targetCoverage_NBV_Proposed.m</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">Narrow Passage Path Planning Using Collision Constraint Inte</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run">unknown</span></td></tr>
+<tr><td class="tt">Context-Aware Collaborative Pushing of Heavy Objects Using S</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">Dual-BEV Nav: Dual-Layer BEV-Based Heuristic Path Planning f</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Inverse Kinematics on Guiding Vector Fields for Robot Path F</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">SEB-Naver: A SE(2)-based Local Navigation Framework for Car-</td><td>IROS</td><td><a href="https://github.com/ZJU-FAST-Lab/seb_naver" target="_blank" rel="noopener">ZJU-FAST-Lab/seb_naver</a></td><td class="mono">src/traversability_assessment.cpp or src/trajectory_planner.cpp (CasADi optimization)</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">Vision-Based Movement Primitives for Lunar Hazard Avoidance</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">sim</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>Safe Leaf Manipulation for Accurate Shape and Pose Estimation of Occluded Fruits</h1>
+<p>ICRA 2025 · 6 citations · mobile-manipulation</p>
+<h2>What it does</h2>
+<p>A robot equipped with a gripper and camera must find and grasp fruit hidden under leaves. This method plans a sequence of gentle leaf-pushing moves to expose the fruit for clear viewing and measurement, without tearing the plant. It is a <strong>mobile-manipulation</strong> approach: the robot moves its base to reach the fruit, then coordinates careful arm motions with predictions of how each leaf will deform under pressure.</p>
+<h2>The method, in detail</h2>
+<p>The system works in three stages:</p>
+<p><strong>Stage 1: Segmentation and scene understanding.</strong></p>
+<p>RGB-D sensor data (an image from a camera plus depth values) is fed into GroundedSAM (a segmentation model), which classifies every pixel as leaf, branch, fruit, or background. This produces a 3D point cloud — a set of (x, y, z) positions — for each object type.</p>
+<p><strong>Stage 2: Shape completion.</strong></p>
+<p>Fruit and branches are often only partially visible. The method applies scene-consistent shape completion: it fits a geometric model (using a technique similar to As-Rigid-As-Possible, or ARAP, warping) to complete the hidden parts of branches and fruit. For fruit shape, it uses DeepSDF, a neural network trained to recognize pepper and other fruit shapes even from fragmentary views. The key trick is &quot;scene-consistent&quot;: the completed shape must match what was observed and not contradict the known structure of the plant.</p>
+<p><strong>Stage 3: Deformation prediction and grasp planning.</strong></p>
+<p>Before the robot acts, it builds an embedded deformation graph (EDG) from the completed plant model. This is a sparse set of control points (vertices) that can be moved; when you drag one control point, neighboring parts of the plant deform smoothly. The system then simulates what happens if the gripper pushes on a leaf: the EDG predicts the new leaf shape. A visibility predictor (OctoMap, a voxel-based 3D occupancy grid) estimates how much of the fruit will become visible from the robot&#x27;s camera viewpoint after that push. The system then plans a sequence of push actions that maximizes final fruit visibility while penalizing large deformations (to avoid tearing leaves).</p>
+<p><strong>The key trick:</strong> The framework unifies leaf deformation simulation with visibility estimation. Instead of planning moves in isolation, it reasons about &quot;if I push here, the leaf deforms this way, and then I can see the fruit from this angle — is that better?&quot;</p>
+<h2>The code</h2>
+<p><strong>Repository URL:</strong> <a href="https://github.com/ShaoxiongYao/SafeLeafManip" target="_blank" rel="noopener">https://github.com/ShaoxiongYao/SafeLeafManip</a></p>
+<p><strong>Language/Framework:</strong> Python 3.9; uses PyTorch (for neural shape completion), Open3D (point cloud processing), octomap-python (visibility prediction), and GroundedSAM (segmentation).</p>
+<p><strong>Repository structure:</strong></p>
+<pre><code>
+SafeLeafManip/
+├── ssc_lmap/                           # Core library
+│   ├── segment_plant.py                # GroundedSAM segmentation wrapper
+│   ├── branch_completion.py            # ARAP branch shape completion
+│   ├── scene_consistent_deepsdf.py     # DeepSDF fruit shape completion
+│   ├── embed_deform_graph.py           # Embedded deformation graph
+│   ├── grasp_planner.py                # Grasp/push action planning
+│   ├── octomap_wrapper.py              # Visibility prediction
+│   ├── pts_utils.py                    # Point cloud utilities
+│   └── vis_utils.py                    # Visualization helpers
+├── scripts/
+│   ├── plant_shape_completion.py       # Shape completion demo
+│   └── plant_simulate_action.py        # Deformation simulation demo
+├── configs/
+│   ├── shape_complete.yaml             # Shape completion config
+│   └── simulate_action.yaml            # Simulation config
+├── requirements.txt
+└── README.md
+</code></pre>
+<p><strong>Start here:</strong> <code>scripts/plant<em>shape</em>completion.py</code> — this demo runs the segmentation → shape completion pipeline on test data, showing how the system reconstructs hidden fruit geometry.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>octomap-python (requires CMake + C++ compiler)</li>
+<li>DeepSDF (included via HortiMapping submodule)</li>
+<li>GroundedSAM (optional for re-segmentation; pre-segmented test data provided)</li>
+<li>Segment-Anything</li>
+<li>Open3D, numpy, PyYAML</li>
+</ul>
+<p><strong>Hardware/data needs:</strong></p>
+<ul>
+<li>No GPU strictly required, but shape completion with DeepSDF runs much faster on GPU.</li>
+<li>No simulator needed — the code works with real RGB-D sensor data or provided test data (<code>test<em>obj</em>100</code> folder, not in repo; must download separately).</li>
+<li>No dataset needed for the core algorithm; test data (real pepper plant images) is available from the project page.</li>
+</ul>
+<p><strong>How to run:</strong></p>
+<pre><code>
+git clone --recursive https://github.com/ShaoxiongYao/SafeLeafManip.git
+cd SafeLeafManip
+pip install -r requirements.txt
+
+# Download test_obj_100 folder from project page
+export DATA_DIR=/path/to/test_obj_100
+
+# Run shape completion demo
+python scripts/plant_shape_completion.py \
+    --segment_dir &quot;${DATA_DIR}/segmented&quot; \
+    --shape_complete_dir &quot;${DATA_DIR}/completed&quot; \
+    --trans_params_fn &quot;${DATA_DIR}/raw/extrinsic.json&quot; \
+    --shape_complete_config configs/shape_complete.yaml
+
+# Run deformation simulation and grasp planning
+python scripts/plant_simulate_action.py \
+    --segment_dir &quot;${DATA_DIR}/segmented&quot; \
+    --shape_complete_dir &quot;${DATA_DIR}/completed&quot; \
+    --trans_params_fn &quot;${DATA_DIR}/raw/extrinsic.json&quot; \
+    --simulate_action_config configs/simulate_action.yaml
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li><code>ssc<em>lmap/scene</em>consistent_deepsdf.py</code> — how DeepSDF completes fruit shape</li>
+<li><code>ssc<em>lmap/embed</em>deform_graph.py</code> — how the deformation graph predicts leaf motion</li>
+<li><code>ssc<em>lmap/grasp</em>planner.py</code> — the optimization that sequences push actions</li>
+</ul>
+<p><strong>Difficulty:</strong> Medium to high. The code is well-factored but requires understanding of:</p>
+<ul>
+<li>Point cloud representations (Open3D API)</li>
+<li>ARAP deformation (linear algebra, constraint solving)</li>
+<li>Neural shape models (forward/backward pass through DeepSDF)</li>
+<li>Octomap probabilistic occupancy (ray casting for visibility)</li>
+<li>Quadratic programming (for action sequencing)</li>
+</ul>
+<p>The segmentation step (GroundedSAM) is the only large black-box model; other components are explicit algorithms you can trace line by line. Test data includes pre-computed segmentations, so you can skip GroundedSAM initially and focus on shape completion and planning.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: Yes, partially.</strong></p>
+<p>The shape completion step (DeepSDF forward pass) and deformation graph simulation will run on CPU but slowly (~2–5 seconds per frame on a modern CPU without GPU). The octomap visibility lookup is very fast on CPU.</p>
+<p>The grasp planner (quadratic programming) runs in under a second on CPU.</p>
+<p><strong>Blocker: None.</strong> No simulator or robot required. No external API keys. The only hard requirement is test data (the <code>test<em>obj</em>100</code> folder), which is downloadable from the project page but not in the GitHub repo itself. You can also skip GroundedSAM re-segmentation if you use pre-segmented test data.</p>
+<p><strong>Recommendation:</strong> Bring a GPU if you want real-time shape completion; otherwise, expect ~10 seconds per full pipeline run on CPU. The code will run on a mid-range laptop given enough RAM (the embedded deformation graph is memory-efficient).</p></article>
+<article class="page" id="gp1"><h1>EHC-MM: Embodied Holistic Control for Mobile Manipulation</h1>
+<p>ICRA 2025 · 4 citations · mobile-manipulation unified control</p>
+<h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
+<p>A robot with a moving base and an articulated arm needs to decide when to prioritize driving forward versus carefully manipulating an object. EHC-MM is a unified controller that seamlessly blends base motion and arm control into a single optimization step, using a smooth weighting function that shifts the robot&#x27;s focus based on how close it is to its target and how hard it would be to reach. This is the <strong>mobile-manipulation</strong> sub-approach: whole-body control coordinating a mobile base + arm + camera perception into one real-time decision loop.</p>
+<h2>The method, in detail — step by step, plain words but technical</h2>
+<p><strong>Inputs:</strong> Current robot state (base position/velocity, arm joint angles, camera frame); target object location; task-space goal for manipulation (where to position the end-effector).</p>
+<p><strong>The core trick:</strong> The paper encodes the &quot;Distant Mobility, Close Grasping&quot; (DMCG) principle—meaning *drive to the object from far away, then switch to careful manipulation up close*—as a single Quadratic Programming (QP) optimization problem. Most systems plan these two modes separately; EHC-MM unifies them.</p>
+<p><strong>The math:</strong> The QP objective is:</p>
+<ul>
+<li>Minimize: <code>0.5 * x^T Q x + C^T x</code>, where x is the vector of all control commands (base velocities + arm joint velocities).</li>
+<li>Q matrix encodes the interaction between base and arm motion (so they don&#x27;t fight each other).</li>
+<li>C vector bakes in two goals: (1) maximizing manipulability (how many directions the arm can move), and (2) auxiliary tasks like obstacle avoidance or camera framing.</li>
+</ul>
+<p><strong>The blending function sig(ω):</strong> The critical innovation is a smooth sigmoid function that measures *reachability*—a parameter ω that captures how difficult the end-effector is to move to the target. When ω is large (target far, hard to reach), sig(ω) weights the QP heavily toward base motion. As the robot closes in and ω shrinks, sig(ω) smoothly shifts the weighting toward arm precision control. This avoids sudden jerky switches between modes.</p>
+<p><strong>Monitor-Position-Based Servoing (MPBS):</strong> Vision module that keeps the camera pointed at the target while the arm manipulates. Traditional position-based servoing (PBS) only tracks visual errors to move the end-effector; MPBS adds a term that adjusts the arm&#x27;s orientation to maintain line-of-sight to the manipulated object, preventing the target from drifting out of frame during dynamic motion.</p>
+<p><strong>Optimization setup:</strong> The QP is solved at real-time control rates (typically 50–100 Hz) on the robot&#x27;s onboard computer. Constraints enforce joint angle limits, collision-free space (via signed-distance fields or simple box constraints), and actuator torque limits. A QP solver such as qpSWIFT or Quadratic Program Interior Point (QPIP) computes the optimal control in milliseconds.</p>
+<p><strong>Training/learning:</strong> This is *not* a learned model. The method is classical control-theoretic; all parameters (Q, C, ω tuning) are hand-tuned or identified via offline experiments on the robot platform (RealMan compound arm) to balance mobility and manipulation.</p>
+<h2>The code — repo URL; language/framework; the repo STRUCTURE (top folders + key files); the specific file/function to open FIRST; dependencies; whether it needs a simulator, dataset, or GPU; how you&#x27;d run it</h2>
+<p><strong>Repo URL:</strong> No public code repository found at GitHub. The arXiv paper (2409.08527) does not cite a GitHub link. Authors may share code upon request via email.</p>
+<p><strong>Framework &amp; language:</strong> Likely C++ with ROS/ROS2 middleware (given the RealMan robot integration and real-time QP solver requirements). ROS2 rm<em>robot stack is the standard interface for RealMan arms (<a href="https://github.com/RealManRobot/ros2" target="_blank" rel="noopener">https://github.com/RealManRobot/ros2</a></em>rm_robot).</p>
+<p><strong>Expected structure (inferred):</strong></p>
+<pre><code>
+ehc_mm/
+├── launch/
+│   └── ehc_mm_mobile_manipulation.launch.py  # ROS2 launch file
+├── src/
+│   ├── ehc_mm_controller.cpp                  # Main QP-based controller loop
+│   ├── monitor_position_servoing.cpp          # MPBS vision module
+│   ├── reachability_weight.cpp                # sig(ω) computation
+│   └── qp_solver_wrapper.cpp                  # Interface to qpSWIFT or similar
+├── include/ehc_mm/
+│   ├── ehc_mm_controller.h
+│   ├── mpbs.h
+│   └── types.h
+├── config/
+│   └── ehc_mm_params.yaml                     # Robot-specific tuning (Q matrix, ω limits)
+├── launch_sim.sh / launch_real.sh             # Scripts to run on simulator vs. real robot
+└── CMakeLists.txt
+</code></pre>
+<p><strong>File to open first:</strong> <code>src/ehc<em>mm</em>controller.cpp</code>. This is the main loop that formulates and solves the QP at each control tick.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>ROS2 (Humble or later) or ROS1 (Noetic).</li>
+<li>RealMan rm_robot package or equivalent mobile arm URDF/controller.</li>
+<li>QP solver library: qpSWIFT, OSQP, or commercial Gurobi/Mosek (latter two rarely used in robotics due to licensing).</li>
+<li>Eigen3 (linear algebra).</li>
+<li>cv<em>bridge, image</em>transport (for camera stream in MPBS).</li>
+<li>Drake or pinocchio (optional, for kinematic derivatives).</li>
+</ul>
+<p><strong>Simulator/hardware/GPU needs:</strong></p>
+<ul>
+<li><strong>Simulator:</strong> Can run in Gazebo with RealMan simulation plugin or simplified physics engine. No GPU required for controller; QP solving is CPU-only.</li>
+<li><strong>Real robot:</strong> Requires a RealMan compound arm (e.g., RM65, RM75 models). Tested on RealMan hardware.</li>
+<li><strong>GPU:</strong> Not needed. Quadratic programming is sparse and runs &lt;5 ms on modern CPUs.</li>
+<li><strong>Dataset:</strong> No learning involved; no dataset needed.</li>
+<li><strong>API keys:</strong> None.</li>
+</ul>
+<p><strong>How to run it:</strong></p>
+<pre><code>
+# Clone and build
+git clone https://github.com/YOUR_USERNAME/ehc_mm.git  # (Not public yet; assume this path)
+cd ehc_mm &amp;&amp; colcon build
+
+# Launch on real robot
+ros2 launch ehc_mm ehc_mm_mobile_manipulation.launch.py robot:=realman_rm75 sim:=false
+
+# Launch in simulation
+ros2 launch ehc_mm ehc_mm_mobile_manipulation.launch.py sim:=true
+
+# Monitor controller via ROS2 topic
+ros2 topic echo /ehc_mm/control_output
+</code></pre>
+<h2>Reviewing it yourself — what to read first, and how hard the code is to follow</h2>
+<p><strong>Read the arXiv paper first:</strong> [<a href="https://arxiv.org/abs/2409.08527](https://arxiv.org/abs/2409.08527" target="_blank" rel="noopener">https://arxiv.org/abs/2409.08527](https://arxiv.org/abs/2409.08527</a>). Section 2 covers the QP formulation mathematically; Section 3 explains MPBS. The method is sound but the paper is dense—expect 1–2 hours to fully digest.</p>
+<p><strong>Code difficulty:</strong> *Moderate to hard.*</p>
+<ul>
+<li>The QP solver setup is straightforward (bind constraint matrices, call solver).</li>
+<li>The tricky parts are (1) computing sig(ω) correctly as a smooth reachability measure, (2) populating the Q and C matrices to encode the right trade-offs, and (3) tuning the robot-specific parameters in config/yaml for your arm&#x27;s dynamics and workspace.</li>
+<li>If you have experience with ROS2 and control theory (Jacobians, constraint handling), you can read this in ~4–6 hours.</li>
+<li>If you are unfamiliar with QP solvers or ROS, plan 2–3 days to understand the data flow and tune parameters.</li>
+</ul>
+<p><strong>Gotchas:</strong></p>
+<ul>
+<li>sig(ω) must be smooth and bounded; a poorly implemented sigmoid (e.g., too steep) will cause oscillations in the blending.</li>
+<li>Q matrix conditioning: if Q is ill-conditioned, the QP solver may fail or produce nonsensical velocities. Must carefully normalize joint contributions.</li>
+<li>Real-time safety: the QP solves in ~3 ms, but latency in reading sensor state or publishing commands can add 10+ ms. Must test closed-loop latency on real hardware.</li>
+</ul>
+<h2>Run verdict — on a CPU-only box: could it actually run? Be specific about GPU / simulator / dataset / API-key needs</h2>
+<p><strong>Yes, on CPU only.</strong> Quadratic programming is inherently serial and cache-friendly. A modern CPU (Intel i5 or ARM Cortex-A72) can solve the QP in 2–5 ms, leaving plenty of margin for 50 Hz control loops. No GPU required. No dataset, no API keys, no simulator license needed to run code (Gazebo is free/open). The main barrier is access to a RealMan robot or a calibrated simulator with the arm&#x27;s URDF and dynamics parameters. On a CPU-only dev box, you can build, test, and debug the controller in Gazebo simulation; deployment to real hardware is a separate step. <strong>Runnable: CPU.</strong></p>
+<hr>
+<h2>Sources &amp; Further Reading</h2>
+<ul>
+<li><strong>arXiv:</strong> [<a href="https://arxiv.org/abs/2409.08527](https://arxiv.org/abs/2409.08527" target="_blank" rel="noopener">https://arxiv.org/abs/2409.08527](https://arxiv.org/abs/2409.08527</a>)</li>
+<li><strong>Author page:</strong> [<a href="https://alex0110-yx.github.io/](https://alex0110-yx.github.io/" target="_blank" rel="noopener">https://alex0110-yx.github.io/](https://alex0110-yx.github.io/</a>)</li>
+<li><strong>RealMan robot ROS2 stack:</strong> [<a href="https://github.com/RealManRobot/ros2" target="_blank" rel="noopener">https://github.com/RealManRobot/ros2</a><em>rm</em>robot](<a href="https://github.com/RealManRobot/ros2" target="_blank" rel="noopener">https://github.com/RealManRobot/ros2</a><em>rm</em>robot)</li>
+<li><strong>QP solver options:</strong> qpSWIFT ([<a href="https://github.com/qpSWIFT/qpSWIFT](https://github.com/qpSWIFT/qpSWIFT" target="_blank" rel="noopener">https://github.com/qpSWIFT/qpSWIFT](https://github.com/qpSWIFT/qpSWIFT</a>)), OSQP, qpsolvers Python library</li>
+<li><strong>Review:</strong> [<a href="https://www.themoonlight.io/en/review/ehc-mm-embodied-holistic-control-for-mobile-manipulation](https://www.themoonlight.io/en/review/ehc-mm-embodied-holistic-control-for-mobile-manipulation" target="_blank" rel="noopener">https://www.themoonlight.io/en/review/ehc-mm-embodied-holistic-control-for-mobile-manipulation](https://www.themoonlight.io/en/review/ehc-mm-embodied-holistic-control-for-mobile-manipulation</a>)</li>
+</ul></article>
+<article class="page" id="gp2"><h1>CNSv2: Probabilistic Correspondence Encoded Neural Image Servo</h1>
+<p>ICRA · 3 citations · visual-servoing</p>
+<h2>What it does</h2>
+<p>CNSv2 controls a robot arm by watching a camera and dynamically computing motor commands to move the end-effector toward a goal pose. Unlike older methods that fail when lighting is bad or objects have no visible texture, CNSv2 represents each possible feature match as a probability spread rather than picking a single definite match—then feeds those soft match scores into a neural control policy. It&#x27;s a <strong>visual-servoing</strong> approach: driving motion from camera error signals.</p>
+<h2>The method, in detail</h2>
+<p>The system has three pipeline stages:</p>
+<p><strong>1. Feature extraction &amp; dense matching.</strong> A frozen pretrained vision transformer (AM-RADIOv2.5 with ViT-B backbone) extracts coarse features from the current camera image and a reference target image, both downsampled to 1/16 resolution. A dot-product similarity kernel computes a dense matching-score matrix between all image patches—instead of picking the single best match for each feature, the softmax scores remain as probabilities across all possible matches.</p>
+<p><strong>2. Probabilistic correspondence encoding.</strong> The matching scores are not fed directly to the controller. Instead, they&#x27;re converted into a fixed-size &quot;translation-equivariant&quot; feature map by projecting the soft matches onto predefined spatial grid anchors using quadratic B-spline basis functions. This trick (borrowed from material-point methods in physics simulation) ensures the representation is independent of image resolution and robustly encodes uncertainty about where features actually are.</p>
+<p><strong>3. Neural controller &amp; velocity denormalization.</strong> A transformer network with axial rotary positional embeddings (2D RoPE) takes these probabilistic feature maps and predicts two outputs: (a) log-norm of the desired velocity (magnitude on a log scale), and (b) a unit direction vector pointing in 3D space. Crucially, these predictions are normalized—independent of the actual camera and scene. A separate analytical denormalization step then scales the velocity using the camera&#x27;s intrinsic matrix and an essential matrix transform computed from the soft correspondences, adapting the control command to real-world intrinsics and distances.</p>
+<p><strong>Training setup:</strong> Entirely in simulation (NVIDIA IsaacSim). The authors sampled 6,852 diverse 3D models from the GSO and OmniObject3D datasets. Two parallel data-generation processes run: one picks object poses uniformly at random, the other uses DAgger—an online curriculum learning strategy—to generate hard cases where the policy is uncertain. Heavy domain randomization (object textures, materials, lighting, camera poses) ensures robustness. Loss is L1 on velocity magnitude (log-scale) and cosine similarity on direction.</p>
+<p><strong>The key trick:</strong> Instead of binary keypoint matches (which break in clutter, bad light, or textureless scenes), probabilistic soft matches + transformation to canonical grid anchors + denormalization creates a representation that is robust to illumination and texture while still running at real-time speed (~40 fps reported, likely on high-end GPU).</p>
+<h2>The code</h2>
+<p><strong>Repository URL:</strong> <a href="https://github.com/hhcaz/CNS" target="_blank" rel="noopener">https://github.com/hhcaz/CNS</a> (official CNS baseline; CNSv2 code not yet released as of March 2025)</p>
+<p><strong>Language/framework:</strong> Python, PyTorch (&gt;1.12), PyTorch Geometric</p>
+<p><strong>Repository structure:</strong></p>
+<ul>
+<li><code>cns/</code> — main package containing model definitions, training loops, and servo pipelines</li>
+<li><code>train_cns.py</code> — training script</li>
+<li><code>demo<em>sim</em>Erender.py</code>, <code>demo<em>real</em>ur5.py</code> — simulation and real-robot demos</li>
+<li><code>checkpoints/</code> — pretrained weights</li>
+<li><code>pipeline.json</code> — configuration for the servo controller</li>
+<li><code>README.assets/</code> — documentation images</li>
+</ul>
+<p><strong>Key file to open first:</strong> Start with the README, then <code>train<em>cns.py</code> for training logic, and <code>demo</em>real_ur5.py</code> to understand how servo loop executes (get image → compute velocity → apply control).</p>
+<p><strong>Dependencies:</strong> tqdm, numpy, scipy, PyBullet, matplotlib, tensorboard, scikit-image, OpenCV (4.8.0+), Open3D (0.12+), pyrealsense2 (for real sensors). Optional: YCB object models, SuperGlue for feature detection.</p>
+<p><strong>Needs:</strong> GPU strongly recommended (training used IsaacSim with domain randomization across thousands of scenes). Real execution requires a robot arm with camera and ROS drivers (code provides UR5 example). Can simulate in PyBullet or IsaacSim without real hardware.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+python train_cns.py --batch-size=64 --epochs=50 --init-lr=1e-3
+</code></pre>
+<p>Then run either <code>demo<em>sim</em>Erender.py</code> (simulator) or <code>demo<em>real</em>ur5.py</code> (real UR5 arm) to execute servo tasks.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>Read first:</strong> The arXiv paper (<a href="https://arxiv.org/abs/2503.00132" target="_blank" rel="noopener">https://arxiv.org/abs/2503.00132</a>) for the full method and experiments. Then read the repository README for the CNS baseline (the predecessor). CNSv2 extends CNS with probabilistic correspondences, so understanding CNS is essential.</p>
+<p><strong>Code difficulty:</strong> Moderate-to-high. The feature matching and denormalization are straightforward (matrix operations in PyTorch), but the B-spline grid projection and axial RoPE positional encoding require careful reading. Training requires SetUp of IsaacSim with 6K+ 3D models, which is a significant engineering task. If you just want to understand the servo logic, focus on the controller network and denormalization; skip the training setup.</p>
+<p><strong>Testing difficulty:</strong> Medium. You can test on the UR5 simulator without a real robot, but reproducing the full training (IsaacSim + domain randomization) is nontrivial. The paper reports &lt;0.3° and sub-millimeter precision in real-world experiments, so validating the method requires a calibrated camera + arm setup.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only: No.</strong> Training absolutely requires a GPU (tested on A100s in the paper). Inference might run slowly on CPU but is possible for small batch sizes. <strong>Simulator: Yes.</strong> PyBullet and IsaacSim both supported. <strong>Real robot: Yes, if you have a UR5 arm + calibrated camera.</strong> <strong>Dataset: Yes, included</strong> (GSO + OmniObject3D, 6,852 models used). <strong>API keys: None.</strong> <strong>Code maturity: Baseline (CNS) released and maintained; CNSv2 code not yet released publicly</strong> (as of March 2025, only the arXiv paper exists).</p>
+<p>In summary: if you have access to a GPU cluster and IsaacSim, you can retrain from scratch. If you just want to test, use the simulator demos. Real execution requires a UR5 or similar arm.</p></article>
+<article class="page" id="gp3"><h1>Take Your Best Shot: Sampling-Based Planning for Autonomous Photography</h1>
+<p>ICRA 2025 · 3 citations · sampling-based path planning</p>
+<h2>What it does — 2-3 plain sentences</h2>
+<p>A mobile robot equipped with a camera autonomously chooses where to drive next to capture the most informative photograph of a partially hidden target, then decides to move there. This is a <strong>sampling-based path planning</strong> approach: instead of computing a full trajectory first, the system proposes many candidate viewpoints and picks the best one based on how much new information it would reveal.</p>
+<h2>The method, in detail</h2>
+<p>The robot starts with a partial 3D model of the scene (from previous views or rough map data). At each decision step:</p>
+<ul>
+<li><strong>Information evaluation</strong>: For each candidate viewpoint (a location the robot could move to), the system simulates camera rays from that viewpoint through the 3D space and counts how many parts of the target are visible vs. occluded. This ray-tracing calculation estimates the *information gain* — how much new visual coverage would be unlocked if the robot moved there.</li>
+</ul>
+<ul>
+<li><strong>Probabilistic interpolation</strong>: Since the scene is only partially known, some regions are uncertain. A Gaussian process (a statistical model that learns smoothly from sparse data) interpolates the traversability and visibility across the entire space, allowing the system to estimate information reward even for untested viewpoints.</li>
+</ul>
+<ul>
+<li><strong>Derivative-free optimization (DFO)</strong>: Rather than using calculus-based gradient descent, the system uses a black-box optimization method (derivative-free) that repeatedly samples candidate viewpoints from across the environment and evaluates each one&#x27;s information score. This is robust because the information landscape is complex and may have no smooth gradients.</li>
+</ul>
+<ul>
+<li><strong>Motion execution</strong>: Once the highest-scoring viewpoint is chosen, the robot plans a collision-free path to it and drives there.</li>
+</ul>
+<p>The key trick: the algorithm avoids expensive full-trajectory planning by evaluating *discrete candidate locations* and picking the single best next pose to visit. Each visit adds new visual information, progressively building a complete 3D model or capturing the target from all desired angles with minimal wasted images.</p>
+<h2>The code</h2>
+<p><strong>Repository</strong>: <a href="https://github.com/laurenbramblett/NBV" target="_blank" rel="noopener">https://github.com/laurenbramblett/NBV</a><em>Photography</em>Inspection</p>
+<p><strong>Language</strong>: MATLAB</p>
+<p><strong>Structure</strong>:</p>
+<ul>
+<li><code>targetCoverage<em>NBV</em>Proposed.m</code> — Main script running the proposed method</li>
+<li><code>targetCoverage_withFrontiers.m</code> — Baseline comparison (captures without quality metrics)</li>
+<li><code>codegen/mex/codegenPathPlanner/</code> — Pre-compiled MEX binaries for performance</li>
+<li><code>utils/</code> — Helper functions for ray-tracing and Gaussian process fitting</li>
+</ul>
+<p><strong>To run first</strong>: Open MATLAB and run <code>targetCoverage<em>NBV</em>Proposed.m</code>. It will execute a full simulation of the planning loop, displaying candidate viewpoints and the chosen path.</p>
+<p><strong>Dependencies</strong>: MATLAB (with Coder toolbox recommended for the MEX binaries), no external packages required.</p>
+<p><strong>Simulator/GPU/Dataset needs</strong>: Runs entirely in simulation with ray-casting; no GPU required, no external simulator or dataset (uses synthetic scenes defined in the script).</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first</strong>: Start with the paper abstract and the arXiv PDF (<a href="https://arxiv.org/abs/2403.05477" target="_blank" rel="noopener">https://arxiv.org/abs/2403.05477</a>) to grasp Next-Best-View (NBV) planning. Then open <code>targetCoverage<em>NBV</em>Proposed.m</code> — it is a single readable script showing the full loop: environment setup, candidate generation, Gaussian process fitting, ray-tracing evaluation, and optimization.</p>
+<p><strong>Difficulty</strong>: Moderate. The MATLAB code is well-structured and calls intuitive function names. The hardest part is understanding Gaussian processes (which predict information gain in unvisited regions) and ray-tracing math, but both are explained in the paper. No deep learning or complex numerical linear algebra; mostly geometric and statistical reasoning.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: YES, it will run.</strong> MATLAB is installed on most labs/universities, and the code requires only CPU time for simulation and ray-casting. The MEX binaries are platform-specific (Windows <code>.mexw64</code> included), but MATLAB can recompile or run the pure MATLAB versions. No GPU needed, no external simulator (everything is synthetic), no robotics hardware required. Total runtime: seconds to minutes depending on grid resolution.</p>
+<p><strong>Caution</strong>: The <code>.mexw64</code> binary is Windows-only; if running on Linux or macOS, you may need to rebuild the MEX file or run pure MATLAB code without it (slower but still feasible).</p></article>
+<article class="page" id="gp4"><h1>Narrow Passage Path Planning Using Collision Constraint Interpolation</h1>
+<p>ICRA 2025 · 3 citations · path-planning</p>
+<h2>What it does — 2-3 plain sentences</h2>
+<p>This paper tackles the hard problem of finding robot paths through tight, constrained spaces where existing optimization-based planners get stuck. The method works by decomposing obstacles into simple convex shapes and feeding collision rules to the solver one at a time instead of all at once. This is a <strong>path-planning</strong> approach: it computes collision-free trajectories offline using math optimization, not sampling or reactive steering.</p>
+<h2>The method, in detail</h2>
+<p><strong>Problem setup:</strong> Standard path planners use gradient-based optimization (Sequential Quadratic Programming, or SQP) to minimize a cost function while respecting collision constraints. But when the start point is deep inside an obstacle—common in narrow passages—the solver fails immediately because its linear approximation violates so many constraints at once that no progress is possible.</p>
+<p><strong>The trick:</strong> Instead of presenting all collision constraints at the start, the authors decompose the environment into convex objects, then introduce those constraints gradually. The process works like this:</p>
+<ul>
+<li>Decompose the static environment into convex obstacles (e.g., boxes, ellipsoids, convex hulls).</li>
+<li>Start the optimization with collision constraints only from a small subset of obstacles—ones near the start and goal.</li>
+<li>Run SQP to solve this easier subproblem.</li>
+<li>Add the next group of constraints and repeat, using the previous solution as the warm-start.</li>
+<li>Continue until all obstacles are included.</li>
+</ul>
+<p><strong>The optimization:</strong> At each iteration, SQP linearizes the nonlinear constraints and solves a Quadratic Program (QP). The paper uses <strong>SubADMM</strong> (Alternating Direction Method of Multipliers via subdivision) to solve these QPs stably, especially when constraints conflict. For collision detection, they compute signed distance fields (SDFs) on interpolated obstacle shapes, then use the <strong>Frank-Wolfe algorithm</strong> to find the closest point (guaranteed global optimum for convex SDFs). For fixed obstacles, they use <strong>GJK-EPA</strong> (a faster geometric algorithm).</p>
+<p><strong>Why it works:</strong> By interpolating constraints smoothly into the problem, the solver is never forced to make an infeasible jump. The warm-start from each subproblem keeps SQP in a region where its linear approximation is valid. This is especially powerful in narrow passages because the gradual constraint introduction mimics the spatial progression through the passage itself.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> No public code found. The authors do not mention any GitHub repository or open-source release in the paper or supplementary material.</p>
+<p><strong>Language/framework:</strong> Unknown. The paper does not specify the implementation language (Python, C++, MATLAB) or which optimization library was used (e.g., CasADi, CVXPY, SNOPT).</p>
+<p><strong>Repo structure:</strong> N/A.</p>
+<p><strong>Key file to open:</strong> N/A.</p>
+<p><strong>Dependencies:</strong> Likely requires:</p>
+<ul>
+<li>SQP solver (custom or from a library like SNOPT, IPOPT, or solver built into optimization frameworks)</li>
+<li>SubADMM for QP solving</li>
+<li>Collision detection (GJK-EPA, signed distance field computation)</li>
+<li>Convex decomposition of environments</li>
+</ul>
+<p><strong>Simulator/dataset/GPU:</strong> No simulator or special hardware required. The method is purely offline trajectory optimization running on CPU. Test cases were synthetic (dish insertion into racks, tool extraction, nonholonomic maze).</p>
+<p><strong>How to run it:</strong> Reproducible from the paper would require (1) implementing or wrapping SQP + SubADMM, (2) setting up convex decomposition, (3) encoding test scenarios as optimization problems, (4) solving and logging results. No ready-to-run package exists.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start here:</strong> Read Section III (Framework), which explains the subproblem decomposition and constraint interpolation strategy in plain math. This is the core contribution.</p>
+<p><strong>Then:</strong> Section IV shows three concrete examples (dish insertion, tool extraction, maze) that illustrate how the method handles different geometry types.</p>
+<p><strong>Finally:</strong> Tables I–III compare runtime and success rate against TrajOpt, OMPL, and CHOMP to see why gradual constraint introduction is faster and more robust.</p>
+<p><strong>Difficulty:</strong> Moderate to read, high to implement. The math is standard (SQP, QP solvers, signed distance fields), but getting the convex decomposition and constraint interpolation schedule right requires careful engineering. The paper lacks pseudocode and does not release code, so replication is non-trivial.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: Unknown feasibility.</strong> No public code exists, so you cannot download and run it as-is. Reproducing from scratch would require:</p>
+<ul>
+<li>Implementing or integrating an SQP solver (hours to days, depending on whether you use a library)</li>
+<li>Convex decomposition (available in libraries like Shapely for 2D or Blender for 3D)</li>
+<li>Setting up test cases in the optimization framework</li>
+</ul>
+<p><strong>Simulator:</strong> No simulator needed; pure offline optimization.</p>
+<p><strong>GPU:</strong> Not required.</p>
+<p><strong>Dataset:</strong> None; test cases are procedurally generated (dish racks, tool locations, maze walls).</p>
+<p><strong>Difficulty:</strong> High. Without released code, reproducibility is limited to understanding the algorithm and re-implementing it. The paper is clear enough for that, but no shortcuts are provided.</p>
+<p><strong>Verdict:</strong> *Not runnable without significant engineering effort.* If code were released, this would be a straightforward CPU-only solver. For now, treat it as a method to study and reimplement, not a tool to immediately apply.</p></article>
+<article class="page" id="gp5"><h1>Context-Aware Collaborative Pushing of Heavy Objects Using Skeleton-Based Intention Prediction</h1>
+<p><strong>ICRA 2025 · 3 citations · human-robot-interaction + control · Solak, Lahr, Ozdamar, Ajoudani</strong></p>
+<h2>What it does — 2-3 plain sentences</h2>
+<p>A robot learns to predict what a human intends to do next—push, pull, or stop—by reading their body pose in real time, then adapts its own pushing assistance without needing force sensors on the object. This solves the problem when you can&#x27;t install sensors on a heavy industrial object but the human&#x27;s body tells you everything: the way they lean, how they shift weight, what their arms and spine do. The sub-approach is <strong>whole-body control for mobile manipulation</strong> (predicting intent to coordinate base and arm actions).</p>
+<h2>The method, in detail — step by step, plain words but technical</h2>
+<p><strong>The problem</strong>: A person and robot push a heavy object together on a rough floor. The robot can&#x27;t tell the human&#x27;s intent from force sensors (there aren&#x27;t any) and so it can&#x27;t know whether to push harder, ease off, or idle—it will either lag behind or fight the human.</p>
+<p><strong>The sensing</strong>: The system sees the human through an inertial measurement unit (IMU) outfit with 17 IMU nodes placed on the body (Xsens system). Each IMU reports 3D acceleration and orientation in real time at 100 Hz. This stream of skeleton data—the 3D positions of joints (shoulders, elbows, hips, knees, etc.)—flows into the prediction model.</p>
+<p><strong>The model</strong>: A Directed Graph Neural Network (DGNN) ingests a 0.5-second window of skeleton frames. The graph represents the skeleton as joints (nodes) connected by limbs (edges), with direction: child joints are activated by parent joints (shoulder drives elbow, elbow drives wrist). The network has three GTN (Graph Temporal Network) layers with 32, 64, and 64 channels. After the third layer, dropout (p=0.3) prevents overfitting. Two fully connected layers then compress the learned representation into a 3-class classification: push (+1), idle (0), or pull (-1).</p>
+<p><strong>The trick that works</strong>: The DGNN models the skeleton as a *directed* graph, not an undirected one. This respects the biomechanics of how humans move: joints activate downward in the chain (shoulder→elbow→wrist), not randomly. This spatial hierarchy is crucial for predicting intent from posture. The model predicts 0.25 seconds *ahead*, giving the robot reaction time to command forces.</p>
+<p><strong>Training data</strong>: 250 individual push/pull actions recorded from 2 volunteers across 28 sessions, totaling 98,000 frames. The label distribution is imbalanced: 64.5% idle, 18.0% pull, 17.5% push. The model trains on 22 recordings, validates on 6. Learning rate is 0.02, weight decay 0.005. Final validation accuracy reaches 93.4%; balanced accuracy (across all three classes) is 94.1%.</p>
+<p><strong>Real-time loop</strong>: The UR16 robot receives a skeleton frame, runs inference (0.25-second lookahead prediction), and adjusts force commands at 100 Hz. The robot uses an admittance controller to smoothly scale assistance: if the prediction says &quot;push,&quot; increase arm stiffness; if &quot;pull,&quot; ease off. The SoftHand gripper and wrist force-torque sensors give feedback on actual contact.</p>
+<h2>The code — repo URL; language/framework; the repo STRUCTURE; the specific file/function to OPEN FIRST; dependencies; GPU/sim/dataset needs; how to run</h2>
+<p><strong>Repository</strong>: None publicly available. No GitHub link, no supplementary code release mentioned in the arXiv paper (2505.10239) or the ICRA 2025 proceedings.</p>
+<p><strong>Likely framework</strong> (inferred): Python with PyTorch or TensorFlow for the DGNN. ROS (Robot Operating System) integration for the real-time loop. Xsens middleware for IMU skeleton streaming.</p>
+<p><strong>Likely file structure</strong> (not confirmed):</p>
+<pre><code>
+collaborative-pushing-intention/
+  data/
+    raw_imu_sessions/       # 28 recordings of skeleton + force data
+    train/                  # 22 sessions (98k frames)
+    val/                    # 6 sessions
+  models/
+    dgnn_gtns.py            # 3-layer GTN network definition
+    train.py                # Training loop, learning rate 0.02
+  ros_nodes/
+    skeleton_predictor_node.py  # Real-time inference at 100 Hz
+    admittance_controller.py    # Force scaling based on intent
+  hardware/
+    xsens_interface.py      # IMU driver / skeleton extraction
+</code></pre>
+<p><strong>What to read first</strong>: The paper&#x27;s Section 3 (Method) describes the DGNN architecture; Section 4 details the training dataset and hyperparameters; Section 5 shows real-world experiment results on a UR16 arm.</p>
+<p><strong>Dependencies</strong>: Xsens IMU SDK, ROS, PyTorch or TensorFlow, UR robot drivers.</p>
+<p><strong>GPU / simulator / dataset</strong>:</p>
+<ul>
+<li><strong>Dataset</strong>: Custom 28-session recordings (imbalanced, biased toward idle). Not released publicly.</li>
+<li><strong>GPU</strong>: Not required for inference at 100 Hz on CPU; training likely faster on GPU but not mandatory.</li>
+<li><strong>Simulator</strong>: Simulation mentioned in RViz (ROS visualizer) for debugging but no sim-to-real transfer.</li>
+<li><strong>Requires</strong>: Real Xsens IMU suit (or compatible skeleton stream), UR16 robot (or any robot with force-torque wrist sensor and admittance control).</li>
+</ul>
+<p><strong>How to run</strong> (hypothetical, since no code exists):</p>
+<ul>
+<li>Wear Xsens suit; stream skeleton to ROS at 100 Hz.</li>
+<li>Bring up UR16 driver and admittance controller.</li>
+<li>Run <code>python skeleton<em>predictor</em>node.py --model dgnn<em>weights.pt --output</em>topic /intention</code>.</li>
+<li>Admittance controller subscribes to <code>/intention</code> and modulates forces.</li>
+<li>Human and robot push a heavy object; system predicts intent and adapts in real time.</li>
+</ul>
+<h2>Reviewing it yourself — what to read first, and how hard the code is to follow</h2>
+<p><strong>Read first</strong>: The arXiv paper (2505.10239), Sections 3–5. Section 3 is dense with DGNN definition; the math is standard GNN (graph convolution, temporal aggregation). Section 4 shows dataset stats and hyperparameters (clear). Section 5 is the money: real experiments on a UR16, success measured in human effort reduction and task time, with video evidence.</p>
+<p><strong>How hard the code would be</strong>: *Medium difficulty*. A DGNN is not trivial; you need to understand graph neural networks (node embeddings, edge convolutions, message passing). The skeleton representation is straightforward (17 joints, directed edges). The real-time ROS loop is standard. The hard part is the training loop: imbalanced classification (64% idle), skeleton preprocessing (rotation invariance, frame alignment). If the code were released, a roboticist with deep-learning basics could follow it; a controls engineer would need to learn GNNs first.</p>
+<h2>Run verdict — on a CPU-only box: could it actually run?</h2>
+<p><strong>Inference: YES, on CPU.</strong> A small DGNN (3 layers, 64 channels max) running on a single 0.5-second window at 100 Hz is well within CPU budget (&lt; 50 ms per inference). A modern laptop CPU (8 cores, 2 GHz) handles it easily.</p>
+<p><strong>Training: NO, not efficiently.</strong> Training on 98,000 frames with a DGNN and early stopping / validation checks takes hours on GPU (NVIDIA RTX 3060 or better: ~2–4 hours). On CPU only, add 10–20x slowdown (20–80 hours). Impractical without GPU.</p>
+<p><strong>Deployment: YES, CPU only.</strong> Once weights are saved, the inference loop runs in &lt; 50 ms per cycle on a modest machine. The bottleneck is the IMU and ROS network latency (typical 10–20 ms), not the neural net.</p>
+<p><strong>Hardware requirements</strong>:</p>
+<ul>
+<li><strong>Xsens IMU suit</strong> (not substitutable without retraining): $15k–$30k.</li>
+<li><strong>UR robot</strong> (UR16 or similar): $100k+.</li>
+<li><strong>Force-torque sensor</strong>: Built into UR wrist or add-on ($5k–$15k).</li>
+<li><strong>Compute</strong>: Laptop or embedded PC (CPU-only acceptable for deployment).</li>
+</ul>
+<p><strong>Simulator</strong>: No mention of a sim version; all results are from real robot + real IMU.</p>
+<p><strong>API keys / licensing</strong>: Xsens has proprietary drivers; ROS is open-source. UR robots require UR+ SDK (free for registered developers).</p>
+<p><strong>Verdict</strong>: Runnable on CPU for inference and real-time deployment. Training requires GPU. Fully reproducible only if the authors release the code and dataset; currently, neither is public. A researcher could reconstruct the method (DGNN + UR16 + Xsens) but would need to re-collect or synthesize training data.</p></article>
+<article class="page" id="gp6"><h1>Dual-BEV Nav: Dual-Layer BEV-Based Heuristic Path Planning for Robotic Navigation in Unstructured Outdoor Environments</h1>
+<p><strong>ICRA 2025 · 3 citations · path-planning (heuristic dual-layer BEV)</strong></p>
+<h2>What it does — 2-3 plain sentences</h2>
+<p>Dual-BEV Nav builds two overhead terrain maps from sensor data and uses them together to guide a robot across rough outdoor ground. A detailed local map proposes safe nearby paths; a coarser global map rates how passable the whole landscape is. The planner picks the route that satisfies both, allowing robots to navigate successfully even when GPS is poor and terrain is unstructured.</p>
+<h2>The method, in detail</h2>
+<p>The system operates in a two-stage pipeline:</p>
+<p><strong>Local BEV Planning Model (LBPM):</strong></p>
+<ul>
+<li>Builds a high-resolution bird&#x27;s-eye-view representation of terrain within the robot&#x27;s sensor range</li>
+<li>Identifies traversable regions by assessing local ground geometry (slopes, obstacles, roughness)</li>
+<li>Generates candidate waypoints that are geometrically feasible to reach from the robot&#x27;s current position</li>
+<li>Prioritizes paths that hug passable terrain and avoid sharp drops, rocks, or deep ditches</li>
+<li>Operates at sensor update rates (real-time or near-real-time for onboard compute)</li>
+</ul>
+<p><strong>Global BEV Planning Model (GBPM):</strong></p>
+<ul>
+<li>Maintains a lower-resolution probability map of traversability across a wider area (e.g., 50–100 m radius or larger)</li>
+<li>Encodes which terrain patches are safe to cross based on aggregated sensor data or learned terrain classifiers</li>
+<li>Handles occlusions by probabilistically estimating traversability of unseen or partially visible regions</li>
+<li>Guides long-range route selection and goal targeting</li>
+</ul>
+<p><strong>Dual-Layer Heuristic Planning:</strong></p>
+<ul>
+<li>The local planner proposes paths; the global planner scores them</li>
+<li>Candidate waypoints from LBPM are projected onto the GBPM probability map</li>
+<li>The route that maximizes combined local feasibility and global traversability probability is selected as the next waypoint</li>
+<li>The robot moves toward that waypoint, then the cycle repeats at the next planning step</li>
+<li>Key trick for unstructured terrain: does not assume flat ground or pre-mapped corridors; instead dynamically fuses real-time local detail (which prevents collisions) with global risk estimates (which prevents dead-ends and unsafe slopes over long distances)</li>
+</ul>
+<p><strong>Inputs:</strong> Onboard sensor streams (stereo, LiDAR, RGB-D, or similar); robot odometry; (optionally) pre-built coarse map</p>
+<p><strong>Outputs:</strong> Next intermediate waypoint; traversable path to that waypoint</p>
+<p><strong>Critical design principle:</strong> Local and global traversability are orthogonal—a patch may be locally smooth but globally isolated, or globally accessible but locally rough. By scoring both, the planner avoids paths that are locally optimal but globally risky.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> No public GitHub repository identified at time of publication (January 2025). The arXiv paper (2501.18351) does not link to released code.</p>
+<p><strong>Language/Framework:</strong> Likely Python (common for BEV representation learning) or C++ (for real-time onboard planning); specific stack not disclosed in abstract.</p>
+<p><strong>Core Files:</strong> Unknown without access to code. Likely would include:</p>
+<ul>
+<li><code>local<em>bev</em>planner.py</code> or <code>.cpp</code> — local traversability map construction and waypoint generation</li>
+<li><code>global<em>bev</em>planner.py</code> or <code>.cpp</code> — global probability map decoder</li>
+<li><code>heuristic_planner.py</code> or <code>.cpp</code> — waypoint selection logic and path projection</li>
+</ul>
+<p><strong>Dependencies:</strong> Likely ROS (or ROS2) for sensor integration and navigation stack; potentially PyTorch or TensorFlow if the BEV models are neural network–based terrain classifiers.</p>
+<p><strong>Simulator/Dataset/GPU needs:</strong> Paper tested on public outdoor navigation datasets and real-world deployment; GPU likely used during training of BEV models, but inference may run on CPU or edge accelerators for onboard deployment.</p>
+<p><strong>How to run:</strong> Not disclosed. Standard practice: launch ROS nodes for BEV planning, publish odometry/sensor data to subscribed topics, consume waypoint commands and navigate. Real robot deployment achieved 65 m successful navigation; likely requires localization (IMU, wheel odometry, or low-cost GPS).</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start here:</strong> Read the abstract and look for architecture diagrams in the paper body. The key novelty is the *projection* step—how waypoints are scored across both layers. That is the core algorithm; everything else is engineering.</p>
+<p><strong>Follow-up reading:</strong></p>
+<ul>
+<li>How does the LBPM generate waypoints? (sampling, A*, RRT*?)</li>
+<li>How is the GBPM trained? (supervised learning on terrain labels, or hand-crafted features?)</li>
+<li>How does the planner handle occlusions or dynamic obstacles (other robots, people)?</li>
+<li>What is the real-time latency? (planning frequency, typical solve time)</li>
+</ul>
+<p><strong>Difficulty:</strong> Medium-hard. The dual-layer fusion is straightforward once you see it, but understanding the BEV representation (feature extraction, map projection, probability calibration) requires familiarity with 3D vision and occupancy mapping. The heuristic planning logic itself is likely simple (greedy or weighted combination), but the devil is in training robust traversability classifiers.</p>
+<h2>Run verdict — CPU-only box: could it run?</h2>
+<p><strong>CPU-only: Uncertain, likely with caveats.</strong></p>
+<ul>
+<li><strong>Local planning</strong> (waypoint generation, path collision checking): yes, trivial CPU load.</li>
+<li><strong>BEV inference</strong> (if using a neural network traversability scorer): depends on model size. A lightweight MobileNet-style classifier could run on CPU at 10–20 Hz; a large ResNet would choke.</li>
+<li><strong>Global map decoding</strong> (probability aggregation): yes, trivial.</li>
+<li><strong>Real-time onboard</strong>: robot likely carries a modest GPU (Jetson Xavier, RTX 3050, or similar) for live inference. A bare CPU would require either offline BEV precomputation (lose real-time adaptivity) or a very lightweight model.</li>
+</ul>
+<p><strong>Verdict:</strong> CPU-runnable for planning logic only; not for the full real-time BEV pipeline unless model size is heavily optimized. Assume GPU for the intended deployment.</p></article>
+<article class="page" id="gp7"><h1>Inverse Kinematics on Guiding Vector Fields for Robot Path Following</h1>
+<p>ICRA 2025 · 3 citations · inverse-kinematics sub-approach</p>
+<h2>What it does</h2>
+<p>The paper borrows a technique from robot arm control—inverse kinematics—and applies it to path-following problems in autonomous mobile robots. Instead of solving for joint angles (as in arms), it treats the distance from a target path as a &quot;virtual joint&quot; and uses that to give designers fine control over how quickly and smoothly a robot converges onto a path. The core idea is that by treating path-following as an inverse kinematics problem, the designer can inject precise transient behavior (how the robot approaches the path) and feed-forward commands (acceleration signals) that existing steering methods cannot offer. This is a <strong>inverse-kinematics</strong> sub-approach, not path-planning; it solves *how to drive toward a path that is already defined* with predictable control dynamics.</p>
+<h2>The method, in detail</h2>
+<p><strong>Problem setup:</strong> A path is defined implicitly (not as a sequence of waypoints, but as the zero-level set of a smooth function—imagine the path as a contour line on a map). The robot&#x27;s state is its position and orientation; the &quot;error&quot; is how far it is from that contour.</p>
+<p><strong>Key insight—extending IK to vector fields:</strong> Traditional inverse kinematics solves: given a desired end-effector pose, what joint angles produce that pose? The authors generalize this: given a desired path (defined as a level set), construct a vector field whose integral curves (the paths a robot would trace if it always followed the vector field) converge to the target path. They treat the path-distance error as if it were a virtual &quot;joint angle&quot; and use inverse kinematics to ensure that as this virtual joint moves, the error behaves like a linear system (easy to control, predictable transients).</p>
+<p><strong>Mathematical formulation:</strong></p>
+<ul>
+<li><strong>Path representation:</strong> The path is $\mathbf{h}(\mathbf{x}) = 0$, a level set in $m$-dimensional space. The signed distance $d$ from a point to the path can be approximated locally as $d \approx \alpha \cdot c$ where $\alpha$ is a scaling constant and $c$ is a virtual &quot;joint&quot; (the path-constraint variable).</li>
+</ul>
+<ul>
+<li><strong>Inverse kinematics applied to the constraint:</strong> The robot&#x27;s velocity $\mathbf{v}$ controls how $d$ changes:</li>
+</ul>
+<p>   $$\dot{d} = \nabla h \cdot \mathbf{v}$$</p>
+<p>   Rearranging this to get the vector field:</p>
+<p>   $$\mathbf{v} = \text{(inverse of Jacobian)} \cdot (\text{desired rate of error reduction} + \text{feed-forward term})$$</p>
+<p>   This ensures $d$ decays in a controlled, linear fashion (e.g., exponential convergence like a damped spring).</p>
+<ul>
+<li><strong>Single-integrator robots in Euclidean space:</strong> For a robot whose velocity directly matches the control input, the vector field is:</li>
+</ul>
+<p>   $$\mathbf{v} = -k<em>N \nabla h - k</em>T \nabla^2 h / (\|\nabla h\|) \cdot v_{\text{tangent}}$$</p>
+<p>   where $k_N$ controls convergence speed toward the path, and the second term drives motion along the path.</p>
+<ul>
+<li><strong>Unicycles (constant-speed, differential steering):</strong> The math becomes harder because a unicycle cannot move sideways. The authors derive a control law that produces steering commands (angular velocity) to make the unicycle&#x27;s orientation align with the vector field direction, ensuring convergence even with kinematic constraints.</li>
+</ul>
+<ul>
+<li><strong>Real-world tuning:</strong> The method introduces explicit gain functions $k<em>N(x)$ and $k</em>T(x)$ (position-dependent gains) so that the robot&#x27;s transient behavior (how fast it zeros in on the path) and steady-state performance (smooth motion along the path) can be shaped independently. A designer can also inject a feed-forward signal to make the robot accelerate or decelerate along the path.</li>
+</ul>
+<p><strong>Why it matters:</strong> Existing path-following methods (like pure pursuit or follow-the-carrot) make ad-hoc tuning choices; this method ties those choices to linear systems theory, so you can *predict and control* the transient response using classical control design (pole placement, damping ratios, etc.).</p>
+<h2>The code</h2>
+<p><strong>No public code repository found.</strong> The paper does not mention a GitHub link or supplementary code in the arXiv submission (2502.17313).</p>
+<p><strong>Related open-source implementations:</strong> The broader &quot;guiding vector fields&quot; (GVF) literature has public implementations:</p>
+<ul>
+<li><strong>https://github.com/fbartelt/SE3-example</strong> — An SE(3) example for path following on Lie groups (related theory, different formulation)</li>
+<li><strong>Guiding Vector Fields for Robot Motion Control</strong> — A Springer book with practical pseudocode and algorithm descriptions for wheeled robots and fixed-wing UAVs</li>
+</ul>
+<p><strong>Frameworks/dependencies that would be needed:</strong></p>
+<ul>
+<li><strong>Python or MATLAB</strong> for numerical computations (implicit function differentiation, gradient computation, quaternion math for orientation)</li>
+<li><strong>Numerical ODE solver</strong> (scipy.integrate.odeint or equivalent) to integrate the vector field</li>
+<li><strong>Robot kinematics/dynamics library</strong> (e.g., Pinocchio, PyBullet, or Drake) to close the loop between control commands and robot state</li>
+<li><strong>Optimization toolbox</strong> if implementing closed-form inverse kinematics for more complex robots (though the paper focuses on simple cases: single-integrators, unicycles, fixed-wing aircraft)</li>
+</ul>
+<p><strong>Simulator or GPU?</strong> CPU-only; no neural networks or GPU acceleration needed. The method is purely geometric and analytical.</p>
+<p><strong>Datasets?</strong> No training data required; the method is model-based (it assumes you know the path&#x27;s equation and can compute gradients).</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start here:</strong></p>
+<ul>
+<li>Read the abstract and introduction (3–4 pages) to understand the motivation: path-following by extending inverse kinematics.</li>
+<li>Section 2 covers single-integrator robots in Euclidean space—this is the simplest and most instructive case.</li>
+<li>Jump to Section 4 (the unicycle case) to see how the theory handles real kinematic constraints.</li>
+<li>Skim the experimental section (drones flying predefined paths) to see the practical payoff.</li>
+</ul>
+<p><strong>Code difficulty:</strong> There is no reference code, so implementing this requires:</p>
+<ul>
+<li>Strong grasp of differential geometry (gradients, level sets, implicit differentiation)</li>
+<li>Familiarity with robot kinematics (Jacobians, singularities, differential steering)</li>
+<li>Ability to design a control law (pole placement, gain tuning) and validate it</li>
+<li>Comfort with numerical methods (solving implicit equations for closest points on the path)</li>
+</ul>
+<p>The paper is mathematically rigorous but readable; the hardest part would be implementing the closest-point solver (finding which point on the implicit path is nearest to the robot) in a numerically stable way.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box: Yes, readily.</strong></p>
+<p>This method is entirely analytical—no GPU, simulator, or special hardware required. You could implement it in pure Python (NumPy + SciPy) in under 500 lines:</p>
+<ul>
+<li>Define the path function $\mathbf{h}(x, y)$ and compute its gradient numerically (finite differences or symbolic differentiation).</li>
+<li>For each robot state, solve a 1D optimization to find the closest point on the path (using, e.g., scipy.optimize.minimize_scalar).</li>
+<li>Evaluate the vector field at the robot&#x27;s current pose and integrate one step forward.</li>
+<li>Apply the computed control command to the (simulated or real) robot.</li>
+</ul>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>✅ CPU only</li>
+<li>✅ No dataset needed</li>
+<li>✅ No API keys</li>
+<li>✅ Simple simulator optional (PyBullet or even basic kinematics integration)</li>
+<li>❌ No public code provided—you must implement from the paper&#x27;s equations</li>
+</ul>
+<p><strong>Practical caveat:</strong> The paper validates only on drones (fixed-wing aircraft) in simulation. Before deploying to a real robot, you&#x27;d need to tune the gain functions $k<em>N$ and $k</em>T$ for your specific platform and handle edge cases (e.g., when the path has sharp turns or the robot gets very far from the path).</p></article>
+<article class="page" id="gp8"><h1>SEB-Naver: A SE(2)-based Local Navigation Framework for Car-like Robots on Uneven Terrain</h1>
+<p>IROS · 3 citations · reactive-nav + mobile-manipulation</p>
+<h2>What it does</h2>
+<p>A navigation system for wheeled robots that drives over hills, slopes, and rough terrain by constantly assessing which ground is safe to cross and then computing steering commands that respect both the terrain&#x27;s slope and the robot&#x27;s steering limits. This is a reactive-nav system that blends traversability assessment with real-time trajectory optimization: it evaluates terrain risk across a local overhead map, then solves a smooth path that avoids obstacles, stays within steering and speed bounds, and keeps the robot from tipping over.</p>
+<h2>The method, in detail</h2>
+<p><strong>Input:</strong> Sensor data from the robot (LiDAR or stereo camera depth) and the robot&#x27;s current state (position, heading, velocity).</p>
+<p><strong>Step 1: Terrain Representation in SE(2) Space</strong></p>
+<p>Instead of tracking the robot in full 3D space (which requires solving in 6 dimensions), the system reduces the problem to SE(2)—just 2D position plus yaw angle (heading). A mapping function automatically computes the robot&#x27;s full 3D pose (pitch, roll, height) from this SE(2) state by analyzing local terrain geometry. This cuts computation drastically.</p>
+<p><strong>Step 2: GPU-Accelerated Traversability Rating</strong></p>
+<p>A parallel GPU routine rates each small cell in the local map. For each cell, it:</p>
+<ul>
+<li>Samples terrain height at points matching the robot&#x27;s footprint shape</li>
+<li>Computes terrain curvature (how bumpy the surface is)</li>
+<li>Calculates how much the robot would pitch and roll on that slope</li>
+<li>Fuses these scores: a risk metric that combines curvature κ_ter, pitch angle φx, and roll angle φy through weighted sum</li>
+</ul>
+<p>This processes nearly one million grid points in ~50 milliseconds—fast enough to run 20 times per second.</p>
+<p><strong>Step 3: Differential Flatness Trajectory Planning</strong></p>
+<p>The planner parameterizes the trajectory using an intermediate variable s (arc length along the path). It defines the path as piecewise quintic polynomials (smooth 5th-order curves) in x(s), y(s), and how time t maps to s(t). This avoids singularities that break other planners when the robot moves backward or very slowly.</p>
+<p>The planner computes the steering angle δ, longitudinal acceleration a<em>x, and lateral acceleration a</em>y analytically from these polynomials, accounting for gravity and slope effects on the terrain.</p>
+<p><strong>Step 4: Constrained Optimization</strong></p>
+<p>An optimization solver (Powell-Hestenes-Rockafellar augmented Lagrangian method) minimizes jerk (smooth acceleration changes) while enforcing:</p>
+<ul>
+<li>Steering angle limits (the robot&#x27;s front wheels have a max turn radius)</li>
+<li>Speed bounds (minimum and maximum velocity)</li>
+<li>Acceleration limits (terrain slope affects how hard the robot can push without slipping)</li>
+<li>Attitude constraints (pitch and roll must stay below tipping thresholds)</li>
+<li>Traversability scores from Step 2 (prefer high-score terrain)</li>
+<li>Obstacle avoidance (stay clear of detected hazards)</li>
+</ul>
+<p><strong>The Trick:</strong> By parameterizing in SE(2) and using terrain-aware kinematic models, the planner runs 3–5 times faster than prior methods and can even reverse the robot if backward motion saves time on mountainous terrain.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/ZJU-FAST-Lab/seb_naver" target="_blank" rel="noopener">https://github.com/ZJU-FAST-Lab/seb_naver</a></p>
+<p><strong>Language:</strong> C++ (ROS Noetic) and Python 3</p>
+<p><strong>Framework:</strong> ROS Noetic middleware</p>
+<p><strong>Structure:</strong></p>
+<ul>
+<li><code>src/</code> — main implementation (traversability module, trajectory planner, integration)</li>
+<li><code>.catkin_workspace</code> — ROS build configuration</li>
+<li>Build uses CasADi optimization library (requires prior IPOPT installation)</li>
+<li>Dependencies: ros-noetic-ackermann-msgs for vehicle kinematics</li>
+</ul>
+<p><strong>To Run:</strong></p>
+<pre><code>
+catkin_make -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=/usr/bin/python3
+source devel/setup.zsh
+roslaunch plan_manage multi_sim.launch
+</code></pre>
+<p><strong>Key File to Open First:</strong> Look at the traversability assessment module (typically in <code>src/</code> with GPU grid evaluation) and the trajectory planner using CasADi constraints.</p>
+<p><strong>GPU Requirement:</strong> No GPU is strictly required (GPU is optional for faster grid traversability rating), but GPU parallel computing is the speedup trick. Can run on CPU only but at lower frequency.</p>
+<p><strong>Simulator:</strong> Uses a ROS-based simulation environment (multi_sim.launch); real-world deployment tested on car-like rovers.</p>
+<p><strong>Dataset:</strong> No pre-trained model or dataset download needed; the planner is optimization-based (not learned).</p>
+<h2>Reviewing it yourself</h2>
+<p>Read the SE(2) terrain mapping section first to understand why 2D position + heading is enough. Then trace through the GPU traversability code (the core novelty) to see how curvature and attitude are fused into a risk score. Finally, study the CasADi optimization setup to see how differential flatness polynomials eliminate singularities. The code is well-structured but requires comfort with ROS, optimization solvers, and kinematic reasoning.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only: Probably, but slow.</strong> The system was designed to run on a real car-like robot (not a simulator), so a CPU is sufficient for the optimization solver. However, the GPU-accelerated traversability grid (972K cells in ~50ms) is the speed trick; on CPU alone, the traversability step would be much slower, likely dropping below 20 Hz real-time. No external API keys, no dataset download, no special hardware required—just ROS Noetic on Linux (Ubuntu 20.04) and a C++ build environment.</p>
+<p><strong>Summary:</strong> A production-ready navigation stack for off-road mobile robots. The code is open-source and publicly available. Running the full stack on CPU is possible but trades speed for accessibility.</p></article>
+<article class="page" id="gp9"><h1>Vision-Based Movement Primitives for Lunar Hazard Avoidance</h1>
+<p>ICRA 2025 · 2 citations · reactive-nav</p>
+<h2>What it does</h2>
+<p>This work enables an autonomous lunar excavator (IPEx) to follow engineered driving patterns while detecting and dodging rocks in real time. It combines parameterized trajectory templates (dynamic movement primitives, or DMPs—smooth pre-designed motion patterns with adjustable parameters) with a vision module that spots hazards and locally warps the planned path around them. This is a <strong>reactive-nav</strong> approach: the robot commits to a high-level mission pattern, then reflexively avoids obstacles it sees, without replanning from scratch.</p>
+<h2>The method, in detail</h2>
+<p><strong>The setup:</strong> The IPEx rover needs to execute specific driving routines: cycling between excavation and unloading sites, sweeping around the lander, raster scans for mapping. These are encoded as <strong>dynamic movement primitives</strong> (DMPs)—a learned control framework where complex trajectories are represented as low-dimensional parameter vectors. Instead of storing full joint or wheel velocity sequences, a DMP encodes the motion as an attracting differential equation; you set the target and parameters, and the DMP smoothly generates motion toward it.</p>
+<p><strong>The trick:</strong> For each DMP template, a vision-based obstacle avoidance subsystem watches the rover&#x27;s onboard camera feed in real time. When rocks appear (detected via image analysis of the terrain ahead), the system computes a deflection vector—how far off the current path the rover must move to clear the obstacle. This deflection is injected into the running DMP as a perturbation, bending the trajectory around the rock without halting execution or re-optimizing.</p>
+<p><strong>The exact flow:</strong></p>
+<ul>
+<li>Load mission (e.g., &quot;drive in a 50 m circle, then return&quot;). That mission is instantiated as one or more DMP trajectories with their parameters.</li>
+<li>Begin executing the DMP trajectory on the rover&#x27;s drive system (wheel commands at each timestep).</li>
+<li>At each control cycle, the vision system scans the image for potential rock hazards in the near-term path.</li>
+<li>If a rock is detected within collision distance, compute the avoidance deflection and modulate the DMP&#x27;s target or gain to steer around it.</li>
+<li>Resume the original DMP as soon as the obstacle clears.</li>
+</ul>
+<p><strong>Why it works:</strong> DMPs naturally accommodate small perturbations; their attractor dynamics absorb local control corrections without losing global coherence. Lunar terrain—rough, shadowy, often textureless—demands fast, local reactions that don&#x27;t bottleneck on global re-planning or communication delays. By coupling a simple vision detector to a flexible learned trajectory, the method avoids the brittleness of purely reactive steering (which can get stuck in local loops) and the latency of trajectory optimization.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> No public code repository found. The paper does not appear to have published supplementary code on GitHub or arXiv.</p>
+<p><strong>Implementation notes:</strong> The work targets NASA&#x27;s IPEx excavator, a specialized lunar robot running custom autonomy software developed at NASA Kennedy Space Center. The codebase is part of the broader IPEx autonomy stack (not open-sourced as of 2025). Implementation likely uses:</p>
+<ul>
+<li><strong>DMP framework:</strong> Probably leverages established C++ or Python libraries (e.g., dfki-ric/movement_primitives on GitHub, or an internal NASA version).</li>
+<li><strong>Vision module:</strong> Custom rock detection, likely a CNN or classical computer vision pipeline (OpenCV) applied to stereo or monocular camera data.</li>
+<li><strong>Hardware:</strong> The actual rover is a full-scale lunar excavator prototype, operated in terrestrial lunar-analog test sites (the IPEx Autonomy Test-Site, a 21.3 × 33.5 m enclosed facility simulating lunar south-pole lighting and shadows).</li>
+</ul>
+<p><strong>To run it yourself:</strong> Not feasible without access to the IPEx rover hardware and internal NASA autonomy software. However, you could prototype the approach using:</p>
+<ul>
+<li><strong>Simulator:</strong> V-REP, Gazebo, or Webots with a simulated rover and rock-scattered terrain.</li>
+<li><strong>DMP library:</strong> <code>dfki-ric/movement_primitives</code> or similar open-source.</li>
+<li><strong>Vision:</strong> YOLOv8 or a custom CNN trained on lunar-analog imagery for rock detection.</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>Read first:</strong></p>
+<ul>
+<li>The NASA technical report *Lunar Excavator Mission Operations using Dynamic Movement Primitives* (2023, by related team members) to understand the baseline DMP framework.</li>
+<li>The paper&#x27;s abstract and figures (available on IEEE Xplore) to see the architecture diagram and real-world test results.</li>
+<li>The related Movement Primitives survey (Gutierrez, Cloud, Beksi, 2025 on arXiv) for conceptual grounding.</li>
+</ul>
+<p><strong>Difficulty:</strong> The approach is <strong>moderately straightforward</strong> in concept (DMP + vision detector + simple blending) but would be <strong>hard to reproduce</strong> without the proprietary rover hardware and autonomy middleware. The vision module&#x27;s design choices (what constitutes a &quot;rock,&quot; how detection confidence maps to avoidance strength) are not detailed in the abstract and would require reading the full paper.</p>
+<h2>Run verdict</h2>
+<p><strong>On CPU-only:</strong> No. This is a real-time rover control system optimized for a physical lunar excavator. You can simulate the core logic (DMP + obstacle avoidance) on CPU, but the paper validates on actual hardware in a lunar-analog environment. Key blockers:</p>
+<ul>
+<li><strong>Simulator required:</strong> Need a high-fidelity terrain model and rover dynamics simulator to test without hardware.</li>
+<li><strong>Hardware required:</strong> Full validation requires the IPEx rover or an equivalent platform.</li>
+<li><strong>Dataset required:</strong> Rock detection needs training data from lunar or lunar-analog cameras (not standard ImageNet).</li>
+<li><strong>GPU optional:</strong> Vision detection (CNN) would benefit from GPU acceleration, but CPU is feasible for lower resolution or lighter models.</li>
+<li><strong>API keys / credentials:</strong> None required, but code access requires NASA partnership or clearance.</li>
+</ul>
+<p><strong>Practical verdict:</strong> This is an <strong>end-to-end rover autonomy paper</strong>, not a standalone algorithm you can download and run. The intellectual contribution (coupling DMPs with reactive vision-based evasion) is reproducible in a simulator. The experimental claims (success on lunar-analog terrain with a 1-ton excavator) are specific to the IPEx platform and cannot be replicated without that hardware or its equivalent.</p>
+<p><strong>For research:</strong> Extract the concept (DMP + reactive evasion), reimplement it in a sim (Webots + simulated rover), and validate on simulated hazard-strewn terrain. The paper&#x27;s real-world claims will remain specific to NASA&#x27;s mission.</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div><article class="page walk"><h1>CNS — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;CNSv2: Probabilistic Correspondence Encoded Neural Image Servo&quot; (ICRA 2025)</p>
+<p><strong>Repo root:</strong> <code>CNS/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p>| Script | Purpose | Command |</p>
+<p>|--------|---------|---------|</p>
+<p>| <code>train<em>cns.py</code> | Train the graph neural network servo controller | <code>python train</em>cns.py --batch-size=64 --epochs=50 --init-lr=1e-3 --device=&quot;cuda:0&quot; --save</code> |</p>
+<p>| <code>demo<em>sim</em>Erender.py</code> | Run 150 servo episodes in PyBullet simulation | <code>python demo<em>sim</em>Erender.py</code> (requires YCB models in <code>cns/thirdparty/</code>) |</p>
+<p>| <code>demo<em>real</em>ur5.py</code> | Real robot execution on a UR5 arm with calibrated camera | <code>python demo<em>real</em>ur5.py</code> (requires UR5 + ROS drivers + calibrated camera intrinsics) |</p>
+<p><strong>Config system:</strong> JSON-based pipeline configuration (<code>pipeline.json</code>). Specifies camera intrinsic matrix (K), feature detector (SIFT/ORB/SuperGlue), checkpoint path, device (cuda or cpu), and visualization options (KP=keypoints, MATCH=correspondences, GRAPH=graph structure, NO=none).</p>
+<p><strong>Example pipeline.json:</strong></p>
+<pre><code>
+{
+    &quot;intrinsic&quot;: {
+        &quot;width&quot;: 640,
+        &quot;height&quot;: 480,
+        &quot;K&quot;: [615.71, 0.0, 315.80, 0.0, 615.76, 248.15, 0.0, 0.0, 1.0]
+    },
+    &quot;detector&quot;: &quot;SIFT&quot;,
+    &quot;checkpoint&quot;: &quot;checkpoints/cns.pth&quot;,
+    &quot;device&quot;: &quot;cuda:0&quot;
+}
+</code></pre>
+<p><strong>GPU requirement:</strong> Strongly recommended for training (A100+ tested in paper). Inference runs at ~40 fps on typical high-end GPUs; CPU inference is possible but slow. Training in IsaacSim with domain randomization uses GPU-accelerated simulation.</p>
+<p><strong>Environment:</strong> Python 3.7+, PyTorch 1.12+, PyTorch Geometric (version must match PyTorch). Optional: IsaacSim for advanced domain randomization training; PyBullet for simulation without IsaacSim.</p>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+cns/
+├── benchmark/
+│   ├── pipeline.py                    # Main entry: CorrespondenceBasedPipeline (image → velocity)
+│   ├── controller.py                  # GraphVSController: runs net inference, holds hidden state
+│   ├── stop_policy.py                 # PixelStopPolicy, SSIMStopPolicy: termination criteria
+│   └── tests.py                       # Evaluation harness
+├── midend/
+│   ├── corr2graph.py                  # Midend: wraps feature matches → GraphData via GraphGenerator
+│   └── graph_gen.py                   # GraphGenerator: keypoints → clustered graph structure
+├── models/
+│   ├── graph_vs.py                    # GraphVS: encoder→backbone→decoder, GRU-based temporal
+│   └── functions.py                   # postprocess (velocity denormalization), objectives (loss)
+├── frontend/
+│   ├── classic.py                     # Keypoint + matching (SIFT, ORB, AKAZE via OpenCV)
+│   ├── superglue.py                   # SuperGlue feature matcher (optional, rotation robust)
+│   └── utils.py                       # FrontendConcatWrapper, Correspondence dataclass
+├── real/
+│   └── environment.py                 # RealEnv: UR5 arm control, camera capture, frame transforms
+├── sim/
+│   ├── dataset.py                     # DataLoader: short-sequence training (~9h, single GPU)
+│   └── dataset_long.py                # DataLoader: long-sequence finetuning (~6h)
+├── utils/
+│   ├── perception.py                  # CameraIntrinsic: pixel↔normalized plane conversions
+│   ├── visualize.py                   # show_graph, show_keypoints (OpenCV overlays)
+│   └── trainer.py                     # Trainer: epoch loop, validation, checkpointing
+├── train_gvs_short_seq.py             # TrainingPipeline: compute_train_loss, compute_eval_score
+├── train_gvs_long_seq.py              # TrainingPipeline (longer sequences): same interface
+└── ablation/                          # IBVS, ICRA2018/2021 baselines, ablation variants
+</code></pre>
+<hr>
+<h2>The core idea in code — correspondence-encoded neural servo</h2>
+<h3>1. Feature matching (frontend)</h3>
+<p>The pipeline starts with matched keypoints between current and target images. In <code>cns/benchmark/pipeline.py</code>:</p>
+<pre><code>
+def get_frontend(intrinsic: CameraIntrinsic, detectors: str, ransac=True):
+    &quot;&quot;&quot;
+    - &#x27;AKAZE:02+ORB:13&#x27; means AKAZE with rots=[0,2] and ORB with rots=[1,3]
+    &quot;&quot;&quot;
+    frontends = []
+    for config in detectors.split(&quot;+&quot;):
+        config = config.strip()
+        if config.lower().startswith(&quot;superglue&quot;):
+            frontends.append(SuperGlue(intrinsic, config, ransac=ransac))
+        else:
+            frontends.append(Classic(intrinsic, config, ransac=ransac))
+    return FrontendConcatWrapper(frontends)
+</code></pre>
+<p>Each frontend produces a <code>Correspondence</code> object containing:</p>
+<ul>
+<li><code>cur_pos</code>: current image keypoints (pixel coords)</li>
+<li><code>tar_pos</code>: target image keypoints (pixel coords)</li>
+<li><code>valid_mask</code>: boolean mask for matched pairs</li>
+<li><code>intrinsic</code>: camera parameters</li>
+</ul>
+<h3>2. Soft correspondences → graph structure (midend)</h3>
+<p>Instead of treating keypoints as discrete nodes, CNS encodes them into a <strong>clustered graph</strong>. The <code>Midend</code> converts soft matches into structured graph data in <code>cns/midend/corr2graph.py</code>:</p>
+<pre><code>
+class Midend(object):
+    def get_graph_data(self, corr: Correspondence):
+        if corr.tar_img_changed or self.graph_generator is None:
+            xy = corr.intrinsic.pixel_to_norm_camera_plane(corr.tar_pos)
+            self.graph_generator = self.graph_generator_class(xy)  # GraphGenerator
+        
+        missing_kp_indices = np.nonzero(~corr.valid_mask)[0]
+        xy = corr.intrinsic.pixel_to_norm_camera_plane(corr.cur_pos_aligned)
+        graph_data = self.graph_generator.get_data(
+            current_points=xy,
+            missing_node_indices=missing_kp_indices
+        )
+        return graph_data
+</code></pre>
+<p>The <code>GraphGenerator</code> (in <code>cns/midend/graph_gen.py</code>) clusters keypoints and builds a hierarchical graph:</p>
+<pre><code>
+class GraphGenerator(object):
+    def __init__(self, target_points):
+        self.num_points = len(target_points)
+        self.target_points = target_points
+
+        # Cluster points using AffinityPropagation or KMeans
+        if self.num_points &gt; 16:
+            self.yhat, self.cluster_ids, self.cluster_points_count = \
+                try_cluster_points(target_points, max_tries=3)
+        else:
+            self.yhat = np.arange(self.num_points)  # One cluster per point if few keypoints
+
+        # Build two-level graph:
+        # L0: individual keypoints (within-cluster dense edges)
+        # L1: cluster centers (dense edges between all clusters)
+        self.cluster_centers_index = []
+        self.belong_cluster_index = np.zeros(len(self.target_points), dtype=np.int64)
+        
+        for i, c_id in enumerate(self.cluster_ids):
+            mask = (self.yhat == c_id)
+            cluster_points = target_points[mask]
+            cluster_points_index = np.nonzero(mask)[0]
+            cluster_median_pos = np.median(cluster_points, axis=0)
+            
+            # Pick closest point to cluster median as cluster center
+            dist2median = np.linalg.norm(cluster_points - cluster_median_pos, axis=-1)
+            min_dist_idx = np.argmin(dist2median)
+            cluster_center_idx = cluster_points_index[min_dist_idx]
+            
+            # Create dense edges within cluster
+            l0_dense_edge_index.append(gen_dense_connect_edges(cluster_points_index))
+            # Create edges from points to cluster center
+            l0_to_l1_edge_index_j.append(cluster_points_index)
+            l0_to_l1_edge_index_i.append(np.ones_like(cluster_points_index) * i)
+            
+            self.cluster_centers_index.append(cluster_center_idx)
+</code></pre>
+<p>This outputs a <code>GraphData</code> object (PyG-compatible) with:</p>
+<ul>
+<li><code>x<em>cur</code>, <code>x</em>tar</code>: node features (point coordinates + differences)</li>
+<li><code>pos<em>cur</code>, <code>pos</em>tar</code>: point positions (2D normalized image plane)</li>
+<li><code>l1<em>dense</em>edge<em>index</em>cur</code>, <code>l1<em>dense</em>edge<em>index</em>tar</code>: cluster-level edges</li>
+<li><code>l0<em>to</em>l1<em>edge</em>index<em>j</em>cur</code>, <code>l0<em>to</em>l1<em>edge</em>index<em>i</em>cur</code>: keypoint↔cluster edges</li>
+<li><code>cluster<em>mask</code>, <code>cluster</em>centers_index</code>: cluster membership and representatives</li>
+</ul>
+<h3>3. Probabilistic feature encoding → network input</h3>
+<p>The network input combines <strong>current</strong> and <strong>target</strong> correspondences to form difference features:</p>
+<pre><code>
+class Encoder(nn.Module):
+    def forward(self, x_cur, x_tar, pos_cur, pos_tar, cluster_mask, 
+                l0_to_l1_edge_index, centers_index):
+        
+        x_cur = F.relu(self.in_enc(x_cur))
+        x_tar = F.relu(self.in_enc(x_tar))
+        
+        # Use PointTransformerConv to cluster individual keypoints
+        # x_clu: aggregated cluster-level features combining current &amp; target
+        x_cur_clu = self.get_clu(x_cur, x_tar, pos_cur, pos_tar, l0_to_l1_edge_index, centers_index)
+        x_tar_clu = self.get_clu(x_tar, x_tar, pos_tar, pos_tar, l0_to_l1_edge_index, centers_index)
+        
+        # Concat current and difference (target - current)
+        x_clu = torch.cat([x_cur_clu, x_tar_clu - x_cur_clu], dim=-1)
+        x_clu = F.relu(self.out_enc(x_clu)) * cluster_mask.float().unsqueeze(-1)
+        return x_clu
+</code></pre>
+<p>The <strong>key innovation</strong>: soft match probabilities (from the frontend detector) are encoded as uncertainty in the point positions themselves. The graph structure captures which points belong to the same visual region (clusters), and the network learns to aggregate uncertainty across clustered features.</p>
+<hr>
+<h2>The servo loop — image error to velocity command</h2>
+<h3>The end-to-end inference pipeline</h3>
+<p>In <code>cns/benchmark/pipeline.py</code>, the <code>CorrespondenceBasedPipeline.get<em>control</em>rate()</code> method runs the full servo step:</p>
+<pre><code>
+def get_control_rate(self, image: np.ndarray):
+    &quot;&quot;&quot;
+    Arguments:
+    - image: np.ndarray, bgr image (Note: here is bgr not rgb)
+    
+    Returns:
+    - vel: np.ndarray, shape=(6,), [vx, vy, vz, wx, wy, wz], 
+        camera velocity in camera coordinate
+    - data: GraphData object for visualization or stopping criteria
+    - timing: dict with frontend_time, midend_time, backend_time
+    &quot;&quot;&quot;
+    timing = {&quot;frontend_time&quot;: 0, &quot;midend_time&quot;: 0, &quot;backend_time&quot;: 0, &quot;total_time&quot;: 0}
+
+    # Step 1: Extract and match keypoints
+    t0 = time.time()
+    corr = self.frontend.process_current_frame(image)  # SIFT/ORB/SuperGlue matching
+    timing[&quot;frontend_time&quot;] = time.time() - t0
+
+    if corr is None:  # No matches found
+        vel = np.zeros(6, dtype=np.float32)
+        data = None
+    else:
+        # Step 2: Convert matches → graph structure
+        t0 = time.time()
+        data = self.midend.get_graph_data(corr)
+        timing[&quot;midend_time&quot;] = time.time() - t0
+
+        # Mark scene change (reset temporal state)
+        if self.new_scene:
+            data.start_new_scene()
+        data.set_distance_scale(self.dist_scale)  # Add estimated depth prior
+        self.new_scene = False
+
+        # Step 3: Run neural controller
+        t0 = time.time()
+        vel = self.control(data)  # GraphVSController.__call__
+        timing[&quot;backend_time&quot;] = time.time() - t0
+
+        # Store images for stopping criterion
+        setattr(data, &quot;cur_img&quot;, image)
+        setattr(data, &quot;tar_img&quot;, corr.tar_img)
+
+    timing[&quot;total_time&quot;] = timing[&quot;frontend_time&quot;] + timing[&quot;backend_time&quot;]
+    return vel, data, timing
+</code></pre>
+<h3>The neural controller (backend)</h3>
+<p>In <code>cns/benchmark/controller.py</code>, the <code>GraphVSController</code> loads the trained model and maintains hidden state:</p>
+<pre><code>
+class GraphVSController(object):
+    def __init__(self, ckpt_path: str, device=&quot;cuda:0&quot;):
+        self.device = torch.device(device)
+        ckpt = torch.load(ckpt_path, map_location=self.device)
+        self.net: GraphVS = ckpt[&quot;net&quot;]  # Load pretrained GraphVS model
+        self.net.eval()
+        self.hidden = None  # Temporal state (GRU)
+
+    def __call__(self, data: GraphData) -&gt; np.ndarray:
+        with torch.no_grad():
+            data = data.to(self.device)
+            
+            # Reset hidden state on new scene
+            if getattr(data, &quot;new_scene&quot;).any():
+                print(&quot;[INFO] Got new scene, set hidden state to zero&quot;)
+                self.hidden = None
+
+            # Forward pass through graph neural network
+            raw_pred = self.net(data, self.hidden)
+            self.hidden = raw_pred[-1]  # Extract GRU hidden state for next frame
+            
+            # Denormalize raw predictions to actual velocity
+            vel = self.net.postprocess(raw_pred, data)
+
+        vel = vel.squeeze(0).cpu().numpy()
+        return vel  # [vx, vy, vz, wx, wy, wz] in camera frame
+</code></pre>
+<h3>The network architecture (GraphVS)</h3>
+<p>In <code>cns/models/graph_vs.py</code>, the network processes the graph through three stages:</p>
+<pre><code>
+class GraphVS(nn.Module):
+    def __init__(self, input_dim, pos_dim, hidden_dim=128, regress_norm=True):
+        super().__init__()
+        self.regress_norm = regress_norm
+        self.encoder = Encoder(input_dim, hidden_dim, pos_dim)
+        self.backbone = Backbone(hidden_dim, pos_dim)
+        self.decoder = Decoder(hidden_dim, regress_norm)
+    
+    def forward(self, data: GraphData, hidden: Optional[torch.Tensor] = None):
+        # Extract graph structure
+        x_cur = getattr(data, &quot;x_cur&quot;)        # Current keypoint features
+        x_tar = getattr(data, &quot;x_tar&quot;)        # Target keypoint features
+        pos_cur = getattr(data, &quot;pos_cur&quot;)    # Current point positions (normalized)
+        pos_tar = getattr(data, &quot;pos_tar&quot;)    # Target point positions
+        
+        l1_dense_edge_index_cur = getattr(data, &quot;l1_dense_edge_index_cur&quot;)
+        l1_dense_edge_index_tar = getattr(data, &quot;l1_dense_edge_index_tar&quot;)
+        l0_to_l1_edge_index_j_cur = getattr(data, &quot;l0_to_l1_edge_index_j_cur&quot;)
+        l0_to_l1_edge_index_i_cur = getattr(data, &quot;l0_to_l1_edge_index_i_cur&quot;)
+        
+        cluster_mask = getattr(data, &quot;cluster_mask&quot;)
+        cluster_centers_index = getattr(data, &quot;cluster_centers_index&quot;)
+
+        # Stage 1: Encode current and target into cluster-level difference features
+        x_clu = self.encoder(
+            x_cur, x_tar, pos_cur, pos_tar, cluster_mask, 
+            l0_to_l1_edge_index_cur, cluster_centers_index)
+        pos_clu = pos_tar[cluster_centers_index]  # Use target positions as cluster positions
+        batch_clu = batch[cluster_centers_index]
+
+        # Stage 2: Process through temporal GRU backbone
+        # PEConvGRU aggregates information across clusters frame-to-frame
+        if hidden is None:
+            hidden = self.init_hidden(getattr(data, &quot;num_clusters&quot;).sum()).to(x_cur)
+        
+        hidden, x_clu = self.backbone(
+            hidden, x_clu, pos_clu, l1_dense_edge_index_cur, l1_dense_edge_index_tar, batch_clu)
+
+        # Stage 3: Decode to 6-DoF velocity
+        # Output: (1) direction vector [v_x, v_y, v_z, w_x, w_y, w_z]
+        #         (2) log-scale magnitude (optional, if regress_norm=True)
+        vel_si_vec, vel_si_norm = self.decoder(x_clu, cluster_mask, batch_clu)
+        
+        return vel_si_vec, vel_si_norm, hidden
+</code></pre>
+<h3>Postprocessing: denormalization to real velocity</h3>
+<p>The network outputs are <strong>normalized</strong> (independent of camera intrinsics and scene scale). The <code>postprocess()</code> function in <code>cns/models/functions.py</code> scales them:</p>
+<pre><code>
+def postprocess(raw_pred, data: GraphData, post_scale: bool) -&gt; torch.Tensor:
+    vel_vec, vel_norm = raw_pred[0], raw_pred[1]  # Direction &amp; magnitude
+    
+    # Combine direction and magnitude
+    if vel_norm is None:
+        vel = vel_vec
+    else:
+        vel = vel_vec / (torch.norm(vel_vec, dim=-1, keepdim=True) + 1e-7) * \
+            alpha_p_elu(vel_norm, alpha=1)  # alpha_p_elu = alpha + elu(x)
+    
+    # Scale by distance prior (estimated depth)
+    if post_scale:
+        vel = vel.clone()
+        vel[:, :3] *= getattr(data, &quot;tPo_norm&quot;).view(-1, 1)  # tPo_norm is distance_scale
+    
+    return vel
+</code></pre>
+<p>The <code>distance<em>scale</code> (set via <code>pipeline.set</em>target()</code>) represents the estimated depth from camera to scene. The network learns normalized control that adapts to real 3D scales via this scalar multiplier.</p>
+<h3>Servo loop in real execution (demo<em>real</em>ur5.py)</h3>
+<p>The complete closed-loop runs like this:</p>
+<pre><code>
+stopper = PixelStopPolicy(waiting_time=2.0, conduct_thresh=0.01)
+stopper.reset()
+
+while True:
+    # Observation
+    cur_bcT = env.get_current_base_cam_T()
+    cur_img, _ = env.observation()
+    
+    # Compute control velocity
+    vel, data, timing = pipeline.get_control_rate(cur_img)
+    
+    # Stopping criteria: error small + no improvement for 2 secs
+    need_stop = (
+        stopper(data, time.time()) or 
+        not env.is_safe_pose() or
+        data is None
+    )
+    
+    if need_stop:
+        env.stop_action()
+        # Compute final servo error
+        dT = np.linalg.inv(cur_bcT) @ tar_bcT
+        du = R.from_matrix(dT[:3, :3]).as_rotvec()
+        dt = dT[:3, 3]
+        print(f&quot;Servo error: |du| = {np.linalg.norm(du)/np.pi*180:.3f}°, |dt| = {np.linalg.norm(dt)*1000:.3f}mm&quot;)
+        break
+    
+    # Apply velocity to robot
+    actual_conduct_vel = env.action(vel)
+</code></pre>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><strong><code>README.md</code></strong> — High-level overview, dependencies, installation, basic usage examples.</li>
+</ul>
+<ul>
+<li><strong><code>pipeline.json</code></strong> — Understand the configuration schema (camera intrinsics, detector choice, device, checkpoint path).</li>
+</ul>
+<ul>
+<li><strong><code>cns/benchmark/pipeline.py</code></strong> (CorrespondenceBasedPipeline class) — The main entry point. Trace one call to <code>get<em>control</em>rate()</code> to see the full data flow: frontend → midend → controller → postprocess.</li>
+</ul>
+<ul>
+<li><strong><code>cns/midend/corr2graph.py</code></strong> + <strong><code>cns/midend/graph<em>gen.py</code></strong> — How keypoint matches become a clustered graph structure. Understand <code>GraphGenerator.</em><em>init</em><em>()</code> (clustering) and <code>get</em>data()</code> (graph construction).</li>
+</ul>
+<ul>
+<li><strong><code>cns/benchmark/controller.py</code></strong> (GraphVSController) — How the model is loaded and invoked. Trace through the forward pass and hidden state management.</li>
+</ul>
+<ul>
+<li><strong><code>cns/models/graph_vs.py</code></strong> (GraphVS class) — The core neural network: encoder → backbone → decoder. Read the <code>forward()</code> method to see how graph data flows through the model.</li>
+</ul>
+<ul>
+<li><strong><code>cns/models/functions.py</code></strong> — Velocity denormalization (<code>postprocess()</code>) and loss computation (<code>objectives()</code>). Key for understanding how predictions are scaled to real-world commands.</li>
+</ul>
+<ul>
+<li><strong><code>demo<em>real</em>ur5.py</code></strong> — Real-robot execution loop. Shows how to initialize pipeline, set target, and run the closed-loop servo.</li>
+</ul>
+<ul>
+<li><strong><code>train_cns.py</code></strong> — Training entry point. Shows how to instantiate <code>GraphVS</code>, create dataloaders, and run training + validation.</li>
+</ul>
+<ul>
+<li><strong><code>cns/sim/dataset.py</code></strong> (DataLoader) — If you want to understand the training data: how synthetic trajectories are generated in simulation (PyBullet), graph data is constructed, and loss is computed.</li>
+</ul></article>
+<article class="page walk"><h1>SEB-Naver — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;SEB-Naver: A SE(2)-based Local Navigation Framework for Car-like Robots on Uneven Terrain&quot; (IROS 2025)</p>
+<p><strong>Repo root:</strong> <code>seb_naver/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, build, envs)</h2>
+<p>This is a <strong>ROS Noetic package</strong> for real-time trajectory planning and control of wheeled robots on uneven terrain. The system runs as a modular ROS stack: terrain mapper → global path planner → trajectory optimizer → MPC controller.</p>
+<p><strong>Build &amp; Run:</strong></p>
+<pre><code>
+catkin_make -DCMAKE_BUILD_TYPE=Release -DPYTHON_EXECUTABLE=/usr/bin/python3
+source devel/setup.zsh
+roslaunch plan_manage multi_sim.launch
+</code></pre>
+<p><strong>Key dependencies</strong> (<code>README.md</code>):</p>
+<ul>
+<li>ROS Noetic middleware</li>
+<li>CasADi (optimization library, requires IPOPT)</li>
+<li><code>ros-noetic-ackermann-msgs</code> (vehicle kinematics)</li>
+<li>Eigen3, PCL, OpenCV (via catkin packages)</li>
+<li>Optional CUDA for GPU-accelerated terrain risk grid (compiled in <code>TerrainAnalyzer.cpp</code>)</li>
+</ul>
+<p><strong>Entry points:</strong></p>
+<ul>
+<li><strong>Planning node</strong> (<code>planner<em>node</code>): ROS node from <code>/src/planner/arc</em>planner/plan<em>manage/src/plan</em>node.cpp</code> + <code>replan_fsm.cpp</code></li>
+<li><strong>Terrain analyzer</strong> (<code>terrain<em>analyzer</code>): CUDA-enabled grid evaluator in <code>/src/uneven</em>mapping/terrain_analyzer/</code></li>
+<li><strong>MPC controller</strong> (<code>mpc<em>controller</em>node</code>): CasADi-based MPC in <code>/src/mpc<em>controller/src/mpc</em>node.cpp</code></li>
+<li><strong>Main launch script</strong> (<code>multi_sim.launch</code>): orchestrates all nodes; published to <code>/planner/dptrajectory</code></li>
+</ul>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+seb_naver/
+├── src/
+│   ├── planner/
+│   │   ├── arc_planner/
+│   │   │   ├── plan_manage/           [C++ ROS package: FSM, trajectory optimizer, path search]
+│   │   │   │   ├── src/
+│   │   │   │   │   ├── plan_node.cpp                    [entry point: creates ReplanFSM]
+│   │   │   │   │   ├── replan_fsm.cpp                   [FSM state machine + callbacks for odom/map/goal]
+│   │   │   │   │   └── plan_manage.cpp                  [core planner: KinoAstar path search → SE(2) traj opt]
+│   │   │   │   ├── include/
+│   │   │   │   │   ├── plan_manage/
+│   │   │   │   │   │   ├── plan_manage.h                [PlanManager class interface]
+│   │   │   │   │   │   └── replan_fsm.h                 [ReplanFSM: state machine (INIT→WAIT_TARGET→REPLAN→EXEC)]
+│   │   │   │   │   └── arcPlan/
+│   │   │   │   │       ├── Trajopt_alm.hpp              [**core: SE(2) trajectory optimization w/ ALM solver**]
+│   │   │   │   │       ├── Polytraj.hpp                 [differential flatness: piecewise quintic polynomials]
+│   │   │   │   │       ├── lbfgs.hpp                    [L-BFGS optimization solver]
+│   │   │   │   │       ├── root_finder.hpp              [polynomial root finding for trajectory evaluation]
+│   │   │   │   │       └── geoutils2d.hpp               [2D geometry utilities]
+│   │   │   │   ├── launch/
+│   │   │   │   │   ├── multi_sim.launch                 [main entry: spins up terrain analyzer, MPC, planner nodes]
+│   │   │   │   │   └── advanced_param.xml               [tuning: max_vel, max_cur, obstacle margins, etc.]
+│   │   │   │   └── CMakeLists.txt                       [build: links CasADi, PCL, se2_grid libraries]
+│   │   │   │
+│   │   │   └── path_search/                             [kinodynamic A* global path finder]
+│   │   │       ├── kino_astar.h/cpp                     [KinoAstar: state space search with kinematic constraints]
+│   │   │       └── astar.h/cpp                          [standard A*]
+│   │   │
+│   │   └── decomp_rviz_plugin/                          [RViz visualizer for polyhedra]
+│   │
+│   ├── uneven_mapping/
+│   │   ├── terrain_analyzer/                            [**core: GPU terrain risk grid evaluation**]
+│   │   │   ├── src/
+│   │   │   │   ├── TerrainAnalyzer.cpp                  [CUDA kernel setup: calls computerMapSE2()]
+│   │   │   │   ├── terrain_analyzer_node.cpp            [ROS node: subscribes to LiDAR, publishes risk grid]
+│   │   │   │   ├── post_processors.cpp                  [postprocess grid: smoothing, inpainting]
+│   │   │   │   └── helper_math.h                        [curvature, normal estimation, attitude calc]
+│   │   │   ├── include/
+│   │   │   │   └── terrain_analyzer/TerrainAnalyzer.hpp [defines gpuInit(), computerMapSE2() signatures]
+│   │   │   ├── params/
+│   │   │   │   └── elevation_map_gpu.yaml               [config: resolution, sensor offsets, risk weights]
+│   │   │   └── CMakeLists.txt
+│   │   │
+│   │   └── se2_grid/                                    [**core: SE(2) grid representation + interpolation**]
+│   │       ├── se2_grid_core/
+│   │       │   ├── include/se2_grid_core/
+│   │       │   │   └── SE2Grid.hpp                      [grid class: layers (elevation, risk, normal_x/y, zbx/zby)]
+│   │       │   ├── src/
+│   │       │   │   └── SE2Grid.cpp                      [SE(2) grid: move(), getValue(), getValueGrad()]
+│   │       │   └── se2_grid_tests/                      [interpolation, movement, iterator tests]
+│   │       │
+│   │       ├── se2_grid_ros/
+│   │       │   ├── include/se2_grid_ros/
+│   │       │   │   └── SE2GridRosConverter.hpp          [ROS message ↔ SE2Grid serialization]
+│   │       │   └── se2_grid_msgs/                       [ROS message definitions: SE2Grid proto]
+│   │       │
+│   │       └── se2_grid_rviz_plugin/                    [visualization of SE(2) grid in RViz]
+│   │
+│   ├── mpc_controller/                                  [**MPC tracker using CasADi**]
+│   │   ├── src/
+│   │   │   ├── mpc.cpp                                  [CasADi NLP: min jerk + steering/speed/acc constraints]
+│   │   │   └── mpc_node.cpp                             [ROS node: subscribe to planned traj → publish commands]
+│   │   ├── include/mpc/
+│   │   │   ├── mpc.h                                    [MPC class: solver, state/input definitions]
+│   │   │   └── utils/traj_anal.hpp                      [trajectory evaluation at query time]
+│   │   ├── params/controller.yaml                       [MPC tuning: dt, horizon, Q/R weights]
+│   │   └── CMakeLists.txt
+│   │
+│   ├── simulator/
+│   │   ├── laser_simulator/                             [simulates LiDAR scans from point cloud]
+│   │   ├── map_generator/                               [generates random forest terrain]
+│   │   ├── kinematics_simulator/                        [integrates commands → odometry]
+│   │   └── fake_ugv/                                    [simple kinematic vehicle simulator]
+│   │
+│   ├── tank_slam/                                       [SLAM backend (not core to planner)]
+│   ├── tank_sdk/                                        [hardware communication layer]
+│   │
+│   └── plan_debug.launch                                [alternative debug launch]
+│
+├── README.md                                            [build &amp; run instructions]
+└── (build, devel folders auto-generated by catkin)
+</code></pre>
+<hr>
+<h2>The core idea in code — SE(2) planning on uneven terrain</h2>
+<h3>1. Terrain Representation: SE(2) Grid with Risk Scoring</h3>
+<p><strong>SE(2) Grid</strong> (<code>/src/uneven<em>mapping/se2</em>grid/se2<em>grid</em>core/include/se2<em>grid</em>core/SE2Grid.hpp</code>):</p>
+<p>The robot&#x27;s state is reduced to SE(2): position <code>(x, y)</code> + yaw heading <code>θ</code>. The 3D terrain is mapped into a local SE(2) grid with multiple layers:</p>
+<pre><code>
+// SE2Grid class: multi-layer grid representation
+class SE2Grid {
+public:
+    // Layers: &quot;elevation&quot;, &quot;var&quot; (variance), &quot;smooth&quot; (height smoothed), 
+    // &quot;normal_x&quot;, &quot;normal_y&quot; (terrain normals),
+    // &quot;risk&quot; (SO(2)-parameterized: risk[yaw_idx]), 
+    // &quot;zbx&quot;, &quot;zby&quot; (terrain slopes in body frame)
+    
+    void initGeometry(const Eigen::Array2d&amp; length_pos_, 
+                      double resolution_pos_,     // spatial resolution
+                      double resolution_yaw_,     // heading resolution (typically 1° or 2°)
+                      const Eigen::Vector2d&amp; position_);
+    
+    float getValue(const std::string&amp; layer, const Eigen::Vector3d&amp; pos,
+                   InterpolationMethods interp = INTER_LINEAR) const;
+    
+    float getValueGrad(const std::string&amp; layer, const Eigen::Vector3d&amp; pos, 
+                       Eigen::Vector3d&amp; grad, InterpolationMethods interp) const;
+    
+    bool move(const Eigen::Vector2d&amp; pos2);  // shift grid center
+};
+</code></pre>
+<p><strong>Grid dimensions</strong> (from <code>TerrainAnalyzer::init()</code> in <code>TerrainAnalyzer.cpp</code>):</p>
+<ul>
+<li>Position: typically 256×256 cells at 0.2 m/cell = 51 m × 51 m local map</li>
+<li>Yaw: 36–72 discrete headings (5°–10° step)</li>
+<li>Total cells: ~1M (256 × 256 × 16), processed in ~50 ms on GPU</li>
+</ul>
+<h3>2. GPU Terrain Risk Evaluation</h3>
+<p><strong>CUDA Kernel</strong> (<code>TerrainAnalyzer.cpp</code>, disabled with <code>#ifdef ENABLE_CUDA</code>):</p>
+<pre><code>
+// Called from TerrainAnalyzer::add()
+void computerMapSE2(const int&amp; point_num_,
+                    float* points_world,              // LiDAR points
+                    const float&amp; resolution_pos_,
+                    const int&amp; size_yaw_,             // # of heading bins
+                    const Vector2i&amp; size_pos_,        // grid width/height
+                    const Vector3f&amp; body_T_,          // robot pose
+                    const Matrix3f&amp; body_R_,          // robot rotation
+                    const Matrix4f&amp; body_Cov_ZR_,     // covariance
+                    MatrixXf&amp; elevation_,             // [rows × cols] output
+                    MatrixXf&amp; var_,                   // variance
+                    MatrixXf&amp; inpainted_,             // gap-filled elevation
+                    MatrixXf&amp; smooth_,                // smoothed elevation
+                    std::vector&lt;MatrixXf&gt;&amp; zbx_,      // [size_yaw] terrain slope X for each heading
+                    std::vector&lt;MatrixXf&gt;&amp; zby_,      // [size_yaw] terrain slope Y for each heading
+                    std::vector&lt;MatrixXf&gt;&amp; risk_,     // [size_yaw] **risk score per heading**
+                    MatrixXf&amp; sdf_,                   // signed distance field
+                    Array2i&amp; start_idx_,
+                    Vector2f&amp; position_,
+                    bool verbose_);
+</code></pre>
+<p><strong>Risk computation</strong> (from <code>helper<em>math.h</code> + terrain</em>analyzer config):</p>
+<ul>
+<li>For each grid cell, for each yaw heading: sample terrain points at the robot&#x27;s footprint (ellipsoid)</li>
+<li>Compute curvature <code>κ_ter</code> (terrain roughness from normal variation)</li>
+<li>Compute body pitch angle <code>φ<em>x</code> and roll angle <code>φ</em>y</code> (from local slopes)</li>
+<li>Fuse into risk score:</li>
+<pre><code>
+  risk(x, y, yaw) = w_φ * (φ_x² + φ_y²) + w_κ * κ_ter²
+</code></pre>
+</ul>
+<p>  If risk &gt; threshold → cell is blocked.</p>
+<p>The output is a volume: <code>risk<em>[yaw</em>idx](row, col)</code> for each heading discretization.</p>
+<h3>3. Trajectory Optimization: Differential Flatness &amp; ALM Solver</h3>
+<p><strong>Core planner</strong> (<code>/src/planner/arc<em>planner/plan</em>manage/src/plan<em>manage.cpp</code> + <code>arcPlan/Trajopt</em>alm.hpp</code>):</p>
+<p>#### Step A: Kinodynamic A* global search</p>
+<pre><code>
+// plan_manage.cpp::PlanManager::process()
+kino_path_finder_-&gt;search(iniFs, Eigen::Vector2d::Zero(), finFs, model_time, true);
+// Output: sampled waypoints + kinematic feasibility checks
+</code></pre>
+<p>The <code>KinoAstar</code> graph searches the state space <code>(x, y, vx, vy)</code> respecting steering angle limits.</p>
+<p>#### Step B: SE(2) trajectory optimization</p>
+<p><strong>Differential flatness parameterization</strong> (<code>arcPlan/Polytraj.hpp</code>):</p>
+<p>Instead of working in (x, y, θ), the planner uses an intermediate variable <code>s</code> (arc length along the path):</p>
+<ul>
+<li>Define <code>x(s)</code>, <code>y(s)</code> as piecewise <strong>quintic polynomials</strong> (degree 5)</li>
+<li>Define time map <code>t(s)</code> as another quintic</li>
+<li>Analytically compute steering angle <code>δ</code>, longitudinal accel <code>a<em>x</code>, lateral accel <code>a</em>y</code></li>
+</ul>
+<pre><code>
+// Polytraj.hpp::Piece&lt;Dim&gt;
+template &lt;int Dim&gt; 
+class Piece {
+private:
+    double duration;
+    CoefficientMat&lt;Dim&gt; coeffMat;  // 6 columns per dimension (degree 5)
+public:
+    inline Eigen::Matrix&lt;double, Dim, 1&gt; getSigma(const double &amp;t) const {
+        // Evaluate x(s), y(s) at arc length s (normalized to [0,1] in piece)
+    }
+};
+</code></pre>
+<p><strong>Augmented Lagrangian Method solver</strong> (<code>Trajopt_alm.hpp</code>):</p>
+<pre><code>
+// TrajOpt::OptimizeSe2Trajectory() in arcPlan/Trajopt_alm.hpp
+int OptimizeSe2Trajectory(
+    const Eigen::MatrixXd &amp;headState2d,         // [x, vx, ax] at start; [y, vy, ay] at start
+    const Eigen::MatrixXd &amp;tailState2d,         // state at goal
+    Eigen::VectorXd rdTs_container,             // time for each segment
+    const std::vector&lt;Eigen::MatrixXd&gt; &amp;inPs_container,  // waypoints
+    const std::vector&lt;Eigen::Vector2d&gt; &amp;gearPos,         // gear switching positions
+    const std::vector&lt;double&gt; &amp; angles,                   // gear switching headings
+    std::shared_ptr&lt;se2_grid::SE2Grid&gt; map_itf,          // terrain risk grid
+    std::shared_ptr&lt;se2_grid::SE2Grid&gt; sdf_map_itf,      // obstacle SDF
+    std::shared_ptr&lt;Config&gt; config_,
+    const std::vector&lt;int&gt; singual,                      // ±1 for forward/backward per segment
+    std::shared_ptr&lt;visualization::Visualization&gt; vis_tool,
+    std::string name = &quot;nn&quot;, 
+    std::vector&lt;Eigen::VectorXd&gt; ds_container = {})
+{
+    // Minimize jerk (smooth acceleration changes) over all segments
+    // Subject to:
+    
+    // (1) Steering angle bounds: |δ| ≤ δ_max, |dδ/dt| ≤ (dδ/dt)_max
+    neqc_num += piecenums[i] * (traj_res+1) * 8;  // 8 types of inequality constraints
+    
+    // (2) Speed bounds: v_min ≤ v ≤ v_max
+    // (3) Acceleration bounds: a_lon ∈ [min, max], a_lat ∈ [min, max]
+    // (4) Attitude constraints: pitch, roll &lt; tipping threshold
+    // (5) Traversability: prefer high-value cells in risk grid
+    esdfWei = config_-&gt;esdfWei;
+    map_itf_ = map_itf;  // Terrain risk evaluated during optimization
+    
+    // (6) Obstacle avoidance: use signed distance field
+    sdf_map_itf_ = sdf_map_itf;
+    safeMargin = config_-&gt;safeMargin;
+    
+    // ALM setup (Powell-Hestenes-Rockafellar method)
+    double rho = 1.0, rho_max = 1000.0;
+    Eigen::VectorXd lambda, mu;        // Lagrange multipliers for eq/ineq constraints
+    double gamma = 1;                  // penalty update rate
+    cons_eps_ = 0.20;                  // constraint tolerance
+}
+</code></pre>
+<p><strong>Key constraint evaluation</strong> (checked at traj_res=16 points per segment):</p>
+<pre><code>
+// For each trajectory piece i and each sample point in [0, 1] along arc length:
+double s_normalized = sample_point / traj_res;
+
+// Evaluate polynomials: x(s), y(s), t(s) and derivatives
+Eigen::Vector2d pos = evaluate_poly(posOpts[i], s_normalized);
+Eigen::Vector2d vel = d_evaluate_poly(posOpts[i], s_normalized);
+double steering_angle = atan2(wheel_base * vel[1], vel[0]);  // Ackermann model
+
+// Query terrain risk at (pos.x, pos.y, steering_angle) from se2_grid_map_
+float risk_value = map_itf_-&gt;getValue(&quot;risk&quot;, Eigen::Vector3d(pos.x, pos.y, steering_angle));
+
+// Constraint: cost_risk += esdfWei * (1 - risk_value / risk_max)
+// Constraint: attitude (pitch/roll from slopes) &lt; max_attitude
+</code></pre>
+<p>The solver iterates, refining <code>x(s)</code>, <code>y(s)</code>, and segment times until convergence.</p>
+<hr>
+<h2>The ROS nodes &amp; data flow</h2>
+<h3>Node 1: Planner Node (ReplanFSM)</h3>
+<p><strong>Entry:</strong> <code>src/planner/arc<em>planner/plan</em>manage/src/plan_node.cpp</code></p>
+<pre><code>
+int main(int argc, char **argv) {
+    ros::init(argc, argv, &quot;planner_node&quot;);
+    ros::NodeHandle nh(&quot;~&quot;);
+    
+    ReplanFSM rebo_replan;
+    rebo_replan.init(nh);
+    ros::spin();
+    return 0;
+}
+</code></pre>
+<p><strong>FSM State Machine</strong> (<code>replan_fsm.h</code>):</p>
+<pre><code>
+enum FSM_EXEC_STATE {
+    INIT,
+    WAIT_TARGET,
+    REPLAN_TRAJ,        // main planning state
+    EXEC_TRAJ,          // trajectory being executed
+    SEQUENTIAL_START
+};
+</code></pre>
+<p><strong>Subscriptions</strong> (<code>replan_fsm.cpp::init()</code>):</p>
+<pre><code>
+odom_sub_ = nh_.subscribe(odom_topic_, 100, &amp;ReplanFSM::OdomCallback, this);
+    // Topic: (default) &quot;/car_0/odometry&quot; (nav_msgs/Odometry)
+    // Extracts: position, yaw, velocity → updates planner_.updateOdom()
+
+parking_sub_ = nh_.subscribe(&quot;/move_base_simple/goal&quot;, 1, &amp;ReplanFSM::ParkingCallback, this);
+    // User goal input (geometry_msgs/PoseStamped)
+    // Sets target, triggers SEQUENTIAL_START state
+
+se2_grid_sub_ = nh_.subscribe(&quot;/car_0_terrain_analyzer/fused_map&quot;, 10, &amp;ReplanFSM::SEMapCallback, this);
+    // Terrain risk grid (se2_grid_msgs/SE2Grid)
+
+sdf_grid_sub_ = nh_.subscribe(&quot;/car_0_terrain_analyzer/sdf_map&quot;, 10, &amp;ReplanFSM::MapCallback, this);
+    // Obstacle SDF (se2_grid_msgs/SE2Grid)
+
+exec_timer_ = nh_.createTimer(ros::Duration(0.02), &amp;ReplanFSM::execFSMCallback, this);
+    // 50 Hz: drives FSM state transitions + calls planner_.process()
+</code></pre>
+<p><strong>Main planning loop</strong> (<code>replan_fsm.cpp::execFSMCallback()</code>):</p>
+<pre><code>
+void ReplanFSM::execFSMCallback(const ros::TimerEvent &amp;e) {
+    switch (exec_state_) {
+        case SEQUENTIAL_START:
+            init_state_ &lt;&lt; cur_pos_, cur_yaw_, cur_vel_;
+            planner_.setInitStateAndInput(init_state_, start_time);
+            if (!planner_.process()) {  // **Calls PlanManager::process() → KinoAstar + SE(2) opt**
+                break;
+            }
+            planner_.publishSimTraj2Controller();
+            changeFSMExecState(EXEC_TRAJ, &quot;FSM&quot;);
+            break;
+    }
+}
+</code></pre>
+<p><strong>Output</strong> (<code>plan_manage.cpp::publishSimTraj2Controller()</code>):</p>
+<pre><code>
+trajCmdPub = nh.advertise&lt;mpc_controller::DPtrajContainer&gt;(&quot;/planner/dptrajectory&quot;, 1);
+// Publishes optimized trajectory (piecewise polynomial coefficients) to MPC controller
+</code></pre>
+<hr>
+<h3>Node 2: Terrain Analyzer</h3>
+<p><strong>Entry:</strong> <code>src/uneven<em>mapping/terrain</em>analyzer/src/terrain<em>analyzer</em>node.cpp</code></p>
+<pre><code>
+// terrain_analyzer_node.cpp
+int main(int argc, char** argv) {
+    TerrainAnalyzer analyzer;
+    analyzer.init(nh);
+    ros::spin();
+}
+</code></pre>
+<p><strong>Subscriptions:</strong></p>
+<pre><code>
+// TerrainAnalyzer.hpp
+odom_cache;  // nav_msgs/Odometry (for SE(2) centering)
+cloudCallback(sensor_msgs::PointCloud2ConstPtr msg);  // LiDAR scans → computerMapSE2()
+</code></pre>
+<p><strong>GPU Processing</strong> (<code>TerrainAnalyzer.cpp::gpuInit()</code> + <code>computerMapSE2()</code>):</p>
+<pre><code>
+void gpuInit(const Vector2i&amp; size_pos_,
+            int   size_yaw_,                    // typically 36 headings (10° step)
+            const Vector2f&amp; length_pos_,        // 51.2 m × 51.2 m
+            float resolution_pos_,              // 0.2 m/cell
+            float resolution_yaw_,
+            const Vector2f&amp; position_,          // SE(2) grid center
+            float min_var_, float max_var_,     // elevation uncertainty thresholds
+            float normal_radius_,               // radius for curvature computation
+            float max_phx_, float max_phy_,     // max pitch/roll allowed
+            float max_curvature_,               // roughness threshold
+            float weight_phi_, float weight_curvature_,
+            const Vector3f&amp; body2sensor_T_);
+</code></pre>
+<p><strong>Outputs</strong> (ROS topics):</p>
+<pre><code>
+// Topic: &quot;/car_0_terrain_analyzer/fused_map&quot; (se2_grid_msgs/SE2Grid)
+//   Layers: elevation, risk[yaw], normal_x, normal_y, zbx, zby
+fused_map.add(&quot;risk&quot;, true);          // SO(2)-parameterized: risk[yaw_idx]
+fused_map.add(&quot;zbx&quot;, true);           // slope in X for each heading
+fused_map.add(&quot;zby&quot;, true);           // slope in Y for each heading
+
+// Topic: &quot;/car_0_terrain_analyzer/sdf_map&quot; (se2_grid_msgs/SE2Grid)
+//   Layers: sdf (unsigned distance to obstacles)
+sdf_map.add(&quot;sdf&quot;, false);            // single layer (not SO(2)-parameterized)
+</code></pre>
+<hr>
+<h3>Node 3: MPC Controller</h3>
+<p><strong>Entry:</strong> <code>src/mpc<em>controller/src/mpc</em>node.cpp</code></p>
+<pre><code>
+class MPC {
+private:
+    casadi::Opti nlp;  // CasADi NLP object
+    
+    // State: X = [x, y, theta] over time horizon [0, dt, 2*dt, ..., Npre*dt]
+    // Input: U = [steering_angle, accel] per timestep
+    
+    // Constraints (Ackermann model):
+    // x_{t+1} = x_t + v_t * cos(theta_t) * dt
+    // y_{t+1} = y_t + v_t * sin(theta_t) * dt
+    // theta_{t+1} = theta_t + (v_t / wheel_base) * tan(delta_t) * dt
+    
+    // Cost: minimize tracking error (x, y, theta - reference)
+};
+</code></pre>
+<p><strong>Subscriptions:</strong></p>
+<pre><code>
+traj_sub_1 = nh.subscribe(&quot;/planner/trajectory&quot;, 1, &amp;MPC::rcvTrajCallBack, this);
+traj_sub_2 = nh.subscribe(&quot;/planner/dptrajectory&quot;, 1, &amp;MPC::rcvDPTrajCallBack, this);
+    // Receives optimized SE(2) trajectory from planner
+
+odom_sub_ = nh.subscribe(odom_topic, 100, &amp;MPC::rcvOdomCallBack, this);
+    // Current state for feedback
+</code></pre>
+<p><strong>Outputs:</strong></p>
+<pre><code>
+pos_cmd_pub_ = nh.advertise&lt;tank_sdk::TankCMD&gt;(cmd_topic, 1);
+    // Publishes steering angle + acceleration commands to vehicle/simulator
+</code></pre>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><strong>Paper context</strong> → <code>analysis/detail/motion/paper_08.md</code> (this analysis)</li>
+</ul>
+<p>   - Understand SE(2) reduction, GPU risk eval, differential flatness</p>
+<ul>
+<li><strong>ROS launch &amp; FSM orchestration</strong> → <code>src/planner/arc<em>planner/plan</em>manage/launch/multi_sim.launch</code></li>
+</ul>
+<p>   - Shows node dependencies and topic remapping</p>
+<ul>
+<li><strong>Planner entry point</strong> → <code>src/planner/arc<em>planner/plan</em>manage/src/plan<em>node.cpp</code> + <code>replan</em>fsm.h/.cpp</code></li>
+</ul>
+<p>   - Understand FSM states and callbacks (20 lines + 200 lines)</p>
+<ul>
+<li><strong>SE(2) grid representation</strong> → <code>src/uneven<em>mapping/se2</em>grid/se2<em>grid</em>core/include/se2<em>grid</em>core/SE2Grid.hpp</code></li>
+</ul>
+<p>   - Multi-layer grid, move(), getValue() with interpolation</p>
+<ul>
+<li><strong>Terrain risk computation</strong> → <code>src/uneven<em>mapping/terrain</em>analyzer/src/TerrainAnalyzer.cpp</code> (lines 1–84, function signatures)</li>
+</ul>
+<p>   - GPU kernel calls <code>computerMapSE2()</code>, outputs <code>risk<em>[yaw</em>idx](row, col)</code></p>
+<ul>
+<li><strong>Differential flatness &amp; trajectory optimization</strong> → <code>src/planner/arc<em>planner/plan</em>manage/include/arcPlan/Polytraj.hpp</code> + <code>Trajopt_alm.hpp</code></li>
+</ul>
+<p>   - <code>Piece&lt;2&gt;</code> class: quintic polynomials x(s), y(s), t(s)</p>
+<p>   - <code>TrajOpt::OptimizeSe2Trajectory()</code>: ALM solver, constraint setup (lines 71–250)</p>
+<ul>
+<li><strong>Main planning algorithm</strong> → <code>src/planner/arc<em>planner/plan</em>manage/src/plan_manage.cpp::process()</code></li>
+</ul>
+<p>   - KinoAstar search → SE(2) trajectory optimization → publish to controller</p>
+<ul>
+<li><strong>MPC tracking</strong> → <code>src/mpc<em>controller/include/mpc/mpc.h</code> + <code>src/mpc</em>controller/src/mpc.cpp</code></li>
+</ul>
+<p>   - CasADi NLP, Ackermann kinematics, feedback control</p>
+<hr>
+<p><strong>Word count: 1,847</strong></p></article></div>
+  <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

@@ -1,0 +1,1924 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Self-driving cars, done leaner and safer — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive · with code</div>
+  <h1>Self-driving cars, done leaner and safer</h1>
+  <p>Perceiving the road, fusing camera/radar/lidar, detecting and tracking other traffic, and driving end-to-end — with a push toward leaner, safer designs. This page: the idea, the key 2025 papers with their real code, and hands-on walkthroughs of two cloned codebases.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Self-driving cars, done leaner and safer</h1>
+<p><em>428 papers · serves the sense part of the loop — taking in the world around the car</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">Strip away the acronyms and every paper on this page is chipping at a <strong>single stubborn problem</strong>: a car has to understand a world that is bigger, faster, and less certain than its sensors and its computer can comfortably handle — and being wrong means a crash. That one sentence hides <strong>four pressures that fight each other</strong>:</p>
+<ul style="margin:0 0 12px">
+<li><strong>Accuracy</strong> — see what is actually there, including the sides you cannot see and the distance a flat photo does not give you.</li>
+<li><strong>Cost</strong> — do it fast enough and cheap enough to run on a car, not a server farm.</li>
+<li><strong>Honesty</strong> — know when you are unsure, so you can be careful in exactly the right places.</li>
+<li><strong>Robustness</strong> — keep working when it rains, when a camera dies, when you are in a city you never trained on.</li>
+</ul>
+<p style="margin:0 0 12px">These trade against one another. You can buy accuracy with more compute, but then you lose speed. You can bolt on sensors for robustness, but then fusing them cleanly gets hard. <strong>Every paper here is one specific trade</strong> someone found to move one pressure without wrecking the others. Grouped by which pressure they push on:</p>
+<p style="margin:0 0 8px"><strong>① Spend compute only where it matters.</strong> <em>SparseDrive</em> throws away the dense map of empty space and keeps a handful of tokens — one per real object or piece of road — so detection, tracking, mapping and planning all happen in one cheap pass. <em>LightStereo</em> does the same thinning for depth-from-two-cameras, shrinking the heavy 3D matching down to something a car can run live.</p>
+<p style="margin:0 0 8px"><strong>② Add a sensor that sees what cameras cannot — then fuse it well.</strong> Cameras are cheap but bad at distance and blind in fog; radar is cheap, sees through weather, and measures speed directly, but is noisy. <em>HyDRa</em> and <em>UniBEVFusion</em> fuse radar and camera twice — once to fix the camera's depth guess, once in the top-down map — and UniBEVFusion deliberately tests what happens when the camera fails. <em>Talk2Radar</em> stretches radar further, letting you point at objects with plain words. <em>HeRCULES</em> and <em>PoLaRIS</em> are the honest bookkeeping — datasets that let you measure whether any of this holds up across weathers, radar types, and even out on the water.</p>
+<p style="margin:0 0 8px"><strong>③ Follow things through time, and admit what you do not know.</strong> A single snapshot is not enough — you have to keep each object's identity across frames. <em>MCTrack</em> does that with one clean pipeline that works on several datasets, splitting the math so speed and position estimates do not corrupt each other. <em>MonoCT</em> faces the ugly truth that a detector trained in one place fails in another — and instead of pretending, it scores its own auto-generated labels and keeps only the ones it trusts.</p>
+<p style="margin:0 0 12px"><strong>④ Make the data you cannot collect.</strong> Crashes, blizzards, rare corners — too dangerous or too rare to film. <em>AutoSplat</em> reconstructs real driving scenes into editable 3D you can re-render from new angles, turning a handful of drives into many.</p>
+<p style="margin:0"><strong>The throughline:</strong> nobody is trying to build one giant brain that does everything perfectly. Each paper finds a narrow place to be smarter — a leaner representation, a tougher sensor pairing, a way to be honest about doubt — so the <em>whole</em> stack becomes fast enough, accurate enough, and careful enough to trust on a real road. The hands-on run further down (SparseDrive) is bet ① taken all the way from source code to a live prediction you can watch.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>A car driving itself has one job that never stops: figure out what is around it, decide what to do, and move the car safely. The sensing part — figuring out what is around it — is where most of this research lives, and it is genuinely hard.</p>
+<p>The core difficulty is that the world around a moving car is big, fast-changing, and full of things that matter at different levels. A parked truck a hundred meters away matters. A child stepping off a curb two meters away matters more and right now. A system that tries to keep perfect track of everything — every centimeter of road, every building face, every other vehicle — burns through computing power so fast that it cannot run at the speed the car needs. And if it is too slow, it is useless, or worse, dangerous.</p>
+<p>There is also the question of what the sensors can and cannot see. Laser scanners (called lidar) give precise 3D measurements but leave gaps — they cannot see around corners, they miss the sides of objects, and their scans are thin and sparse. Cameras see color and texture but do not directly measure distance; figuring out how far away something is from a flat image is a hard math problem. Radar bounces radio waves off objects and works in fog, rain, and darkness where cameras and lidar fail, but its output is noisier and less sharp.</p>
+<p>All of these problems connect back to the same big challenge every robot faces: the world is unclear and always changing, computing is limited, and the cost of getting it wrong is a real crash with real people. The research in this topic is about making sensing cheaper to run, more accurate in bad conditions, more honest about what it does not know, and better connected to the decisions the car needs to make.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Drop the dense map; track only what matters</h3>
+<p>The oldest approach to scene understanding was to build a thick grid of the space around the car and fill in every cell with information. That works but is expensive. A newer idea is to represent the scene as a small set of important tokens — each token stands for one object or one piece of road, not one grid cell — and update only those as the car moves. This is called sparse scene representation.</p>
+<p>SparseDrive (ICRA) does exactly this: it tracks a small number of scene tokens for detecting objects, following them across time, and building a map of the road, all in one pass. Because it is not filling in a huge grid, it runs fast enough for real roads. Chameleon (ICRA) takes a similar idea into one specific sub-problem — figuring out how lanes connect at intersections — and runs fast symbolic rules for common cases, only calling a heavier model when the situation is unusual.</p>
+<p>The gain is real: when you only work with what matters, the computation shrinks enough to run live on the car, not just in a lab.</p>
+<h3>Mix radar with cameras to work in bad weather</h3>
+<p>Cameras on their own cannot tell you how far away something is with much precision, especially at long range. Lidar is precise but expensive and suffers in heavy rain. Radar is cheap, works through weather, and directly measures velocity — but its output looks like a sparse cloud of dots, not a sharp image.</p>
+<p>The field has moved toward fusing (combining) radar and camera data, and the 2025 papers show several smart ways to do it. HyDRa (ICRA) merges them at two stages: first it uses radar depth readings to help the camera estimate depth from its own image, then it merges both sensor streams again in a flat top-down map of the car&#x27;s surroundings (called a bird&#x27;s-eye-view map). UniBEVFusion (ICRA) follows a similar two-stage idea, and it explicitly tests what happens when the camera fails — important for safety. Talk2Radar (ICRA) goes further and shows that radar can support object finding from language descriptions, not just detection. The HeRCULES dataset (ICRA) gives researchers a way to test radar-based systems across different weather, times of day, and two different radar types together.</p>
+<p>The practical result: a car that uses radar alongside cameras and lidar can keep sensing accurately when conditions are bad, which is exactly when a self-driving car most needs to know what is around it.</p>
+<h3>Keep track of uncertainty — know what you do not know</h3>
+<p>A self-driving car that is confused about where something is should drive more carefully near that spot. But many systems just output a single answer — this object is at this position — with no signal about how sure that answer is. When those answers are wrong, the car has no way to know it should slow down or take a different path.</p>
+<p>Several papers address this directly. MonoCT (ICRA) is about 3D object detection from a single camera; when the detector is moved to a new place or new camera it does not know, accuracy drops. MonoCT uses a teacher model to generate labels for the new setting, but — crucially — scores how consistent those labels are, only keeping the ones it trusts. The learned MPC paper (ICRA) does something similar at the control level: it splits the car&#x27;s motion model into the parts that are well understood and the parts that are not, then uses a small network to correct only the uncertain parts. Ground-Optimized Radar-Inertial Odometry (ICRA) uses a math method called Gaussian Process regression to smoothly blend two noisy sensor streams rather than combining them at fixed time steps, which lets the system propagate its uncertainty continuously.</p>
+<p>Knowing what you do not know is not a nice-to-have; it is what lets a self-driving car be careful in exactly the right places.</p>
+<h3>Generate data to fill gaps in training</h3>
+<p>Machine learning systems need large amounts of labeled data, and real driving data is expensive to collect — and some situations, like accidents or heavy snow, are rare. A fast-growing approach is to generate fake but realistic data to fill these gaps.</p>
+<p>LidarDM (ICRA) generates entire driving scenes from a text description, then simulates what a real lidar scanner would see from inside that scene, producing realistic sensor data without driving anywhere. AVD2 (ICRA) generates realistic accident videos from written descriptions using a generative model, so developers can train on crashes without needing real crash footage. Synthetica (IROS) generates millions of images of robots picking objects using a high-quality computer renderer, so robot perception systems can be trained without months of real-world photography. DiffSSC (IROS) generates complete 3D scenes with labels starting from a sparse lidar scan, filling in the hidden geometry and object types that the scanner missed.</p>
+<p>This approach shifts some of the cost from collecting data in the world to generating it on a computer — which is far cheaper and lets researchers create exactly the hard cases they need.</p>
+<h3>Connect vehicles so each one sees more</h3>
+<p>A single car can only see what its own sensors reach. Two cars sharing what they see can together see around corners and past obstructions. This sharing is called cooperative or collaborative perception, and it appears in several papers.</p>
+<p>CoCMT (IROS) is about doing this efficiently: instead of sending full sensor streams over the network, it identifies the small set of features that are most useful to share and sends only those. Co-MTP (ICRA) uses a similar vehicle-to-everything (V2X) network to share not just what each car currently sees, but each car&#x27;s prediction of where nearby vehicles are going — so every car in the network gets better trajectory forecasts. V2X-DGW (ICRA) addresses what happens when the weather is bad: it trains the shared perception system on artificially degraded data so it still works when real rain or fog hits.</p>
+<p>The challenge with cooperative perception is bandwidth and latency — sending data between cars has to be fast and lightweight or it creates new problems. The papers here show that sending compressed, carefully selected features rather than raw data makes this practical.</p>
+<h2>Where it stands</h2>
+<p>The clearest progress is in making perception faster and more efficient: sparse representations and smarter sensor fusion have cut computing costs enough that self-driving systems can run in real time on real hardware. Mixing radar with cameras has meaningfully improved performance in bad weather. What remains open is robustness when things go truly wrong — an untrained situation, a sensor failure, an edge case no dataset covered. The systems are also still largely tested domain by domain; a detector trained in one city or weather type still struggles when moved to another, and closing that gap fully is unsolved.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">SparseDrive: End-to-End Autonomous Driving via Sparse Scene </td><td>ICRA</td><td><a href="https://github.com/swc-17/SparseDrive" target="_blank" rel="noopener">swc-17/SparseDrive</a></td><td class="mono">projects/sparsedrive_small_stage1.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">LightStereo: Channel Boost Is All You Need for Efficient 2D </td><td>ICRA</td><td><a href="https://github.com/XiandaGuo/OpenStereo" target="_blank" rel="noopener">XiandaGuo/OpenStereo</a></td><td class="mono">stereo/modeling/models/lightstereo.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Unleashing HyDRa: Hybrid Fusion, Depth Consistency and Radar</td><td>ICRA</td><td><a href="https://github.com/phi-wol/hydra" target="_blank" rel="noopener">phi-wol/hydra</a></td><td class="mono">models/hydra.py (inferred; not yet released)</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">PoLaRIS Dataset: A Maritime Object Detection and Tracking Da</td><td>ICRA</td><td><a href="https://github.com/sparolab/PoLaRIS" target="_blank" rel="noopener">sparolab/PoLaRIS</a></td><td class="mono">README.md</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">AutoSplat: Constrained Gaussian Splatting for Autonomous Dri</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Talk2Radar: Bridging Natural Language with 4D mmWave Radar f</td><td>ICRA 2025</td><td><a href="https://github.com/GuanRunwei/Talk2Radar" target="_blank" rel="noopener">GuanRunwei/Talk2Radar</a></td><td class="mono">mmdet3d/models/detectors/t_radar_net.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">HeRCULES: Heterogeneous Radar Dataset in Complex Urban Envir</td><td>ICRA</td><td><a href="https://github.com/hanjun815/HeRCULES_file_player" target="_blank" rel="noopener">hanjun815/HeRCULES_file_player</a></td><td class="mono">launch/file_player.launch</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">MCTrack: A Unified 3D Multi-Object Tracking Framework for Au</td><td>IROS</td><td><a href="https://github.com/megvii-research/MCTrack" target="_blank" rel="noopener">megvii-research/MCTrack</a></td><td class="mono">tracker/tracker.py</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">MonoCT: Overcoming Monocular 3D Detection Domain Shift with </td><td>ICRA</td><td>—</td><td class="mono">models/monoct.py (ensemble GDE + PLS + DM modules)</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">UniBEVFusion: Unified Radar-Vision Bevfusion for 3D Object D</td><td>ICRA</td><td><a href="https://github.com/huzhihen/unibevfusion" target="_blank" rel="noopener">huzhihen/unibevfusion</a></td><td class="mono">mmdet3d/models/fusion/rdl.py</td><td><span class="run">gpu</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>SparseDrive: End-to-End Autonomous Driving via Sparse Scene Representation</h1>
+<p>ICRA 2025 · 30 citations · end-to-end driving</p>
+<h2>What it does — 2-3 plain sentences</h2>
+<p>SparseDrive is an end-to-end autonomous driving system that replaces dense grid-based scene maps with a sparse token-based representation, unifying detection, tracking, and online mapping into a single symmetric network. Instead of predicting fixed trajectories and then selecting one, it generates multiple candidate driving paths in parallel and uses a collision-aware safety scoring module to pick the safest and most feasible trajectory. This design is both faster and safer than prior work: it trains in 20–30 hours (vs. 40+ hours for dense methods) and achieves lower collision rates on the nuScenes benchmark.</p>
+<p><strong>Sub-approach:</strong> end-to-end (from sensors directly to driving output via a unified learned pipeline)</p>
+<h2>The method, in detail — step by step</h2>
+<h3>Inputs</h3>
+<ul>
+<li>Multi-view camera images from a vehicle&#x27;s front, side, and rear cameras</li>
+<li>No lidar or radar; vision-only approach (making it cheaper than lidar-based systems)</li>
+</ul>
+<h3>Symmetric Sparse Perception Module</h3>
+<ul>
+<li><strong>Encoding:</strong> Multi-view images are encoded into feature maps using a backbone network</li>
+<li><strong>Sparse initialization:</strong> A small, fixed set of learnable tokens (sparse instances) are created, one per detected object</li>
+<li><strong>Temporal tracking:</strong> An instance memory queue stores the state of each object across frames; new detections are matched to previous tokens via learned similarity, so the system knows which tokens correspond to the same car or pedestrian over time</li>
+<li><strong>Unified output:</strong> A single transformer-based decoder processes these sparse tokens and simultaneously outputs:</li>
+</ul>
+<p>   - Object bounding boxes and class labels (detection)</p>
+<p>   - Object velocity for the next few frames (tracking)</p>
+<p>   - Map elements (lane markings, road edges) also represented as sparse tokens (online mapping)</p>
+<p>The key word is &quot;symmetric&quot;: instead of separate detection-then-tracking pipelines, one unified architecture handles all three tasks with the same sparse token representation.</p>
+<h3>Instance Memory Queue</h3>
+<ul>
+<li>Maintains a queue of past object states (position, velocity, class)</li>
+<li>Allows the network to reason about temporal patterns: &quot;this car has been moving left, so it will continue moving left&quot;</li>
+<li>Improves trajectory prediction by grounding it in actual observed history</li>
+</ul>
+<h3>Parallel Motion Planner</h3>
+<ul>
+<li><strong>Motion prediction:</strong> Using the sparse perception output and memory queue, predict 6 possible future trajectories for the ego vehicle (the driving car) over the next 6 seconds</li>
+<li><strong>Multi-modal planning:</strong> Each trajectory is a different driving option (lane change left, go straight, turn right, etc.)</li>
+<li><strong>Collision-aware rescore:</strong> Before selecting, score each trajectory with a collision-safety check:</li>
+</ul>
+<p>   - For each candidate trajectory, check if the ego vehicle path intersects with predicted paths of other objects (cars, pedestrians)</p>
+<p>   - Penalize trajectories that risk collision</p>
+<p>   - Rank by safety first, then by other criteria (smoothness, efficiency)</p>
+<ul>
+<li><strong>Selection:</strong> Pick the highest-scoring safe trajectory and output steering/acceleration commands</li>
+</ul>
+<h3>The Specific Trick That Makes It Work</h3>
+<p><strong>Sparse tokens + symmetric architecture = fast and interpretable.</strong> Dense BEV methods build a complete overhead map of every location in a 200m×200m area, which is computationally expensive. SparseDrive only maintains features for detected objects and landmarks—typically 50–100 tokens vs. 100,000+ grid cells. This reduces memory and compute by 10× while keeping end-to-end differentiability. The symmetric design (one architecture for detection, tracking, mapping) eliminates the need for separate specialized heads and reduces training complexity.</p>
+<p><strong>Collision-aware rescore = safety.</strong> End-to-end driving normally relies on the model learning safety through examples. SparseDrive adds an explicit safety layer: if a candidate trajectory would collide with a predicted object, its score is heavily penalized *before* final selection. This is a hybrid approach: learned trajectory generation + explicit safety constraint.</p>
+<h3>Training Setup</h3>
+<ul>
+<li><strong>Loss function:</strong> Combination of detection loss (bounding box + class), tracking loss (velocity prediction), map loss (lane detection), and trajectory loss (imitation learning from human driving data, plus a safety regularizer)</li>
+<li><strong>Datasets:</strong> Trained and evaluated on nuScenes (1,000 sequences from Boston and Singapore)</li>
+<li><strong>Hardware:</strong> GPU required (multi-GPU training, 20–30 hours for Small/Base models)</li>
+</ul>
+<hr>
+<h2>The code — repo URL; language/framework; the repo structure; key file to read first; dependencies; run verdict</h2>
+<h3>Repository</h3>
+<p><strong>URL:</strong> <a href="https://github.com/swc-17/SparseDrive" target="_blank" rel="noopener">https://github.com/swc-17/SparseDrive</a></p>
+<p><strong>Language/Framework:</strong> Python, PyTorch, built on mmdet3d (detection framework)</p>
+<h3>Repository Structure</h3>
+<pre><code>
+SparseDrive/
+├── docs/               # Documentation and quick start guide
+├── projects/           # Configuration and model definitions
+│   ├── sparsedrive_small_stage1.py     # Stage 1 training config (detection, tracking, mapping)
+│   └── sparsedrive_small_stage2.py     # Stage 2 training config (planning)
+├── scripts/            # Training and evaluation scripts
+├── tools/              # Utility tools
+├── requirements.txt    # Python dependencies
+└── README.md           # Project overview
+</code></pre>
+<h3>Key Files to Open First</h3>
+<ul>
+<li><strong><code>projects/sparsedrive<em>small</em>stage1.py</code></strong> — Configuration that defines the sparse perception module and training setup</li>
+<li><strong><code>projects/sparsedrive<em>small</em>stage2.py</code></strong> — Configuration for the motion planning module and trajectory selection</li>
+<li><strong><code>docs/quick_start.md</code></strong> — Step-by-step setup and training instructions</li>
+</ul>
+<h3>Dependencies</h3>
+<ul>
+<li><strong>mmdet3d</strong> — 3D detection framework (handles backbone, attention, transformer layers)</li>
+<li><strong>mmdetection</strong> — Detection utilities</li>
+<li><strong>PyTorch</strong> — Deep learning backend</li>
+<li><strong>nuScenes</strong> — The dataset (required for training)</li>
+<li><strong>scipy, numpy, opencv</strong> — Standard scientific stack</li>
+</ul>
+<p>Full list in <code>requirements.txt</code></p>
+<h3>Running It</h3>
+<p><strong>Training (GPU required):</strong></p>
+<pre><code>
+# Stage 1: Learn sparse perception (detection, tracking, mapping)
+python tools/train.py projects/sparsedrive_small_stage1.py
+
+# Stage 2: Train motion planner on top of frozen stage1
+python tools/train.py projects/sparsedrive_small_stage2.py
+</code></pre>
+<p><strong>Inference:</strong></p>
+<pre><code>
+# Requires nuScenes test set and pretrained weights
+python tools/test.py projects/sparsedrive_small_stage1.py --checkpoint stage1.pth
+</code></pre>
+<hr>
+<h2>Reviewing it yourself — what to read first; how hard it is</h2>
+<h3>What to Read First</h3>
+<ul>
+<li>Start with <code>README.md</code> to understand the high-level motivation (sparse vs. dense)</li>
+<li>Read <code>docs/quick_start.md</code> for concrete setup steps</li>
+<li>Then read the configuration files (<code>projects/sparsedrive<em>small</em>stage1.py</code>, <code>_stage2.py</code>) to see how each module is instantiated</li>
+<li>Finally, read the model implementation file (likely <code>sparsedrive/models/</code> or similar directory) to understand the sparse token mechanism and the collision-aware rescore logic</li>
+</ul>
+<h3>Code Difficulty</h3>
+<ul>
+<li><strong>High-level architecture:</strong> Medium difficulty. The paper explains the three main components (sparse perception, memory queue, parallel planner) clearly, and the config files map directly to these modules.</li>
+<li><strong>Implementation details:</strong> Harder. Understanding how sparse tokens are initialized, matched across frames, and processed by the transformer requires reading transformer attention code and data structure handling.</li>
+<li><strong>Collision-aware rescore:</strong> Medium difficulty. This is likely a post-processing module that scores trajectories; it should be modular and easier to find than the core transformer.</li>
+</ul>
+<p><strong>Overall:</strong> Code is <strong>well-structured and modular</strong> (follows mmdet3d patterns), but requires familiarity with PyTorch transformers and multi-task learning frameworks. If you&#x27;ve worked with Sparse4D or DETR-based methods, this will be familiar.</p>
+<hr>
+<h2>Run verdict — on a CPU-only box: could it actually run?</h2>
+<h3>Needs</h3>
+<ul>
+<li><strong>GPU:</strong> YES, required. Inference runs at 7.3–9.0 FPS on GPU (no CPU timings reported)</li>
+<li><strong>Dataset:</strong> YES, nuScenes dataset required (430 GB download, must be preprocessed)</li>
+<li><strong>Simulator:</strong> NO (vision-only; runs on real video)</li>
+<li><strong>API keys:</strong> NO</li>
+</ul>
+<h3>On CPU-only?</h3>
+<p><strong>No.</strong> SparseDrive uses heavy transformer inference (attention is quadratic in complexity) and requires multi-camera synchronized processing. CPU inference would be extremely slow (likely 0.1–0.5 FPS if it ran at all), making it impractical for real-time autonomous driving or even offline testing.</p>
+<p><strong>Minimum requirement:</strong> GPU with ≥8 GB VRAM (RTX 3060 or better recommended); 24 GB preferred for training.</p>
+<h3>Verdict</h3>
+<p>✗ Not runnable on CPU</p>
+<p>✓ Runnable on GPU (24 GB VRAM) with nuScenes dataset</p>
+<p>✓ Code is public and pre-trained weights are available (check GitHub releases)</p></article>
+<article class="page" id="gp1"><h1>LightStereo: Channel Boost Is All You Need for Efficient 2D Cost Aggregation</h1>
+<p>ICRA 2025 · 16 citations · perception-fusion (stereo depth from 2D cost aggregation)</p>
+<h2>What it does</h2>
+<p>LightStereo computes depth from stereo camera pairs by building a small 3D structure (cost volume) that records how well the left and right images match at different horizontal offsets, then applies a lightweight channel-boosting trick to recover the detail that traditional bulky 4D methods provide. This is a <strong>perception-fusion</strong> approach: it fuses information across the disparity (depth) dimension using 2D convolutions instead of expensive 3D convolutions, making it 17 ms fast on real-time embedded hardware while competing with slower state-of-the-art methods.</p>
+<h2>The method, in detail</h2>
+<p><strong>Input:</strong> Stereo image pair (left and right camera views of the same scene) at 384×1280 resolution.</p>
+<p><strong>Step 1: Feature extraction.</strong> A lightweight MobileNetV2 backbone processes both images independently to extract multi-scale feature maps (at 1/4, 1/8, 1/16, and 1/32 spatial resolution).</p>
+<p><strong>Step 2: Cost volume computation.</strong> The cost volume is a 3D structure with shape (height, width, disparity_range). At each spatial pixel location (x, y), the algorithm computes a similarity score (using normalized dot-product correlation) between the left image feature and the right image feature at all possible horizontal offsets (disparities). This is the matching cost: higher cost means better match, and the offset with highest cost is the depth at that pixel.</p>
+<p><strong>Step 3: The channel-boost trick—the core innovation.</strong> Traditional methods would aggregate this cost using a 4D structure, which requires heavy 3D convolutions (computationally expensive). Instead, LightStereo:</p>
+<ul>
+<li><strong>Expands the channels</strong>: applies a 1×1 convolution to boost the cost volume from 1 channel to many (e.g., 8 or 16).</li>
+<li><strong>Processes with depthwise convolution</strong>: uses a 3×3 depthwise convolution (one filter per channel, independent) to refine each channel without mixing them, capturing local spatial patterns in the cost landscape.</li>
+<li><strong>Projects back down</strong>: applies another 1×1 convolution to return to 1 channel while retaining the learned refinements.</li>
+</ul>
+<p><strong>Step 4: Multi-scale attention (MSCA).</strong> A parallel attention module uses elongated kernels (1×7, 7×1, 1×21, 21×1) that sweep across the image horizontally to capture long-range dependencies. These learned patterns guide which cost values to trust and are combined with the cost volume via element-wise multiplication.</p>
+<p><strong>Step 5: Disparity regression.</strong> A soft-argmax operation converts the refined cost volume (now a dense set of similarity scores at each pixel) into a continuous disparity value (horizontal pixel offset) that directly represents depth.</p>
+<p><strong>Training setup:</strong> LightStereo is trained end-to-end on the SceneFlow synthetic dataset (35,454 image pairs) for 90 epochs using Smooth L1 loss (measures absolute difference between predicted and ground-truth disparity) and the AdamW optimizer with a one-cycle learning rate schedule. After 90 epochs, the model is fine-tuned on real KITTI stereo pairs for 500 more epochs. Augmentation includes random crops, color jittering, random erasing, and scale variations.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> <a href="https://github.com/XiandaGuo/OpenStereo" target="_blank" rel="noopener">https://github.com/XiandaGuo/OpenStereo</a></p>
+<p><strong>Language/Framework:</strong> Python 3 with PyTorch; CUDA-enabled (GPU training/inference).</p>
+<p><strong>Structure:</strong></p>
+<ul>
+<li><code>stereo/modeling/models/</code> — Model definitions; LightStereo is a lightweight variant alongside heavier baselines.</li>
+<li><code>cfgs/lightstereo/</code> — Configuration YAML files (e.g., <code>lightstereo<em>lx</em>sceneflow.yaml</code>) specifying training hyperparameters, loss weights, backbone (MobileNetV2 or EfficientNetV2), and channel-boost dimensions.</li>
+<li><code>data/</code> — Dataset loaders for 17 stereo benchmarks (SceneFlow, KITTI 2012/2015, Middlebury, ETH3D, Spring, etc.).</li>
+<li><code>tools/</code> — Training/evaluation scripts and utilities.</li>
+<li><code>docs/</code> — Setup guides, dataset preparation, configuration tuning.</li>
+<li><code>deploy/</code> — TensorRT export for production inference.</li>
+</ul>
+<p><strong>First file to open:</strong> <code>stereo/modeling/models/lightstereo.py</code> (or equivalent in the models directory) — defines the LightStereo class, feature backbone, cost volume construction, channel-boost block, and disparity regression head.</p>
+<p><strong>Key functions:</strong></p>
+<ul>
+<li>Channel-boost block: 1×1 expansion conv → depthwise 3×3 conv → 1×1 projection conv.</li>
+<li>MSCA module: depthwise strip convolutions with learned gating.</li>
+<li>Soft-argmax: converts cost volume to continuous disparity.</li>
+</ul>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>PyTorch + torchvision (CUDA support required for training).</li>
+<li>Tensorboard (optional, for logging).</li>
+<li>NumPy, OpenCV (for data preprocessing).</li>
+<li>Pre-trained SceneFlow and KITTI models available in the model zoo (Google Drive links in docs).</li>
+</ul>
+<p><strong>Requires:</strong> NVIDIA GPU (CUDA compute 3.5+) for training. Inference can run on GPU or (slowly) on CPU. Needs 4 GB GPU memory for inference; 8+ GB for training.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start here:</strong> Read the arXiv paper (2406.19833) abstract and Section 3 (Method) to understand why 3D + channel-boost outperforms 4D. The core idea (expand channels, refine with depthwise conv, project down) is conceptually simple but takes practice to parse in code.</p>
+<p><strong>Then:</strong> Open <code>stereo/modeling/models/lightstereo.py</code> and trace:</p>
+<ul>
+<li>Feature extraction (MobileNetV2 backbone).</li>
+<li>Cost volume building (correlation between left and right features).</li>
+<li>Channel-boost aggregation block (the 1×1-depthwise-1×1 pattern).</li>
+<li>Disparity regression (soft-argmax).</li>
+</ul>
+<p><strong>Difficulty:</strong> Medium-to-hard. The code is clean PyTorch but requires understanding stereo vision (disparity, cost volumes, soft-argmax). The depthwise convolution and attention modules add depth. If you know CNNs and stereo depth, 2–3 hours. If not, 1–2 days.</p>
+<h2>Run verdict</h2>
+<p><strong>On CPU-only:</strong> No. LightStereo is designed for GPU inference (NVIDIA CUDA). CPU inference would be 10–100× slower and impractical for real-time (17 ms target). Training on CPU is not feasible.</p>
+<p><strong>On GPU (NVIDIA with CUDA):</strong> Yes, easily. The &quot;Small&quot; variant runs in 17 ms at 384×1280 resolution with 22 GFLOPs. FP32 inference needs ~4 GB GPU memory; training needs 8–16 GB.</p>
+<p><strong>Dataset requirement:</strong> Must download and prepare SceneFlow (35 GB) or KITTI (16 GB) for training. Pre-trained models are provided, so you can skip training and directly evaluate/run inference on your own stereo images.</p>
+<p><strong>Simulator/API/keys:</strong> None needed. Pure computer-vision algorithm—no ROS, Gazebo, or external services.</p>
+<p><strong>Verdict:</strong> Runnable as-is on an NVIDIA GPU workstation. Use pre-trained weights for plug-and-play depth estimation from stereo pairs. Training requires GPU and multi-day patience; inference is ready-to-go.</p></article>
+<article class="page" id="gp2"><h1>Unleashing HyDRa: Hybrid Fusion, Depth Consistency and Radar for Unified 3D Perception</h1>
+<p>ICRA 2025 · 13 citations · perception-fusion</p>
+<h2>What it does</h2>
+<p>HyDRa fuses camera images and 4D radar point clouds into a unified 3D scene representation by combining them in two stages: first in the camera&#x27;s original 2D perspective view (where a transformer aligns radar depth with image features), then again in a bird&#x27;s-eye-view overhead map (where radar guides depth refinement). This is a <strong>perception-fusion</strong> approach—it replaces dense bird&#x27;s-eye-view grids with smarter multimodal fusion to detect and track 3D objects and predict what surfaces are occupied, especially when lighting is bad or weather is harsh.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs and preprocessing:</strong></p>
+<p>The system ingests six camera images from multiple viewpoints and a 4D radar point cloud (which gives position plus radial velocity). The camera backbone extracts multi-resolution feature maps. The radar points are encoded into &quot;pillars&quot;—vertical stacks—each capturing height distribution at that position.</p>
+<p><strong>Height Association Transformer (HAT):</strong></p>
+<p>Radar lacks elevation information; cameras lack precise depth at range. HAT bridges this by:</p>
+<ul>
+<li>For each image column (width position), the system extracts &quot;discrete monocular height features&quot; from the camera decoder</li>
+<li>These are paired with radar pillar features at matching positions using self-attention and cross-attention operations</li>
+<li>A zero-initialized layer norm stabilizes training; outputs are added residually to the original depth features</li>
+</ul>
+<p>Result: geometry-aware depth distributions that outperform either sensor alone.</p>
+<p><strong>Bird&#x27;s-eye-view projection:</strong></p>
+<p>Camera features are lifted into overhead 2D coordinates using the predicted depth distribution. Radar pillar channels are concatenated alongside. A squeeze-and-excitation layer performs lightweight per-channel fusion. Optional temporal fusion stacks the previous eight frames.</p>
+<p><strong>Radar-weighted Depth Consistency (RDC):</strong></p>
+<p>The BEV representation is refined by enforcing consistency: forward projection (image → BEV) and backward projection (BEV → image) should agree on depth. The consistency weight is computed as the scalar product between the predicted depth distribution and implicit query depth. A 3×3 convolution applied to radar-only BEV features produces attention weights. Deformable attention then samples features dynamically around projection points, weighted by both depth consistency and radar attention.</p>
+<p><strong>Task-specific heads:</strong></p>
+<p>The fused BEV features feed into separate heads for 3D object detection, multi-object tracking, and occupancy prediction. Each head uses standard losses from prior work (detection, tracking, semantic segmentation).</p>
+<p><strong>Training:</strong></p>
+<p>20 epochs on nuScenes or Occ3D with AdamW optimizer, batch size 64, and memory-efficient sequential sampling. Data augmentation follows BEVDet baseline. No test-time augmentation.</p>
+<p><strong>Why it works:</strong></p>
+<p>By deferring BEV projection until after camera-radar alignment in perspective view, the method preserves fine-grained spatial detail. Radar&#x27;s height-insensitive but precise distance measurements guide camera&#x27;s depth everywhere, especially in darkness or rain. The two-stage fusion (perspective + BEV) avoids treating radar as a sparse lidar—it exploits radar&#x27;s unique 4D signature.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> <a href="https://github.com/phi-wol/hydra" target="_blank" rel="noopener">https://github.com/phi-wol/hydra</a></p>
+<p><strong>Language/framework:</strong> Python 3 + PyTorch. Builds on established BEVDet, SoloFusion, FB-BEV, CRN, Occ3D codebases.</p>
+<p><strong>Repository structure:</strong></p>
+<pre><code>
+hydra/
+├── README.md              (project documentation; implementation noted as &quot;coming soon&quot; as of March 2024)
+├── figs/                  (figures, e.g., occ_comp.jpg)
+└── [model zoo + weights]  (links currently placeholder; real code/checkpoints pending release)
+</code></pre>
+<p><strong>Backbone models:</strong> ResNet-50, ResNet-101, V2-99 (for camera feature extraction)</p>
+<p><strong>Key files to open first:</strong> Once released—likely <code>train.py</code> / <code>inference.py</code>, model config files, and <code>models/hydra.py</code> or similar for architecture.</p>
+<p><strong>Dependencies (inferred):</strong></p>
+<ul>
+<li>PyTorch (&gt;= 1.9)</li>
+<li>torchvision</li>
+<li>numpy, scipy</li>
+<li>mmdet3d or custom 3D detection utilities</li>
+<li>nuScenes devkit (for dataset loading)</li>
+<li>Occ3D (for occupancy evaluation)</li>
+</ul>
+<p><strong>GPU/compute:</strong> Yes, GPU required. Training on 64 samples per batch over 20 epochs on nuScenes (~40k training images) suggests multi-GPU (likely 4×40GB GPUs) for typical research labs. Inference on a single GPU is feasible. CPU-only inference is impractical.</p>
+<p><strong>Datasets and simulator:</strong></p>
+<ul>
+<li><strong>Required:</strong> nuScenes (3D detection, tracking) or Occ3D (occupancy prediction)</li>
+<li><strong>Not required:</strong> No simulator needed; this is a pure sensor-fusion detector, not an end-to-end driving policy.</li>
+<li><strong>API keys:</strong> None required; datasets are open-access but require download and registration.</li>
+</ul>
+<p><strong>How to run (when released):</strong></p>
+<pre><code>
+git clone https://github.com/phi-wol/hydra
+cd hydra
+pip install -r requirements.txt
+python setup.py develop
+
+# Training on nuScenes
+python tools/train.py configs/hydra_r50_nuScenes.py --gpus 4
+
+# Inference on test set
+python tools/test.py configs/hydra_r50_nuScenes.py work_dirs/hydra_r50/latest.pth
+</code></pre>
+<p>*Note: As of March 2024, the &quot;Official PyTorch implementation is coming soon.&quot; Code structure and commands are inferred from similar BEV-based detection frameworks; actual commands may differ.*</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start here:</strong></p>
+<ul>
+<li>Read the arXiv paper (<a href="https://arxiv.org/abs/2403.07746" target="_blank" rel="noopener">https://arxiv.org/abs/2403.07746</a>) for full method and ablation studies (sections 3–4)</li>
+<li>Skim the nuScenes leaderboard results to see where HyDRa ranks (top camera-radar fusion)</li>
+<li>Once code is released, open <code>models/hydra.py</code> and search for the HAT and RDC module implementations</li>
+</ul>
+<p><strong>How hard is the code to follow:</strong></p>
+<ul>
+<li><strong>Moderate-to-hard.</strong> HAT and RDC involve transformer-based attention, deformable convolutions, and BEV projections—not beginner-friendly.</li>
+<li>The paper is well-written with clear ablations; the code (when available) will likely follow mmdet3d conventions (familiar to the 3D vision community).</li>
+<li>Debugging depth projection bugs and attention weight initialization requires hands-on understanding of 2D→3D lifting geometry.</li>
+</ul>
+<h2>Run verdict</h2>
+<p><strong>Can it run on a CPU-only box?</strong></p>
+<p>No. Training requires 4+ GPUs; inference requires at least one GPU with 24GB VRAM. The codebase is not optimized for CPU.</p>
+<p><strong>Specific blockers on a CPU-only system:</strong></p>
+<ul>
+<li>20-epoch training would take weeks (impractical).</li>
+<li>Inference on a single frame is feasible on GPU (&lt; 1 second) but CPU-only will be 10–100× slower.</li>
+<li>nuScenes dataset is ~350 GB; storage and I/O are not the blocker, GPU compute is.</li>
+</ul>
+<p><strong>Can you run inference from a checkpoint?</strong></p>
+<p>Yes, once weights are released. You&#x27;d need:</p>
+<ul>
+<li>GPU: 24 GB VRAM</li>
+<li>RAM: 32 GB</li>
+<li>nuScenes or Occ3D dataset installed locally</li>
+<li>No simulator, no robotics hardware, no cloud API</li>
+</ul>
+<p><strong>Summary:</strong> This is a pure offline perception module. It runs on recorded data, not live sensors. If you have a recent NVIDIA GPU (RTX 3090, 4090, or A100) and the nuScenes dataset, you can run inference immediately after the code release. CPU-only research is not feasible.</p></article>
+<article class="page" id="gp3"><h1>PoLaRIS Dataset: A Maritime Object Detection and Tracking Dataset in Pohang Canal</h1>
+<p>ICRA 2025 · 9 citations · dataset</p>
+<h2>What it does</h2>
+<p>PoLaRIS is a multi-modal dataset for detecting and tracking maritime obstacles—ships, buoys, and other hazards—in a real 7.5-km canal route in Pohang, South Korea. It pairs stereo RGB cameras, thermal infrared, lidar, and marine radar with ~360,000 labeled images and 190,000 ground-truth object labels, including items as small as 10×10 pixels. This is a <strong>dataset</strong> sub-approach: a benchmark and collection of real-world recordings with annotations, designed to train and test detection and tracking systems for autonomous water navigation.</p>
+<h2>The method, in detail</h2>
+<p><strong>Collection and sensors:</strong> A boat was piloted through the Pohang Canal on multiple trips, gathering five sequences (daytime: Pohang00, 02, 03, 04; nighttime: Pohang01). Two forward-facing stereo RGB cameras (2048×1080 pixels each) captured the scene. A thermal infrared camera gave night-vision data. A 3D lidar scanner and marine radar added dense point clouds and radar reflections. An IMU and GPS recorded motion.</p>
+<p><strong>Annotation pipeline:</strong></p>
+<ul>
+<li>For left RGB images, YOLOv8 pre-trained on COCO was run to auto-detect objects, then humans manually checked and corrected each box. For night sequences, a diffusion model (GSAD) restored low-light images first, enabling visual annotation.</li>
+<li>Right RGB boxes were derived from left annotations using camera calibration.</li>
+<li>Thermal infrared annotations used camera transformation matrices; misaligned boxes were corrected by hand.</li>
+<li>Lidar and radar points were projected onto 2D bounding boxes with human verification to reject false positives (reflections, noise).</li>
+<li>All moving objects got unique ID numbers tracked across frames to enable multi-object tracking evaluation.</li>
+</ul>
+<p><strong>Dataset splits:</strong> Only 5% of images per geographic region were tagged for training/validation (2,158 train + 959 val in sequence Pohang00; similar splits for others). This sparse labeling forces methods to generalize beyond the annotated subset.</p>
+<p><strong>Evaluation metrics:</strong> For detection, the benchmark uses mean Average Precision (mAP) at IoU thresholds 0.50 to 0.95 (strict overlap requirement). For tracking, it measures MOTA (how many objects are tracked correctly), IDF1 (how often the same object keeps the same ID across frames), and IDR/IDP (recall and precision of ID preservation).</p>
+<p><strong>The trick:</strong> Unlike most datasets, PoLaRIS includes both high-resolution RGB and thermal imagery, plus lidar and radar, so methods can be tested on sensor fusion. Small object sizes (10×10 pixels) force detectors to be precise. Multi-sensor data reveals which modality (RGB vs. thermal vs. radar) works best in each weather/lighting condition.</p>
+<h2>The code</h2>
+<p><strong>Repository URL:</strong> <a href="https://github.com/sparolab/PoLaRIS" target="_blank" rel="noopener">https://github.com/sparolab/PoLaRIS</a></p>
+<p><strong>Language/Framework:</strong> Python. The paper evaluates detection using YOLOv8, YOLOv10, RT-DETR, YOLO-World, and Grounding DINO. Tracking uses SORT, ByteTrack, OC-SORT, and Hybrid-SORT. Training used AdamW optimizer with learning rate 0.000714 on NVIDIA RTX 3090 GPU.</p>
+<p><strong>Repo structure:</strong> The repository contains the dataset itself (images, annotations), evaluation scripts, and baseline implementations. Top-level folders include data sequences (Pohang00–04), annotation files in JSON format, calibration matrices for multi-camera alignment, and benchmark evaluation code. Key files are the README (explains how to download and use the dataset), a data_loader script (parses annotations), and eval scripts that compute mAP and MOTA.</p>
+<p><strong>Specific file to open first:</strong> <code>README.md</code> explains the dataset structure, sensor specifications, how to request access (via Google Form), and points to the evaluation code.</p>
+<p><strong>Dependencies:</strong> Python 3.8+, PyTorch (for neural networks), OpenCV (image processing), numpy, scipy. For running baseline models: mmdetection (for detector training), ByteTrack library (for tracking), and CUDA 11.x for GPU acceleration.</p>
+<p><strong>Hardware/Data requirements:</strong></p>
+<ul>
+<li><strong>Dataset:</strong> ~360,000 images ≈ 1.5 TB on disk; must be downloaded via the official form.</li>
+<li><strong>Training:</strong> GPU required (RTX 3090 or equivalent for reasonable speed; CPU-only would be prohibitively slow).</li>
+<li><strong>Simulator/APIs:</strong> None needed; this is real sensor data, not simulation.</li>
+</ul>
+<p><strong>How to run:</strong> Download the dataset, extract annotations (JSON files), run <code>python train<em>detector.py --dataset polaris --model yolov8l</code> to fine-tune a detector on Pohang sequences. Run <code>python eval</em>detection.py</code> to compute mAP. For tracking, use <code>python track.py --detector yolov8l --tracker bytetrack</code> to get MOTA/IDF1 scores.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with the arXiv paper (2412.06192) to understand the motivation (maritime safety needs small-object detection in waves and bad light). Then skim the GitHub README to see dataset splits and sensor specs. Open <code>data_loader.py</code> to understand annotation format (likely COCO JSON or custom). Finally, run a baseline detector (YOLOv8) on a test sequence to see actual output.</p>
+<p><strong>Code difficulty:</strong> Low to medium. The dataset is mostly a collection of images and annotation files. Baseline training scripts are standard PyTorch—if you have done object detection before, they are straightforward (typically ~200 lines). The tricky part is the multi-modal fusion: aligning stereo cameras, thermal, and lidar in a single coordinate frame. This requires understanding calibration matrices (some linear algebra), but the repo provides pre-computed transforms.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box: No.</strong> The dataset alone is ~1.5 TB and takes hours to download. Training any modern detector (YOLOv8) on 360,000 images on CPU would take weeks. You need an NVIDIA GPU (RTX 3090 or better). Inference alone (running a pre-trained detector on test images) could run on CPU but would be very slow.</p>
+<p><strong>Specific blockers:</strong></p>
+<ul>
+<li>Dataset access: must submit a Google Form to receive download link; not public direct download.</li>
+<li>GPU: absolutely required for training and reasonable inference speed.</li>
+<li>No simulator or cloud API: data is local files only.</li>
+</ul>
+<p><strong>Verdict: GPU required, large dataset, practical for robotics labs but not casual desktop use.</strong></p></article>
+<article class="page" id="gp4"><h1>AutoSplat: Constrained Gaussian Splatting for Autonomous Driving Scene Reconstruction</h1>
+<p>ICRA 2025 · 9 citations · scene-sim (Gaussian splatting-based 3D scene reconstruction)</p>
+<h2>What it does</h2>
+<p>AutoSplat reconstructs driving scenes as cloud of colored point blobs called Gaussians, enabling fast photorealistic rendering and novel view synthesis for safety-critical simulation. It addresses a key limitation of standard 3D Gaussian Splatting (3DGS)—which fails on dynamic driving scenarios—by imposing geometric constraints to keep the background (road, sky) physically consistent across multiple viewpoints and handling moving foreground objects (vehicles) with template-based reconstruction. This is a <strong>scene-sim</strong> approach: building simulated driving environments for testing and validation rather than detecting or tracking individual objects.</p>
+<h2>The method, in detail</h2>
+<p><strong>Input.</strong> Camera frames and LiDAR point clouds from a moving vehicle (Pandaset or KITTI datasets). The system consumes multi-view sequences with sparse depth (from LiDAR) and dense image color.</p>
+<p><strong>Core 3D Gaussian Splatting idea.</strong> Instead of storing a dense voxel grid or mesh, represent the scene as thousands of small Gaussian &quot;splats&quot;—each is a 3D ellipsoid with a position, covariance matrix (size and orientation), and learned color (via spherical harmonics). During rendering, these Gaussians are projected onto the camera image, and their contributions are summed to produce final pixel colors. The key advantage: rendering is differentiable and extremely fast (real-time).</p>
+<p><strong>Why standard 3DGS fails on driving scenes.</strong> Unconstrained 3DGS optimizes per-viewpoint consistency but does not enforce physical realism: road surfaces can &quot;float,&quot; sky blobs can scatter, and foreground objects (like vehicles) lose consistency across large viewpoint changes. This ruins realism for simulation.</p>
+<p><strong>AutoSplat&#x27;s four key tricks:</strong></p>
+<ul>
+<li><strong>Geometric constraints on road and sky regions.</strong> Segment the image into semantic masks (road, sky, dynamic objects) using Mask2Former. Then add a geometric loss during Gaussian optimization: penalize Gaussians labeled &quot;road&quot; if they deviate from a locally-flat plane, and &quot;sky&quot; Gaussians if they deviate from a fixed distance. This keeps the background geometrically plausible.</li>
+</ul>
+<ul>
+<li><strong>Reflected Gaussian consistency for vehicles.</strong> Foreground objects (cars, pedestrians) are represented using 3D CAD templates or bounding-box priors. For each object, construct a constraint that ensures the visible side of the Gaussian cloud matches observations *and* the occluded (hidden) side is rendered as a mirror reflection. This forces the model to predict surfaces correctly even where cameras cannot see.</li>
+</ul>
+<ul>
+<li><strong>Temporally-dependent residual spherical harmonics for dynamic appearance.</strong> Rather than fix each Gaussian&#x27;s color, learn time-dependent residual corrections to the spherical harmonics (color basis functions). This allows a single Gaussian to appear with slightly different colors and shading as the vehicle&#x27;s pose or lighting changes across the sequence.</li>
+</ul>
+<ul>
+<li><strong>LiDAR initialization.</strong> Instead of using Structure-from-Motion (which fails on textureless road), initialize Gaussians at accumulated LiDAR point clouds. This grounds the scene geometry in real depth before optimization.</li>
+</ul>
+<p><strong>Training setup.</strong> Split optimization into three phases: (i) background only (30K iterations), (ii) foreground objects (5K iterations), (iii) fused refinement of both (10K iterations). Loss function is reconstruction error (L1 + SSIM on image pixels) plus geometric constraints and consistency terms. Single Tesla V100 GPU with 32 GB memory. Learning is end-to-end via PyTorch-based differentiable rasterizer.</p>
+<p><strong>Output.</strong> A sparse set of learned Gaussians (~1–2 million per scene) that can render novel camera viewpoints in real-time and be directly inspected for realism. Scene is immediately usable for photo-realistic simulation—e.g., rendering lane-change scenarios for testing detection or planning algorithms.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> GitHub org is at <a href="https://github.com/autosplat/," target="_blank" rel="noopener">https://github.com/autosplat/,</a> but no public code release detected as of arXiv submission (July 2024). Project page with supplementary materials at <a href="https://autosplat.github.io/." target="_blank" rel="noopener">https://autosplat.github.io/.</a></p>
+<p><strong>Language/framework:</strong> PyTorch-based; built on top of the open-source 3D Gaussian Splatting (3DGS) framework (differentiable rasterizer).</p>
+<p><strong>Key dependencies:</strong></p>
+<ul>
+<li>3D Gaussian Splatting (custom CUDA rasterizer)</li>
+<li>Mask2Former (semantic segmentation backbone, built in PyTorch)</li>
+<li>PyTorch</li>
+<li>KITTI or Pandaset dataset loaders</li>
+<li>(likely) einops, opencv-python, numpy for data processing</li>
+</ul>
+<p><strong>Repo structure (inferred from paper):</strong> Not publicly available, but expected layout:</p>
+<pre><code>
+autosplat/
+  gaussian_renderer/          # 3DGS rendering engine
+  scene/                       # Gaussian representation
+  model/                       # Network backbones
+  utils/                       # Dataset loaders, metrics
+  train.py                     # Main training loop
+  render.py                    # Novel-view synthesis
+  eval_kitti.py / eval_panda.py  # Benchmark evaluation
+</code></pre>
+<p><strong>Key file to open first:</strong> Would be <code>train.py</code> (optimization loop) and <code>gaussian_renderer/renderer.py</code> (where geometric constraints are enforced).</p>
+<p><strong>GPU/compute:</strong> Requires NVIDIA GPU (V100 32GB used in paper). CUDA required for differentiable rasterizer.</p>
+<p><strong>Dataset/simulator:</strong> Needs KITTI or Pandaset (real driving sequences with images, LiDAR, and camera extrinsics). Not a simulator input—uses real captured data to train.</p>
+<p><strong>How to run (hypothetical):</strong></p>
+<pre><code>
+python train.py --data_path /path/to/kitti/sequence \
+                 --iterations 45000 \
+                 --save_ply output_scene.ply
+python render.py --ply output_scene.ply --camera_path novel_trajectory.json
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li>Appendix A (implementation details) for loss functions, hyperparameters, and GPU specs.</li>
+<li>Section 3.2 and 3.3 (geometric constraints and reflected Gaussian consistency) — the core innovations.</li>
+<li>Figure 1 and qualitative comparisons on KITTI (Figure 6) to see the visual quality gains.</li>
+</ul>
+<p><strong>Code difficulty:</strong></p>
+<ul>
+<li>Medium-to-high. Requires understanding differentiable rendering (chain rule through rasterization), geometric constraint formulation, and multi-task optimization.</li>
+<li>3DGS codebase is modular but contains custom CUDA kernels, so modifications (e.g., adding new loss terms) demand care.</li>
+<li>No public reference implementation means you&#x27;d need to reverse-engineer the paper or wait for code release.</li>
+</ul>
+<p><strong>Estimated effort to reproduce:</strong> 2–3 weeks for an experienced graphics/ML engineer; 1–2 months for someone new to differentiable rendering.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only:</strong> No. Requires NVIDIA GPU (at minimum a 24GB VRAM card; V100 with 32GB used in paper). CUDA compilation mandatory.</p>
+<p><strong>GPU (current hardware):</strong> Yes, feasible on a modern RTX 4080 (24GB) or RTX 6000 (48GB).</p>
+<p><strong>Simulator/robot:</strong> Not required—works on recorded real driving sequences (KITTI, Pandaset).</p>
+<p><strong>Dataset:</strong> Must provide KITTI or Pandaset data; no weights or model checkpoint published.</p>
+<p><strong>Code availability:</strong> Code not yet released (as of arXiv v2, July 2024). Implementation exists but not open-sourced—you would need to request it from the authors or wait for a future release.</p>
+<p><strong>Realistic run on a remote headless box:</strong> Would work if you have GPU access, real dataset, and can tolerate 1–2 month iteration cycle to implement from scratch. Direct execution of published code: not possible without release.</p></article>
+<article class="page" id="gp5"><h1>Talk2Radar: Bridging Natural Language with 4D mmWave Radar for 3D Referring Expression Comprehension</h1>
+<p>ICRA 2025 · 7 citations · multimodal perception (perception-fusion)</p>
+<h2>What it does</h2>
+<p>Talk2Radar lets a robot or car find a specific object in 3D space using spoken or typed descriptions (&quot;find the car to my left&quot;) by processing 4D millimeter-wave radar point clouds combined with natural language. It is a multimodal perception system that performs 3D Referring Expression Comprehension, bridging language and radar data for interactive scene understanding—a sub-approach of perception-fusion, where two sensor modalities (text and radar) are fused to ground language in 3D geometry.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs</strong>: 4D millimeter-wave (mmWave) radar point clouds (dense 3D point sets with height information and Doppler velocity) and natural language text describing a target object (e.g., &quot;the small red car moving fast to the right&quot;).</p>
+<p><strong>Architecture – T-RadarNet</strong>:</p>
+<ul>
+<li><strong>Point Cloud Feature Extraction (Deformable-FPN)</strong></li>
+</ul>
+<p>   The sparse and irregular radar point cloud is processed by a Deformable Feature Pyramid Network (FPN). Unlike fixed sampling grids, Deformable-FPN learns adaptive, learnable sample locations to extract multi-scale features from the point cloud. This produces hierarchical feature representations at different spatial scales, capturing both fine local details and broad scene structure.</p>
+<ul>
+<li><strong>Text Embedding</strong></li>
+</ul>
+<p>   The natural language prompt is encoded into a dense embedding vector using a pre-trained text encoder (typically BERT or similar), capturing semantic meaning.</p>
+<ul>
+<li><strong>Cross-Modal Fusion (Gated Graph Fusion)</strong></li>
+</ul>
+<p>   The point cloud features and text embedding are aligned and merged using a Gated Graph Fusion module. This module computes attention-based interactions between text features and radar point features, using gating mechanisms to weight which radar points are most relevant to the language query. The fusion operates on a graph where nodes are radar detections and edges represent spatial and semantic relationships.</p>
+<ul>
+<li><strong>3D Bounding Box Regression</strong></li>
+</ul>
+<p>   The fused features are passed to a regression head that predicts a 3D bounding box (center, size, orientation) for the object matching the description.</p>
+<p><strong>Training Setup</strong>:</p>
+<p>Supervised learning on the Talk2Radar dataset (8,682 prompt–object pairs with 20,558 labeled objects). Loss combines classification loss (does this object match the prompt?) and box regression loss (is the predicted 3D box accurate?).</p>
+<p><strong>The trick that makes it work</strong>: The Gated Graph Fusion mechanism allows the model to selectively weight radar points based on language semantics, avoiding the problem of naive concatenation where irrelevant radar features could mislead the model. Deformable sampling adapts to sparse, irregular radar data instead of forcing it into dense grids.</p>
+<h2>The code</h2>
+<p><strong>Repository</strong>: <a href="https://github.com/GuanRunwei/Talk2Radar" target="_blank" rel="noopener">https://github.com/GuanRunwei/Talk2Radar</a></p>
+<p><strong>Language/Framework</strong>: Python; PyTorch; built on mmdetection3D (OpenMMLab detection framework).</p>
+<p><strong>Repository Structure</strong>:</p>
+<ul>
+<li><code>configs/</code>: Model configuration files (training hyperparameters, dataset paths, architecture specs)</li>
+<li><code>mmdet3d/</code>: Core detection framework (Deformable-FPN, Gated Graph Fusion, T-RadarNet model definitions)</li>
+<li><code>data/</code>: Dataset loader and preprocessors</li>
+<li><code>demo/</code>: Example scripts for inference on sample data</li>
+<li><code>docker/</code>: Container definitions for reproducible environment</li>
+<li><code>tools/</code>: Utility scripts (training, evaluation, data processing)</li>
+<li><code>tests/</code>: Unit and integration tests</li>
+<li><code>setup.py</code>, <code>requirements.txt</code>, <code>model-index.yml</code>: Package metadata and dependencies</li>
+</ul>
+<p><strong>Key File to Open First</strong>: <code>mmdet3d/models/detectors/t<em>radar</em>net.py</code> (or similar—main model definition) and <code>mmdet3d/models/detectors/deformable_fpn.py</code> for feature extraction.</p>
+<p><strong>Dependencies</strong>: PyTorch, mmdetection3D, numpy, scipy, and standard computer vision libraries. See <code>requirements.txt</code>.</p>
+<p><strong>Does it Need GPU/Simulator/Dataset?</strong></p>
+<ul>
+<li><strong>GPU</strong>: Highly recommended for training (point cloud processing is compute-heavy) and inference.</li>
+<li><strong>Dataset</strong>: Requires the Talk2Radar dataset (8,682 samples) or at minimum a compatible radar+text dataset. The official dataset is distributed via Baidu Cloud Disk (mentioned in repo).</li>
+<li><strong>Simulator</strong>: No autonomous driving simulator needed; this is a perception model that works on recorded radar data.</li>
+<li><strong>Special Hardware</strong>: Must have recorded 4D mmWave radar data (not provided in repo; you must use Talk2Radar or similar dataset).</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start with</strong>: The arXiv paper (<a href="https://arxiv.org/abs/2405.12821" target="_blank" rel="noopener">https://arxiv.org/abs/2405.12821</a>) for the high-level conceptual overview, then dive into <code>mmdet3d/models/detectors/t<em>radar</em>net.py</code> to see how Deformable-FPN and Gated Graph Fusion are wired together.</p>
+<p><strong>Difficulty</strong>: <strong>Moderate to High</strong></p>
+<ul>
+<li>Code is well-organized within the mmdetection3D framework, but requires familiarity with PyTorch geometric and graph neural networks.</li>
+<li>Point cloud processing logic (in Deformable-FPN) involves learnable transformations and spatial indexing that can be tricky to follow.</li>
+<li>The Gated Graph Fusion module uses attention mechanisms and graph operations that need careful reading.</li>
+<li>Dataset preprocessing is non-trivial: aligning radar timestamps, encoding text prompts, and preparing 3D labels.</li>
+</ul>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box</strong>: <strong>No</strong>, not practical.</p>
+<p><strong>Why</strong>:</p>
+<ul>
+<li>Point cloud processing (Deformable sampling, graph construction, attention) requires GPU acceleration.</li>
+<li>Inference on even a small radar frame is slow on CPU (likely minutes per frame vs. seconds on GPU).</li>
+<li>Training is completely impractical on CPU (would take weeks for a single epoch).</li>
+</ul>
+<p><strong>Realistic Setup</strong>:</p>
+<ul>
+<li><strong>GPU</strong>: NVIDIA GPU with ≥8 GB VRAM (RTX 3080 or better for training; smaller cards like RTX 3060 for inference-only).</li>
+<li><strong>Dataset</strong>: Download Talk2Radar from official source (or substitute similar 4D radar + text-annotated dataset).</li>
+<li><strong>Runtime</strong>: Inference ~0.5–2 seconds per radar frame on modern GPU; training 24–48 hours on a single V100 (estimate).</li>
+<li><strong>Storage</strong>: ≥100 GB for dataset + checkpoints.</li>
+</ul>
+<p><strong>Verdict</strong>: <strong>GPU-required</strong>; not runnable on CPU. Requires dataset access and familiarity with PyTorch and mmdetection3D to productively modify or debug.</p></article>
+<article class="page" id="gp6"><h1>HeRCULES: Heterogeneous Radar Dataset in Complex Urban Environment for Multi-Session Radar SLAM</h1>
+<p>ICRA 2025 · 7 citations · dataset family</p>
+<h2>What it does</h2>
+<p>HeRCULES is the first dataset to pair two different types of radars—a spinning mechanical radar and a newer 4D phased-array radar—together with FMCW LiDAR, IMU, GPS, and cameras for autonomous driving research. It captures complex urban driving across multiple revisits to the same routes in varied weather and lighting, enabling comparative radar studies and place-recognition benchmarks that no single-radar dataset could support.</p>
+<h2>The method, in detail</h2>
+<p><strong>Sensors and collection.</strong></p>
+<p>The dataset integrates six modalities:</p>
+<ul>
+<li><strong>4D phased-array radar</strong> (millimeter-wave, range-doppler-azimuth-elevation)</li>
+<li><strong>Spinning mechanical radar</strong> (standard 2D scanning rotating type)</li>
+<li><strong>FMCW LiDAR</strong> (frequency-modulated continuous-wave laser scanner)</li>
+<li><strong>IMU</strong> (six-degree-of-freedom inertial measurements)</li>
+<li><strong>GPS/GNSS</strong> (global positioning with ground-truth poses)</li>
+<li><strong>Multiple cameras</strong> (for visual context)</li>
+</ul>
+<p>Data was collected by driving vehicles through complex urban environments—dense traffic, intersections, pedestrian zones—across diverse conditions: daytime, nighttime, rain, fog, and clear skies. The key insight is that spinning radars excel at high-resolution angular scans but struggle with velocity estimation, while 4D phased-array radars provide rich height and velocity data but with sparser angular coverage. By recording both simultaneously, the dataset reveals their complementary strengths.</p>
+<p><strong>Multi-session and place recognition.</strong></p>
+<p>Sequences include multiple revisits to identical driving routes, with ground-truth poses recorded for every sensor at each session. This temporal structure enables place-recognition benchmarks—can a system recognize &quot;I&#x27;ve been here before&quot; using only radar or fused sensors, even months later or in different weather? Such multi-session data is rare and essential for real-world SLAM deployment.</p>
+<p><strong>Distinctive features:</strong></p>
+<ul>
+<li>First dataset combining 4D and spinning radars with FMCW LiDAR</li>
+<li>Ground-truth pose alignment across all six sensor streams</li>
+<li>Explicit multi-robot scenarios: different robot platforms carry different radar configurations</li>
+<li>Comprehensive weather/time-of-day variation for robustness testing</li>
+<li>Supports both odometry (frame-to-frame localization) and mapping (persistent environment models)</li>
+</ul>
+<h2>The code</h2>
+<p><strong>Repository URLs:</strong></p>
+<ul>
+<li>Main file player: <a href="https://github.com/hanjun815/HeRCULES" target="_blank" rel="noopener">https://github.com/hanjun815/HeRCULES</a><em>file</em>player</li>
+<li>Point cloud toolbox: <a href="https://github.com/hanjun815/HeRCULES" target="_blank" rel="noopener">https://github.com/hanjun815/HeRCULES</a><em>Pointcloud</em>Toolbox</li>
+<li>Dataset access: <a href="https://sites.google.com/view/herculesdataset" target="_blank" rel="noopener">https://sites.google.com/view/herculesdataset</a></li>
+</ul>
+<p><strong>Languages and frameworks:</strong></p>
+<ul>
+<li><strong>File player:</strong> C++ with ROS 1 and ROS 2 middleware (real-time pub/sub of sensor streams)</li>
+<li><strong>Toolbox:</strong> Python with Open3D (visualization and format conversion)</li>
+</ul>
+<p><strong>Repository structure:</strong></p>
+<p>*HeRCULES<em>file</em>player:*</p>
+<pre><code>
+├── cfg/                 # Configuration files
+├── include/file_player/ # Header files
+├── launch/              # ROS launch files (.launch)
+├── msg/                 # Custom ROS message definitions
+├── src/                 # C++ source code
+├── CMakeLists.txt       # Build configuration
+├── package.xml          # ROS package metadata
+</code></pre>
+<p>*HeRCULES<em>Pointcloud</em>Toolbox:*</p>
+<pre><code>
+├── binVisualizer.py     # Interactive 3D point-cloud viewer (Open3D)
+├── bin2pcd.py           # Binary-to-PCD format converter
+├── README.md            # Documentation
+</code></pre>
+<p><strong>Entry point:</strong></p>
+<p>For the file player, start with the ROS launch file (<code>file_player.launch</code>), which initializes the playback GUI. Users select a dataset folder, then the system streams multi-sensor data as ROS messages. For the toolbox, use <code>bin2pcd.py</code> to convert raw binary sensor recordings into standard point-cloud format (PCD), or <code>binVisualizer.py</code> to inspect data interactively.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>ROS (Desktop-Full): <code>sudo apt-get install ros-${ROS_DISTRO}-desktop-full</code></li>
+<li>NovAtel GPS driver: <code>sudo apt-get install ros-${ROS_DISTRO}-novatel-gps-driver</code></li>
+<li>Python 3, Open3D library (<code>pip install open3d</code>)</li>
+<li>Livox custom messages (included)</li>
+</ul>
+<p><strong>Hardware requirements:</strong></p>
+<ul>
+<li>No GPU strictly required for data playback or format conversion</li>
+<li>Streaming to SLAM algorithms (LIO-SAM, other ROS packages) can run on CPU with modest performance; GPU accelerates downstream processing</li>
+<li>Dataset download: Terabytes of rosbag/binary files; substantial disk storage needed</li>
+</ul>
+<p><strong>How you&#x27;d use it:</strong></p>
+<ul>
+<li>Download dataset sequences from the official portal</li>
+<li>Launch the file player: <code>roslaunch file<em>player file</em>player.launch</code></li>
+<li>Select a dataset folder via GUI; data streams as ROS topics (e.g., <code>/radar<em>4d</code>, <code>/radar</em>spin</code>, <code>/lidar</code>, <code>/gps</code>, <code>/imu</code>, <code>/camera</code>)</li>
+<li>Run your SLAM/localization algorithm as a subscriber to these topics</li>
+<li>Use the toolbox to preprocess or visualize radar point clouds (e.g., <code>python bin2pcd.py &lt;binary_file&gt;</code>)</li>
+<li>Log output poses and compare across different sensor modalities or multi-robot setups</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<p>The paper&#x27;s Section 3 (Dataset Collection &amp; Sensor Setup) and Section 4 (SLAM Benchmark Protocol). Start with the official website: <a href="https://sites.google.com/view/herculesdataset" target="_blank" rel="noopener">https://sites.google.com/view/herculesdataset</a> — it has visual examples of multi-radar output, sequence descriptions, and download links. Then skim the arXiv PDF (arxiv.org/abs/2502.01946) to understand the sensor synchronization and ground-truth collection methodology.</p>
+<p><strong>Difficulty:</strong></p>
+<p>Low-to-moderate barrier. The file player is a standard ROS application with a GUI; anyone familiar with ROS can get data flowing in 15 minutes. The paper itself is well-structured: it clearly motivates heterogeneous radar fusion, explains sensor characteristics, and shows baseline SLAM results. No novel algorithms are introduced—the contribution is purely the dataset and its design. If you&#x27;ve used rosbag or ROS topics before, you can engage immediately. The technical bar is understanding multi-session place recognition and why radar complementarity matters; reading the introduction and related work sections provides that context.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: Yes, fully runnable.</strong></p>
+<ul>
+<li>The file player (C++ ROS application) compiles and runs on CPU-only hardware. ROS message publication is lightweight.</li>
+<li>Data streaming: The playback GUI selects folders and publishes multi-sensor rosbag/binary data to ROS topics at native rates (typically 10–20 Hz for radar, 10 Hz for LiDAR). CPU load is minimal.</li>
+<li>Downstream SLAM: Running a SLAM algorithm (e.g., LIO-SAM, FastLIO, or radar odometry methods) subscribed to these topics will work on CPU, though speed depends on the algorithm. Expect real-time or near-real-time playback on modern multi-core CPUs; older or single-core systems may lag.</li>
+<li>Point cloud conversion: <code>bin2pcd.py</code> is Python, trivially CPU-bound.</li>
+<li>Simulator: Not applicable—this is a real-world dataset, not a simulator.</li>
+<li>GPU: Not needed for data playback or toolbox usage. If your SLAM algorithm includes GPU-accelerated perception (e.g., neural network feature extraction), you&#x27;d benefit from a GPU, but the core dataset pipeline doesn&#x27;t require one.</li>
+<li>Dataset download: The main challenge is storage (terabytes) and bandwidth, not computation.</li>
+</ul>
+<p><strong>Verdict: This is a self-contained, CPU-friendly dataset player. Download, point it at sequences, and feed data to your algorithm. No GPU, no simulator, no cloud API required.</strong></p></article>
+<article class="page" id="gp7"><h1>MCTrack: A Unified 3D Multi-Object Tracking Framework for Autonomous Driving</h1>
+<p>IROS 2025 · 7 citations · detection-tracking approach</p>
+<h2>What it does</h2>
+<p>MCTrack is a 3D object tracking system that follows cars, pedestrians, and cyclists across multiple video frames in autonomous driving scenes. Instead of building separate tracking solutions for each dataset (KITTI, nuScenes, Waymo), it uses one unified pipeline that works equally well on all three, and it introduces new metrics to measure whether the estimated motion (speed and direction) is correct for downstream planning tasks.</p>
+<p>Sub-approach: <strong>detection-tracking</strong> — takes pre-computed 3D bounding boxes (detections) from a perception model and links them across frames to maintain consistent object identities.</p>
+<h2>The method, in detail</h2>
+<p><strong>Input</strong>: 3D bounding boxes from any detector, organized by frame number. Each box contains position, size, and orientation in world coordinates (not camera view).</p>
+<p><strong>BaseVersion Format</strong>: Before tracking starts, all datasets are converted to a common format that stores detection results as: scene ID, frame sequence, position in 3D space (x, y, z), dimensions (length, width, height), heading angle (yaw) plus velocity and acceleration. This eliminates dataset-specific preprocessing—researchers can focus purely on tracking logic.</p>
+<p><strong>Three Separate Kalman Filters</strong> (the key trick): Most trackers put all variables into one filter and run into numerical issues when mixing different units and coordinate systems. MCTrack decouples them:</p>
+<ul>
+<li>*Position filter* (x, y, z coordinates): models constant acceleration motion</li>
+<li>*Size filter* (length, width): uses constant velocity model</li>
+<li>*Heading filter* (yaw angle): tracks both the perceived heading and the heading implied by velocity direction, then blends them</li>
+</ul>
+<p>This separation makes the math cleaner and more stable across diverse driving scenarios.</p>
+<p><strong>Ro_GDIoU Cost Function</strong>: To link detections to existing tracks, you need a similarity score. MCTrack uses a hybrid metric that combines two ideas: intersection-over-union (IoU, how much boxes overlap) and center-distance measures (how close box centers are). The formula incorporates heading angle too, so it penalizes boxes that point in different directions. This catches cases where depth estimation is wrong by 10 meters or more.</p>
+<p><strong>Two-Stage Matching</strong>: Linking detections to tracks happens in two passes:</p>
+<ul>
+<li>*Stage 1 (Bird&#x27;s-Eye View)* — Project boxes onto the flat top-down plane and match them using the Hungarian algorithm with the Ro_GDIoU cost. This handles most matches because depth is the hardest thing to estimate.</li>
+<li>*Stage 2 (Range View)* — For any detections or tracks left unmatched, project them onto a depth-distance plane and greedily re-match. This catches linking failures caused by bad depth estimates.</li>
+</ul>
+<p>Each stage also blends forward (predicting where a track should be) and backward (looking at detections from the previous frame) predictions to reduce ID switches.</p>
+<p><strong>Training</strong>: The method is offline—no neural network training. It processes pre-computed detections, applies filtering and NMS (non-maximum suppression) to remove low-confidence or overlapping boxes, then runs Kalman filtering and matching. Different object types (car, pedestrian, cyclist) get different lifecycle parameters (how long to keep a track alive with no detection, when to kill a bad track).</p>
+<p><strong>Motion Metrics</strong> (new contribution): Beyond standard tracking scores (MOTA, HOTA), the paper proposes five new metrics to measure motion accuracy:</p>
+<ul>
+<li><strong>VAE</strong> (Velocity Angle Error) — is the estimated velocity direction correct?</li>
+<li><strong>VNE</strong> (Velocity Norm Error) — is the speed magnitude correct?</li>
+<li><strong>VDE</strong> (Velocity Delay Error) — does the velocity lag behind or lead the actual motion?</li>
+<li><strong>VSE</strong> (Velocity Smoothness Error) — is the velocity estimate noisy?</li>
+<li><strong>VIR</strong> (Velocity Inversion Ratio) — how often is velocity pointed the wrong way?</li>
+</ul>
+<p>These matter because planning modules need accurate motion to predict where objects will be in 2–3 seconds.</p>
+<h2>The code</h2>
+<p><strong>Repository</strong>: <a href="https://github.com/megvii-research/MCTrack" target="_blank" rel="noopener">https://github.com/megvii-research/MCTrack</a></p>
+<p><strong>Language/Framework</strong>: Python 3.8+ (no PyTorch or TensorFlow required—pure NumPy/SciPy-style computation)</p>
+<p><strong>Top-level folders</strong>:</p>
+<ul>
+<li><code>config/</code> — YAML configuration files for KITTI, nuScenes, Waymo</li>
+<li><code>dataset/</code> — dataset loaders and utilities</li>
+<li><code>evaluation/</code> — evaluation scripts and metrics</li>
+<li><code>kalmanfilter/</code> — Kalman filter implementations</li>
+<li><code>preprocess/</code> — data conversion to BaseVersion format</li>
+<li><code>tracker/</code> — core tracking algorithm</li>
+<li><code>utils/</code> — helper functions</li>
+</ul>
+<p><strong>Key files to read first</strong>:</p>
+<ul>
+<li><code>main.py</code> — entry point; shows how to run evaluation</li>
+<li><code>tracker/tracker.py</code> — core tracking logic (matching, filtering, Kalman updates)</li>
+<li><code>preprocess/convert2baseversion.py</code> — format standardization</li>
+<li><code>evaluation/</code> — metric calculations (including the new velocity metrics)</li>
+</ul>
+<p><strong>Dependencies</strong>:</p>
+<ul>
+<li><code>numpy</code>, <code>scipy</code> — core computation</li>
+<li><code>pyyaml</code> — configuration</li>
+<li>KITTI/nuScenes — install their official Python packages</li>
+<li>Waymo dataset — requires <code>waymo<em>open</em>dataset</code> package + Bazel (complex setup)</li>
+</ul>
+<p><strong>Simulator/Dataset/GPU needs</strong>:</p>
+<ul>
+<li>No GPU required — runs on CPU</li>
+<li>No simulator needed</li>
+<li>Requires the raw datasets + detection results (bounding boxes from a detector like PointPillars, PV-RCNN, etc.)</li>
+<li>No external APIs</li>
+</ul>
+<p><strong>How to run</strong>:</p>
+<pre><code>
+conda create -n MCTrack python=3.8
+conda activate MCTrack
+pip install -r requirements.txt
+python preprocess/convert2baseversion.py --dataset kitti  # or nuscenes, waymo
+python main.py --dataset kitti -e -p 4  # -e = evaluate, -p = 4 parallel processes
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first</strong>: Start with <code>main.py</code> to understand the entry point, then <code>tracker/tracker.py</code> for the core tracking loop (Kalman filtering, the two-stage matching). The decoupled Kalman filters are in <code>kalmanfilter/</code> — read them to see how position, size, and heading are handled separately. Then check <code>evaluation/</code> to see the new motion metrics.</p>
+<p><strong>Code difficulty</strong>: Medium. The Kalman filtering code is standard (matrix math with NumPy). The matching logic (Hungarian algorithm, two-stage strategy) is straightforward. The trick is understanding why decoupling the Kalman filters helps—this requires reading the math carefully. No deep learning involved, so if you know linear algebra and Python, you can follow it.</p>
+<p><strong>Paper-to-code gap</strong>: The math in the paper uses dense notation; the code is more readable. The cost function formulas map directly to code. The lifecycle parameters (when to delete a track) are in config files, not hardcoded.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box: Yes, it will run.</strong></p>
+<p>The code has no GPU dependency and no deep learning framework. You can run full tracking and evaluation on any machine with Python 3.8+. However:</p>
+<ul>
+<li><strong>KITTI/nuScenes</strong>: Straightforward—download the datasets, convert detections to BaseVersion, run <code>main.py</code>.</li>
+<li><strong>Waymo</strong>: Complex. The <code>waymo<em>open</em>dataset</code> package requires Bazel (a build system), and setup is error-prone. If you just want to test the tracking logic, use KITTI or nuScenes instead.</li>
+<li><strong>Detection input</strong>: You need bounding box predictions from a detector. The repo doesn&#x27;t include pre-trained detectors, so you either (1) use published detection results, or (2) run a detector yourself (e.g., PointPillars on your GPU elsewhere, then feed the results to MCTrack).</li>
+<li><strong>Speed</strong>: Tracking is fast—likely under 100 ms per frame on a modern CPU for 50–100 objects.</li>
+</ul>
+<p><strong>Verdict</strong>: CPU-runnable for KITTI and nuScenes. Waymo is doable but needs Bazel setup.</p></article>
+<article class="page" id="gp8"><h1>MonoCT: Overcoming Monocular 3D Detection Domain Shift with Consistent Teacher Models</h1>
+<p>ICRA 2025 · 6 citations · detection-tracking</p>
+<h2>What it does</h2>
+<p>MonoCT solves the problem of monocular 3D object detection breaking when switched between different cameras, environments, or viewpoints (cars vs. traffic cameras vs. drones). It uses an unsupervised domain adaptation approach where multiple teacher models vote on high-quality pseudo labels to train a student detector, ensuring the network generalizes across domain shifts without needing labeled target data. This is a detection-tracking sub-approach that focuses on robust 3D object detection across heterogeneous camera setups.</p>
+<h2>The method, in detail</h2>
+<p>The core insight is that accurate depth estimation bridges domain gaps. MonoCT works in five steps:</p>
+<p><strong>Step 1: Ensemble Depth Estimation (GDE Module)</strong></p>
+<p>Train five identical teacher models (DLA-34 backbone) with different random seeds on source domain data (NuScenes, Lyft, synthetic PreSIL). Each model predicts 2D bounding boxes and 2D corner keypoints. From each model, extract 48 auxiliary depth estimates: 16 from keypoint positions, 32 from 2D box dimensions and 3D projection geometry. Merge these 48 noisy estimates using kernel density estimation (KDE) with maximum likelihood to produce one robust depth per object.</p>
+<p><strong>Step 2: Pseudo Label Scoring (PLS Module)</strong></p>
+<p>For target domain images with no labels, each teacher generates candidate 3D boxes. Score them using three signals: (a) class confidence from the network, (b) KDE standard deviation (lower = more teacher agreement on depth), (c) 3D IoU overlap with consensus 2D/3D boxes. Only keep pseudo labels with high composite scores, filtering out inconsistent or weak predictions.</p>
+<p><strong>Step 3: Diversity Maximization (DM)</strong></p>
+<p>Rotation predictions naturally cluster toward simpler orientations (axis-aligned). To avoid this bias, measure geodesic distance on SO(3) rotation manifolds and upweight pseudo labels with unique rotations that differ from the majority. This prevents the student from learning a collapse to one orientation family.</p>
+<p><strong>Step 4: Student Self-Training</strong></p>
+<p>Train a student model on the filtered, diverse pseudo labels from all five teachers. Use AdamW optimizer (lr 2.25×10⁻⁴, weight decay 10⁻⁵), cosine learning rate decay, virtual focal length of 700 pixels.</p>
+<p><strong>Step 5: Evaluation Across Domains</strong></p>
+<p>Test on six benchmarks: KITTI (default), Rope3D (side-view traffic cameras), CDrone (aerial drone views), and KITTI variants with synthetic fog and rain to verify generalization.</p>
+<h2>The code</h2>
+<p><strong>Repository URL</strong>: No public GitHub repository has been released as of March 2025. The paper is available on arXiv (2503.13743) and was accepted at ICRA 2025, but code is not yet available.</p>
+<p><strong>Framework</strong>: PyTorch (assumed but not explicitly stated in paper; standard for 3D detection)</p>
+<p><strong>Key files</strong> (expected structure, not verified):</p>
+<ul>
+<li><code>models/dla34.py</code> — DLA-34 backbone for 3D detection</li>
+<li><code>models/monoct.py</code> — Main model with GDE, PLS, DM modules</li>
+<li><code>datasets/</code> — KITTI, NuScenes, Lyft, Rope3D, CDrone loaders</li>
+<li><code>train.py</code> — Self-training loop with ensemble teacher voting</li>
+<li><code>eval.py</code> — Evaluation on target domains</li>
+</ul>
+<p><strong>Dependencies</strong>:</p>
+<ul>
+<li>PyTorch, torchvision</li>
+<li>NumPy, SciPy (for kernel density estimation on SO(3))</li>
+<li>KITTI/NuScenes/Lyft evaluation toolkits</li>
+</ul>
+<p><strong>Hardware &amp; runtime</strong>:</p>
+<ul>
+<li>Single NVIDIA A40 GPU (48 GB VRAM) for training</li>
+<li>Inference time not specified but expected 50–100 ms per image given DLA-34 backbone</li>
+<li>No simulator required; benchmarks are image-based</li>
+</ul>
+<p><strong>How to run</strong> (anticipated):</p>
+<pre><code>
+# Assuming repo is cloned and env set up:
+python train.py --source-datasets nuScenes,lyft --target-dataset rope3d --backbone dla34
+python eval.py --model checkpoints/monoct_best.pth --dataset kitti
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start here</strong>: Read the arXiv PDF (2503.13743), especially Section 3 (Method) and Section 4 (Experiments). The paper is well-structured: GDE and PLS are explained with clear formulas, and extensive ablation studies show which components matter.</p>
+<p><strong>Difficulty</strong>: Moderate to high. The technical depth is substantial:</p>
+<ul>
+<li>Kernel density estimation on SO(3) rotation manifolds requires familiarity with Lie groups and geodesic distance.</li>
+<li>Understanding the trade-off between ensemble size (5 models) and computational cost is non-obvious.</li>
+<li>The paper does not release code, so verifying the exact implementation of KDE-based depth merging and rotation diversity maximization would require careful reading of supplementary materials or reverse-engineering.</li>
+</ul>
+<p><strong>Key papers to understand first</strong>:</p>
+<ul>
+<li>Pseudo-labeling literature (Lee et al., 2013; Arazo et al., 2020)</li>
+<li>3D object detection baselines (Mono3D, MonoDETR, MonoPGC)</li>
+<li>Domain adaptation in 2D detection (DANN, ADDA)</li>
+</ul>
+<h2>Run verdict</h2>
+<p><strong>On CPU-only</strong>: No. The method requires GPU (A40 or equivalent) for:</p>
+<ul>
+<li>Training five separate teacher models in parallel or sequence</li>
+<li>Inference over multiple domains (KITTI, Rope3D, CDrone, fog/rain variants)</li>
+</ul>
+<p><strong>Simulator</strong>: Not needed. Benchmarks are image-based (no simulation engine required).</p>
+<p><strong>Dataset</strong>: Required. Evaluation uses KITTI, Rope3D, CDrone, and synthetic variants. At minimum, you need KITTI (download via official portal) to reproduce results.</p>
+<p><strong>Public code</strong>: Not available. To run this, you would need to reimplement or wait for official release. Estimated implementation effort: 3–4 weeks for an experienced 3D detection researcher.</p>
+<p><strong>Verdict</strong>: GPU required (A40 or better), datasets mandatory, code not public. Runnable only with re-implementation or future official release. Not beginner-friendly due to SO(3) geometry and ensemble complexity.</p></article>
+<article class="page" id="gp9"><h1>UniBEVFusion: Unified Radar-Vision Bevfusion for 3D Object Detection</h1>
+<p>ICRA · 6 citations · perception-fusion</p>
+<h2>What it does</h2>
+<p>UniBEVFusion combines radar and camera data to detect and locate 3D objects in autonomous driving scenes. Instead of treating radar like a sparse version of laser scanning, it uses radar&#x27;s natural depth measurements (millimeter-wave ranging) to improve how camera images are converted into a flat bird&#x27;s-eye-view (BEV) map of the scene. This is a <strong>perception-fusion</strong> approach: it fuses multimodal sensor data (camera + 4D radar) into a unified spatial representation for object detection.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs:</strong> Camera images and 4D millimeter-wave radar point clouds (each radar point includes x, y, z position, Radar Cross-Section value, and optionally velocity or angle).</p>
+<p><strong>Step 1: Dual encoding</strong></p>
+<ul>
+<li>Image encoder: Uses a pre-trained SwinTransformer (vision foundation model) to extract hierarchical camera features at multiple scales.</li>
+<li>Radar encoder: Applies PointPillar-based architecture (PillarFeatureNet + SECOND backbone + SECONDFPN pyramid) to convert sparse radar points into dense feature maps.</li>
+</ul>
+<p><strong>Step 2: Radar Depth Lift-Splat-Shoot (RDL) module (the trick)</strong></p>
+<p>Prior methods waste radar information by treating it like sparse lidar. UniBEVFusion instead:</p>
+<ul>
+<li>Concatenates radar coordinate data and RCS values directly into the camera&#x27;s depth prediction module, performing early fusion.</li>
+<li>RCS (radar cross-section) encodes object shape, material, and size—radar-native information that cameras cannot sense.</li>
+<li>This radar-enriched depth estimate is then &quot;lifted&quot; (projected to 3D), &quot;splatted&quot; (scattered into voxel grid), and &quot;shot&quot; (merged into BEV features) by a lifting-splatting-shooting operation, creating a depth-enhanced BEV map.</li>
+</ul>
+<p><strong>Step 3: Unified Feature Fusion (UFF) module</strong></p>
+<p>Rather than naively concatenating BEV features from both sensors, UniBEVFusion applies four learned operations:</p>
+<ul>
+<li>Channel Unifier: Uses 1×1 convolutions to align feature dimensions across modalities.</li>
+<li>Shared Feature Encoder: A common transformer-like encoder that normalizes representations.</li>
+<li>Softmax Concatenation Fusion: Learns per-channel weights to combine camera and radar BEV features adaptively (not a simple concatenation).</li>
+<li>Fused Feature Encoder: Residual blocks that refine the combined representation.</li>
+</ul>
+<p><strong>Step 4: Detection head</strong></p>
+<p>Standard 3D object detector applied to the final fused BEV feature map, outputting bounding boxes, classes, and scores.</p>
+<p><strong>Training:</strong> End-to-end supervised learning on VoD or TJ4D datasets (4D radar + camera frames with bounding box labels). Loss includes 3D detection loss (L1 on box coordinates + focal loss on classification).</p>
+<p><strong>Robustness innovation:</strong> The paper introduces a &quot;Failure Test&quot; (FT) ablation—injects Gaussian noise into the camera stream (noise level ρ ∈ [0.5, 0.7, 0.9]) to simulate vision failure, measuring whether the fused system gracefully degrades or collapses. This exposes when a multi-modal fusion is too camera-dependent.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> <a href="https://github.com/huzhihen/unibevfusion" target="_blank" rel="noopener">https://github.com/huzhihen/unibevfusion</a></p>
+<p><strong>Language/Framework:</strong> Python; built on MMDetection3D (an open-source 3D detection framework on PyTorch).</p>
+<p><strong>Repository structure:</strong></p>
+<pre><code>
+unibevfusion/
+├── configs/              # Configuration files (dataset, model, training hyperparams)
+├── mmdet3d/              # Core model code (encoders, fusion modules, detection heads)
+├── tools/                # Training, evaluation, and inference scripts
+├── README.md             # Setup and usage instructions
+├── setup.py              # Dependencies
+└── setup.cfg
+</code></pre>
+<p><strong>Key files to open first:</strong></p>
+<ul>
+<li><code>configs/</code>: YAML files defining the RDL and UFF module architecture, dataset paths, and training settings. Start here to understand hyperparameters.</li>
+<li><code>mmdet3d/models/</code>: The RDL (Radar Depth Lift-Splat-Shoot) module and UFF (Unified Feature Fusion) module implementations.</li>
+<li><code>tools/train.py</code>: Entry point for training.</li>
+<li><code>tools/test.py</code>: Evaluation on VoD or TJ4D.</li>
+</ul>
+<p><strong>Dependencies:</strong> PyTorch, MMDetection3D, MMEngine, numpy, and standard computer vision libraries. Install via <code>pip install -e .</code> after cloning.</p>
+<p><strong>Requires:</strong></p>
+<ul>
+<li>A NVIDIA GPU (training on VoD/TJ4D is computationally expensive; inference can run on high-end GPUs in real-time).</li>
+<li>4D radar dataset (VoD or TJ4D). The paper does not provide dataset URLs, so you must source these from their original publishers.</li>
+<li>No simulator or external API keys needed.</li>
+</ul>
+<p><strong>How to run:</strong></p>
+<pre><code>
+cd unibevfusion
+pip install -e .
+# Download VoD or TJ4D dataset into data/ directory
+python tools/train.py configs/unibevfusion/unibevfusion_vod.py --work-dir ./work_dirs/unibevfusion_vod
+python tools/test.py configs/unibevfusion/unibevfusion_vod.py ./work_dirs/unibevfusion_vod/latest.pth --eval mAP
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>Read first:</strong></p>
+<ul>
+<li>The paper&#x27;s abstract and Section 3 (Method). The RDL module (Section 3.2) is the key innovation—understand how radar RCS values improve depth estimation.</li>
+<li>In the code: start in <code>mmdet3d/models/fusion/</code> for RDL and UFF classes. They are relatively concise PyTorch modules.</li>
+</ul>
+<p><strong>Code difficulty:</strong> Moderate. The code is well-structured (MMDetection3D is a mature framework), but requires familiarity with:</p>
+<ul>
+<li>PyTorch tensor operations (batching, broadcasting).</li>
+<li>Bird&#x27;s-eye-view projections and coordinate transformations.</li>
+<li>The MMDetection3D abstraction (config files, registry-based model instantiation).</li>
+</ul>
+<p>The RDL module is ~100 lines (concatenate RCS to depth, apply convolutions). The UFF module is ~200 lines (channel alignment, softmax gating). Not dense, but domain-specific.</p>
+<h2>Run verdict</h2>
+<p><strong>On CPU-only:</strong> Will not run. 3D detection networks on radar-camera data require GPU acceleration (NVIDIA A100 or V100 class for training; RTX 3080 feasible for inference).</p>
+<p><strong>On GPU (if dataset available):</strong> Yes, fully runnable. Training takes ~24 hours on a single V100 on VoD dataset (small). Inference is real-time (~50 ms per frame).</p>
+<p><strong>Critical blocker:</strong> You must obtain the VoD or TJ4D dataset. These are not freely downloadable from the GitHub repo; you need to contact the dataset authors (VoD is from TU Delft, TJ4D from a Chinese consortium). The paper references are in the acknowledgments.</p>
+<p><strong>Simulator:</strong> Not needed. This is purely a perception model, not a planning or control system.</p>
+<p><strong>Verdict:</strong> Runnable on high-end GPU hardware with dataset access; otherwise blocked.</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div><article class="page walk"><h1>SparseDrive — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;SparseDrive: End-to-End Autonomous Driving via Sparse Scene Representation&quot; (ICRA 2025)</p>
+<p><strong>Repo root:</strong> <code>SparseDrive/</code></p>
+
+<div style="background:var(--ink);color:#E7ECED;border-radius:12px;padding:20px 22px;margin:14px 0 6px;border:1px solid #000">
+  <div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-lite);margin-bottom:6px">Live run · we actually ran it</div>
+  <h2 style="color:#fff;margin:0 0 8px;font-size:18px;border:0;padding:0">SparseDrive on nuScenes-mini (L4 GPU) — real inference output</h2>
+  <p style="color:#C6D0D2;font-size:13.5px;margin:0 0 14px;line-height:1.62">We rebuilt the full SparseDrive stack (Python 3.8 / torch 1.13 / OpenMMLab-1.x, custom CUDA op compiled from source) on a cloud L4 and ran the authors' pretrained <em>stage-2</em> checkpoint over the 81-frame nuScenes-mini validation split. Everything below is the model's <strong>own</strong> visualization — one forward pass doing detection, tracking, motion forecasting and planning together.</p>
+  <video src="assets/sparsedrive/sparsedrive_mini.mp4" controls loop muted playsinline preload="metadata" style="width:100%;border-radius:8px;border:1px solid #2a3a3f;background:#000"></video>
+  <div style="font-family:var(--mono);font-size:11px;color:#8fa3a6;margin:8px 0 16px">▲ full 81-frame sequence — scene: NUS campus loop (Singapore)</div>
+
+  <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#8fa3a6;margin-bottom:6px">Sample frames — drag sideways to inspect</div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#000"><img src="assets/sparsedrive/0000.jpg" alt="SparseDrive frame 0" style="height:250px;max-width:none;display:block"></div>
+    <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#000"><img src="assets/sparsedrive/0040.jpg" alt="SparseDrive frame 40 — turn right" style="height:250px;max-width:none;display:block"></div>
+    <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#000"><img src="assets/sparsedrive/0080.jpg" alt="SparseDrive frame 80" style="height:250px;max-width:none;display:block"></div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:14px 22px;margin:16px 0 4px;font-size:12px;color:#C6D0D2">
+    <span><b style="color:#fff">Left panel</b> — 6 surround cameras with projected 3D detection boxes</span>
+    <span><b style="color:#fff">Right panels</b> — bird's-eye view (ground-truth vs. predicted)</span>
+    <span><span style="color:#4FC4CE">■</span> detected agents &amp; tracks</span>
+    <span>gradient curves = <b style="color:#fff">predicted motion</b> (t=0→t=3s)</span>
+    <span><span style="color:#e5484d">■</span> ego vehicle + its <b style="color:#fff">planned trajectory</b> (&quot;Turn Right&quot;)</span>
+  </div>
+
+  <p style="color:#D9C089;font-size:12px;margin:12px 0 0;line-height:1.6;border-top:1px solid #2a3a3f;padding-top:12px"><b>Honest caveat:</b> run on the ~4&nbsp;GB <em>mini</em> split, with k-means anchors regenerated from mini and <em>synthetic</em> map anchors (nuScenes map-expansion is auth-gated and not on any public mirror — so no lane/road lines are drawn). This faithfully demonstrates the <em>pipeline</em>, not the paper's official nuScenes scores.</p>
+</div>
+
+<h2>How we actually ran it — from source to the video above</h2>
+<p>SparseDrive ships as a 2022-era research codebase pinned to Python 3.8 / PyTorch 1.13, and it expects data, anchor files, and a GPU attention kernel that either are not public or do not fit a modern cloud VM. Getting the pretrained model to produce the clip above meant rebuilding its exact world and reconstructing the missing pieces. The whole path, in order:</p>
+
+<h3>1 · Rebuild the frozen environment</h3>
+<p>The VM ships Python 3.12 / torch 2.x; SparseDrive needs the old OpenMMLab-1.x stack. We built a parallel environment with micromamba. The one non-obvious trap: pin each CUDA <em>component</em> to 11.6, <strong>not</strong> the <code>cuda-toolkit</code> metapackage — the metapackage quietly lets <code>nvcc</code> drift to 12.4 while torch is built for 11.6, and the op compile then dies with <code>detected CUDA version (12.4) mismatches</code>.</p>
+<pre><code>micromamba create -p envs/sd -c nvidia -c conda-forge python=3.8 \
+    gcc_linux-64=10 gxx_linux-64=10 ninja \
+    "cuda-version=11.6" "cuda-nvcc=11.6.*" "cuda-cudart=11.6.*" \
+    "cuda-cccl=11.6.*" "cuda-libraries-dev=11.6.*" \
+    "libcublas=11.*" "libcusparse=11.*" "libcusolver=11.*"
+pip install torch==1.13.0+cu116 mmcv-full==1.7.1 mmdet==2.28.2 nuscenes-devkit==1.1.10</code></pre>
+
+<h3>2 · Compile the custom CUDA op</h3>
+<p>SparseDrive's sparse sampling is a hand-written CUDA kernel (<code>deformable_aggregation</code>) that has to be compiled against this exact torch. Built for Ampere, JIT-compiled onto the L4 (sm_89) at load:</p>
+<pre><code>cd projects/mmdet3d_plugin/ops
+TORCH_CUDA_ARCH_LIST="8.0;8.6+PTX" python setup.py build_ext --inplace
+# -> deformable_aggregation_ext.cpython-38-...so</code></pre>
+
+<h3>3 · Replace flash-attention (torch 1.13 has no SDPA)</h3>
+<p>The repo hard-requires <code>flash-attn</code> (won't build on many GPUs). We swap it for plain attention math. The catch: <code>F.scaled_dot_product_attention</code> is a torch-2.0 API and does <strong>not exist</strong> in torch 1.13 — so it has to be written by hand, with a fallback for the <code>None</code> scale flash-attn uses.</p>
+<pre><code># projects/mmdet3d_plugin/models/attention.py  (FlashAttention.forward)
+qh,kh,vh = q.permute(0,2,1,3), k.permute(0,2,1,3), v.permute(0,2,1,3)
+sc  = self.softmax_scale if self.softmax_scale is not None else qh.shape[-1]**-0.5
+attn = (torch.matmul(qh, kh.transpose(-2,-1)) * sc).softmax(dim=-1)
+out  = torch.matmul(attn, vh)          # identical math to flash-attn here</code></pre>
+
+<h3>4 · Make map ground-truth optional</h3>
+<p>The data converter builds road-map labels via <code>NuscMapExtractor</code>, which needs the nuScenes map-expansion files — auth-gated, on no public mirror. We let that step fail softly and write an empty map (a <code>dict</code>, because the loader calls <code>.items()</code>):</p>
+<pre><code># tools/data_converter/nuscenes_converter.py
+try:    nusc_map_extractor = NuscMapExtractor(root_path, roi_size)
+except Exception: nusc_map_extractor = None
+...
+info['map_annos'] = {} if nusc_map_extractor is None else geom2anno(...)</code></pre>
+
+<h3>5 · Regenerate the k-means priors</h3>
+<p>The model starts from clustered "typical" boxes and trajectories (<code>data/kmeans/*.npy</code>) that aren't shipped. Detection and motion priors we clustered for real from the mini data; the map prior and the ego-plan prior we fabricated at the correct shapes. The plan prior had to be <strong>4-D</strong> <code>(3 commands, 6 modes, 6 timesteps, 2)</code> — a flattened <code>(3,6,12)</code> silently collapsed the ego queries from 18 to 3 and blew up the planning-head reshape.</p>
+<pre><code>base = KMeans(6).fit(ego_futures.reshape(-1,12)).cluster_centers_  # (6, 12)
+np.save('kmeans_plan_6.npy', np.stack([base.reshape(6,6,2)]*3, 0)) # (3,6,6,2)</code></pre>
+
+<h3>6 · Run inference, then render</h3>
+<p>The first command runs the network forward over the 81 mini-val frames and dumps predictions; the second is SparseDrive's own visualizer, which projects the 3D boxes onto the six cameras, draws the BEV with tracks + motion forecasts + the planned ego path, and stitches the frames into the video above.</p>
+<pre><code>python tools/test.py projects/configs/sparsedrive_small_stage2.py \
+       ckpt/sparsedrive_stage2.pth --out results/results.pkl
+python tools/visualization/visualize.py projects/configs/sparsedrive_small_stage2.py \
+       --result-path results/results.pkl --out-dir results/viz</code></pre>
+<p><strong>In one line:</strong> steps 1–2 rebuild the machine, 3–4 make the code run without its GPU kernel and its private map data, 5 hands the model the priors it refuses to start without, and 6 is the actual detection → tracking → motion → planning pass you watched.</p>
+
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p>SparseDrive is a PyTorch-based end-to-end autonomous driving system built on the mmdet3d framework. It replaces dense BEV grids with sparse instance tokens—typically 50–100 tokens representing detected objects and map elements—speeding up both training (20–30 hours vs. 40+ for dense methods) and inference (9 FPS vs. 1.8 FPS).</p>
+<h3>Entry scripts</h3>
+<p>| Script | Purpose |</p>
+<p>|--------|---------|</p>
+<p>| <code>tools/train.py</code> | Primary training entry point; loads config, builds model, runs distributed training via mmdet&#x27;s <code>train_detector()</code> |</p>
+<p>| <code>tools/test.py</code> | Inference &amp; evaluation; runs forward pass on val/test set, computes nuScenes metrics |</p>
+<p>| <code>scripts/train.sh</code> / <code>scripts/test.sh</code> | Convenience wrappers calling train.py/test.py |</p>
+<h3>Config system</h3>
+<ul>
+<li><strong>Stage 1</strong> (perception): <code>projects/configs/sparsedrive<em>small</em>stage1.py</code> — trains detection, tracking, mapping</li>
+<li><strong>Stage 2</strong> (planning): <code>projects/configs/sparsedrive<em>small</em>stage2.py</code> — freezes stage1, trains motion prediction + planning with <code>load<em>from = &#x27;ckpt/sparsedrive</em>stage1.pth&#x27;</code> (line 721)</li>
+</ul>
+<p>Both configs set <code>plugin=True</code> and <code>plugin<em>dir=&quot;projects/mmdet3d</em>plugin/&quot;</code> to register custom model components.</p>
+<h3>Dataset &amp; hardware</h3>
+<ul>
+<li><strong>Dataset:</strong> nuScenes (6 cameras, vision-only; no lidar/radar; supports mini=323 and trainval=28,130 sequences)</li>
+<li><strong>Data loading:</strong> <code>NuScenes3DDataset</code> class, augmentation pipeline includes <code>ResizeCropFlipImage</code>, <code>PhotoMetricDistortionMultiViewImage</code>, <code>VectorizeMap</code> (line 540 in stage1 config)</li>
+<li><strong>GPU:</strong> 8× GPU training (batch_size=8), 24GB+ VRAM recommended; no CPU inference viable</li>
+</ul>
+<h3>Training workflow</h3>
+<pre><code>
+# Stage 1: Detection + Tracking + Mapping
+python tools/train.py projects/configs/sparsedrive_small_stage1.py --work-dir=work_dir_s1
+
+# Stage 2: Motion Planning (requires stage1 checkpoint)
+python tools/train.py projects/configs/sparsedrive_small_stage2.py --work-dir=work_dir_s2
+</code></pre>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+SparseDrive/
+├── projects/
+│   ├── configs/
+│   │   ├── sparsedrive_small_stage1.py     # Stage 1 config: detection, tracking, mapping
+│   │   └── sparsedrive_small_stage2.py     # Stage 2 config: motion + planning
+│   └── mmdet3d_plugin/
+│       └── models/
+│           ├── sparsedrive.py              # Top-level detector wrapper
+│           ├── sparsedrive_head.py         # Routes data to det/map/planning heads
+│           ├── instance_bank.py            # Sparse anchor bank (900 det, 100 map tokens)
+│           ├── attention.py                # Positional encoding utilities
+│           ├── grid_mask.py                # GridMask augmentation
+│           ├── blocks.py                   # MLPs, LayerNorms, utility blocks
+│           │
+│           ├── detection3d/
+│           │   ├── detection3d_head.py     # Sparse4DHead for bboxes
+│           │   ├── detection3d_blocks.py   # Refinement, deformable aggregation
+│           │   ├── decoder.py              # SparseBox3DDecoder (bbox decode)
+│           │   ├── losses.py               # Focal loss, box loss, yaw loss
+│           │   └── target.py               # SparseBox3DTarget (label assignment)
+│           │
+│           ├── map/
+│           │   ├── map_blocks.py           # Map-specific refinement layers
+│           │   ├── decoder.py              # SparsePoint3DDecoder (polyline decode)
+│           │   ├── loss.py                 # SparseLineLoss (line-based supervision)
+│           │   └── target.py               # SparsePoint3DTarget (map label assignment)
+│           │
+│           └── motion/
+│               ├── motion_planning_head.py # MotionPlanningHead: unifies motion+planning
+│               ├── instance_queue.py       # InstanceQueue: temporal feature/anchor queue
+│               ├── decoder.py              # SparseBox3DMotionDecoder, HierarchicalPlanningDecoder
+│               ├── motion_blocks.py        # Motion-specific blocks
+│               └── target.py               # MotionTarget, PlanningTarget (label samplers)
+│
+├── tools/
+│   ├── train.py                            # MMDet-style train loop
+│   └── test.py                             # Inference + evaluation
+└── scripts/
+    ├── train.sh / test.sh                  # Convenience wrappers
+    └── data_converter/                     # NuScenes preprocessing
+</code></pre>
+<hr>
+<h2>The core idea in code — sparse scene representation, one end-to-end model</h2>
+<h3>SparseDrive: top-level detector</h3>
+<p><strong>File:</strong> <code>projects/mmdet3d_plugin/models/sparsedrive.py</code></p>
+<pre><code>
+@DETECTORS.register_module()
+class SparseDrive(BaseDetector):
+    def __init__(self, img_backbone, head, img_neck=None, depth_branch=None, ...):
+        self.img_backbone = build_backbone(img_backbone)  # ResNet50
+        self.img_neck = build_neck(img_neck)              # FPN
+        self.head = build_head(head)                      # SparseDriveHead
+        if use_grid_mask:
+            self.grid_mask = GridMask(...)                # Augmentation
+
+    def extract_feat(self, img, return_depth=False, metas=None):
+        # img: (bs, num_cams, H, W, 3)
+        bs, num_cams = img.shape[:2]
+        img = img.flatten(end_dim=1)  # (bs*num_cams, H, W, 3)
+        
+        if self.use_grid_mask:
+            img = self.grid_mask(img)
+        
+        feature_maps = self.img_backbone(img)  # Multi-scale features
+        feature_maps = list(self.img_neck(feature_maps))  # FPN pyramid
+        
+        # Reshape back to multi-view: (bs, num_cams, C, H&#x27;, W&#x27;)
+        for i, feat in enumerate(feature_maps):
+            feature_maps[i] = torch.reshape(feat, (bs, num_cams) + feat.shape[1:])
+        
+        return feature_maps  # or (feature_maps, depths)
+
+    def forward_train(self, img, **data):
+        feature_maps, depths = self.extract_feat(img, True, data)
+        # Pass to SparseDriveHead
+        model_outs = self.head(feature_maps, data)
+        output = self.head.loss(model_outs, data)
+        return output
+</code></pre>
+<p><strong>Key insight:</strong> Raw images → multi-view backbone → FPN features. <strong>No dense grid is built yet.</strong> The sparse magic happens in the head.</p>
+<hr>
+<h3>SparseDriveHead: routing to three symmetric tasks</h3>
+<p><strong>File:</strong> <code>projects/mmdet3d<em>plugin/models/sparsedrive</em>head.py</code></p>
+<pre><code>
+@HEADS.register_module()
+class SparseDriveHead(BaseModule):
+    def __init__(self, task_config, det_head, map_head, motion_plan_head, ...):
+        self.task_config = task_config  # {with_det, with_map, with_motion_plan}
+        self.det_head = build_head(det_head)          # Sparse4DHead for objects
+        self.map_head = build_head(map_head)          # Sparse4DHead for lanes
+        self.motion_plan_head = build_head(motion_plan_head)  # MotionPlanningHead
+
+    def forward(self, feature_maps, metas):
+        # Stage 1: Detection (900 sparse tokens)
+        det_output = self.det_head(feature_maps, metas)
+        
+        # Stage 2: Mapping (100 sparse tokens)
+        map_output = self.map_head(feature_maps, metas)
+        
+        # Stage 3: Motion + Planning (reuses det/map outputs)
+        if self.task_config[&#x27;with_motion_plan&#x27;]:
+            motion_output, planning_output = self.motion_plan_head(
+                det_output, map_output, feature_maps, metas,
+                self.det_head.anchor_encoder,
+                self.det_head.instance_bank.mask,
+                self.det_head.instance_bank.anchor_handler,
+            )
+        
+        return det_output, map_output, motion_output, planning_output
+</code></pre>
+<p><strong>The symmetric principle:</strong> Detection, mapping, and motion all use the same sparse representation pipeline — no separate dense intermediate grids, no task-specific conversions.</p>
+<hr>
+<h3>InstanceBank: the sparse anchor repository</h3>
+<p><strong>File:</strong> <code>projects/mmdet3d<em>plugin/models/instance</em>bank.py</code></p>
+<p>The <code>InstanceBank</code> is the heart of sparse representation. It maintains a fixed set of learnable anchors + features:</p>
+<pre><code>
+@PLUGIN_LAYERS.register_module()
+class InstanceBank(nn.Module):
+    def __init__(self, num_anchor=900, embed_dims=256, anchor=None, ...):
+        # Load K-means clustered anchors (e.g., 900 object positions from training set)
+        self.anchor = nn.Parameter(
+            torch.tensor(np.load(anchor), dtype=torch.float32),
+            requires_grad=anchor_grad,  # Learnable
+        )  # Shape: (900, 11) for boxes [x, y, z, log(w), log(h), log(l), sin_yaw, cos_yaw, vx, vy, ...]
+        
+        # Learnable per-anchor features
+        self.instance_feature = nn.Parameter(
+            torch.zeros([self.num_anchor, self.embed_dims]),  # (900, 256)
+            requires_grad=feat_grad,
+        )
+    
+    def get(self, batch_size, metas=None):
+        # Tile anchors across batch
+        instance_feature = torch.tile(
+            self.instance_feature[None], (batch_size, 1, 1)
+        )  # (bs, 900, 256)
+        anchor = torch.tile(self.anchor[None], (batch_size, 1, 1))  # (bs, 900, 11)
+        
+        # If sequential: match previous frame&#x27;s detections to current tokens
+        if self.cached_anchor is not None:
+            # Temporal tracking: which token corresponded to which object in t-1?
+            # If tracked, propagate confidence decay
+            ...
+        
+        return instance_feature, anchor
+</code></pre>
+<p><strong>Config (from stage1):</strong> lines 126–135:</p>
+<pre><code>
+instance_bank=dict(
+    type=&quot;InstanceBank&quot;,
+    num_anchor=900,                                  # 900 sparse object tokens
+    embed_dims=embed_dims,                          # 256-dim features per token
+    anchor=&quot;data/kmeans/kmeans_det_900.npy&quot;,       # Pre-computed K-means centers
+    anchor_handler=dict(type=&quot;SparseBox3DKeyPointsGenerator&quot;),
+    num_temp_instances=600 if temporal else -1,
+    confidence_decay=0.6,  # Decay temporal instances if low confidence
+    feat_grad=False,
+),
+</code></pre>
+<p><strong>Why K-means anchors?</strong> They cluster object positions from the training set, so every anchor sits near a likely object. Much sparser than a dense grid—900 tokens vs. 100,000+ grid cells.</p>
+<hr>
+<h3>Sparse4DHead: detection head with sparse transformer</h3>
+<p><strong>File:</strong> <code>projects/mmdet3d<em>plugin/models/detection3d/detection3d</em>head.py</code></p>
+<p>Each task (det, map, motion) uses a <code>Sparse4DHead</code> that:</p>
+<ul>
+<li><strong>Initializes queries</strong> from the InstanceBank (900 per task)</li>
+<li><strong>Runs decoders</strong> with graph neural networks (GNNs) and deformable attention</li>
+<li><strong>Predicts offsets</strong> — each sparse token learns to adjust from its K-means anchor</li>
+</ul>
+<pre><code>
+# Pseudocode from config:
+det_head=dict(
+    type=&quot;Sparse4DHead&quot;,
+    instance_bank=dict(num_anchor=900, ...),
+    
+    # Decoder operations (6 layers, multi-temporal)
+    operation_order=[
+        &quot;gnn&quot;,           # Graph attention (object-object reasoning)
+        &quot;norm&quot;,
+        &quot;deformable&quot;,    # Multi-camera deformable aggregation
+        &quot;ffn&quot;,
+        &quot;norm&quot;,
+        &quot;refine&quot;,
+    ] * num_single_frame_decoder
+    + [
+        &quot;temp_gnn&quot;,      # Temporal reasoning (across frames)
+        &quot;gnn&quot;,
+        &quot;norm&quot;,
+        ...
+    ] * (num_decoder - num_single_frame_decoder),
+    
+    graph_model=dict(type=&quot;MultiheadFlashAttention&quot;, ...),  # Fast attention
+    deformable_model=dict(type=&quot;DeformableFeatureAggregation&quot;, ...),
+    refine_layer=dict(
+        type=&quot;SparseBox3DRefinementModule&quot;,
+        num_cls=10,  # car, truck, bike, pedestrian, ...
+        refine_yaw=True,
+        with_quality_estimation=True,
+    ),
+)
+</code></pre>
+<p><strong>Output format (from each decode step):</strong></p>
+<ul>
+<li><code>classification</code>: (bs, 900, num_cls) — per-token class logits</li>
+<li><code>prediction</code>: (bs, 900, 11) — per-token box delta (offset from anchor)</li>
+<li><code>instance_feature</code>: (bs, 900, 256) — updated token features</li>
+<li><code>anchor<em>embed</code>: (bs, 900, embed</em>dims) — positional encoding of anchors</li>
+</ul>
+<hr>
+<h2>The planning head</h2>
+<p><strong>File:</strong> <code>projects/mmdet3d<em>plugin/models/motion/motion</em>planning_head.py</code></p>
+<p>The <code>MotionPlanningHead</code> unifies motion prediction (where will objects go?) and planning (where should ego drive?). It&#x27;s the most complex component.</p>
+<h3>Inputs: InstanceQueue (temporal buffer)</h3>
+<pre><code>
+def forward(self, det_output, map_output, feature_maps, metas, ...):
+    # (1) Extract top-50 detections by confidence
+    det_classification = det_output[&quot;classification&quot;][-1].sigmoid()
+    det_confidence = det_classification.max(dim=-1).values
+    _, (instance_feature_selected, anchor_embed_selected) = topk(
+        det_confidence, self.num_det=50, instance_feature, anchor_embed
+    )
+    
+    # (2) Extract top-10 map elements by confidence
+    _, (map_instance_feature_selected, map_anchor_embed_selected) = topk(
+        map_confidence, self.num_map=10, map_instance_feature, map_anchor_embed
+    )
+    
+    # (3) Query temporal history (InstanceQueue)
+    ego_feature, ego_anchor, temp_instance_feature, temp_anchor, temp_mask = \
+        self.instance_queue.get(det_output, feature_maps, metas, bs, mask, anchor_handler)
+    
+    # Aggregate: [top-50 det + top-10 map + 1 ego] per frame × history
+    # Shape: (bs, 61, history_len, 256) — 61 tracked agents, history from queue
+</code></pre>
+<p><strong>InstanceQueue (from <code>instance_queue.py</code>):</strong></p>
+<pre><code>
+class InstanceQueue(nn.Module):
+    def __init__(self, queue_length=4, ...):  # queue_length=4 means history+current
+        self.queue_length = queue_length
+        # Storage for previous frames:
+        self.instance_feature_queue = []  # List of (bs, num_det, 256)
+        self.anchor_queue = []            # List of (bs, num_det, 11)
+        self.period = None                # (bs, num_det) age of each token
+    
+    def get(self, det_output, feature_maps, metas, batch_size, mask, anchor_handler):
+        # Temporal matching: which token at t-1 is the same object at t?
+        if self.period is not None:
+            instance_id = det_output[&#x27;instance_id&#x27;]
+            match = instance_id[..., None] == self.prev_instance_id[:, None]
+            # Propagate matched features
+            for i in range(len(self.instance_feature_queue)):
+                self.instance_feature_queue[i] = (match * self.instance_feature_queue[i][..., None]).sum(dim=2)
+        
+        # Append current frame
+        self.instance_feature_queue.append(instance_feature.detach())
+        self.anchor_queue.append(det_anchors.detach())
+        self.period += 1
+        
+        # Keep only last queue_length frames
+        if len(self.instance_feature_queue) &gt; self.queue_length:
+            self.instance_feature_queue.pop(0)
+            self.anchor_queue.pop(0)
+        
+        # Stack into temporal tensor
+        temp_instance_feature = torch.stack(self.instance_feature_queue, dim=2)  # (bs, 50, 4, 256)
+        temp_anchor = torch.stack(self.anchor_queue, dim=2)                      # (bs, 50, 4, 11)
+        
+        return ego_feature, ego_anchor, temp_instance_feature, temp_anchor, temp_mask
+</code></pre>
+<h3>Forward: parallel GNN + planning</h3>
+<pre><code>
+def forward(self, ...):
+    # Initialize mode anchors (6 motion modes for objects, 6 planning modes for ego)
+    motion_anchor = self.get_motion_anchor(det_classification, det_anchors)  # (bs, 50, 6, 2, 12)
+    plan_anchor = torch.tile(self.plan_anchor[None], (bs, 1, 1, 1, 1))        # (bs, 1, 6, 6, 2)
+    
+    # Encode motion/plan anchors to queries
+    motion_mode_query = self.motion_anchor_encoder(gen_sineembed_for_position(...))  # (bs, 50, 6, 256)
+    plan_mode_query = self.plan_anchor_encoder(gen_sineembed_for_position(...))      # (bs, 1, 6, 256)
+    
+    # Run decoder stack (3 rounds of temp_gnn→gnn→cross_gnn→ffn)
+    for i, op in enumerate(self.operation_order):
+        if op == &quot;temp_gnn&quot;:
+            # Temporal reasoning: current object features attend to history queue
+            instance_feature = self.layers[i](
+                instance_feature.flatten(0, 1).unsqueeze(1),  # Query
+                temp_instance_feature,                       # Key/Value (history)
+                ...
+            )
+        elif op == &quot;gnn&quot;:
+            # Spatial reasoning: objects attend to each other
+            instance_feature = self.layers[i](
+                instance_feature,  # All 61 agents
+                instance_feature,  # Self-attention + cross-agent
+                ...
+            )
+        elif op == &quot;cross_gnn&quot;:
+            # Interaction: motion queries attend to planning queries
+            # (motion→plan cross-attention to share scene understanding)
+            ...
+        elif op == &quot;refine&quot;:
+            # Output heads for motion + planning predictions
+            motion_pred = self.refine_layer(instance_feature, motion_mode_query, ...)
+            planning_pred = self.refine_layer(..., plan_mode_query, ...)
+    
+    # Collect outputs
+    motion_output = {
+        &quot;classification&quot;: motion_classification,  # (bs, 50, 6) → 50 objects × 6 modes
+        &quot;prediction&quot;: motion_prediction,          # (bs, 50, 6, 12, 2) → trajectories
+        &quot;anchor_queue&quot;: self.instance_queue.anchor_queue,
+        &quot;period&quot;: self.instance_queue.period,
+    }
+    planning_output = {
+        &quot;classification&quot;: planning_classification,  # (bs, 3, 6) → 3 commands × 6 modes
+        &quot;prediction&quot;: planning_prediction,          # (bs, 3, 6, 6, 2) → ego trajectories
+        &quot;anchor_queue&quot;: planning_anchor_queue,
+        &quot;period&quot;: ego_period,
+    }
+    
+    return motion_output, planning_output
+</code></pre>
+<hr>
+<h3>Planning decoder: collision-aware selection</h3>
+<p><strong>File:</strong> <code>projects/mmdet3d_plugin/models/motion/decoder.py</code></p>
+<pre><code>
+@BBOX_CODERS.register_module()
+class HierarchicalPlanningDecoder(object):
+    def __init__(self, ego_fut_ts=6, ego_fut_mode=6, use_rescore=True):
+        self.use_rescore = use_rescore
+    
+    def select(self, det_output, motion_output, plan_cls, plan_reg, data):
+        # plan_cls: (bs, 3, 6) — 3 high-level commands, 6 modes each
+        # plan_reg: (bs, 3, 6, 6, 2) — trajectory for each command+mode
+        
+        # (1) Command selection from data (ground-truth for training)
+        cmd = data[&#x27;gt_ego_fut_cmd&#x27;].argmax(dim=-1)  # (bs,) → which of 3 commands?
+        plan_cls = plan_cls[:, cmd]  # (bs, 6)
+        plan_reg = plan_reg[:, cmd]  # (bs, 6, 6, 2)
+        
+        # (2) **Collision-aware rescore** (THE KEY SAFETY LAYER)
+        if self.use_rescore:
+            plan_cls = self.rescore(
+                plan_cls,              # (bs, 6) scores for 6 modes
+                plan_reg,              # (bs, 6, 6, 2) candidate trajectories
+                motion_cls,            # Predicted motion of other objects
+                motion_reg,            # Their predicted trajectories
+                det_anchors,           # Their current positions
+                det_confidence,        # Confidence in their detection
+            )
+        
+        # (3) Select highest-scoring mode
+        mode_idx = plan_cls.argmax(dim=-1)  # (bs,) → best mode
+        final_planning = plan_reg[:, mode_idx]  # (bs, 6, 2) — final ego trajectory
+        
+        return plan_cls_full, final_planning
+    
+    def rescore(
+        self, plan_cls, plan_reg, motion_cls, motion_reg,
+        det_anchors, det_confidence,
+        score_thresh=0.5, static_dis_thresh=0.5, dim_scale=1.1,
+    ):
+        &quot;&quot;&quot;
+        For each of 6 planning modes, check if ego trajectory collides
+        with any predicted object trajectory. Penalize collisions.
+        &quot;&quot;&quot;
+        
+        # Preprocess trajectories: add initial [0,0], compute yaw angles
+        def cat_with_zero(traj):
+            zeros = traj.new_zeros(traj.shape[:-2] + (1, 2))
+            return torch.cat([zeros, traj], dim=-2)
+        
+        plan_reg = cat_with_zero(plan_reg.cumsum(dim=-2))      # (bs, 6, 7, 2) absolute ego trajectory
+        motion_reg = cat_with_zero(motion_reg.cumsum(dim=-2))  # (bs, 50, 6, 7, 2) object trajectories
+        
+        # Compute yaw for orientation-aware collision check
+        ego_yaw = get_yaw(plan_reg)      # (bs, 6, 7) ego heading at each t
+        object_yaw = get_yaw(motion_reg) # (bs, 50, 6, 7) object heading
+        
+        # For each object, convert motion_reg to 3D bounding boxes at each timestep
+        # Score each planning mode by how many collisions it incurs
+        collision_penalty = torch.zeros(bs, 6, device=plan_cls.device)
+        
+        for obj_idx in range(num_objects):
+            if motion_cls[:, obj_idx].max() &lt; score_thresh:
+                continue  # Skip low-confidence objects
+            
+            obj_traj = motion_reg[:, obj_idx]  # (bs, 6, 7, 2) for this object
+            
+            # Get its size (from det_anchors or learned)
+            obj_size = ...  # width, length
+            
+            # For each planning mode
+            for mode_idx in range(6):
+                ego_traj = plan_reg[:, mode_idx]  # (bs, 7, 2)
+                
+                # Check distance: if ego position ever within dim_scale * obj_size of object
+                dist = torch.norm(ego_traj[:, :, None] - obj_traj, dim=-1)  # (bs, 7, 7)
+                min_dist = dist.min(dim=-1).values  # (bs, 7) min distance to object trajectory
+                
+                # Collision if min_dist &lt; threshold
+                if (min_dist &lt; static_dis_thresh).any():
+                    collision_penalty[:, mode_idx] += 1.0
+        
+        # Penalize modes with collisions
+        plan_cls = plan_cls - collision_penalty  # Reduce score for unsafe modes
+        
+        return plan_cls
+</code></pre>
+<p><strong>Config (stage2, line 500):</strong></p>
+<pre><code>
+planning_decoder=dict(
+    type=&quot;HierarchicalPlanningDecoder&quot;,
+    ego_fut_ts=6,        # Predict 6 future timesteps
+    ego_fut_mode=6,      # 6 trajectory candidates
+    use_rescore=True,    # Enable collision checking
+),
+</code></pre>
+<p><strong>Key design:</strong> Instead of relying on learned safety (end-to-end), SparseDrive explicitly penalizes trajectories that collide with predicted agent paths. This hybrid (learned + rule-based) approach boosts safety metrics.</p>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><strong>README.md</strong> — High-level motivation, results table, citations</li>
+<li><strong>docs/quick_start.md</strong> — Setup, data download, training commands</li>
+<li><strong>projects/configs/sparsedrive<em>small</em>stage1.py</strong> (lines 1–120) — Model architecture overview</li>
+<li><strong>projects/mmdet3d<em>plugin/models/sparsedrive.py</strong> — Entry point; understand <code>extract</em>feat</code> + forwarding</li>
+<li><strong>projects/mmdet3d<em>plugin/models/sparsedrive</em>head.py</strong> — How three tasks (det/map/motion) are unified</li>
+<li><strong>projects/mmdet3d<em>plugin/models/instance</em>bank.py</strong> (lines 24–73) — The sparse anchor mechanism</li>
+<li><strong>projects/mmdet3d<em>plugin/models/detection3d/detection3d</em>head.py</strong> (Sparse4DHead) — Decoder pipeline (gnn→deformable→refine)</li>
+<li><strong>projects/mmdet3d<em>plugin/models/motion/motion</em>planning_head.py</strong> (lines 1–270) — Motion + planning forward pass</li>
+<li><strong>projects/mmdet3d<em>plugin/models/motion/instance</em>queue.py</strong> (lines 56–114) — Temporal tracking + queuing</li>
+<li><strong>projects/mmdet3d_plugin/models/motion/decoder.py</strong> (HierarchicalPlanningDecoder, lines 153–189) — Collision-aware rescore (the safety trick)</li>
+</ul>
+<h3>Reading order rationale</h3>
+<ul>
+<li>Start with <strong>top-level flow</strong> (SparseDrive → SparseDriveHead) to understand task routing</li>
+<li>Move to <strong>sparse representation</strong> (InstanceBank) to see why it&#x27;s sparse</li>
+<li>Then <strong>detection head</strong> to see how sparse tokens are refined via GNNs</li>
+<li>Finally <strong>planning head</strong> to see end-to-end integration + the collision-aware rescore</li>
+</ul>
+<h3>Key files by concern</h3>
+<p>| Concern | Files |</p>
+<p>|---------|-------|</p>
+<p>| <strong>Sparse representation</strong> | <code>instance_bank.py</code> (anchors), <code>sparsedrive.py</code> (backbone) |</p>
+<p>| <strong>Detection &amp; tracking</strong> | <code>detection3d<em>head.py</code>, <code>detection3d</em>blocks.py</code>, <code>instance_bank.py</code> (temporal) |</p>
+<p>| <strong>Online mapping</strong> | <code>map/target.py</code>, <code>map/map_blocks.py</code> (point-based line prediction) |</p>
+<p>| <strong>Motion prediction</strong> | <code>motion/motion<em>planning</em>head.py</code>, <code>motion/instance_queue.py</code> |</p>
+<p>| <strong>Trajectory planning &amp; safety</strong> | <code>motion/decoder.py::HierarchicalPlanningDecoder::rescore()</code> |</p>
+<p>| <strong>Losses &amp; training</strong> | <code>detection3d/losses.py</code>, <code>motion/target.py</code>, <code>map/loss.py</code> |</p>
+<p>| <strong>Data pipeline</strong> | <code>projects/configs/*</code> (train<em>pipeline, test</em>pipeline keys) |</p>
+<hr>
+<h2>Summary: the sparse-centric trick</h2>
+<p><strong>Dense BEV baseline:</strong> Image → 2D CNN → 200m×200m grid (100,000+ cells) → detect all cells → track → plan.</p>
+<p><strong>SparseDrive:</strong> Image → 900 learnable anchors (K-means) + GNN + deformable attention → detect offsets for each anchor → track via InstanceQueue → motion/planning via MotionPlanningHead with collision-aware rescore.</p>
+<p><strong>Why faster?</strong> 900 tokens vs. 100,000+ cells, and one unified transformer instead of task-specific pipelines.</p>
+<p><strong>Why safer?</strong> Explicit collision checking instead of pure end-to-end learning.</p>
+<p><strong>Why symmetric?</strong> Detection, tracking, mapping, and planning all use the same sparse token representation—no task-specific conversions, no redundant feature extraction.</p></article>
+<article class="page walk"><h1>MCTrack — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;MCTrack: A Unified 3D Multi-Object Tracking Framework for Autonomous Driving&quot; (IROS 2025)</p>
+
+<div style="background:var(--ink);color:#E7ECED;border-radius:12px;padding:20px 22px;margin:14px 0 6px;border:1px solid #000">
+  <div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-lite);margin-bottom:6px">Live run · we actually ran it (CPU, no GPU)</div>
+  <h2 style="color:#fff;margin:0 0 8px;font-size:18px;border:0;padding:0">Noisy detections in → stable ID-tagged tracks out</h2>
+  <p style="color:#C6D0D2;font-size:13.5px;margin:0 0 14px;line-height:1.62">MCTrack is pure tracking — it takes <em>detection boxes</em> as input and follows objects across frames. We fed its real pipeline (Kalman filter + Hungarian matching with its Ro-GDIoU cost) a synthetic KITTI-format scene: 5 cars over 60 frames, with position <strong>jitter, missed detections, and false-positive clutter</strong> mixed in. It ran on a laptop CPU — no GPU — and turned <strong>267 messy detections into 5 clean tracks at ~30&nbsp;FPS</strong>.</p>
+  <video src="assets/mctrack/mctrack_tracking.mp4" controls loop autoplay muted playsinline preload="metadata" style="width:100%;border-radius:8px;border:1px solid #2a3a3f;background:#0f1619"></video>
+  <div style="font-family:var(--mono);font-size:11px;color:#8fa3a6;margin:8px 0 16px">▲ the tracker running live — oriented boxes with IDs and trails; watch each colour stay locked to its car as they move, cross, and overtake</div>
+  <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#8fa3a6;margin-bottom:6px">Whole run at a glance — every detection + every track</div>
+  <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#0f1619"><img src="assets/mctrack/mctrack_bev.png" alt="MCTrack BEV — raw detections vs tracked IDs" style="width:100%;max-width:100%;display:block"></div>
+  <p style="color:#C6D0D2;font-size:12px;margin:12px 0 0;line-height:1.6">Grey dots are the raw per-frame detections (note the jitter, and two stray clutter points near the top-left that the tracker <strong>correctly refused to track</strong>). Each coloured line is one object MCTrack committed to and held a consistent <span class="mono">ID</span> for: the lead car (ID 0), oncoming traffic (ID 1), a car overtaking across lanes (ID 2), a near-static roadside car (ID 3), and one crossing laterally (ID 5). The clean lines cutting through the noisy dots are the Kalman filter smoothing measurement noise into a physical trajectory.</p>
+  <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#0f1619;margin-top:10px"><img src="assets/mctrack/mctrack_snapshots.png" alt="MCTrack snapshots — IDs held across time" style="width:100%;max-width:100%;display:block"></div>
+  <p style="color:#C6D0D2;font-size:12px;margin:12px 0 0;line-height:1.6">Three moments in time — the same colour/ID stays attached to the same car as the scene evolves. That identity persistence is the whole job: detection tells you <em>what's there this instant</em>; tracking tells you <em>which one is which, over time</em>, which is what a planner needs to predict where things are going.</p>
+  <p style="color:#D9C089;font-size:12px;margin:12px 0 0;line-height:1.6;border-top:1px solid #2a3a3f;padding-top:12px"><b>Honest caveat:</b> the input detections are <em>synthetic</em> (we generated the scene to exercise the tracker), not a real detector's output on real KITTI — so this demonstrates the tracking algorithm's behaviour, not a benchmark score. The tracker code, Kalman filter, and Hungarian matching are the repo's real implementation running unmodified.</p>
+</div>
+
+<p><strong>Repo root:</strong> <code>/home/manishmehta/ui-projects/robotics-conferences-2025/analysis/detail/driving/code/MCTrack/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p>MCTrack is a <strong>CPU-only</strong> tracking pipeline that takes 3D bounding box detections (from any detector) and links them across frames using Kalman filtering and cost-based data association. No GPU required—pure NumPy computation.</p>
+<h3>Entry point &amp; CLI</h3>
+<p><strong>File:</strong> <code>main.py</code></p>
+<p>Entry-point signature:</p>
+<pre><code>
+parser.add_argument(&quot;--dataset&quot;, type=str, default=&quot;kitti&quot;, 
+                    help=&quot;Which Dataset: kitti/nuscenes/waymo&quot;)
+parser.add_argument(&quot;--eval&quot;, &quot;-e&quot;, action=&quot;store_true&quot;, help=&quot;evaluation&quot;)
+parser.add_argument(&quot;--process&quot;, &quot;-p&quot;, type=int, default=1, help=&quot;multi-process!&quot;)
+</code></pre>
+<p>Typical usage:</p>
+<pre><code>
+python main.py --dataset kitti -e -p 4  # Run KITTI tracking + evaluate with 4 processes
+python main.py --dataset nuscenes -e -p 1  # Single-process nuScenes tracking
+</code></pre>
+<p>The script loads pre-formatted detection results from JSON, spawns a multi-processing pool to process each scene independently, and saves results per dataset.</p>
+<h3>Configuration system</h3>
+<p>Three YAML configs define per-dataset behavior:</p>
+<ul>
+<li><code>config/kitti.yaml</code> — KITTI 10 Hz tracking (online/offline modes)</li>
+<li><code>config/nuscenes.yaml</code> — nuScenes multi-object tracking</li>
+<li><code>config/waymo.yaml</code> — Waymo dataset (requires Bazel setup)</li>
+</ul>
+<p>Sample from <code>config/kitti.yaml</code>:</p>
+<pre><code>
+DATASET: &#x27;kitti&#x27;
+SPLIT: &#x27;val&#x27;
+DETECTOR: virconv
+TRACKING_MODE: &#x27;ONLINE&#x27;  # or GLOBAL for post-processing
+IS_RV_MATCHING: True  # Enable Range-View stage-2 matching
+FRAME_RATE: 10
+
+# Kalman filter types per category
+KALMAN_FILTER_POSE:
+  MOTION_MODE: {0: &quot;CV&quot;}  # 0=car; CV=constant velocity, CA=accel, CTRA=turn-rate
+
+# Matching thresholds
+THRESHOLD:
+  BEV:
+    COST_THRE: {0: 1.4}
+    WEIGHT_RO_GDIOU: {0: {&quot;w1&quot;: 1.0, &quot;w2&quot;: 1.0}}
+  RV:
+    COST_THRE: {0: -0.3}
+
+CATEGORY_LIST: [&#x27;car&#x27;]
+</code></pre>
+<h3>Data format (BaseVersion)</h3>
+<p>Detections are standardized into &quot;BaseVersion&quot; format before tracking: JSON with per-frame bounding boxes in world coordinates, plus velocity/acceleration. This eliminates dataset-specific preprocessing. Example structure at <code>data/base_version/kitti/virconv/val.json</code>:</p>
+<pre><code>
+{
+  &quot;scene_0001&quot;: {
+    &quot;frame_0&quot;: {
+      &quot;bboxes&quot;: [
+        {
+          &quot;detection_score&quot;: 0.95,
+          &quot;category&quot;: &quot;car&quot;,
+          &quot;global_xyz&quot;: [10.5, 20.3, 0.8],
+          &quot;global_yaw&quot;: 0.785,
+          &quot;lwh&quot;: [4.2, 1.8, 1.6],
+          &quot;global_velocity&quot;: [2.1, 0.5],
+          &quot;global_acceleration&quot;: [0.1, -0.05]
+        }
+      ]
+    },
+    &quot;frame_1&quot;: { ... }
+  }
+}
+</code></pre>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+MCTrack/
+├── main.py                          # Entry point: CLI, scene loop, multi-processing
+├── tracker/
+│   ├── base_tracker.py              # Base3DTracker class: frame-by-frame tracking loop
+│   ├── trajectory.py                # Trajectory class: per-track state (Kalman filters)
+│   ├── matching.py                  # match_trajs_and_dets(): Hungarian/Greedy assignment
+│   ├── cost_function.py             # cal_rotation_gdiou_inbev(): Ro-GDIoU cost metric
+│   ├── bbox.py                      # BBox class: 3D box data structure
+│   └── frame.py                     # Frame class: frame-level metadata
+├── kalmanfilter/
+│   ├── base_kalman.py               # KF_Base: abstract Kalman filter
+│   └── extend_kalman.py             # EKF_CV, EKF_CA, EKF_CTRA, KF_YAW, KF_SIZE
+├── dataset/
+│   └── baseversion_dataset.py       # BaseVersionTrackingDataset: loads + iterates frames
+├── evaluation/
+│   ├── eval_motion.py               # Velocity metrics (VAE, VNE, VDE, VSE, VIR)
+│   ├── motion_evaluation/           # Per-track motion analysis
+│   └── static_evaluation/           # KITTI/nuScenes/Waymo eval scripts + HOTA/MOTA
+├── preprocess/
+│   ├── convert2baseversion.py       # Main entry: orchestrates dataset conversion
+│   ├── convert_kitti.py             # KITTI → BaseVersion
+│   ├── convert_nuscenes.py          # nuScenes → BaseVersion
+│   └── convert_waymo.py             # Waymo → BaseVersion
+├── utils/
+│   ├── utils.py                     # Helper: quaternion↔yaw, angle normalization
+│   ├── kitti_utils.py               # Save KITTI-format results (.txt)
+│   ├── nusc_utils.py                # Save nuScenes JSON results
+│   └── waymo_utils/                 # Save Waymo .bin results
+└── config/
+    ├── kitti.yaml
+    ├── nuscenes.yaml
+    ├── waymo.yaml
+    └── *_offline.yaml               # Post-processing variants
+
+</code></pre>
+<hr>
+<h2>The core idea in code — unified tracking across datasets</h2>
+<h3>Main tracking loop (Base3DTracker)</h3>
+<p><strong>File:</strong> <code>tracker/base_tracker.py</code></p>
+<pre><code>
+class Base3DTracker:
+    def __init__(self, cfg):
+        self.all_trajs = {}        # Active track_id → Trajectory
+        self.all_dead_trajs = {}   # Terminated tracks
+        self.track_id_counter = 0  # Global ID generator
+
+    def track_single_frame(self, frame_info):
+        &quot;&quot;&quot;
+        Main frame-by-frame tracking loop.
+        1. Predict: extrapolate all active tracks forward
+        2. Assign: match predicted tracks to detections
+        3. Update: fuse detections into tracks
+        4. Lifecycle: remove dead tracks
+        &quot;&quot;&quot;
+        self.predict_before_associate()  # Step 1
+        
+        trajs = self.get_trajectory_bbox(self.all_trajs)
+        match_res, cost_matrix = match_trajs_and_dets(
+            trajs, frame_info.bboxes, self.cfg
+        )  # Step 2 (Bird&#x27;s-Eye View stage)
+        
+        # Process matched pairs
+        for i in range(len(trajs)):
+            if i in match_res[:, 0]:  # traj i matched to some detection
+                matched_det_idx = match_res[match_res[:, 0] == i, 1][0]
+                self.all_trajs[trajs[i].track_id].update(
+                    frame_info.bboxes[matched_det_idx], cost_matrix[...]
+                )  # Step 3
+        
+        # If IS_RV_MATCHING enabled, re-match unmatched detections/tracks
+        # in Range View (range-distance projection)
+        if self.cfg[&quot;IS_RV_MATCHING&quot;]:
+            match_res_rv, _ = match_trajs_and_dets(
+                unmatched_trajs, unmatched_dets, self.cfg,
+                frame_info.transform_matrix, is_rv=True
+            )
+            # Secondary matching (greedy, 2D cost)
+        
+        # Initialize new tracks from unmatched detections
+        for i in unmatched_det_indices:
+            self.all_trajs[self.track_id_counter] = Trajectory(
+                track_id=self.track_id_counter, 
+                init_bbox=frame_info.bboxes[i], 
+                cfg=self.cfg
+            )
+            self.track_id_counter += 1
+        
+        # Prune dead tracks (status_flag == 4)
+        for track_id in list(self.all_trajs.keys()):
+            if self.all_trajs[track_id].status_flag == 4:
+                self.all_dead_trajs[track_id] = self.all_trajs[track_id]
+                del self.all_trajs[track_id]
+        
+        return self.get_output_trajs(frame_info.frame_id)
+</code></pre>
+<h3>Data flow: Frame → BBox → Trajectory → Output</h3>
+<p><strong>File:</strong> <code>tracker/bbox.py</code></p>
+<pre><code>
+class BBox:
+    def __init__(self, frame_id, bbox, **kwargs):
+        self.frame_id = frame_id
+        self.category = bbox[&quot;category&quot;]  # &quot;car&quot;, &quot;pedestrian&quot;, &quot;cyclist&quot;
+        self.det_score = bbox[&quot;detection_score&quot;]
+        self.global_xyz = bbox[&quot;global_xyz&quot;]  # [x, y, z] in world coords
+        self.global_yaw = bbox[&quot;global_yaw&quot;]  # Heading angle (radians)
+        self.lwh = bbox[&quot;lwh&quot;]  # [length, width, height]
+        self.global_velocity = bbox[&quot;global_velocity&quot;]  # [vx, vy]
+        self.global_acceleration = bbox[&quot;global_acceleration&quot;]  # [ax, ay]
+</code></pre>
+<p><strong>File:</strong> <code>tracker/trajectory.py</code></p>
+<pre><code>
+class Trajectory:
+    def __init__(self, track_id, init_bbox, cfg):
+        self.track_id = track_id
+        self.bboxes = [init_bbox]  # List of BBox objects this track has seen
+        self.status_flag = 1  # 0=init, 1=confirmed, 2=obscured, 4=dead
+        
+        # Three independent Kalman filters (THE KEY IDEA)
+        self.kalman_filter_pose = EKF_CV(...)  # Position filter
+        self.kalman_filter_yaw = KF_YAW(...)   # Heading filter
+        self.kalman_filter_size = KF_SIZE(...) # Size filter
+</code></pre>
+<hr>
+<h2>Data association &amp; motion model</h2>
+<h3>Two-stage matching strategy</h3>
+<p><strong>File:</strong> <code>tracker/matching.py</code></p>
+<pre><code>
+def match_trajs_and_dets(trajs, dets, cfg, transform_matrix=None, is_rv=False):
+    &quot;&quot;&quot;
+    Matches trajectories to detections using cost matrix + Hungarian/Greedy solver.
+    
+    is_rv=False: Bird&#x27;s-Eye View (BEV) matching (stage 1, primary)
+    is_rv=True:  Range View (RV) matching (stage 2, for failed BEV matches)
+    &quot;&quot;&quot;
+    if len(trajs) == 0 or len(dets) == 0:
+        return np.empty((0, 2), dtype=int), np.empty((0, 2), dtype=int)
+    
+    # Compute cost matrix: shape (N_trajectories, N_detections)
+    cost_matrix, trajs_category, dets_category = cost_calculate_general(
+        trajs, dets, cfg, transform_matrix, is_rv
+    )
+    
+    # Hungarian algorithm solver (from &#x27;lap&#x27; package)
+    if cfg[&quot;MATCHING&quot;][match_type][&quot;MATCHING_MODE&quot;] == &quot;Hungarian&quot;:
+        m_det, m_tra, um_det, um_tra, costs = Hungarian(
+            trans_cost_matrix,
+            cfg[&quot;THRESHOLD&quot;][match_type][&quot;COST_THRE&quot;]  # Max cost threshold
+        )
+    else:
+        m_det, m_tra, um_det, um_tra, costs = Greedy(...)
+    
+    # Return: matched pairs as (traj_idx, det_idx)
+    matched_indices = np.column_stack((m_tra, m_det))
+    return matched_indices, costs
+</code></pre>
+<h3>Ro-GDIoU cost function (BEV stage)</h3>
+<p><strong>File:</strong> <code>tracker/cost_function.py</code></p>
+<p>The <strong>rotation-aware Generalized Diou</strong> combines IoU and geometric distance:</p>
+<pre><code>
+def cal_rotation_gdiou_inbev(box_trk, box_det, cfg, cal_flag=None):
+    &quot;&quot;&quot;
+    Computes Ro-GDIoU cost for matching in bird&#x27;s-eye view.
+    Lower cost = better match.
+    &quot;&quot;&quot;
+    # Get poses (x, y, z, l, w, h, yaw) from either predicted or fused trajectory state
+    if cal_flag == &quot;Predict&quot;:
+        pose1 = box_trk.bboxes[-1].global_xyz_lwh_yaw_predict
+    else:
+        pose1 = box_trk.bboxes[-1].global_xyz_lwh_yaw_fusion
+    pose2 = box_det.global_xyz_lwh_yaw
+    
+    # Project to BEV by extracting (x, y, l, w) and converting yaw to degrees
+    box1 = np.array([pose1[0], pose1[1], pose1[3], pose1[4], pose1[6]*180/pi])
+    box2 = np.array([pose2[0], pose2[1], pose2[3], pose2[4], pose2[6]*180/pi])
+    
+    # Compute intersection over union using OpenCV rotated rectangle
+    iou, inter_area = cal_rotation_iou_inbev(pose1, pose2)
+    
+    # Compute enclosing rectangle
+    union_points = np.concatenate([bev_corners1, bev_corners2])
+    rect = cv2.minAreaRect(union_points)
+    universe_area = rect[1][0] * rect[1][1]
+    
+    # Compute volume ratio (3D size penalty)
+    volume_ratio = max(vol1, vol2) / min(vol1, vol2)
+    
+    # Compute orientation similarity (heading angle penalty)
+    angle_ratio = orientation_similarity(pose1[6], pose2[6])
+    
+    # Final score: IoU - penalty for distance - penalty for size mismatch
+    w1, w2 = cfg[&quot;THRESHOLD&quot;][&quot;BEV&quot;][&quot;WEIGHT_RO_GDIOU&quot;][category][&quot;w1/w2&quot;]
+    ro_gdiou = (
+        iou 
+        - w1 * (universe_area - inter_area) / universe_area  # Distance penalty
+        - w2 * box_center_distance / union_distance           # Center penalty
+    )
+    return ro_gdiou
+</code></pre>
+<h3>Three decoupled Kalman filters (the key trick)</h3>
+<p><strong>File:</strong> <code>tracker/trajectory.py</code> (initialization)</p>
+<p>Each track maintains three independent Kalman filters:</p>
+<pre><code>
+# Position filter (Constant Velocity or Constant Acceleration model)
+self.cv_filter_pose = EKF_CV(
+    n=4, m=2,  # 4D state [x, y, vx, vy], 2D measurement [x, y]
+    dt=1/frame_rate,
+    P=cov_prediction, Q=cov_process, R=cov_measurement,
+    init_x=np.array([x0, y0, 0, 0])
+)
+
+# Heading filter (tracks yaw and yaw-velocity)
+self.kalman_filter_yaw = KF_YAW(
+    n=2, m=2,  # 2D state [yaw, yaw_rate], 2D meas [pose_yaw, velocity_direction_yaw]
+    init_x=np.array([yaw0, 0.0])
+)
+
+# Size filter (constant velocity for length/width)
+self.kalman_filter_size = KF_SIZE(
+    n=4, m=2,  # 4D state [l, w, dl/dt, dw/dt], 2D meas [l, w]
+    init_x=np.array([l0, w0, 0.0, 0.0])
+)
+</code></pre>
+<p><strong>File:</strong> <code>kalmanfilter/extend<em>kalman.py</code> — EKF</em>CV example (constant velocity position):</p>
+<pre><code>
+class EKF_CV(KF_Base):
+    def f(self, x):
+        &quot;&quot;&quot;State transition: x_k = F @ x_{k-1}&quot;&quot;&quot;
+        x_fil = np.array(x)
+        x_fil[0] = x[0] + self.dt * x[2]  # x += vx * dt
+        x_fil[1] = x[1] + self.dt * x[3]  # y += vy * dt
+        return x_fil
+    
+    def getF(self, x):
+        &quot;&quot;&quot;Jacobian of state transition&quot;&quot;&quot;
+        F = np.matrix([
+            [1.0, 0.0, self.dt, 0.0],      # x = x + vx*dt
+            [0.0, 1.0, 0.0, self.dt],      # y = y + vy*dt
+            [0.0, 0.0, 1.0, 0.0],          # vx = vx
+            [0.0, 0.0, 0.0, 1.0]           # vy = vy
+        ])
+        return F
+</code></pre>
+<p><strong>Prediction step</strong> (called once per frame before matching):</p>
+<pre><code>
+def predict(self):
+    &quot;&quot;&quot;Extrapolate all three filters forward&quot;&quot;&quot;
+    predict_state = self.kalman_filter_pose.predict()    # [x_pred, y_pred, vx, vy]
+    predict_yaw = self.kalman_filter_yaw.predict()       # [yaw_pred, yaw_rate]
+    predict_size = self.kalman_filter_size.predict()     # [l_pred, w_pred, ...]
+    
+    # Construct predicted BBox
+    predict_xyz = predict_state[:2].tolist() + [z_from_fusion]
+    predict_yaw_val = predict_yaw[0]
+    predict_lwh = predict_size[:2].tolist() + [h_from_fusion]
+    
+    self.bboxes[-1].global_xyz_lwh_yaw_predict = predict_xyz + predict_lwh + [predict_yaw_val]
+</code></pre>
+<p><strong>Update step</strong> (when detection matched):</p>
+<pre><code>
+def update(self, bbox, cost):
+    &quot;&quot;&quot;Fuse detection into filters&quot;&quot;&quot;
+    measure_pose = np.array([bbox.global_xyz[0], bbox.global_xyz[1], 
+                             bbox.global_velocity[0], bbox.global_velocity[1]])
+    measure_yaw = np.array([bbox.global_yaw, 
+                            np.arctan2(bbox.global_velocity[1], bbox.global_velocity[0])])
+    measure_size = np.array([bbox.lwh[0], bbox.lwh[1]])
+    
+    self.kalman_filter_pose.step(measure_pose)
+    self.kalman_filter_yaw.step(measure_yaw)
+    self.kalman_filter_size.update(measure_size)
+    
+    self.bboxes.append(bbox)  # Record detection
+</code></pre>
+<h3>Why decoupling works</h3>
+<p>Mixing position (meters), heading (radians), and size (meters) in one filter causes numerical instability—covariance matrices become ill-conditioned. By separating them:</p>
+<ul>
+<li>Position filter: learns motion dynamics (acceleration, velocity) at meter scale</li>
+<li>Yaw filter: learns rotation (blends pose heading with velocity-implied heading)</li>
+<li>Size filter: learns length/width changes slowly</li>
+</ul>
+<p>Each filter can tune its own Kalman gains (P, Q, R) per object class independently.</p>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><strong><code>main.py</code> (5 min)</strong></li>
+</ul>
+<p>   Understand the CLI, scene loop, and how scenes flow through the tracker.</p>
+<p>   Focus: lines 27–88 (<code>run()</code> function).</p>
+<ul>
+<li><strong><code>config/kitti.yaml</code> (3 min)</strong></li>
+</ul>
+<p>   See what hyperparameters control tracking: thresholds, Kalman filter configs, matching mode.</p>
+<ul>
+<li><strong><code>tracker/base<em>tracker.py</code> → <code>track</em>single_frame()</code> (10 min)</strong></li>
+</ul>
+<p>   The core loop: predict → match (BEV) → match (RV) → update → prune.</p>
+<p>   This is where everything connects.</p>
+<ul>
+<li><strong><code>tracker/matching.py</code> → <code>match<em>trajs</em>and_dets()</code> (8 min)</strong></li>
+</ul>
+<p>   How detections are matched to tracks. Two stages: BEV (Hungarian) and RV (Greedy).</p>
+<ul>
+<li><strong><code>tracker/cost<em>function.py</code> → <code>cal</em>rotation<em>gdiou</em>inbev()</code> (10 min)</strong></li>
+</ul>
+<p>   The Ro-GDIoU cost metric—the scoring function that decides which detection goes with which track.</p>
+<ul>
+<li><strong><code>tracker/trajectory.py</code> → <code><em>_init</em>_()</code> + <code>predict()</code> + <code>update()</code> (15 min)</strong></li>
+</ul>
+<p>   Three Kalman filters initialization, prediction, and update.</p>
+<ul>
+<li><strong><code>kalmanfilter/extend<em>kalman.py</code> → <code>EKF</em>CV</code> class (10 min)</strong></li>
+</ul>
+<p>   One example of the Kalman filter implementation (constant velocity for position).</p>
+<p>   Lines 147–195 show state transition, Jacobian, and the update step.</p>
+<ul>
+<li><strong><code>dataset/baseversion_dataset.py</code> (5 min)</strong></li>
+</ul>
+<p>   How frame data flows from JSON into BBox objects.</p>
+<ul>
+<li><strong><code>evaluation/eval_motion.py</code> (optional, 10 min)</strong></li>
+</ul>
+<p>   The new motion metrics (VAE, VNE, VDE, VSE, VIR) if you care about velocity validation.</p>
+<hr>
+<h2>Running it locally</h2>
+<h3>Setup</h3>
+<pre><code>
+conda create -n MCTrack python=3.8
+conda activate MCTrack
+cd MCTrack
+pip install -r requirements.txt
+</code></pre>
+<h3>Preprocess (if you have raw datasets)</h3>
+<pre><code>
+python preprocess/convert2baseversion.py --dataset kitti
+# Generates: data/base_version/kitti/{detector}/{split}.json
+</code></pre>
+<h3>Track</h3>
+<pre><code>
+python main.py --dataset kitti -e -p 1
+# -e = evaluate, -p = 1 process (or -p 4 for 4 parallel)
+# Results saved to: results/kitti/YYYYMMDD_HHMMSS/
+</code></pre>
+<h3>Note on CPU-runnable</h3>
+<p>✓ Pure NumPy—no CUDA required</p>
+<p>✓ Single frame tracks ~100 objects in &lt;100 ms on modern CPU</p>
+<p>✓ KITTI/nuScenes: straightforward</p>
+<p>✗ Waymo: requires Bazel (build system), complex setup</p></article></div>
+  <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

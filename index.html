@@ -1,0 +1,104 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Robotics 2025 — ICRA + IROS analysis</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ .wrap{max-width:900px;margin:0 auto;padding:0 24px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 36px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:33px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:12px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ header .stat{margin-top:16px;font-family:var(--mono);font-size:12.5px;color:#8fa0a3}
+ h2{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--graphite);margin:34px 0 12px}
+ .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+ @media(max-width:640px){.grid{grid-template-columns:1fr}}
+ a.card{display:block;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:18px 20px;transition:border-color .15s,transform .15s}
+ a.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+ a.card.big{grid-column:1/-1;border-left:3px solid var(--accent)}
+ a.card .ic{font-size:20px} a.card h3{margin:8px 0 0;font-size:17px;letter-spacing:-.01em}
+ a.card p{margin:6px 0 0;font-size:14px;color:var(--graphite)}
+ a.card .go{margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--accent-deep)}
+ .tag{font-family:var(--mono);font-size:10px;color:var(--accent-deep);background:var(--tint);padding:2px 6px;border-radius:4px;margin-left:6px}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:11.5px;padding:30px 0 60px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Conference analysis · robotics</div>
+  <h1>Robotics 2025 — ICRA + IROS</h1>
+  <p>Every paper from the two biggest robotics conferences, read and analyzed: the problem it solves, how, and its contribution — in plain words — then mined for themes and, for key topics, reviewed down to the real code.</p>
+  <div class="stat">3,589 papers · 1,604 ICRA + 1,985 IROS · 16 themes · 12 topic code deep-dives</div>
+</div></header>
+<div class="wrap">
+
+  <div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:20px 24px;margin:26px 0 6px">
+  <div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:10px">The big picture — connecting the dots</div>
+  <p style="margin:0 0 12px">Strip away the subfields and every robot runs the same loop, over and over, fast: <strong>sense</strong> the world, <strong>decide</strong> what to do, <strong>move</strong> — and do it cheaply, safely, and reliably enough to trust around people. Each theme below is one slice of that loop. Read together, the same few forces show up everywhere at once.</p>
+  <p style="margin:0 0 6px"><strong>The loop, and where the themes sit:</strong></p>
+  <ul style="margin:0 0 12px;padding-left:20px">
+  <li style="margin:0 0 5px"><strong>Sense</strong> — turn raw sensor streams into a usable picture of the world: <em>self-driving perception</em>, <em>Gaussian-Splatting scene maps</em>, <em>world models</em> that predict what happens next.</li>
+  <li style="margin:0 0 5px"><strong>Decide</strong> — turn a goal into a plan: <em>language-model planners</em>, <em>vision-language-action policies</em>, <em>multi-robot coordination</em>.</li>
+  <li style="margin:0 0 5px"><strong>Move</strong> — turn a plan into physical action that survives contact with reality: <em>real-time motion planning</em>, <em>legged locomotion</em>, <em>grasping &amp; dexterous hands</em>.</li>
+  <li style="margin:0"><strong>Cutting across all three</strong> — making it <em>cheap</em> (cheaper training data) and making it <em>safe</em> (attacks, formal guarantees, knowing what you don't know).</li>
+  </ul>
+  <p style="margin:0 0 6px"><strong>The shifts that show up in every theme this year:</strong></p>
+  <ul style="margin:0 0 12px;padding-left:20px">
+  <li style="margin:0 0 5px"><strong>Learning is eating hand-engineering.</strong> Hand-coded controllers, planners, and perception pipelines are being replaced by learned ones — everywhere.</li>
+  <li style="margin:0 0 5px"><strong>Foundation models arrived.</strong> The same big vision/language models trained on the internet are now the planner, the perception front-end, and the instruction-reader — across driving, planning, VLA, multi-robot, and grasping.</li>
+  <li style="margin:0 0 5px"><strong>The bottleneck moved to data and reality.</strong> The hard part is no longer the algorithm but getting real experience cheaply (simulation, generative data, human video) and closing the gap between the simulator and the messy real world.</li>
+  <li style="margin:0 0 5px"><strong>Efficiency became a first-class goal.</strong> Sparse representations, compression, real-time control — because a method that needs a server-grade GPU is useless on a battery-powered robot.</li>
+  <li style="margin:0"><strong>Capability outran trust.</strong> The more flexible and learned a system is, the harder it is to guarantee it won't do something dangerous — which is why safety is now its own theme, not a footnote.</li>
+  </ul>
+  <p style="margin:0"><strong>The throughline:</strong> robotics in 2025 is the field learning to swap brittle, hand-built pieces for flexible learned ones — while fighting to keep them cheap enough to run, honest enough to trust, and grounded enough to survive the real world. The themes below are the specific battlegrounds; each opens with this same "big picture" treatment, then drills down to the real, cloned-and-reviewed code.</p>
+  </div>
+
+  <h2>Read the story</h2>
+  <div class="grid">
+    <a class="card big" href="deep/">
+      <div class="ic">🧠</div><h3>The deep read — from first principles<span class="tag">start here</span></h3>
+      <p>One connected page, no jargon left undefined: the single problem every robot shares → the sense·decide·move loop → all 16 themes explained from first principles → down to the key papers, each with its problem, approach, and contribution (with citations). The most-detailed way in.</p>
+      <div class="go">Open the deep read →</div>
+    </a>
+    <a class="card big" href="report.html">
+      <div class="ic">📖</div><h3>The whole picture</h3>
+      <p>One page, top to bottom: the big-picture problem, the two forces (cost &amp; data), every theme, and all 3,589 papers listed plainly under their theme.</p>
+      <div class="go">Open report →</div>
+    </a>
+    <a class="card" href="deepdives.html">
+      <div class="ic">🧭</div><h3>How each part works</h3>
+      <p>The 16 themes as first-principles deep dives — the problem in depth, then the approaches used. Plain words.</p>
+      <div class="go">Open topic deep dives →</div>
+    </a>
+    <a class="card" href="explorer.html">
+      <div class="ic">🔎</div><h3>Search all papers</h3>
+      <p>Browse/filter all 3,589 by conference and tag; plain-words or technical; sort by citations.</p>
+      <div class="go">Open explorer →</div>
+    </a>
+  </div>
+
+  <h2>Topic code deep-dives — with real code &amp; cloned-repo walkthroughs</h2>
+  <div class="grid">
+    <a class="card" href="worldmodel-deepdive.html"><div class="ic">🌍</div><h3>World models<span class="tag">code</span></h3><p>Robots that predict what happens next and plan by imagining. Walkthroughs: LUMOS (DreamerV2), X-MOBILITY (RSSM).</p><div class="go">Open →</div></a>
+    <a class="card" href="cheapdata-deepdive.html"><div class="ic">🎛️</div><h3>Making training data cheaper<span class="tag">code</span></h3><p>Better rigs, reusing few demos, sim data, refine-after. Walkthroughs: SPOT, residual-RL.</p><div class="go">Open →</div></a>
+    <a class="card" href="safety-deepdive.html"><div class="ic">🛡️</div><h3>Breaking robots &amp; guaranteeing safety<span class="tag">code</span></h3><p>Attacks that find failures vs. formal guarantees. Walkthroughs: ROBOPAIR, SELP.</p><div class="go">Open →</div></a>
+    <a class="card" href="gs-deepdive.html"><div class="ic">🟢</div><h3>Gaussian Splatting for robots<span class="tag">code</span></h3><p>A blob-based 3D scene format for mapping &amp; sim. Walkthroughs: CGS-SLAM, SplatSim.</p><div class="go">Open →</div></a>
+    <a class="card" href="vla-deepdive.html"><div class="ic">🤖</div><h3>Vision-Language-Action models<span class="tag">code</span></h3><p>Camera + instruction → actions; VLMs as planners &amp; for navigation. Walkthroughs: ReMEmbR, 3D-LOTUS.</p><div class="go">Open →</div></a>
+    <a class="card" href="locomotion-deepdive.html"><div class="ic">🦿</div><h3>Legged locomotion &amp; humanoids<span class="tag">code</span></h3><p>Walking/whole-body control, train-in-sim-then-transfer. Walkthroughs: HOVER, Berkeley Humanoid.</p><div class="go">Open →</div></a>
+    <a class="card" href="planning-deepdive.html"><div class="ic">🗣️</div><h3>Language models that plan the job<span class="tag">code</span></h3><p>LLMs turning a plain-language goal into grounded robot steps. Walkthroughs: E2Map, AdaptBot.</p><div class="go">Open →</div></a>
+    <a class="card" href="driving-deepdive.html"><div class="ic">🚗</div><h3>Self-driving, leaner &amp; safer<span class="tag">code</span></h3><p>Perception, sensor fusion, end-to-end driving, 3D tracking. Walkthroughs: SparseDrive, MCTrack.</p><div class="go">Open →</div></a>
+    <a class="card" href="multirobot-deepdive.html"><div class="ic">🐝</div><h3>Getting several robots to cooperate<span class="tag">code</span></h3><p>LLM task allocation, swarms, multi-agent pathfinding. Walkthroughs: COHERENT, SIGMA.</p><div class="go">Open →</div></a>
+    <a class="card" href="grasping-deepdive.html"><div class="ic">🤏</div><h3>Grasping &amp; dexterous hands<span class="tag">code</span></h3><p>Where-to-grasp, multi-finger dexterity, learning from human video. Walkthroughs: DexMimicGen, GraspSAM.</p><div class="go">Open →</div></a>
+    <a class="card" href="motion-deepdive.html"><div class="ic">🧭</div><h3>Planning motion in real time<span class="tag">code</span></h3><p>Path planning, mobile-manipulation control, visual servoing, reactive nav. Walkthroughs: CNS, SEB-Naver.</p><div class="go">Open →</div></a>
+    <a class="card" href="deepdives.html#p10"><div class="ic">➕</div><h3>More topics</h3><p>The remaining themes are covered in the topic deep dives; any can get the same clone-and-review treatment.</p><div class="go">See topics →</div></a>
+  </div>
+
+  <h2>Notes</h2>
+  <div class="grid">
+    <a class="card" href="rss-corl-status.html"><div class="ic">📝</div><h3>RSS / CoRL availability</h3><p>Why RSS 2025 &amp; CoRL 2025 aren't in yet, and the options.</p><div class="go">Open →</div></a>
+  </div>
+
+  <footer>Served locally · repo: ~/ui-projects/robotics-conferences-2025 · code clones gitignored (need CUDA to run; readable for review)</footer>
+</div>
+</body></html>

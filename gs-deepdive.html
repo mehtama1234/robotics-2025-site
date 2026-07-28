@@ -1,0 +1,1310 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaussian Splatting for Robots — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive · with code</div>
+  <h1>Gaussian Splatting for robots</h1>
+  <p>A blob-based way to store a 3D scene that is fast to draw and realistic. This page: how it works and where it's used in robotics, the key 2025 papers with their real code repos, and a hands-on walkthrough of two of those codebases (cloned and read).</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>One shared way to store the 3D world</h1>
+<p><em>447 papers · sense — how the robot takes in and holds a picture of the world around it</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">For decades a robot had to store the world <strong>three incompatible ways</strong>: one format to know <em>where it is</em> (SLAM), another to <em>render</em> photorealistic views for training perception, a third for a planner to <em>reason</em> about objects. Three silos, three systems, and bugs at every seam. The single bet running through almost every paper here is that <strong>3D Gaussian Splatting can be the one shared format for all three</strong> — a cloud of small colored 3D blobs that is simultaneously a map, a photorealistic renderer, and a set of taggable objects. That is <em>why</em> robotics grabbed a graphics technique: not for pretty pictures, but as a <strong>common language</strong> that lets one captured scene feed mapping, training, and reasoning at once. Everything below is people testing how far that one idea stretches.</p>
+<p style="margin:0 0 8px"><strong>Six things people are actually trying to do with it:</strong></p>
+<ul style="margin:0 0 12px">
+<li><strong>① Bridge simulation and reality.</strong> <em>SplatSim</em> scans a real workspace into a blob replica, trains a manipulation skill inside a physics sim built on it, and runs it on the real robot <em>with no retraining</em> — directly attacking the sim-to-real gap. <em>Robo-GS</em> ties each blob to a mesh so appearance <em>and</em> physics move together.</li>
+<li><strong>② Map while moving (SLAM), robustly.</strong> <em>CGS-SLAM</em> fights the blob-count explosion with pruning + compression; <em>GARAD-SLAM</em> masks out moving people/cars before they corrupt the map; <em>RGB-only GS-SLAM</em> drops the depth sensor entirely.</li>
+<li><strong>③ Run on real hardware.</strong> A splat that needs a server GPU is useless on a battery. <em>NGD-SLAM</em> hits 60 FPS on a laptop with no graphics chip by parallelizing tracking and dynamic-masking.</li>
+<li><strong>④ Survive hard environments.</strong> <em>SeaSplat</em> goes underwater and jointly learns how water absorbs light to recover true color; <em>GaussianRoom</em> handles blank textureless walls with a geometry model guiding where blobs may grow; <em>Endo-2DTAM</em> pushes it inside the body.</li>
+<li><strong>⑤ Handle time.</strong> Lifelong-mapping work scores each part of the map by how <em>temporary</em> it is and keeps one master map absorbing new visits over months, so it never goes stale.</li>
+<li><strong>⑥ Give the map meaning.</strong> <em>SemGauss-SLAM</em> bakes object labels into the blobs; <em>BBQ</em> and <em>ReMEmbR</em> put a language model on top so a robot can answer "find the cup near the red bowl" or "what did you see an hour ago?"</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> the field is converging on Gaussian Splatting as a <em>unifying substrate for robot perception</em>, and the 2025 work is the messy, productive phase of making that substrate robust (dynamics, weird environments, time), cheap (compression, real-time), and meaningful (semantics + language) enough to actually live on a robot. The live run further down is that bare substrate — photos → blobs → novel views — that every paper here extends with one twist. <strong>Still open:</strong> full blob maps on tiny GPU-less hardware; merging maps across many robots in real time; and making the semantic layer reliable outside curated labs.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>Every robot needs to know what the world around it looks like before it can do anything useful. That sounds simple, but it is not.</p>
+<p>A robot&#x27;s sensors — cameras, laser scanners, motion chips — pour out raw streams of numbers: brightness values, distance readings, tiny acceleration signals. None of that is a &quot;map.&quot; The robot has to turn those raw numbers into some stored structure that tells it where things are, what they look like, and how they relate to each other. That stored structure is what researchers mean when they talk about a scene representation — a way the robot holds the world in memory.</p>
+<p>For decades, different jobs used completely different structures. If you wanted to track where the robot is while it builds a map (a job called simultaneous localization and mapping, or SLAM), you used one format. If you wanted to render a photo-realistic view of the scene for training, you used a different one. If you wanted a planner to reason about what objects are near each other, you used yet another. Each format was a silo: data captured for one job could not easily feed another. You had to scan the scene, store it three different ways, and keep three systems running.</p>
+<p>This is wasteful. Memory is tight on a robot. Processing time is tight. And the seams between the different systems are where bugs and errors creep in.</p>
+<p>The deeper problem is that robots operate in the real world, which is messy. Lighting changes. People walk through the scene. Outdoor spaces have no walls to bounce a laser off cleanly. Underwater, light scatters in ways that make every color look wrong. Featureless hallways give a camera almost nothing to anchor on. Any representation that only works in a clean, static, well-lit lab is not good enough.</p>
+<p>All of this connects to the central challenge every robot faces: take in an unclear, changing world, decide what to do, move a real body, and do it fast, cheap, safe, and general. A scene representation sits at the very start of that chain. If the stored picture of the world is wrong, noisy, too slow to build, or too large to fit in memory, every step after it — the decisions, the movements — goes wrong too. Getting the representation right is not a detail; it is the foundation.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Building the scene from tiny colored blobs</h3>
+<p>The single biggest idea running through this group of papers is a method called 3D Gaussian Splatting. The name is technical, but the idea is this: instead of storing the scene as a mesh of flat triangles or a grid of boxes, you describe it as a large collection of small, soft, colored blobs — each blob has a position, a size, a shape, and a color. When you want to see what the scene looks like from a new camera angle, you project all the blobs onto the image plane, and the result looks strikingly realistic. The key advantage is speed: rendering with blobs is fast enough to do live, and the format is flexible enough to support training, mapping, and planning all at once.</p>
+<p>Papers in this group use Gaussian Splatting as the common language that connects different jobs. SplatSim shows that if you scan a real workspace and build a blob-based model of it, you can drop that model into a physics simulator and train robot manipulation skills in it. The simulated images look close enough to real ones that the trained skill runs directly on the real robot without retraining — a problem the field calls the simulation-to-real gap. Robo-GS goes further: it ties each blob to a nearby point on a geometric mesh, so that when the robot arm moves, both the visual appearance and the physical geometry update together, giving you a replica that is both realistic and physically accurate. SemGauss-SLAM bakes object labels — &quot;this blob is part of a chair&quot; — directly into the blob data, so the map understands what things are, not just what they look like.</p>
+<h3>Making maps while moving — and staying on track</h3>
+<p>Several papers use the blob format specifically for SLAM: building a map of an unknown space while simultaneously figuring out where the robot is in that map. This is hard because the two jobs depend on each other: you need a map to know your position, and you need your position to build the map correctly.</p>
+<p>CGS-SLAM attacks one of the biggest practical problems with blob-based SLAM: these maps grow very large very fast because the system keeps placing new blobs everywhere. The paper trims the map by discarding blobs that have not been seen recently, then compresses the remaining ones by sharing shape data across groups — cutting memory use sharply without losing visual quality. GARAD-SLAM and Dy3DGS-SLAM both tackle moving objects: people or vehicles that cross the scene corrupt the map because the system tries to record them as permanent structure. Both papers detect movement — one by checking which pixels flow against the expected camera motion, the other by watching for depth changes — and mask those pixels out before updating the map. RGB-Only Gaussian Splatting SLAM removes the need for a depth sensor entirely, building the blob map from plain color images alone by using a network that predicts consistent 3D positions across frames.</p>
+<h3>Shrinking and speeding up for real hardware</h3>
+<p>A representation that needs a server-grade graphics chip or gigabytes of memory is useless on a robot that runs on a battery. A strong thread in this group is about making representations small and fast enough to run live on modest hardware.</p>
+<p>NGD-SLAM achieves 60 frames per second on a regular laptop — no graphics chip — by running two tasks at the same time instead of in sequence: one thread tracks camera position while another masks out moving objects, so neither waits for the other. CGS-SLAM&#x27;s compression work fits here too. Kinematic-ICP takes a different angle: instead of a blob-based scene, it uses a classic laser-scan alignment method (ICP — a technique that takes two clouds of 3D points and finds the shift and rotation that makes them match best), but adds the robot&#x27;s known motion rules as hard limits on what position estimates are allowed. This cuts drift without any extra memory. MambaGlue speeds up the step of matching visual features across camera frames by replacing the standard attention mechanism — which slows down as the number of features grows — with a newer sequence model (Mamba) that scales better.</p>
+<h3>Handling hard environments and long time scales</h3>
+<p>Some papers push the representation to work in conditions that earlier work ignored. SeaSplat takes the blob format underwater: it learns, at the same time as building the 3D scene, how water absorbs and scatters light at different depths, so it can undo those effects and recover the true color of objects. GaussianRoom handles plain, textureless indoor walls — surfaces that give the blob optimizer almost nothing to anchor on — by training a second model alongside it that estimates the true surface geometry and tells the blobs where they should and should not grow.</p>
+<p>Other papers deal with time: a map built once will go stale. Ephemerality Meets Lidar-Based Lifelong Mapping assigns each part of a laser scan a score for how temporary it is — a score that captures both short-term changes within one mapping session and longer-term changes across many sessions. LiLoc keeps a single master map that absorbs new scan data from each new visit to a space, using a coarse-then-fine position search to start each session and a local graph that fuses motion, laser, and inertial data to keep estimates tight over months.</p>
+<h3>Giving maps meaning so robots can reason about them</h3>
+<p>A map that only stores where surfaces are cannot answer the question &quot;find the cup near the red bowl.&quot; Beyond Bare Queries (BBQ) builds a map where each object is a node that carries a text description of what it is and where it sits. A large language model then reasons through a step-by-step chain over those nodes to answer spatial questions in plain language. ReMEmbR extends this to long time horizons: a robot that has been running for hours stores past observations — with times, positions, and image descriptions — in a searchable database. When asked a question about something it saw earlier, it retrieves the relevant entries and reasons over them.</p>
+<h2>Where it stands</h2>
+<p>Gaussian Splatting has moved quickly from a graphics novelty to a practical common format for robot sensing, and the compression and real-time work has made it usable on modest hardware. Systems that handle moving objects, plain surfaces, and tricky lighting environments now exist. What is still open: running a full blob-based map on very small, cheap hardware without a GPU remains difficult; merging maps across many robots in real time is unsolved at scale; and making the semantic layer — the part that knows what objects are — work reliably across diverse, uncontrolled environments is an active area with no settled answer yet.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">Robo-GS: A Physics Consistent Spatial-Temporal Model for Rob</td><td>ICRA</td><td><a href="https://github.com/louhz/robogs" target="_blank" rel="noopener">louhz/robogs</a></td><td class="mono">robogs/vis/gsplat_trainer.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">SplatSim: Zero-Shot Sim2Real Transfer of RGB Manipulation Po</td><td>ICRA</td><td><a href="https://github.com/qureshinomaan/SplatSim" target="_blank" rel="noopener">qureshinomaan/SplatSim</a></td><td class="mono">splatsim/robots/sim_robot_pybullet_object_on_plate.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">CGS-SLAM: Compact 3D Gaussian Splatting for Dense Visual SLA</td><td>IROS</td><td><a href="https://github.com/dtc111111/Compact_GSSLAM" target="_blank" rel="noopener">dtc111111/Compact_GSSLAM</a></td><td class="mono">src/entities/gaussian_slam.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">GARAD-SLAM: 3D Gaussian Splatting for Real-Time Anti Dynamic</td><td>ICRA</td><td><a href="https://github.com/DrLi-Ming/GARAD-SLAM" target="_blank" rel="noopener">DrLi-Ming/GARAD-SLAM</a></td><td class="mono">src/segmentation/ (Gaussian pyramid network + CRF dynamic labeling — not yet released)</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">GaussianRoom: Improving 3D Gaussian Splatting with SDF Guida</td><td>ICRA</td><td><a href="https://github.com/xhd0612/GaussianRoom" target="_blank" rel="noopener">xhd0612/GaussianRoom</a></td><td class="mono">scene/gaussian_model.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Advancing Dense Endoscopic Reconstruction with Gaussian Spla</td><td>ICRA</td><td><a href="https://github.com/lastbasket/Endo-2DTAM" target="_blank" rel="noopener">lastbasket/Endo-2DTAM</a></td><td class="mono">scripts/main.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">SeaSplat: Representing Underwater Scenes with 3D Gaussian Sp</td><td>ICRA</td><td><a href="https://github.com/dxyang/seasplat" target="_blank" rel="noopener">dxyang/seasplat</a></td><td class="mono">deepseecolor/__init__.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">AutoSplat: Constrained Gaussian Splatting for Autonomous Dri</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">RGB-Only Gaussian Splatting SLAM for Unbounded Outdoor Scene</td><td>ICRA</td><td><a href="https://github.com/3DAgentWorld/OpenGS-SLAM" target="_blank" rel="noopener">3DAgentWorld/OpenGS-SLAM</a></td><td class="mono">slam.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">SemGauss-SLAM: Dense Semantic Gaussian Splatting SLAM</td><td>IROS</td><td><a href="https://github.com/IRMVLab/SemGauss-SLAM" target="_blank" rel="noopener">IRMVLab/SemGauss-SLAM</a></td><td class="mono">sem_gauss.py</td><td><span class="run">gpu</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>Robo-GS: A Physics Consistent Spatial-Temporal Model for Robotic Arm with Hybrid Representation</h1>
+<p>ICRA 2025 · 16 citations · DOI: 10.1109/ICRA55743.2025.11128786 · arXiv: 2408.14873</p>
+<h2>What it does</h2>
+<p>Robo-GS builds a digital twin of a real robotic arm (or manipulation scene) that simultaneously looks photorealistic and physically simulates correctly. Starting from monocular video of the robot, it reconstructs a hybrid asset — Gaussian blobs for rendering, a mesh for collision/kinematics, URDF parameters for physics — and links all three so they move together when the physics simulator runs. The result is a Real2Sim asset you can drop into Isaac Gym or MuJoCo and get visually faithful, physically plausible sim data for reinforcement learning or imitation learning, without manual CAD tweaking.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> A monocular RGB video of the robotic arm (ideally 360° orbit). No depth sensor needed. The video must have panoptic segmentation labels (instance masks per link/object/background), either pre-computed or inferred. Camera intrinsics/extrinsics come from structure-from-motion (COLMAP or GLOMAP run on the frames first). Optionally, Denavit-Hartenberg (DH) parameters from a CAD model can seed the kinematic chain.</p>
+<p><strong>What each Gaussian stores.</strong> Standard 3D Gaussian Splatting attributes: 3D center position x<em>p, opacity σ</em>p, covariance encoded as scale + rotation (via spherical harmonics SH<em>p), view-dependent color coefficients C</em>p. Robo-GS adds a semantic label S_p per Gaussian — a categorical tag indicating which robot link or object the Gaussian belongs to. This label is the anchor for the mesh binding.</p>
+<p><strong>Building the map — two stages.</strong></p>
+<p>*Stage 1 (static Gaussian fit).* Frames are fed through standard 3DGS optimization (gsplat library, v0.8+): initialize a point cloud via COLMAP sparse reconstruction, seed Gaussians at those points, minimize photometric loss on rendered vs. real frames. This gives a Gaussian cloud that renders the scene accurately from arbitrary viewpoints.</p>
+<p>*Stage 2 (mesh extraction).* The trained Gaussians are converted to a point cloud (PLY) and fed into a separate mesh reconstruction pipeline (meshrecon/train.py + render.py). Normal maps are pre-computed with StableNormal to stabilize surface orientation. The resulting mesh is cleaned and segmented: each mesh face/vertex gets the same panoptic label as the Gaussians that cover it.</p>
+<p><strong>Gaussian-Mesh-Pixel binding (the core trick).</strong> Three mappings are composed into one structure:</p>
+<ul>
+<li>Projection π: each Gaussian center (x,y,z) → pixel (u,v) via perspective projection.</li>
+<li>Mesh mapping μ: each Gaussian center → its nearest mesh vertices/faces (sharing the same semantic label).</li>
+<li>Isomorphic composite ϕ = π ∘ μ: pixel ↔ Gaussian ↔ mesh vertex, all one-to-one.</li>
+</ul>
+<p>&quot;Isomorphic&quot; here means the correspondence is structure-preserving and differentiable end-to-end — gradient from pixel loss flows back through the Gaussian to the mesh vertices and, further, to physics parameters.</p>
+<p><strong>Physics representation and temporal model.</strong> Rather than learning a neural deformation field (4D NeRF style), Robo-GS solves explicit rigid-body governing equations. Physics parameters — mass m, inertia matrix I (3×3), friction coefficients, link DH parameters (length a<em>i, twist α</em>i, offset d_i) — are embedded in a URDF file. The LLM is used to infer plausible mass/friction from video trajectory data (the approach is heuristic here, not precisely specified). At time t, each link&#x27;s Gaussian positions are updated by:</p>
+<p>    P<em>t = T</em>0→t · (T<em>0→i)^{-1} · P</em>0</p>
+<p>where T is the 6-DOF rigid transform (position + quaternion) coming from the physics solver. This collapses the optimization from 6n free parameters (one per Gaussian) to 6A parameters (one per articulated link, A &lt;&lt; n), making the temporal problem tractable and physically plausible.</p>
+<p><strong>URDF/simulation pipeline.</strong> The full 12-step workflow: (1) video → frames, (2) SfM for poses, (3) train Gaussians, (4) generate normal maps, (5) extract PLY, (6) reconstruct mesh, (7) manually align mesh to world frame and resolve monocular scale ambiguity against a known reference, (8) segment by instance, (9) assign link IDs, (10) fine-tune kinematic/dynamic parameters, (11) generate URDF/MJCF files, (12) run in Isaac Gym or MuJoCo. Steps 7 and 10 have manual intervention — this is not fully automated.</p>
+<p><strong>Robotics-specific twist.</strong> The paper&#x27;s contribution over vanilla 4DGS is the physics constraint: Gaussians are not free to drift — they must follow rigid-body dynamics of the articulated link they are bound to. This makes the sim asset physically consistent: the robot&#x27;s Gaussian appearance updates correctly when you command a joint angle in the simulator, because each Gaussian simply inherits its link&#x27;s rigid transform.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/louhz/robogs" target="_blank" rel="noopener">https://github.com/louhz/robogs</a></p>
+<p><strong>Language / framework:</strong> Python (primary), CUDA via PyTorch 2.1+, XML for MJCF/URDF assets.</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+robogs/
+├── robogs/              # Main Python package
+│   ├── vis/
+│   │   ├── gsplat_trainer.py     # Gaussian splatting training (core rendering)
+│   │   ├── video2image.py        # Frame extraction
+│   │   └── extract_ply.py        # Gaussian → point cloud export
+│   ├── meshrecon/
+│   │   ├── train.py              # Mesh reconstruction from PLY + normals
+│   │   └── render.py             # Mesh renderer
+│   ├── mesh_util/
+│   │   └── generate_mjcf.py      # URDF/MJCF asset generation
+│   └── installation.md           # Detailed setup guide
+├── mjcf_asset/          # Bundled digital assets (MJCF scene files, demo data)
+├── .vscode/             # Debug configs
+├── LICENSE              # CC BY-NC 4.0
+└── README.md
+</code></pre>
+<p><strong>Where the core method lives.</strong> Open <code>robogs/vis/gsplat<em>trainer.py</code> first — it is where Gaussian training happens, the semantic label assignment is wired in, and the Gaussian-Mesh binding is implemented. <code>robogs/meshrecon/train.py</code> is the second file to read for the mesh reconstruction side. <code>robogs/mesh</em>util/generate_mjcf.py</code> shows how the URDF/MJCF asset is built from the reconstructed geometry.</p>
+<p><strong>Main dependencies:</strong></p>
+<ul>
+<li><code>gsplat</code> &gt;= 0.8 (Gaussian Splatting renderer, GPU-only)</li>
+<li><code>PyTorch</code> &gt;= 2.1 with CUDA 11.8–12.6</li>
+<li><code>COLMAP</code> or <code>GLOMAP</code> (SfM, installed separately, CPU-capable but slow)</li>
+<li><code>StableNormal</code> (normal map estimation, needs a GPU)</li>
+<li><code>MuJoCo</code> (physics simulation, CPU/GPU)</li>
+<li><code>Isaac Gym</code> (optional, NVIDIA GPU only)</li>
+</ul>
+<p><strong>Datasets:</strong> Demo data for Franka arm + Allegro hand and Franka + Robotiq gripper are provided via Dropbox links in the README. No large external benchmark dataset is required — the idea is you bring your own robot video.</p>
+<p><strong>How to run:</strong> Follow the 12-step workflow in <code>robogs/installation.md</code>. The minimal path is: extract frames → run COLMAP → run <code>gsplat<em>trainer.py</code> → run <code>extract</em>ply.py</code> → run <code>meshrecon/train.py</code> → run <code>generate_mjcf.py</code> → open the MJCF in MuJoCo. Each step is a separate script invocation; there is no single unified runner script.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with the arXiv HTML paper (arxiv.org/html/2408.14873v1) — Section 3 on the hybrid representation and the Gaussian-Mesh-Pixel binding is concise and gives you the mathematical structure. Then open <code>robogs/vis/gsplat<em>trainer.py</code> to see how semantic labels are attached to Gaussians and how the binding is initialized. Then <code>robogs/mesh</em>util/generate_mjcf.py</code> to understand how the full pipeline outputs a simulation-ready asset.</p>
+<p><strong>Code organization.</strong> The repo is in research-messy territory. The 12-step workflow is broken into separate standalone scripts with no shared pipeline runner, so you have to read the README carefully and manually chain the steps. File naming is clear (each script&#x27;s name matches its job), but there is no high-level orchestrator, no unit tests, and documentation is concentrated in <code>installation.md</code>. Variable naming inside the scripts is adequate but not heavily commented. The gsplat library (external dependency) is well-documented on its own, which helps, but understanding the binding logic requires reading both the paper and the trainer script side-by-side. Overall: readable enough if you know 3DGS basics, but expect an afternoon of environment setup before anything runs.</p>
+<h2>Run verdict</h2>
+<p><strong>Not runnable on CPU-only.</strong> Gaussian Splatting training with gsplat requires CUDA — the rasterizer is a custom CUDA kernel. StableNormal (normal estimation) also requires GPU. The Gaussian training step (step 3) will refuse to run without a CUDA device.</p>
+<p>What does work on CPU: COLMAP/GLOMAP for SfM (step 2, slow but functional), MuJoCo physics simulation (step 12, CPU-capable), and MJCF/URDF generation scripts (step 11, pure Python). The full end-to-end pipeline needs an NVIDIA GPU with at least CUDA 11.8. A mid-range GPU (RTX 3070 class) can train on the demo data; the paper used unspecified NVIDIA hardware. There is no pre-trained checkpoint or viewer-only mode that bypasses the CUDA requirement.</p></article>
+<article class="page" id="gp1"><h1>SplatSim: Zero-Shot Sim2Real Transfer of RGB Manipulation Policies Using Gaussian Splatting</h1>
+<p>ICRA 2025 · 12 citations · DOI: 10.1109/ICRA55743.2025.11128339 · arXiv: 2409.10161</p>
+<h2>What it does</h2>
+<p>SplatSim replaces the visual renderer inside a physics simulator (PyBullet) with Gaussian Splat reconstructions of the real robot and real objects. You collect motion-planned demonstrations inside this photorealistic fake world, train an imitation-learning policy on those synthetic RGB images, and deploy it directly on the real robot without any fine-tuning — zero-shot. The key claim is that Gaussian Splats are close enough to real camera images that the policy&#x27;s visual backbone never notices it has moved to the real world, achieving 86.25% task success versus 97.5% for policies trained entirely on real data.</p>
+<h2>The method, in detail</h2>
+<p><strong>What a Gaussian Splat is here.</strong> The scene is represented as a set of 3D ellipsoids (Gaussians). Each blob stores: a 3D mean position (where it lives in space), a 3D covariance matrix (its shape and orientation as an ellipsoid), an opacity value, and spherical harmonic coefficients that encode view-dependent colour. Rasterizing millions of these sorted blobs from a camera viewpoint produces a photo-quality RGBA image. The standard 3DGS rasterizer is used with no architectural changes.</p>
+<p><strong>Building the robot splat model — three steps:</strong></p>
+<ul>
+<li>*Capture and reconstruct.* The real robot is photographed from many poses. A standard 3DGS training pipeline (COLMAP for sparse point cloud + differentiable Gaussian rasterization) fits a splat model to those photos. This gives a static cloud of blobs that looks exactly like the real robot arm.</li>
+<li>*Frame alignment.* The splat cloud exists in camera-reconstruction space, not in PyBullet&#x27;s coordinate frame. ICP (Iterative Closest Point) aligns them, producing a rigid transformation T.</li>
+<li>*Link segmentation.* To animate the arm, each Gaussian must be assigned to a specific robot link (forearm, wrist, gripper finger, etc.) so it moves with that link. The paper uses the robot&#x27;s CAD bounding boxes in simulator space to label Gaussians per link. For articulated parts where bounding boxes overlap (e.g., gripper fingers), a KNN classifier is trained on labelled simulator point clouds to resolve the boundary.</li>
+</ul>
+<p><strong>Animating the splat in simulation.</strong> At every timestep, PyBullet computes forward kinematics from joint angles, giving a rigid transform (R<em>t^k, t</em>t^k) per link k. Each Gaussian assigned to link k is moved: its mean transforms as mu&#x27; = R*mu + t, and its covariance as Sigma&#x27; = R * Sigma * R^T. Object splats (the thing being manipulated) are handled identically using PyBullet&#x27;s object pose. The rasterizer then renders the full scene — robot + object + background splat — from the virtual camera to produce a synthetic RGB frame.</p>
+<p><strong>Policy training.</strong> Demonstrations are collected inside SplatSim using motion planners with full access to simulator state (privileged information — exact object positions). 400 demonstrations per pick task. The policy is Diffusion Policy (behaviour cloning): it takes the current RGB image and end-effector pose as input and outputs the next action (position + orientation delta). Data augmentation during training — Gaussian noise, random erasing, brightness/contrast jitter — is critical: without it, success drops from 86.25% to 21%. The robotics-specific twist is that the simulation loop is purely about rendering; the physics/dynamics remain in PyBullet (contact, collision), so you get photo-realism without sacrificing physics fidelity.</p>
+<p><strong>Tasks tested.</strong> Push-T (planar pushing), apple picking, orange placement, and peg assembly. Evaluated on a Franka Panda arm.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/qureshinomaan/SplatSim" target="_blank" rel="noopener">https://github.com/qureshinomaan/SplatSim</a></p>
+<p><strong>Language / framework:</strong> Python 3.12 · PyTorch 2.7.1 (CUDA 12.6) · PyBullet for physics · the original gaussian-splatting renderer as a git submodule (diff-gaussian-rasterization + simple-knn).</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+SplatSim/
+├── splatsim/           # main package — rendering, robot models, environment logic
+├── scripts/            # entry-point scripts (launch nodes, run env, articulated pipeline)
+│   ├── launch_nodes.py             # starts the simulation server
+│   ├── run_env_sim.py              # replays / collects trajectories
+│   └── articulated_robot_pipeline.py  # URDF-to-point-cloud for link segmentation
+├── configs/            # YAML configs for robots, objects, folder paths
+│   ├── folder_configs.yaml
+│   └── object_configs/objects.yaml
+├── submodules/         # gaussian-splatting, pybullet utils, GELLO (git submodules)
+├── data/               # place pre-trained splat models and COLMAP outputs here
+├── requirements.txt
+└── setup.py
+</code></pre>
+<p><strong>Where the core method lives:</strong> <code>splatsim/robots/sim<em>robot</em>pybullet<em>object</em>on<em>plate.py</code> — this is the environment class that owns the render loop, applies the per-link Gaussian transforms, and interfaces with PyBullet. The ICP alignment and link segmentation are in <code>scripts/articulated</em>robot_pipeline.py</code>.</p>
+<p><strong>Main dependencies:</strong> diff-gaussian-rasterization (CUDA kernel), simple-knn, PyBullet, PyTorch, COLMAP (external binary for initial reconstruction), GELLO (optional, for real robot teleoperation during real-world demo collection). All submodules must be installed in a specific order listed in the README.</p>
+<p><strong>Datasets / assets needed:</strong> You need pre-trained Gaussian Splat model files (the <code>.ply</code> or checkpoint files from training on your own robot photos) and the corresponding COLMAP data. There is no single downloadable dataset — you reconstruct your own robot and objects. The repo links to pre-trained splat checkpoints for the tasks in the paper.</p>
+<p><strong>How to run:</strong></p>
+<ul>
+<li>Clone with <code>--recurse-submodules</code>, install submodules in order (diff-gaussian-rasterization first, then simple-knn).</li>
+<li>Configure <code>configs/object_configs/objects.yaml</code> with paths to your splat model checkpoints and COLMAP output.</li>
+<li>Set trajectory folders in <code>configs/folder_configs.yaml</code>.</li>
+<li><code>python scripts/launch_nodes.py</code> — starts the simulation rendering server.</li>
+<li><code>python scripts/run<em>env</em>sim.py</code> — runs the environment, collects demonstrations or evaluates a policy.</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li>The arXiv HTML paper (<a href="https://arxiv.org/html/2409.10161v3" target="_blank" rel="noopener">https://arxiv.org/html/2409.10161v3</a>) — Sections III (Method) and IV (Experiments) are compact and cover the ICP alignment, link segmentation, and KNN classifier in enough detail to understand every design decision.</li>
+<li><code>scripts/articulated<em>robot</em>pipeline.py</code> — this is the pre-processing step that does URDF parsing and builds the per-link Gaussian assignments. Understanding it makes the rest of the repo make sense.</li>
+<li><code>splatsim/robots/sim<em>robot</em>pybullet<em>object</em>on_plate.py</code> — the live render loop.</li>
+</ul>
+<p><strong>Code organisation:</strong> Research-messy but navigable. The core idea (transform Gaussians per link each frame) is straightforward once you understand the three-step setup. The submodule dependency chain is the main friction — if any submodule install fails, nothing runs. There is no unit testing. Config files are YAML and reasonably commented. Expect to spend an hour getting the environment set up before the first render.</p>
+<h2>Run verdict</h2>
+<p><strong>Not runnable on a CPU-only machine.</strong> The diff-gaussian-rasterization submodule is a CUDA C++ extension — it will not compile without nvcc and a CUDA-capable GPU. PyTorch operations for splat training and rendering are also CUDA-only. There is no CPU fallback path and no pre-built inference server. You need at minimum an NVIDIA GPU (the paper used hardware that supports CUDA 12.6, so an RTX-class card from 2021 or later). The PyBullet physics side alone is CPU-runnable, but that gives you no rendered images and is useless without the splat renderer.</p></article>
+<article class="page" id="gp2"><h1>CGS-SLAM: Compact 3D Gaussian Splatting for Dense Visual SLAM</h1>
+<p>IROS 2025 · 12 citations · arXiv 2403.11247 · also accepted IJCV 2026</p>
+<h2>What it does</h2>
+<p>Standard 3D Gaussian Splatting SLAM systems accumulate tens of thousands of redundant ellipsoid primitives, burning GPU memory and slowing the optimization loop that runs while the robot moves. CGS-SLAM cuts that cost from two angles: it prunes ellipsoids that carry little information using a learnable sliding-window mask, and it compresses the geometric parameters of surviving ellipsoids using a residual vector quantization codebook. Camera pose estimation uses a local-to-global bundle adjustment scheme with a combined photometric, depth, and ICP loss, letting the system stay accurate while the map stays compact.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> Sequential RGB-D frames <code>{I<em>i, D</em>i}</code> with known camera intrinsics. Each frame supplies a color image and a metric depth map (from a depth sensor, not estimated). The system is therefore a dense visual SLAM in the RGB-D regime, not monocular.</p>
+<p><strong>What each blob stores.</strong> Each 3D Gaussian is a primitive with: position <code>mu</code> in R^3, opacity <code>alpha</code> in [0,1], rotation expressed as a quaternion <code>q</code> in R^4, three scale values <code>s</code> in R^3, and per-Gaussian color <code>c</code> in R^3. The color can be represented as spherical-harmonic coefficients for view-dependent appearance. Together, position + rotation + scale define an oriented ellipsoid in 3D space; during differentiable rasterization, these are projected to 2D Gaussians and alpha-composited front-to-back to produce an RGB image and a rendered depth map.</p>
+<p><strong>Sliding-window masking (pruning step).</strong> At each SLAM iteration the system works over a local window of the most recent keyframes. For every Gaussian visible in that window a learnable scalar mask logit <code>m<em>n</code> is maintained. A sigmoid converts it to a soft mask <code>Sig(m</em>n)</code> and a straight-through estimator binarizes it: <code>M<em>n = sg(1[Sig(m</em>n) &gt; epsilon] - Sig(m<em>n)) + Sig(m</em>n)</code>. Gaussians with mask value below epsilon are zeroed out of the rendering pass. A regularization term <code>L<em>mask = (1/N</em>w) * sum Sig(m_n)</code> penalizes having many active Gaussians, pushing the network to keep only the most useful ones. Frustum culling further limits optimization to Gaussians that actually project into the current frame set. Window sliding: when the window moves forward, the mask state resets for the newly admitted keyframes so that previously pruned Gaussians cannot be permanently eliminated if they re-enter a new window — preventing the system from collapsing the map over time.</p>
+<p><strong>Geometry codebook (compression step).</strong> The covariance matrices (equivalently, quaternion + scale pairs) of most Gaussians in a static indoor scene are geometrically similar — walls, floors, and table surfaces all produce near-planar ellipsoids with similar orientations. The codebook exploits this. Residual Vector Quantization (R-VQ) runs L=6 cascaded stages. In each stage k, the current residual is quantized to the nearest entry in a learned codebook <code>C^k</code>; that entry is subtracted, and the remaining residual is passed to stage k+1. Reconstructed geometry: <code>l<em>hat</em>n = sum_{k=1}^{L} C^k[i^k]</code> where <code>i^k</code> is the index chosen at stage k. Each index is stored as a 1-byte integer, so the full L=6 stages per Gaussian cost 6 bytes instead of 28 bytes for raw float32 quaternion + scale. The codebook is learned end-to-end jointly with the rest of the SLAM optimization. The reported compression ratio is approximately 2.21x in memory for the geometric parameters.</p>
+<p><strong>Map building and online optimization.</strong> New Gaussians are spawned where rendered depth disagrees with observed depth (high gradient regions). The system uses an anchor-based scaffold: anchor points sit at voxel grid centers, and each anchor carries a 32-dimensional feature vector plus learnable position offsets. Small per-anchor MLPs decode those features into the Gaussian attributes (color, opacity, geometry) conditioned on viewing direction and distance — this is the Scaffold-GS design for structured Gaussian placement. This structure means the map grows in a spatially organized way rather than scattering primitives randomly.</p>
+<p><strong>Local-to-global bundle adjustment.</strong> The tracking loss over a local window is:</p>
+<p><code>L<em>t = sum</em>{pixels p with S(p) &gt; 0.99} (L<em>color + lambda</em>1 * L<em>depth + lambda</em>2 * L_icp)</code></p>
+<p>where <code>S(p)</code> is accumulated alpha (only high-confidence pixels count), <code>L<em>color</code> is photometric L1/SSIM, <code>L</em>depth</code> is depth L1, and <code>L<em>icp = sum</em>i w<em>i ||R*p</em>i + t - q_i||^2</code> is an ICP loss that aligns Gaussian center positions to the closest depth observations. Globally, a keyframe database accumulates past observations; periodic global BA re-optimizes all keyframe poses and the global map jointly, using multi-frame associations to reduce drift.</p>
+<p><strong>Robotics-specific angle.</strong> The compactness is the robotics contribution: the paper targets embedded and real-time deployment where GPU VRAM is a hard constraint. By cutting memory 2x while matching accuracy, the system becomes viable on smaller edge GPUs. The method is framed as a plug-in compatible with the MonoGS and Gaussian-SLAM SLAM frontends.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/dtc111111/Compact_GSSLAM" target="_blank" rel="noopener">https://github.com/dtc111111/Compact_GSSLAM</a></p>
+<p><strong>Language / framework:</strong> Python 3.10, PyTorch 2.1.2, CUDA 12.1+. Custom CUDA kernels via diff-gaussian-rasterization (a fork with pose-gradient support). FAISS-GPU for codebook nearest-neighbor lookups. Open3D for mesh evaluation. hloc (Hierarchical-Localization) as a third-party loop-closure detector.</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+Compact_GSSLAM/
+  configs/              # per-dataset YAML configs (Replica, TUM, ScanNet, ScanNet++)
+  scripts/              # dataset download, preprocessing, SLURM batch scripts
+  src/
+    entities/           # core SLAM logic (see below)
+    Scaffold_GS/        # anchor-based Gaussian representation (Scaffold-GS port)
+    DepthLab/           # depth processing utilities
+    gsr/                # Gaussian surface reconstruction helpers
+    evaluation/         # metric computation
+    utils/              # misc helpers
+  thirdparty/
+    Hierarchical-Localization/   # hloc, for loop detection
+  run_slam.py           # main entry point
+  run_evaluation.py     # evaluation entry point
+  environment.yml
+  requirements.txt
+</code></pre>
+<p><strong>Where the core method lives.</strong> Open <code>src/entities/</code> first:</p>
+<ul>
+<li><code>gaussian_slam.py</code> — top-level orchestrator, ties tracker and mapper together; start here.</li>
+<li><code>mapper.py</code> — Gaussian map management: spawning new primitives, the masking logic, codebook quantization calls, and the global BA loop.</li>
+<li><code>tracker.py</code> — per-frame pose estimation using the local BA loss (photometric + depth + ICP).</li>
+<li><code>gaussian_model.py</code> — the Gaussian primitive data structure; stores all per-Gaussian parameters and wraps the rasterizer.</li>
+<li><code>losses.py</code> — all loss terms (photometric, depth L1, ICP, mask regularizer).</li>
+<li><code>lc.py</code> — loop closure detection using hloc.</li>
+</ul>
+<p>The codebook (R-VQ) implementation lives inside <code>src/Scaffold_GS/</code>, which is the anchor-scaffold Gaussian module. The diff-gaussian-rasterization CUDA extension (installed as a pip dependency from GitHub) handles the actual differentiable rendering kernel.</p>
+<p><strong>Main dependencies:</strong></p>
+<ul>
+<li>PyTorch 2.1.2 + CUDA 12.1</li>
+<li>diff-gaussian-rasterization (custom fork, installed from GitHub)</li>
+<li>simple-knn (GPU KD-tree for nearest-Gaussian lookups)</li>
+<li>FAISS-GPU 1.8.0 (codebook quantization search)</li>
+<li>Open3D 0.18.0 (mesh reconstruction + evaluation)</li>
+<li>hloc / Hierarchical-Localization (loop closure)</li>
+<li>EVO 1.11.0 (trajectory evaluation metrics)</li>
+<li>ROMA (relative pose estimation fallback)</li>
+</ul>
+<p><strong>Datasets needed:</strong> Replica (synthetic indoor), TUM-RGBD (handheld RGB-D), ScanNet, ScanNet++. Download scripts are in <code>scripts/</code>. The system requires pre-processed depth frames; a preprocessing notebook handles the ScanNet <code>inf</code>-pose frames.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+# 1. Set up environment (RTX 3090/4090 or A100/A6000 required)
+conda create -n vcgs-slam -c nvidia/label/cuda-12.1.0 cuda=12.1 cuda-toolkit=12.1
+conda env update --file environment.yml --prune
+conda activate vcgs-slam
+pip install -r requirements.txt
+cd thirdparty/Hierarchical-Localization &amp;&amp; pip install -e .
+
+# 2. Run SLAM on a scene
+python run_slam.py configs/replica/room0.yaml \
+  --input_path /data/Replica/room0 \
+  --output_path ./output/room0
+
+# 3. Evaluate
+python run_evaluation.py --output_path ./output/room0
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with <code>src/entities/gaussian<em>slam.py</code> (20-50 lines of high-level orchestration) to see the tracking-mapping alternation loop, then <code>mapper.py</code> for the masking and codebook logic. The Scaffold-GS anchor representation in <code>src/Scaffold</em>GS/</code> is the most novel structural piece — it repurposes the SIGGRAPH 2024 Scaffold-GS design for an online SLAM context.</p>
+<p><strong>Code organization.</strong> The repo is research-messy in the usual ways: there are <code>gaussian<em>model</em>old.py</code> and <code>datasets_old.py</code> leftovers, and the boundary between what is CGS-SLAM&#x27;s contribution versus inherited Scaffold-GS code is not clearly commented. The overall structure (tracker / mapper / model split) is a clean and familiar pattern borrowed from MonoGS and Gaussian-SLAM, so the architecture is readable if you know those prior works. The codebook quantization is the hardest piece to follow because it is embedded inside the Scaffold-GS module rather than isolated in its own file.</p>
+<p><strong>Difficulty:</strong> moderate. Someone familiar with 3DGS and one prior GS-SLAM paper (e.g., MonoGS) can orient themselves in an afternoon. The R-VQ compression piece requires reading Scaffold-GS alongside this repo.</p>
+<h2>Run verdict</h2>
+<p><strong>Not runnable on CPU-only.</strong> Hard requirements: NVIDIA GPU with CUDA 12.1+, tested on RTX 3090/4090 and A100. The CUDA kernels in diff-gaussian-rasterization and simple-knn will not compile without nvcc and a CUDA-capable device. The FAISS-GPU codebook search is GPU-only. There is no CPU fallback path and no pre-built viewer. On a CPU-only machine you can read the code and run unit tests that do not invoke the rasterizer, but the actual SLAM pipeline will not execute.</p></article>
+<article class="page" id="gp3"><h1>GARAD-SLAM: 3D Gaussian Splatting for Real-Time Anti Dynamic SLAM</h1>
+<p><strong>ICRA 2025 · 11 citations</strong></p>
+<h2>What it does</h2>
+<p>GARAD-SLAM is a dense RGB-D SLAM system that builds a live 3D Gaussian Splatting map of a scene while simultaneously filtering out moving people and objects so they do not corrupt the map or knock the pose tracker off course. The key twist over prior 3DGS-SLAM work: instead of rejecting dynamic pixels in image space (the standard approach), it reasons about which Gaussian blobs in the 3D map are dynamic and sends those labels back to the front-end tracker. This keeps the underlying map clean without hard-deleting anything — dynamically labelled blobs are penalized during rendering rather than pruned, so the system can recover if an object stops moving.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> The system takes a stream of registered RGB-D frames (color image + per-pixel depth, aligned). It expects the TUM/BONN RGB-D format: 640×480, depth in millimetres. No IMU, no LiDAR.</p>
+<p><strong>What each Gaussian blob stores.</strong> Each 3D Gaussian carries the standard 3DGS parameters: a 3D centre position (mean), a 3×3 covariance encoded as a scale vector + rotation quaternion (the &quot;ellipsoid&quot; shape), an opacity scalar, and spherical-harmonic coefficients for view-dependent colour. On top of that, GARAD-SLAM tags each Gaussian with a <strong>dynamic label</strong> — a binary classification maintained throughout the system&#x27;s lifetime.</p>
+<p><strong>Map initialization and growth.</strong> Depth is unprojected to 3D points using the camera intrinsics, forming an initial point cloud. Each new keyframe adds candidate Gaussian seeds from its depth, which are then optimized via the standard differentiable Gaussian rasterizer (CUDA tile-based renderer). The map grows by densification (splitting and cloning under-covered regions) and is pruned for low-opacity or oversized blobs — the same lifecycle as vanilla 3DGS, except dynamic blobs are never pruned; they are suppressed via penalty instead (see below).</p>
+<p><strong>Dynamic segmentation — the Gaussian pyramid network.</strong> This is the novel front-end. Instead of running a semantic segmentation network on the RGB image, the system reasons about Gaussians directly:</p>
+<ul>
+<li><strong>CRF graph over Gaussians.</strong> A fully connected Conditional Random Field (CRF) is constructed with one node per Gaussian. The unary potential for each node is derived from three signals: the reprojection error of the Gaussian onto the current frame, the depth variance between the Gaussian&#x27;s predicted depth and the measured depth, and the observation frequency (how often this Gaussian has been seen and consistently explained static frames).</li>
+</ul>
+<ul>
+<li><strong>Multi-scale processing (pyramid).</strong> Gaussians are grouped into resolution levels — a coarse level pools spatially nearby Gaussians, finer levels deal with individual blobs. This hierarchical structure lets the CRF propagate dynamic decisions from obvious movers (large, fast, high reprojection error) down to smaller or slower neighbours before solving the pairwise energy.</li>
+</ul>
+<ul>
+<li><strong>Gibbs energy minimization.</strong> The pairwise energy term encodes a smoothness prior: neighbouring Gaussians in 3D space are encouraged to share the same label. The system minimizes this energy (likely via iterative belief propagation or graph cuts — the paper doesn&#x27;t name the solver explicitly) to get a binary static/dynamic assignment per Gaussian.</li>
+</ul>
+<ul>
+<li><strong>Optical flow correction pass.</strong> Sparse optical flow (LK-style tracking of 2D feature points) is computed between consecutive frames. The flow vectors are reprojected onto the Gaussian labels; Gaussians whose projected flow is inconsistent with their CRF label are flipped. This corrects the most common failure mode: a slowly drifting person being mis-classified as static by the CRF alone.</li>
+</ul>
+<p><strong>Tracking (front-end).</strong> The camera pose for each new frame is estimated by ICP-style minimization between the current depth map and the static Gaussians only. Dynamic-labelled Gaussians are excluded from the pose Jacobian computation. This is the critical coupling: without it, a person walking across the frame would pull the estimated camera rotation or translation toward their motion.</p>
+<p><strong>Mapping (back-end optimization).</strong> A windowed bundle-adjustment step re-optimizes the Gaussian parameters (position, shape, colour, opacity) over a set of recent keyframes using the photometric rendering loss — the difference between the Gaussian-rasterized image and the actual camera image. For dynamic-labelled Gaussians, a <strong>rendering penalty</strong> is added to their loss contribution: their opacity is pushed toward zero, suppressing their visual presence in the render without deleting the blobs. If a blob&#x27;s label flips back to static in a later frame (the person sat down, an object stopped moving), the opacity can recover — this is why penalize-not-prune matters.</p>
+<p><strong>Robotics-specific twist.</strong> Dynamic-environment robustness. Most 3DGS-SLAM papers test on static indoor scenes; GARAD-SLAM specifically targets the moving-object case that real robot deployments encounter. The decision to operate on Gaussians rather than pixels is architecturally significant: it lets the system exploit the 3D structure of the map (neighbour relationships in world space, consistent depth) rather than making per-frame 2D decisions that have no memory of where the object was a second ago.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/DrLi-Ming/GARAD-SLAM" target="_blank" rel="noopener">https://github.com/DrLi-Ming/GARAD-SLAM</a></p>
+<p><strong>Status:</strong> Placeholder only as of mid-2026. The repository contains <code>README.md</code>, <code>CITATION.bib</code>, <code>LICENSE</code>, and <code>.gitignore</code> — no source code. The README says &quot;Source code will be released soon.&quot; The build instructions reference a <code>./build.sh</code> script and several system dependencies, implying a C++/CUDA hybrid architecture (consistent with other 3DGS-SLAM systems like MonoGS and SplaTAM).</p>
+<p><strong>Expected language/framework</strong> (from README dependencies):</p>
+<ul>
+<li>C++ for the SLAM back-end (Eigen3, Boost, JsonCPP for pose graph / data structures)</li>
+<li>CUDA 10.1 + cuDNN 8.9.3 for the Gaussian rasterizer and CRF optimization</li>
+<li>PyTorch 2.0.1 for the Gaussian pyramid network (likely the optical-flow module and CRF solver)</li>
+<li>OpenGL / GLFW3 / GLM for the real-time viewer</li>
+</ul>
+<p><strong>Declared dependencies:</strong></p>
+<pre><code>
+libeigen3-dev libboost-all-dev libjsoncpp-dev libopengl-dev
+mesa-utils libglfw3-dev libglm-dev
+CUDA 10.1, cuDNN 8.9.3, PyTorch 2.0.1
+</code></pre>
+<p><strong>Datasets needed:</strong></p>
+<ul>
+<li>TUM RGB-D dynamic sequences (e.g., <code>fr3/walking<em>xyz</code>, <code>fr3/sitting</em>xyz</code>)</li>
+<li>BONN RGB-D dynamic dataset (specifically designed for dynamic SLAM evaluation)</li>
+</ul>
+<p><strong>Top-level structure (inferred from README build instructions — not yet verifiable):</strong></p>
+<pre><code>
+GARAD-SLAM/
+├── build.sh              # top-level build script
+├── CMakeLists.txt        # (expected) C++ build
+├── src/
+│   ├── tracking/         # front-end pose estimation
+│   ├── mapping/          # Gaussian map management
+│   └── segmentation/     # Gaussian pyramid network + CRF
+├── scripts/              # Python: optical flow, dataset loading
+├── viewer/               # OpenGL real-time visualizer
+├── README.md
+├── CITATION.bib
+└── LICENSE
+</code></pre>
+<p><strong>Where to look first (once code ships):</strong> The dynamic segmentation module — likely <code>src/segmentation/</code> or equivalent. That is the paper&#x27;s novel contribution; everything else (Gaussian rasterizer, bundle adjustment) is inherited from existing 3DGS-SLAM codebases (MonoGS / SplaTAM / Gaussian-SLAM).</p>
+<p><strong>How to run (from README):</strong></p>
+<pre><code>
+git clone https://github.com/DrLi-Ming/GARAD-SLAM
+cd GARAD-SLAM
+chmod +x ./build.sh
+./build.sh
+# then presumably: ./run.sh --dataset tum --sequence fr3/walking_xyz
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with the arXiv paper (<a href="https://arxiv.org/abs/2502.03228" target="_blank" rel="noopener">https://arxiv.org/abs/2502.03228</a>), sections 3 (method overview) and 4 (dynamic segmentation). The CRF formulation is the core — once you understand which energy terms drive the static/dynamic split, the rest of the system falls into place. Then read the tracking section to see exactly which Gaussians are excluded from the pose Jacobian.</p>
+<p>For code context before the official repo ships: MonoGS (<a href="https://github.com/muskie82/MonoGS" target="_blank" rel="noopener">https://github.com/muskie82/MonoGS</a>) and Gaussian-SLAM (<a href="https://github.com/VladimirYugay/Gaussian-SLAM" target="_blank" rel="noopener">https://github.com/VladimirYugay/Gaussian-SLAM</a>) are the closest architectural relatives. Both are well-organized research codebases (~5–8 top-level modules, clear separation of tracking/mapping/viewer). GARAD-SLAM likely follows the same pattern.</p>
+<p><strong>Code organization (anticipated).</strong> C++/CUDA SLAM systems of this type tend to be moderately organized: clear module separation for tracking vs. mapping, but the CUDA kernels for the rasterizer are often dense and sparsely commented. The PyTorch components (CRF, optical flow) will be more readable. Expect research-level quality: functional and reproducible, but the connection between the paper&#x27;s mathematical notation and variable names in code will require some cross-referencing.</p>
+<p><strong>What&#x27;s hard to follow</strong> in this class of system: the Gaussian lifecycle (when blobs are born, split, cloned, or penalized) is controlled by a handful of thresholds scattered across the codebase. These thresholds are rarely documented inline and heavily influence output quality. Budget time to trace the densification/pruning calls.</p>
+<h2>Run verdict</h2>
+<p><strong>Not runnable on CPU-only.</strong> The system requires:</p>
+<ul>
+<li>A CUDA GPU for the tile-based Gaussian rasterizer (this is non-negotiable — 3DGS rasterization has no CPU fallback in any existing implementation)</li>
+<li>cuDNN for the neural components (CRF solver, optical flow net)</li>
+<li>Real-time performance (the paper targets live SLAM) implies a mid-range to high-end NVIDIA GPU; comparable systems need an RTX 2080 or better</li>
+</ul>
+<p>Even the real-time viewer uses OpenGL with CUDA interop. There is no CPU inference path and no pre-computed output to inspect. On a CPU-only machine: blocked entirely. On a machine with a CUDA GPU but no cuDNN: the rasterizer might compile but the segmentation network will not run. Minimum viable setup: Ubuntu 20.04 + NVIDIA GPU (RTX 2070+) + CUDA 10.1 + cuDNN 8.9.3 + PyTorch 2.0.1 (CUDA build).</p>
+<p>Additionally, the code has not been released yet, so no one can run it regardless of hardware as of mid-2026.</p></article>
+<article class="page" id="gp4"><h1>GaussianRoom: Improving 3D Gaussian Splatting with SDF Guidance and Monocular Cues for Indoor Scene Reconstruction</h1>
+<p>ICRA 2025 · 11 citations</p>
+<h2>What it does</h2>
+<p>Standard 3D Gaussian Splatting (3DGS) breaks down in indoor scenes because large flat, textureless surfaces (walls, floors, ceilings) give sparse, noisy point cloud initializations, and there is nothing in the photometric loss to prevent Gaussians from drifting off the actual surface. GaussianRoom fixes this by running a neural signed distance field (SDF) in parallel with the Gaussian map and letting the two representations teach each other: the SDF tells the Gaussians where the surfaces are and which blobs to add or remove, while the Gaussians tell the SDF where to concentrate its expensive sampling. Two extra loss terms — one from predicted surface normals, one from predicted edge maps — push the geometry to be sharp in the texture-free regions where the photometric loss is otherwise uninformative.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> A set of calibrated RGB images of an indoor scene (from ScanNet or ScanNet++) plus two sets of monocular predictions run offline: per-pixel surface normals (from the Surface Normal Uncertainty network, stored as <code>.npz</code> files) and per-pixel edge maps (from PIDINet, stored as <code>.png</code> files). COLMAP is used first to get an initial sparse point cloud and camera poses.</p>
+<p><strong>What each Gaussian blob stores.</strong> The standard 3DGS set of per-blob parameters: position (xyz, 3 floats), opacity (1 float), scale along three axes (3 floats, exponentiated), rotation as a quaternion (4 floats), and appearance encoded as spherical harmonic coefficients — one DC term (3 floats for the zero-frequency color) and 15 higher-order terms per color channel. There is a zero-initialized normal slot but it is not actively trained in the Gaussian branch; normals used in the loss are derived from the SDF&#x27;s gradient.</p>
+<p><strong>The SDF branch (NeuRIS).</strong> A neural SDF is implemented as an MLP with hash-grid or positional encoding (inheriting from NeuRIS). It takes a 3D query point and returns a signed distance value. During training, a batch of 3D points is sampled along camera rays, the SDF values are queried, and a standard NeuS-style volume-rendering loss is applied. Crucially, instead of sampling points uniformly along each ray (which is expensive), the system uses the Gaussian-rendered depth map to narrow the sampling range to a thin shell around the visible surface — so the SDF only has to resolve geometry where the Gaussians say matter is.</p>
+<p><strong>The Gaussian branch (3DGS).</strong> Differentiable tile-based rasterization renders the Gaussian cloud into an image. The photometric loss is the standard L1 + SSIM combination used in vanilla 3DGS.</p>
+<p><strong>SDF-guided densification and pruning (the key contribution).</strong> Vanilla 3DGS adds and removes blobs based on how large the gradient of the rendered image is with respect to blob position — a purely photometric signal. GaussianRoom replaces this with <code>sdf<em>densify</em>and<em>prune()</code>. It evaluates the NeuRIS SDF at all current Gaussian centers and computes a <code>sdf</em>densify<em>guidance</code> score via a Gaussian weighting (<code>gaussian</em>fun</code>) that is high when a blob is near the zero-level set (i.e., on a surface) and low when it is far away. Blobs that score above 0.95 are cloned or split regardless of photometric gradient — so the system populates surfaces that are featureless but geometrically located by the SDF. Blobs that score low on the complementary <code>sdf<em>prune</em>guidance</code> are removed. Standard opacity and screen-size pruning is also applied on top.</p>
+<p><strong>Anchor seeding.</strong> When <code>is<em>anchor=True</code>, <code>runner.gen</em>anchor_pts()</code> queries the SDF across a grid, identifies regions close to the zero crossing, and injects new Gaussian seeds there. This is the cold-start mechanism for surfaces that had no COLMAP points at all.</p>
+<p><strong>Normal regularization loss.</strong> When <code>is<em>gs</em>norm=True</code>, the rendered Gaussian depth is used to compute per-pixel surface normals (via finite differences over the depth map). These are compared with the monocular normal predictions using both an L1 term and a cosine similarity term, weighted by <code>lambda<em>l1</em>normal</code> and <code>lambda<em>cos</em>normal</code>. This pushes the Gaussian geometry to match the general surface orientation even in low-texture regions.</p>
+<p><strong>Edge regularization loss.</strong> The photometric L1 loss is re-weighted per pixel by <code>edge_weight = 2 * sigmoid(edge)</code>, where <code>edge</code> is the PIDINet edge-probability map. High-edge pixels (object boundaries, depth discontinuities) receive extra photometric supervision, guiding the Gaussians to stay sharp at those locations.</p>
+<p><strong>Training schedule.</strong> The GS branch and the SDF branch share a single training loop. They are updated in alternating mini-batches. The SDF-to-GS interaction (densification/pruning calls that query the SDF) is active for a specific iteration window (<code>sdf2gs<em>from</code> to <code>sdf2gs</em>end</code>), avoiding disrupting either branch before it has converged enough to give useful geometry.</p>
+<p><strong>Robotics angle.</strong> The stated motivation is embodied intelligence: a robot navigating an indoor environment needs a dense, geometrically accurate reconstruction of walls, floors, and furniture — not just a photorealistic texture. The SDF produces a clean mesh via marching cubes for downstream planning or collision checking, while the Gaussians provide real-time rendering for a simulator or policy evaluation loop.</p>
+<h2>The code</h2>
+<p><strong>Repo.</strong> <a href="https://github.com/xhd0612/GaussianRoom" target="_blank" rel="noopener">https://github.com/xhd0612/GaussianRoom</a></p>
+<p><strong>Language / framework.</strong> Python 3.9, PyTorch 2.5.0 + CUDA 11.8. The Gaussian rasterizer is a custom CUDA extension (<code>diff<em>gaussian</em>rasterization</code>, compiled from a submodule). The SDF branch is NeuRIS, included as a subdirectory.</p>
+<p><strong>Top-level structure.</strong></p>
+<pre><code>
+GaussianRoom/
+├── train.py               # main entry: joint GS + SDF training loop
+├── render.py              # render a trained Gaussian scene to images
+├── metrics.py             # PSNR / SSIM / LPIPS evaluation
+├── full_eval.py           # run eval on all scenes in a benchmark
+├── convert.py             # COLMAP-to-3DGS data conversion
+├── run.sh                 # driver script (edit paths, then bash run.sh)
+├── arguments/             # argument dataclasses for GS hyperparameters
+├── confs/                 # HOCON config files for NeuRIS SDF branch
+├── gaussian_renderer/     # tile rasterizer wrapper (__init__.py)
+├── scene/
+│   ├── gaussian_model.py  # Gaussian blob class + sdf_densify_and_prune
+│   ├── dataset_readers.py # ScanNet / ScanNet++ data loaders
+│   └── cameras.py         # camera projection math
+├── NeuRIS/                # full NeuRIS SDF codebase (submodule copy)
+│   ├── exp_runner.py      # Runner class: SDF training + loss_neus()
+│   ├── models/            # SDF MLP, color network, ray sampler
+│   └── confs/             # per-scene SDF configs
+├── NeuRIS-eval/           # evaluation scripts for the SDF mesh
+├── submodules/            # diff_gaussian_rasterization, simple_knn
+├── utils/                 # image I/O, loss utilities, training helpers
+├── lpipsPyTorch/          # local LPIPS implementation
+└── requirements.txt       # pinned full environment (~150 packages)
+</code></pre>
+<p><strong>Where the core method lives.</strong> Open <code>scene/gaussian<em>model.py</code> first — specifically <code>sdf</em>densify<em>and</em>prune()</code>, <code>sdf<em>densify</em>and<em>clone()</code>, and <code>sdf</em>densify<em>and</em>split()</code>. These three functions are the geometric heart of the contribution. Then read <code>train.py</code> to see how the two branches are synchronized: the call to <code>runner.sdf<em>network</em>fine.sdf(pts)</code> is the SDF query that feeds into those functions, and <code>runner.get<em>model</em>input(...)</code> is where Gaussian depth maps are handed to the SDF sampler.</p>
+<p><strong>Main dependencies.</strong> PyTorch 2.5 + CUDA 11.8 (hard requirement — nvidia-cu11 wheels are pinned). <code>diff<em>gaussian</em>rasterization</code> and <code>simple<em>knn</code> must be built from source (CUDA required). NeuRIS dependencies: <code>pyhocon</code>, <code>PyMCubes</code>, <code>trimesh</code>, <code>pyrender</code>, <code>open3d</code>, <code>roma</code>. Normal predictions need <code>surface</em>normal_uncertainty</code> (separate download); edge predictions need <code>pidinet</code> (separate download). Datasets: ScanNet (requires signing an agreement) and ScanNet++ (same).</p>
+<p><strong>Running it.</strong> Edit paths in <code>run.sh</code>, then <code>bash run.sh</code>. Data must be pre-organized into two parallel directories per scene: <code>data/scene<em>name-GS/</code> (for the Gaussian branch: <code>images/</code>, <code>sparse/</code>) and <code>data/scene</em>name-SDF/</code> (for NeuRIS: <code>image/</code>, <code>pred<em>normal/</code>, <code>pred</em>edge/</code>, <code>cameras_sphere.npz</code>, intrinsics file). The data-prep steps follow NeuRIS conventions exactly.</p>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>scene/gaussian<em>model.py</code> — read the <code></em><em>init</em><em></code> to understand what each blob stores, then jump to <code>sdf</em>densify<em>and</em>prune</code>. The <code>gaussian<em>fun</code> weighting function (the SDF-to-score mapping) is short and makes the densification logic self-contained. After that, read <code>train.py</code> top-to-bottom: it is dense but well-commented, and the iteration-gated <code>if first</em>iter &lt;= iteration &lt;= sdf2gs_end:</code> blocks make the training schedule explicit.</p>
+<p>The code is research-quality, not production-quality. The NeuRIS submodule is a near-verbatim copy of a separate codebase, so if you want to understand the SDF architecture (the MLP layers, the positional encoding, the NeuS rendering integral), you need to read <code>NeuRIS/models/</code> independently. The two branches are loosely coupled through function calls in <code>train.py</code> rather than a clean interface, which means tracing a gradient from image loss through to Gaussian position requires jumping between several files. That said, the Gaussian branch is recognizably vanilla 3DGS with surgical additions, which helps if you already know 3DGS. The config system is split: GS hyperparameters come from <code>arguments/</code> Python dataclasses; SDF hyperparameters come from HOCON <code>.conf</code> files under <code>confs/</code>. Overall: organized enough to follow the paper, but expect to spend time reconciling the two codebases.</p>
+<h2>Run verdict</h2>
+<p>Not runnable on CPU only. The system requires CUDA in three distinct places: (1) <code>diff<em>gaussian</em>rasterization</code> is a CUDA kernel that cannot run without a GPU, (2) NeuRIS&#x27;s ray-marching volume rendering is implemented in CUDA, and (3) the requirements pin <code>torch==2.5.0+cu118</code> with explicit nvidia-cu11 wheels. The authors recommend more than 32 GB of VRAM for full-resolution ScanNet training — this rules out any consumer GPU below an A100. There is no CPU fallback, no inference-only viewer mode, and no pretrained checkpoint released for scene-agnostic rendering. A machine without a high-end NVIDIA GPU cannot run this at all.</p></article>
+<article class="page" id="gp5"><h1>Advancing Dense Endoscopic Reconstruction with Gaussian Splatting-Driven Surface Normal-Aware Tracking and Mapping</h1>
+<p>(Endo-2DTAM)  ICRA 2025 · citations: 10</p>
+<h2>What it does</h2>
+<p>Endo-2DTAM is a real-time SLAM system for endoscopic (camera-inside-body) video that replaces 3D Gaussian ellipsoids with 2D disk-shaped surfels — a variant called 2D Gaussian Splatting (2DGS). Because each surfel is a flat disk, its orientation directly encodes the local surface normal. The system exploits that normal information in both tracking (pose estimation per frame) and mapping (scene update), achieving sub-2 mm depth reconstruction accuracy in colonoscopy video. It runs in real time and is one of the first GS-SLAM systems designed specifically for deformable, texture-poor, single-camera surgical scenes rather than rigid indoor rooms.</p>
+<h2>The method, in detail</h2>
+<p><strong>The representation — 2D Gaussian surfels.</strong> Standard 3DGS uses 3D ellipsoids; each stores position, a full 3x3 covariance (encoded as rotation + scale), opacity, and spherical-harmonic color coefficients. The critical problem for surface reconstruction is that a 3D ellipsoid has no single surface normal — it is a volume. 2DGS collapses one scale axis to zero, making each primitive a flat disk in 3D space. Each surfel stores: center position X (3D), two orthogonal tangent vectors (t<em>u, t</em>v) whose cross product t<em>w = t</em>u x t<em>v is the normal, two scale values (s</em>u, s_v) for disk size, opacity, and RGB color. This makes the surface normal an explicit, differentiable parameter of every Gaussian.</p>
+<p><strong>Inputs.</strong> RGB-D frames from an endoscope: color image + calibrated depth map (from a stereo or structured-light source). Camera intrinsics are assumed known. The system also reads ground-truth depth and ground-truth normals (derived on-the-fly via finite differences across the depth map) for supervision.</p>
+<p><strong>Initialization.</strong> The first RGB-D frame is back-projected into a point cloud. Each point becomes one 2D Gaussian disk, with scale, opacity, and color initialized from that pixel. No pretrained network is used — initialization is purely geometric.</p>
+<p><strong>Tracking (pose estimation, per frame).</strong> Camera pose is predicted with a constant-velocity motion model (current pose = previous pose + last delta). The predicted pose is then refined via gradient descent while the Gaussian map is held fixed. Three losses drive this:</p>
+<ul>
+<li>Point-to-point depth loss: L1 distance between rendered depth and ground-truth depth.</li>
+<li>Point-to-plane loss: L1 distance between the 3D point error projected onto the ground-truth surface normal (N_GT, computed as the cross product of depth gradients). This penalizes error along the normal direction more than tangential drift — an ICP-inspired term that is more geometrically meaningful than raw depth error.</li>
+<li>Color loss: L1 between rendered RGB and observed RGB, with an affine exposure correction applied (endoscopes have strong illumination variation).</li>
+</ul>
+<p>The tracking step runs for 15 iterations per frame. This is deliberately cheap — tracking only moves the camera, not the map.</p>
+<p><strong>Gaussian expansion.</strong> Every k frames (k=8 in the base variant), the system checks which parts of the current frame are not yet covered by the Gaussian map. Coverage is measured by the rendered silhouette: pixels where the accumulated opacity falls below a threshold (0.5) have missing geometry. New 2D Gaussians are initialized from the RGB-D data at those uncovered pixels and added to the map.</p>
+<p><strong>Mapping (scene optimization, per frame).</strong> With camera poses fixed, the 2D Gaussian parameters are updated by minimizing:</p>
+<ul>
+<li>Reconstruction loss: 80% L1 color + 20% SSIM (structural similarity).</li>
+<li>Point-to-point depth loss (same as tracking).</li>
+<li>Depth distortion loss: For each ray through the scene, Gaussians are composited front-to-back. The distortion loss penalizes cases where two Gaussians at very different depths both contribute significant weight — it forces depth-ordering consistency and prevents &quot;floaters&quot; and fuzzy surfaces. Formulated as the weighted sum of |z<em>i - z</em>j| over all Gaussian pairs on each ray, weighted by their rendering weights.</li>
+<li>Normal consistency loss: For each Gaussian contributing to a pixel, its disk normal n<em>i should match the depth-derived ground-truth normal N</em>GT. Loss = sum over contributing Gaussians of w<em>i * (1 - n</em>i . N_GT). This is the key robotics-domain adaptation: it uses the normal built into the surfel representation to regularize geometry, which is critical in the textureless, featureless regions typical of intestinal mucosa.</li>
+</ul>
+<p>Hyperparameters: depth distortion weight alpha = 1000, normal consistency weight beta = 0.05. Mapping runs 15 iterations per frame.</p>
+<p><strong>Bundle adjustment.</strong> Every 100 tracking iterations, a global bundle adjustment jointly optimizes both camera poses and Gaussian parameters over a selected set of keyframes. The combined loss is the full tracking + mapping objective. It runs for 200 iterations.</p>
+<p><strong>Pose-consistent keyframe sampling.</strong> Rather than selecting keyframes by overlap ratio alone, the system samples keyframes probabilistically based on three signals: translational distance from the current frame, rotational distance (quaternion error), and temporal distance (frame index gap). Each candidate keyframe&#x27;s probability is P = sum over {d<em>l, r</em>l, t_l} of log2(1 + 1/(l + 0.2)). Frames that are far away in position, rotated differently, and from a different time point all get higher probability. This prevents the map from collapsing onto nearby redundant views — a particular risk in endoscopy where the camera often backtracks.</p>
+<p><strong>Robotics-specific twist — medical endoscopy context.</strong> Endoscopic scenes are unlike indoor SLAM targets in three ways: (1) the tissue is deformable (the system assumes quasi-static scenes per clip, side-stepping full deformation modeling); (2) there is essentially no rigid texture — surfaces are smooth and pink-pink-pink, making color-based tracking unreliable; (3) depth from an endoscope is much noisier than from a depth camera. The method addresses (2) and (3) by leaning heavily on geometry (the normal-aware losses), while (1) is left as a limitation acknowledged in the paper.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/lastbasket/Endo-2DTAM" target="_blank" rel="noopener">https://github.com/lastbasket/Endo-2DTAM</a></p>
+<p><strong>Language / framework:</strong> Python 3.10, PyTorch 1.13.1 with CUDA 11.8. The rasterizer is a custom CUDA/C++ extension (<code>diff-surfel-rasterization</code>, forked from hbb1&#x27;s 2DGS rasterizer), not pure PyTorch — CUDA compilation is required at install time.</p>
+<p><strong>Repo structure (top-level):</strong></p>
+<pre><code>
+configs/          — YAML config files per sequence/model size (Base, Small, Tiny)
+datasets/         — dataset loader and preprocessing scripts
+figs/             — paper figures, not needed for running
+scripts/
+  main.py         — entry point: rgbd_slam() function, full tracking+mapping loop
+  calc_metrics.py — compute PSNR/SSIM/LPIPS/ATE/RMSE post-run
+  extract_mesh.py — Poisson/marching-cubes mesh from trained Gaussians
+  extract_gt_mesh.py — same for ground truth, for comparison
+utils/
+  slam_helpers.py       — Gaussian init, add_new_gaussians(), transform_to_frame(),
+                          L1/L2 losses, optimizer setup
+  keyframe_selection.py — pose-consistent probabilistic keyframe sampling
+  depth_to_normal.py    — finite-difference normal estimation from depth maps
+  recon_helpers.py      — mapping iteration loop and bundle adjustment
+  slam_external.py      — interface to diff-surfel-rasterization (render call)
+  eval_helpers.py       — tracking-accuracy and rendering-quality evaluation
+  online_render.py      — real-time viewer during SLAM
+  point_utils.py        — back-projection, point cloud ops
+  metrics_helper.py     — metric accumulators
+  vis_utils.py, vis_dep.py, plot_traj_gt.py — visualization
+viz_scripts/      — standalone visualization helpers
+slam.sh           — shell wrapper: sets config path, calls scripts/main.py
+eval.sh           — shell wrapper for eval
+viz_mesh.sh       — shell wrapper for mesh visualization
+requirements.txt  — pip dependencies (see below)
+</code></pre>
+<p><strong>Where the core method lives:</strong> Start with <code>scripts/main.py</code> — the <code>rgbd<em>slam()</code> function is the full pipeline. Tracking loss and per-frame optimization are in <code>utils/slam</em>helpers.py</code> (loss functions, Gaussian addition). The mapping/BA iteration logic is in <code>utils/recon<em>helpers.py</code>. The actual 2DGS render call goes through <code>utils/slam</em>external.py</code> into the CUDA <code>diff-surfel-rasterization</code> extension. The keyframe sampler is <code>utils/keyframe_selection.py</code>.</p>
+<p><strong>Main dependencies:</strong></p>
+<ul>
+<li><code>torch==1.13.1</code>, <code>torchvision==0.14.1</code> (CUDA 11.8 build)</li>
+<li><code>diff-surfel-rasterization</code> (manual git clone + pip install, requires CUDA toolkit)</li>
+<li><code>simple-knn</code> (manual git clone + pip install, for k-NN during densification)</li>
+<li><code>open3d==0.16.0</code> (mesh extraction, point cloud ops)</li>
+<li><code>opencv-python==4.9.0</code>, <code>kornia</code> (image processing)</li>
+<li><code>lpips</code>, <code>pytorch-msssim</code> (evaluation metrics)</li>
+<li><code>trimesh</code>, <code>plotly</code> (mesh visualization)</li>
+</ul>
+<p><strong>Dataset:</strong> C3VD (Colonoscopy 3D Video Dataset). 10 sequences, 675x540 resolution, ~638 frames each. Each sequence: <code>color/</code> (RGB PNGs), <code>depth/</code> (depth PNGs in mm), <code>pose.txt</code> (4x4 camera-to-world matrices). The README links to a Google Drive with the preprocessed version used in the paper (same format as EndoGSLAM&#x27;s preprocessing). Not included in the repo — must be downloaded separately.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+conda create -n endo2dtam python=3.10
+conda activate endo2dtam
+pip install torch==1.13.1 torchvision==0.14.1 --extra-index-url https://download.pytorch.org/whl/cu118
+pip install -r requirements.txt
+git clone https://github.com/hbb1/diff-surfel-rasterization.git
+pip install ./diff-surfel-rasterization
+git clone https://github.com/camenduru/simple-knn.git
+pip install ./simple-knn
+# download C3VD dataset into data/
+bash slam.sh          # runs one sequence per the config
+bash eval.sh          # computes metrics
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li><code>scripts/main.py</code> — the <code>rgbd_slam()</code> function. Read it top to bottom: it is the canonical description of the pipeline in code. It is ~400 lines and well-commented relative to most research code.</li>
+<li><code>utils/slam<em>helpers.py</code> — focus on <code>add</em>new<em>gaussians()</code>, <code>transform</em>to_frame()</code>, and the loss helper functions. These are the building blocks.</li>
+<li><code>utils/recon_helpers.py</code> — the mapping and bundle adjustment loops; this is where the depth distortion and normal consistency losses are assembled and applied.</li>
+<li><code>utils/depth<em>to</em>normal.py</code> — short file, shows how ground-truth normals are derived from depth (the key signal that makes the method work).</li>
+</ul>
+<p><strong>Code quality:</strong> Research-typical but cleaner than average. The repo has a logical folder separation between scripts (entry points) and utils (modules). Variable names match the paper&#x27;s notation fairly closely. The configs directory makes it easy to reproduce the paper&#x27;s three model sizes (Base/Small/Tiny) without editing code. The main complexity is the CUDA extension dependency (<code>diff-surfel-rasterization</code>), which requires matching CUDA toolkit and PyTorch versions — version mismatches are the most common install failure. There is no unit test suite. The README covers installation and dataset prep but does not explain individual module internals.</p>
+<h2>Run verdict</h2>
+<p><strong>Not runnable on a CPU-only box.</strong> This system requires a CUDA GPU for two reasons:</p>
+<ul>
+<li><code>diff-surfel-rasterization</code> is a CUDA extension — it compiles CUDA kernels at install time and will not build without a CUDA toolkit and GPU.</li>
+<li>Even if you bypassed that, the optimization loop over hundreds of thousands of Gaussians per frame would be unusably slow on CPU; real-time tracking at 15 iterations/frame is only feasible on GPU.</li>
+</ul>
+<p>The README explicitly states development on Ubuntu 20.04 with an RTX 4090. A mid-range CUDA GPU (RTX 3080 or better, 10+ GB VRAM for the Base model) is the practical minimum. There is no CPU fallback mode, no ONNX export, and no pretrained checkpoint that could be loaded for inference-only CPU use.</p></article>
+<article class="page" id="gp6"><h1>SeaSplat: Representing Underwater Scenes with 3D Gaussian Splatting and a Physically Grounded Image Formation Model</h1>
+<p>ICRA 2025 · 10 citations</p>
+<h2>What it does</h2>
+<p>SeaSplat takes a set of underwater images (with COLMAP camera poses) and builds a 3D Gaussian Splatting scene that simultaneously models the true scene color and the water medium that obscures it. Because water attenuates light in a range- and wavelength-dependent way and adds backscattered glow, standard 3DGS trained on underwater images learns a corrupted appearance. SeaSplat bakes a physics-based underwater image formation model directly into the differentiable rendering pipeline, so the Gaussians learn the restored, in-air color of every point while globally learned medium parameters account for the water. At inference time you can render the scene either as it looks underwater (with the medium re-applied) or as a clean, dewatered novel view.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> A directory of undistorted underwater images plus COLMAP sparse reconstruction output (<code>sparse/0/</code>) — the standard 3DGS input format.</p>
+<p><strong>What the Gaussians store.</strong> Each Gaussian primitive holds the standard 3DGS parameters: mean position (3D), covariance encoded as scale + rotation quaternion, opacity, and color expressed as spherical harmonic coefficients. Crucially, the color SH coefficients here represent the *true in-air scene color J*, not the observed underwater color.</p>
+<p><strong>Underwater image formation model.</strong> The method adopts the revised SeaThru formation equation:</p>
+<pre><code>
+I = J * exp(-beta_D * Z) + B_inf * (1 - exp(-beta_B * Z))
+</code></pre>
+<p>where I is the observed degraded pixel, J is the true color, Z is per-pixel depth, <code>beta<em>D</code> (attenuation) and <code>beta</em>B</code> (backscatter) are wavelength-dependent (one value per RGB channel), and <code>B<em>inf</code> is the color of water at infinite depth. These four global parameter sets — beta</em>D, beta<em>B, B</em>inf, plus the depth-to-attenuation mapping — are learned jointly with the Gaussians. The coefficients beta<em>D and beta</em>B are implemented as 1×1×3 convolution kernels applied to the depth image, making them differentiable and GPU-friendly.</p>
+<p><strong>Depth extraction.</strong> A second rendering pass runs the standard Gaussian rasterizer but replaces each Gaussian&#x27;s color with its z-depth value, producing a per-pixel depth map Z from the same scene representation. This depth feeds directly into the formation model.</p>
+<p><strong>Two-phase optimization.</strong> Training runs standard 3DGS from scratch for the first 10,000 iterations (flag <code>--seathru<em>from</em>iter 10000</code>). After that, the underwater image formation model activates and medium parameters start being optimized alongside the Gaussian parameters. This staging prevents the medium model from interfering with initial scene geometry.</p>
+<p><strong>Seven loss terms.</strong> The total loss is:</p>
+<ul>
+<li><code>L_GS</code> — standard 3DGS photometric loss (L1 + D-SSIM on rendered vs. observed image, with the medium re-applied to the Gaussian render).</li>
+<li><code>L_bs</code> (backscatter) — dark channel prior applied to backscatter estimate, encouraging the medium model to explain dark regions rather than the Gaussians absorbing them.</li>
+<li><code>L_gw</code> (gray world) — pushes the mean of each color channel toward mid-range, preventing trivial solutions where all J goes to zero.</li>
+<li><code>L_sat</code> (saturation) — penalizes restored color values above 0.7, preventing the dewatering from overcorrecting to blown-out whites.</li>
+<li><code>L<em>op</code> (opacity) — for pixels whose observed color matches B</em>inf (pure backscatter water column), this drives Gaussian opacity low, removing floaters in open water.</li>
+<li><code>L_Z-smooth</code> (edge-aware depth smoothness) — regularizes depth, allowing discontinuities at image edges but penalizing noise in uniform regions.</li>
+<li><code>L_Z-recon</code> (depth-weighted reconstruction) — upweights photometric error in far regions that suffer most from medium degradation, guiding geometry in those areas.</li>
+</ul>
+<p>Gradient detachment is applied in <code>L_bs</code>: gradients from backscatter loss do not flow back through the depth computation, preventing the medium model from distorting scene geometry.</p>
+<p><strong>Robotics-specific twist.</strong> The paper is squarely aimed at underwater robotics: the SeaThru-NeRF dataset was collected by an underwater vehicle. A clean, accurate 3D map of the seafloor is essential for AUV navigation and inspection tasks, and recovering true scene color (rather than the bluish/greenish appearance underwater cameras produce) is important for object detection and identification in scientific or inspection missions.</p>
+<h2>The code</h2>
+<p><strong>Repo.</strong> <a href="https://github.com/dxyang/seasplat" target="_blank" rel="noopener">https://github.com/dxyang/seasplat</a> (70 stars, 11 forks as of mid-2026)</p>
+<p><strong>Language / framework.</strong> Python 3.10, PyTorch 2.1.0, CUDA 12.2. The rasterization kernel is the standard <code>diff-gaussian-rasterization</code> CUDA extension from the original INRIA 3DGS codebase. Medium parameter optimization is pure PyTorch autograd on top.</p>
+<p><strong>Top-level structure.</strong></p>
+<pre><code>
+seasplat/
+  train.py              # main training loop; where seathru_from_iter logic lives
+  render_uw.py          # inference / render script (both underwater and dewatered)
+  convert.py            # convert raw data to COLMAP format
+  metrics.py            # PSNR/SSIM/LPIPS evaluation
+  requirements.txt
+  Dockerfile
+
+  arguments/            # argparse config: all hyperparameters including seathru flags
+  scene/                # Scene class, Camera class, GaussianModel — core data structures
+  gaussian_renderer/    # wraps diff-gaussian-rasterization; the second depth-render pass lives here
+  deepseecolor/         # underwater image formation model: beta_D, beta_B, B_inf, loss terms
+  lpipsPyTorch/         # perceptual loss helper
+  submodules/           # diff-gaussian-rasterization and simple-knn as git submodules
+  utils/                # image/loss utilities
+</code></pre>
+<p><strong>Where the core method lives.</strong> Open <code>deepseecolor/</code> first — this directory contains the underwater image formation model: the parameter tensors (beta<em>D, beta</em>B, B<em>inf), the forward pass applying the formation equation to rendered images + depth, and all seven loss functions. The integration point in <code>train.py</code> is the block guarded by <code>if iteration &gt;= seathru</em>from_iter</code>, where the deepseecolor forward pass wraps the standard Gaussian render output before computing loss.</p>
+<p>The second key file is <code>gaussian<em>renderer/</em><em>init</em>_.py</code>, which contains the depth rendering pass (a second call to the rasterizer with z-values substituted for color SH).</p>
+<p><strong>Main dependencies.</strong></p>
+<ul>
+<li><code>torch==2.1.0</code> + matching CUDA toolkit</li>
+<li><code>diff-gaussian-rasterization</code> (INRIA CUDA extension, built from submodule)</li>
+<li><code>simple-knn</code> (KNN for Gaussian densification, built from submodule)</li>
+<li><code>lpips</code>, <code>imageio</code>, <code>Pillow</code>, <code>scipy</code>, <code>tqdm</code></li>
+</ul>
+<p><strong>Datasets.</strong></p>
+<ul>
+<li>SeaThru-NeRF dataset (Curasao, Japanese Gardens, Panama, IUI3) — publicly available</li>
+<li>Salt Pond dataset (authors provide via Google Drive link on project page)</li>
+<li>Simulation-degraded variants of in-air scenes (SimFog Garden, SimWater Garden)</li>
+<li>Any COLMAP-processed underwater image collection works if you provide <code>images/</code> and <code>sparse/0/</code></li>
+</ul>
+<p><strong>How to run.</strong></p>
+<pre><code>
+git clone git@github.com:dxyang/seasplat.git --recursive
+conda create -n seasplat_py310 python=3.10 -y &amp;&amp; conda activate seasplat_py310
+pip install torch==2.1.0+cu122 torchvision --index-url https://download.pytorch.org/whl/cu122
+pip install -r requirements.txt
+# build CUDA submodules
+pip install submodules/diff-gaussian-rasterization submodules/simple-knn
+
+# train with underwater model (activates after 10k iters)
+python train.py -s /path/to/dataset --exp my_run --do_seathru --seathru_from_iter 10000
+
+# render: outputs both underwater and dewatered images
+python render_uw.py -m output/my_run
+
+# evaluate
+python metrics.py -m output/my_run
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with <code>deepseecolor/<em>_init</em><em>.py</code> (or whichever file in that directory holds the formation model class). It contains the physics equation, the parameter definitions, and all seven loss terms with comments. Then read the <code>seathru</em>from<em>iter</code> block in <code>train.py</code> to see how these plug into the main loop. Read <code>gaussian</em>renderer/<em>_init</em>_.py</code> next to understand the depth render pass — it is a small delta on top of the standard 3DGS renderer.</p>
+<p><strong>Code organization.</strong> The repo is a clean fork of the INRIA 3DGS codebase with the underwater additions confined mostly to the <code>deepseecolor/</code> module. Anyone already familiar with the original 3DGS code (Kerbl et al. 2023) will find this easy to navigate. The additions are well-isolated. The main complexity is the interaction between the depth render pass and the formation model, and the gradient detachment choices — these are research-grade code (not production) but the structure is cleaner than average for a methods paper. The seven loss terms are individually named and could be ablated by removing flags.</p>
+<h2>Run verdict</h2>
+<p><strong>Requires a CUDA GPU — not runnable on a CPU-only box.</strong> The <code>diff-gaussian-rasterization</code> submodule is a compiled CUDA extension; it will fail to build without nvcc and a compatible GPU. The standard 3DGS training loop also requires GPU memory for the point cloud (typically 6–12 GB for a scene this size). There is no CPU fallback and no ONNX export. The <code>render_uw.py</code> script also invokes the CUDA rasterizer, so even inference is GPU-only. If you have a GPU, Ubuntu 22.04 + CUDA 12.2 is the tested environment; the Dockerfile makes setup reproducible.</p></article>
+<article class="page" id="gp7"><h1>AutoSplat: Constrained Gaussian Splatting for Autonomous Driving Scene Reconstruction</h1>
+<p>(ICRA 2025 · 9 citations · DOI: 10.1109/ICRA55743.2025.11127564 · arXiv: 2407.02598)</p>
+<h2>What it does</h2>
+<p>AutoSplat reconstructs autonomous driving scenes from multi-camera and LiDAR sequences into a 3D Gaussian Splatting representation that can synthesize novel viewpoints in real time — including viewpoints that simulate lane changes or other camera positions not present in the original capture. It treats the scene as three distinct layers (road/sky background, general background, and dynamic foreground vehicles) with separate initialization and constraints for each. The key contribution is a set of geometric constraints and a reflection-based supervision trick that together make Gaussian Splatting tolerate the sparse viewpoints, large outdoor scale, and moving objects that kill standard 3DGS in driving contexts.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> A calibrated sequence of N monocular images with per-frame camera intrinsics and extrinsics, synchronized LiDAR point clouds, and 3D bounding box trajectories for dynamic objects (these come from a standard perception stack or annotation). No stereo pair and no depth sensor beyond LiDAR.</p>
+<p><strong>Representation.</strong> Each 3D Gaussian blob stores: 3D mean position, a 3x3 covariance encoded as a rotation quaternion plus three scale values, opacity, and spherical harmonic (SH) coefficients for view-dependent color. Foreground vehicle Gaussians get an extra per-frame residual SH vector on top of the base SH.</p>
+<p><strong>Initialization — background.</strong> LiDAR point clouds accumulated across all frames seed the background Gaussians. This gives far better spatial coverage of the road and distant structure than the Structure-from-Motion point clouds that standard 3DGS uses, which often miss flat road surfaces entirely.</p>
+<p><strong>Initialization — foreground.</strong> A single-image 3D reconstruction network generates a coarse vehicle mesh template from one image of each tracked object. That template is replicated for every frame in which the object appears, placed in world coordinates according to the tracked 3D bounding box, and then scaled along each axis so its bounding box matches the annotated object dimensions. Gaussians are seeded on those scaled template points. This solves the severe problem that driving cameras only see one side of a vehicle — you get a geometrically reasonable full-body initialization without 360-degree capture.</p>
+<p><strong>Road and sky geometric constraint.</strong> A semantic segmentation model (Mask2Former, pretrained) labels road and sky pixels per frame. Gaussians whose centers fall inside those regions are penalized for having non-zero roll/pitch angles or non-zero vertical scale:</p>
+<p>  C<em>g = (1/N</em>g) * sum( |roll<em>i| + |pitch</em>i| + |sz_i| )</p>
+<p>This forces road/sky Gaussians to be flat horizontal or flat vertical discs, which makes them render consistently from any viewpoint angle — essential when you want to synthesize a shifted camera position during a simulated lane change.</p>
+<p><strong>Reflected Gaussian consistency constraint.</strong> Vehicles are approximately bilaterally symmetric. AutoSplat reflects each foreground Gaussian across the vehicle&#x27;s symmetry plane using a reflection matrix M = I - 2(aa^T)/||a||^2 where a is the lateral axis of the vehicle. The position, rotation matrix, and SH coefficients (rotated using the Wigner D-matrix to keep the viewing-angle dependence physically correct) are all reflected. These reflected ghost Gaussians are rasterized and compared to the ground-truth image with a standard photometric loss. The result: the unseen far side of every vehicle gets supervised through the reflected view of the near side. Without this, the unseen half of the vehicle is unconstrained and produces garbage when the novel view exposes it.</p>
+<p><strong>Dynamic appearance — residual spherical harmonics.</strong> A small MLP takes a per-frame temporal embedding E<em>t, a Gaussian&#x27;s world-space position x, and its base SH coefficients f</em>SH as input, and outputs a residual delta<em>f</em>SH<em>t. The per-frame SH is then f</em>SH + delta<em>f</em>SH_t. This lets the color model adapt to lighting changes, glare, and reflections that change as the vehicle moves. A sparsity loss (weight gamma) penalizes large residuals to prevent flickering.</p>
+<p><strong>Training schedule — four phases.</strong></p>
+<ul>
+<li>Background phase 1 (15k iterations): road and sky regions only, with geometric flatness constraint active.</li>
+<li>Background phase 2 (15k iterations): all background Gaussians together.</li>
+<li>Foreground (5k iterations): vehicle Gaussians optimized with reflected consistency loss; background frozen.</li>
+<li>Joint fine-tuning (10k iterations): foreground and background rendered together; only foreground attributes and background opacity are updated (positions/scales of background are frozen to avoid drift).</li>
+</ul>
+<p>Loss is L1 + (1-lambda)*DSSIM, standard for 3DGS, plus the constraint terms.</p>
+<p><strong>Robotics-specific twist.</strong> The method is squarely aimed at driving simulation: it supports synthesizing novel camera poses for lane-change evaluation, handles moving objects explicitly rather than treating them as noise, and uses the sensor suite (LiDAR + calibrated camera rig) that autonomous vehicles already carry — not a lab scanner.</p>
+<h2>The code</h2>
+<p><strong>Repo URL.</strong> No public code repository has been released. The GitHub organization at <a href="https://github.com/autosplat/" target="_blank" rel="noopener">https://github.com/autosplat/</a> contains only the project website source (autosplat/autosplat.github.io, JavaScript, 5 stars). The project page at <a href="https://autosplat.github.io/" target="_blank" rel="noopener">https://autosplat.github.io/</a> does not link to any code. As of the ICRA 2025 publication, the implementation is not open-sourced.</p>
+<p><strong>Language/framework.</strong> Based on the method description and standard practice in the 3DGS ecosystem: Python, PyTorch, CUDA. The base 3DGS rasterizer uses CUDA extensions. Mask2Former would come from the detectron2 framework.</p>
+<p><strong>Repo structure.</strong> Not available — no code released.</p>
+<p><strong>Key file to open first.</strong> None (no code released).</p>
+<p><strong>Main dependencies (inferred).</strong> The 3DGS codebase (gaussian-splatting by graphdeco-inria), PyTorch, detectron2 (for Mask2Former segmentation), a single-image 3D reconstruction network for vehicle templates (paper cites [23], likely an off-the-shelf model).</p>
+<p><strong>Datasets.</strong> PandaSet (free for non-commercial use, requires registration) and KITTI (public, requires registration). Both provide calibrated multi-camera imagery, LiDAR, and 3D bounding box annotations.</p>
+<p><strong>How to run.</strong> No code to run. The project page only provides qualitative videos.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with the arXiv HTML version (<a href="https://arxiv.org/html/2407.02598v1" target="_blank" rel="noopener">https://arxiv.org/html/2407.02598v1</a>), specifically: Section III-A (Initialization) for the LiDAR background and template foreground setup, Section III-B (Geometric Constraint) for the road/sky flatness loss, Section III-C (Reflected Gaussian Consistency) for the symmetry trick with the Wigner D-matrix, and Section III-D (Residual SH MLP) for dynamic appearance. Figure 2 (the architecture diagram at <a href="https://autosplat.s3.amazonaws.com/images/architecture_final.jpg" target="_blank" rel="noopener">https://autosplat.s3.amazonaws.com/images/architecture_final.jpg</a>) lays out the whole pipeline. The math is clean and the notation is consistent.</p>
+<p><strong>Code readability.</strong> Moot — there is no released code. The paper itself is well-structured and specific enough that an experienced 3DGS practitioner could reimplement it: the constraint losses are fully stated with equations, the training schedule is given with iteration counts, and the initialization procedure is described step by step. The MLP architecture is underspecified (no layer sizes or activations given), which is the only gap that would require guessing.</p>
+<h2>Run verdict</h2>
+<p>Not runnable on CPU. No code has been released, so there is nothing to run at all. Even if it were released, this method is built directly on 3D Gaussian Splatting, which requires a CUDA GPU for the differentiable rasterizer. Training a single scene would require a mid-to-high-end GPU (the base 3DGS requires roughly 6-24 GB VRAM depending on scene complexity and number of Gaussians; driving scenes with both LiDAR-initialized backgrounds and dynamic vehicle tracks push toward the higher end). The Mask2Former segmentation step also runs on GPU. There is no inference-only viewer mode that could run on CPU, and no pretrained scene checkpoints are provided.</p></article>
+<article class="page" id="gp8"><h1>RGB-Only Gaussian Splatting SLAM for Unbounded Outdoor Scenes</h1>
+<p>ICRA 2025 · 8 citations</p>
+<h2>What it does</h2>
+<p>OpenGS-SLAM is a SLAM system that builds a 3D Gaussian Splatting map of an outdoor scene using only a monocular RGB camera — no depth sensor, no pretrained per-dataset depth model. It simultaneously tracks the camera pose and optimizes the Gaussian scene representation in an end-to-end differentiable pipeline. On the Waymo driving dataset it cuts the translation error of prior 3DGS-SLAM methods to roughly one-tenth of their error.</p>
+<h2>The method, in detail</h2>
+<p><strong>The core problem with prior work.</strong> Indoor GS-SLAM systems (MonoGS, SplaTAM, etc.) bootstrap camera tracking either from an RGB-D sensor that hands them metric depth directly, or from a monocular depth network that was trained on indoor data. Neither transfers to unbounded outdoor driving sequences, where depth scales are large and vary rapidly, and the effective baseline between consecutive frames is short.</p>
+<p><strong>Pointmap regression instead of depth maps.</strong> The first stage is a pointmap regression network — specifically built on DUSt3R/CroCo, a transformer that takes a pair of overlapping images and regresses a dense 3D pointmap: for every pixel in each image it predicts the (x, y, z) coordinate of the visible surface point in a shared coordinate frame. This is richer than a depth map: it already encodes the cross-frame geometry, so the relative camera pose between the two frames can be read out by aligning the two pointmaps. The transformer was pretrained on large collections of diverse stereo/multi-view data, giving it a prior over outdoor geometry that no indoor depth model has.</p>
+<p><strong>Adaptive scale mapper.</strong> Raw pointmaps from DUSt3R come in an arbitrary reconstruction scale that drifts across windows of frames. OpenGS-SLAM adds an adaptive scale mapper that converts pointmap estimates into a metric scale consistent with the growing 3DGS map, preventing scale drift from accumulating into the Gaussian scene representation.</p>
+<p><strong>Gaussian scene representation.</strong> Each 3D Gaussian blob stores: a 3D mean position, a 3x3 covariance (parameterized as a rotation quaternion and a scale vector), an opacity scalar, and spherical-harmonic coefficients for view-dependent color. These are the standard 3DGS parameters. Gaussians are initialized by unprojecting the pointmap points into 3D at each new keyframe and adding them as new blobs. The map is therefore seeded directly from the pointmap, not from a separate SfM step.</p>
+<p><strong>Joint optimization.</strong> Camera poses and Gaussian parameters are jointly optimized by minimizing a photometric rendering loss: the differentiable 3DGS rasterizer renders the current Gaussians from the estimated camera pose, and the pixel-level RGB error is backpropagated through both the Gaussian parameters and the pose variables. This tightens the coupling between tracking and mapping — a better map gives better gradients for pose, and a better pose gives better Gaussian placement.</p>
+<p><strong>Outdoor-specific adaptations.</strong> The system drops the assumption of a bounded scene: Gaussians are placed at whatever depth the pointmap predicts, which may be hundreds of meters. The adaptive scale mapper is the key mechanism that stops the system from collapsing when the pointmap scale changes (e.g., from a close object to a far skyline). No sky modeling or separate dynamic-object mask is applied; the paper focuses purely on static outdoor structure.</p>
+<p><strong>Evaluation.</strong> Nine driving clips from the Waymo Open Dataset. Metrics: absolute translation error (ATE) for tracking, and PSNR/SSIM/LPIPS for novel view synthesis. OpenGS-SLAM outperforms all prior 3DGS-SLAM baselines on both, with tracking error at 9.8% of the next-best method.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/3DAgentWorld/OpenGS-SLAM" target="_blank" rel="noopener">https://github.com/3DAgentWorld/OpenGS-SLAM</a> (MIT license)</p>
+<p><strong>Language / framework:</strong> Python, PyTorch 2.1.0, CUDA 11.8. The Gaussian rasterizer uses the <code>diff-gaussian-rasterization</code> CUDA extension. The pointmap network uses <code>croco</code> (CroCo transformer) and <code>dust3r</code> as submodules.</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+OpenGS-SLAM/
+  slam.py                  # main entry point — orchestrates tracking + mapping
+  run_waymo.sh             # convenience script to run all 9 Waymo segments
+  environment.yml          # conda environment spec
+  base_config.yaml         # global defaults (GUI toggle, logging, etc.)
+  configs/
+    mono/waymo/            # per-segment .yaml configs (100613.yaml, etc.)
+  croco/                   # CroCo transformer backbone
+    models/
+      curope/              # custom CUDA rope positional encoding (needs build_ext)
+  dust3r/                  # DUSt3R pointmap regression model
+  gaussian_splatting/      # 3DGS scene representation + rasterizer
+  gui/                     # optional interactive viewer (VISER-based)
+  submodules/
+    simple-knn/            # KNN acceleration for Gaussian densification
+    diff-gaussian-rasterization/  # CUDA differentiable rasterizer
+  utils/
+    dataset.py             # data loading; modify here for custom datasets
+</code></pre>
+<p><strong>Where the core method lives:</strong> <code>slam.py</code> is the file to open first. It wires the pointmap network (DUSt3R) to the adaptive scale mapper to the Gaussian map, runs the tracking loop, calls the joint optimization, and manages keyframe selection. The Gaussian scene parameters and their optimization live in <code>gaussian_splatting/</code>. The pointmap backbone is loaded from <code>dust3r/</code> with weights downloaded separately (~512 MB checkpoint).</p>
+<p><strong>Main dependencies:</strong></p>
+<ul>
+<li>PyTorch 2.1.0 + CUDA 11.8</li>
+<li><code>diff-gaussian-rasterization</code> (custom CUDA, built from submodules)</li>
+<li><code>simple-knn</code> (built from submodules)</li>
+<li>CroCo rope encoding (built with <code>python setup.py build_ext --inplace</code> inside <code>croco/models/curope/</code>)</li>
+<li>DUSt3R checkpoint (downloaded separately; link in README)</li>
+</ul>
+<p><strong>Dataset:</strong> Waymo Open Dataset — 9 pre-extracted segments available via Google Drive / Baidu links in the repo. Custom datasets require editing <code>utils/dataset.py</code> to match the expected image/pose format.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+conda env create -f environment.yml
+conda activate opengs-slam
+pip install submodules/simple-knn
+pip install submodules/diff-gaussian-rasterization
+cd croco/models/curope &amp;&amp; python setup.py build_ext --inplace &amp;&amp; cd ../../..
+# Download DUSt3R checkpoint to checkpoints/
+CUDA_VISIBLE_DEVICES=0 python slam.py --config configs/mono/waymo/100613.yaml
+# or run all segments:
+bash run_waymo.sh
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>Reading order:</strong></p>
+<ul>
+<li><code>slam.py</code> — the system loop. Read the <code><em>_init</em>_</code>, the tracking step, and the mapping step in order; it is the clearest entry to how the three components (pointmap network, scale mapper, Gaussian map) hand off to each other.</li>
+<li><code>gaussian_splatting/</code> — focus on the Gaussian parameter class and the optimizer setup to understand what is being jointly optimized.</li>
+<li><code>dust3r/</code> — you only need to understand the output format (dense pointmaps per image pair); the backbone internals are pre-trained and not modified.</li>
+<li><code>utils/dataset.py</code> — if you want to run on your own data.</li>
+</ul>
+<p><strong>Code organization:</strong> The repo is research-clean for its scope. <code>slam.py</code> is the single main loop and is readable (~500–800 lines). The DUSt3R and CroCo submodules are heavy (transformer code with many files) but are treated as black-box components, so you do not need to read them to understand OpenGS-SLAM&#x27;s contribution. The build steps (three separate <code>pip install / build_ext</code> commands) are a common friction point in GS research repos.</p>
+<h2>Run verdict</h2>
+<p>Not runnable on a CPU-only box. The method has three CUDA hard requirements that cannot be worked around:</p>
+<ul>
+<li><code>diff-gaussian-rasterization</code> — the Gaussian rasterizer is a CUDA kernel; it will not compile or run without a CUDA-capable GPU.</li>
+<li><code>croco/models/curope</code> — a custom CUDA rotary positional encoding kernel, same issue.</li>
+<li>The DUSt3R pointmap inference is a large transformer; even if you patched around the CUDA kernels it would be impractically slow on CPU.</li>
+</ul>
+<p>The system was developed and tested on an NVIDIA RTX A6000 (48 GB VRAM). A consumer GPU (RTX 3090, 24 GB) is likely sufficient given the Waymo segments are processed one clip at a time. No CPU inference path or pre-exported viewer is provided. GPU required.</p></article>
+<article class="page" id="gp9"><h1>SemGauss-SLAM: Dense Semantic Gaussian Splatting SLAM</h1>
+<p>IROS 2025 · 8 citations</p>
+<h2>What it does</h2>
+<p>SemGauss-SLAM builds a dense 3D map of an environment from RGB-D video while simultaneously tracking the camera pose and labeling every part of the map with semantic category information. Each 3D Gaussian blob in the map carries a semantic feature vector in addition to the usual geometry and color, so the map is queryable for &quot;what object is here?&quot; not just &quot;what does this look like?&quot;. The robotics payoff is a single unified representation that supports rendering, localization, and scene understanding without separate modules or post-processing.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> RGB-D video (color frame + aligned depth map per timestep). No point cloud scanner or IMU required. The system is indoor-scene oriented (Replica, ScanNet).</p>
+<p><strong>What the blobs store.</strong> Each 3D Gaussian holds: a 3D center position μ, a radius r (isotropic, not full covariance), an RGB color c, an opacity α, and a 16-channel semantic feature embedding e. The semantic embedding is the novel addition — standard 3DGS uses only geometry+color.</p>
+<p><strong>Initialization.</strong> At the first keyframe, every pixel&#x27;s depth reading is unprojected into 3D space using the known camera intrinsics. That produces a point cloud, and each point seeds one Gaussian. DINOv2 (a self-supervised vision transformer trained on diverse imagery) extracts dense 2D feature maps from the color frame; those per-pixel features are projected onto the corresponding new Gaussians to warm-start their semantic embeddings, avoiding random initialization and accelerating convergence.</p>
+<p><strong>Tracking (camera pose estimation).</strong> While the Gaussian map is frozen, the camera pose for each new frame is estimated by minimizing a rendering loss: the system renders the current map from the estimated pose and compares the rendered color and depth against the observed frame. A constant-velocity motion model initializes the pose estimate, then iterative gradient descent refines it. Only pixels inside the visible silhouette of the rendered map contribute to this loss, which makes tracking more robust. Semantic features are not used during single-frame tracking — only RGB and depth.</p>
+<p><strong>Mapping (Gaussian update).</strong> When a new keyframe is selected (based on co-visibility: if less than 50% of the current frame overlaps the existing map, a new keyframe is declared), the Gaussians are updated while camera poses are held fixed. The map is optimized with three losses simultaneously:</p>
+<p>  1. RGB rendering loss (L1 + SSIM against the observed color image).</p>
+<p>  2. Depth rendering loss (L1 against the depth map).</p>
+<p>  3. Feature-level loss: ℒ<em>f = Σ |F</em>e − E(p)| where F_e is the per-pixel DINOv2 feature extracted from the current color frame and E(p) is the corresponding feature rendered from the Gaussian semantic embeddings via alpha-compositing. This directly supervises the semantic field.</p>
+<p><strong>Densification.</strong> When the co-visibility ratio drops below 50%, new Gaussians are instantiated by unprojecting the new keyframe&#x27;s depth, replicating the initialization step for the newly visible regions. There is no splitting/cloning procedure like vanilla 3DGS; the growth strategy is purely coverage-based.</p>
+<p><strong>Semantic-informed bundle adjustment (BA).</strong> After a window of keyframes accumulates, the system runs a joint optimization over both camera poses and Gaussian parameters. The BA loss includes a cross-frame semantic consistency term: ℒ<em>BA-sem = Σ</em>i Σ<em>j |T</em>ij · G(T<em>i, e) − G(T</em>j, e)|, which warps the rendered semantic feature map from frame i into frame j&#x27;s viewpoint and penalizes disagreement. Combined with RGB and depth cross-frame terms, this multi-view semantic constraint pulls drifting camera poses back into alignment and sharpens the semantic field simultaneously. This is the paper&#x27;s most distinctive contribution — using semantic features as a registration signal on top of photometric and geometric signals.</p>
+<p><strong>Robotics-specific twist.</strong> The primary twist is purely semantic: the map is queryable by meaning, not just appearance. For navigation or manipulation, a robot can ask &quot;where is the table?&quot; by rendering the semantic feature map and matching against a query feature. The scene graph is implicit in the Gaussian field itself. There is no handling of dynamic objects, no LiDAR, no sim-to-real transfer — the paper&#x27;s focus is indoor static scenes with RGB-D input.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/IRMVLab/SemGauss-SLAM" target="_blank" rel="noopener">https://github.com/IRMVLab/SemGauss-SLAM</a></p>
+<p><strong>Language / framework:</strong> Python 3.10, PyTorch 1.12.1, CUDA 11.6. Custom CUDA extension for differentiable Gaussian rasterization. No JAX, no ROS dependency.</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+SemGauss-SLAM/
+├── configs/                   # per-dataset config files (Replica, ScanNet scenes)
+├── datasets/                  # dataset loaders (wraps GradSLAM dataloaders)
+├── demo/                      # demo visualizations / example outputs
+├── diff-gaussian-rasterization-w-depth_sem_gauss/
+│                              # custom CUDA rasterizer that outputs RGB, depth,
+│                              # AND rendered semantic feature maps
+├── eval_mesh/                 # mesh extraction + Replica/ScanNet evaluation scripts
+├── segmentation/              # DINOv2 feature extractor wrapper
+├── utils/                     # miscellaneous helpers (logging, geometry, vis)
+├── sem_gauss.py               # MAIN ENTRY POINT — tracking + mapping loop
+└── requirements.txt
+</code></pre>
+<p><strong>Where the core method lives.</strong> Start with <code>sem<em>gauss.py</code>. This is the top-level training/inference script that implements the keyframe selection logic, the tracking loop (pose optimization with frozen map), the mapping loop (Gaussian update with fixed poses), the BA trigger, and calls into the rasterizer. The custom rasterizer in <code>diff-gaussian-rasterization-w-depth</em>sem_gauss/</code> is where the semantic channel gets alpha-composited alongside RGB and depth — that is where the feature-level rendering math is implemented in CUDA. The DINOv2 wrapper in <code>segmentation/</code> extracts the 2D features that supervise the semantic embeddings.</p>
+<p><strong>Main dependencies:</strong></p>
+<ul>
+<li>PyTorch 1.12.1 + CUDA 11.6 (strict version; the CUDA extension is compiled against these)</li>
+<li>DINOv2 pretrained weights (download separately; Facebook Research release)</li>
+<li>GradSLAM (dataloader abstraction)</li>
+<li>Standard scientific stack: numpy, opencv-python, open3d, trimesh, scipy</li>
+</ul>
+<p><strong>Datasets:</strong></p>
+<ul>
+<li>Replica (synthetic indoor rooms): download via Google Drive link in the README; cite iMAP authors</li>
+<li>ScanNet (real RGB-D indoor scans): download via the official ScanNet tool, extract <code>.sens</code> files into color + depth frames</li>
+</ul>
+<p><strong>How to run:</strong></p>
+<pre><code>
+conda create -n sem_gauss python=3.10
+conda activate sem_gauss
+conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.6
+pip install -r requirements.txt
+# compile the custom CUDA rasterizer:
+cd diff-gaussian-rasterization-w-depth_sem_gauss &amp;&amp; pip install -e . &amp;&amp; cd ..
+# download DINOv2 weights (see README for URL)
+# prepare Replica data under ./data0/replica/
+python sem_gauss.py configs/replica/replica.py
+# mesh eval (edit paths first):
+python eval_mesh/mesh_eval.py
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Read <code>sem<em>gauss.py</code> top-to-bottom. It is structured as a single large class/script (research style) with the full pipeline inline. After that, read the forward pass inside <code>diff-gaussian-rasterization-w-depth</em>sem<em>gauss/</code> — specifically the rasterizer&#x27;s kernel that composites the extra semantic channels. The feature-level loss and BA loss are also defined in <code>sem</em>gauss.py</code>, so you can see the exact tensors being optimized.</p>
+<p><strong>How hard is the code to follow.</strong> Research-messy by typical standards, but not badly so for this sub-field. The code follows the SplaTAM / MonoGS tradition of a single large file with the tracking and mapping loops inline, which makes it easy to trace the algorithm end-to-end without navigating many files. The custom CUDA extension adds friction: you must compile it successfully before anything runs, and the strict PyTorch/CUDA version requirement means mismatching your CUDA driver will immediately break the build. The config system (plain Python config files) is readable. No type annotations, limited comments on loss terms, and some hardcoded paths in eval scripts — but the overall structure maps cleanly to the paper&#x27;s three contributions (feature embedding, feature loss, semantic BA).</p>
+<h2>Run verdict</h2>
+<p>Not runnable on a CPU-only box. The system has two hard GPU requirements: (1) the custom CUDA rasterizer (<code>diff-gaussian-rasterization-w-depth<em>sem</em>gauss</code>) must be compiled against a real CUDA toolkit and is invoked every forward pass — there is no CPU fallback; (2) DINOv2 feature extraction at video rates is practical only on GPU. The strict CUDA 11.6 + PyTorch 1.12.1 requirement also means you need a GPU with an appropriate driver (Ampere / Turing era). A machine with a single mid-range GPU (RTX 3080 class, 10 GB VRAM) is enough to run Replica scenes. CPU-only: not feasible.</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div>
+
+<article class="page walk"><h1>We actually ran it — 3D Gaussian Splatting, live</h1>
+<p>Every paper on this page — the SLAM systems, underwater <em>SeaSplat</em>, endoscopic reconstruction, <em>AutoSplat</em> for driving — is a variation on <strong>one core engine</strong>: 3D Gaussian Splatting. So we ran that engine itself, end to end, on a cloud L4 GPU: fed it ~185 photos of a garden scene, optimized millions of 3D Gaussians to match them, then rendered a smooth camera path that was never one of the original photos.</p>
+
+<div style="background:var(--ink);color:#E7ECED;border-radius:12px;padding:20px 22px;margin:14px 0 6px;border:1px solid #000">
+  <div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-lite);margin-bottom:6px">Live run · gsplat on Mip-NeRF360 garden</div>
+  <h2 style="color:#fff;margin:0 0 8px;font-size:18px;border:0;padding:0">Novel-view fly-through of a reconstructed 3D scene</h2>
+  <p style="color:#C6D0D2;font-size:13.5px;margin:0 0 14px;line-height:1.62">Trained 15,000 steps with <span class="mono" style="color:#9fd4da">gsplat</span> (torch 2.4, CUDA JIT-compiled). The video is the model's <strong>own</strong> render along a camera path it invented — the scene is now a real 3D model, not a slideshow.</p>
+  <video src="assets/gaussian-splatting/garden_flythrough.mp4" controls loop muted playsinline preload="metadata" style="width:100%;border-radius:8px;border:1px solid #2a3a3f;background:#000"></video>
+  <div style="font-family:var(--mono);font-size:11px;color:#8fa3a6;margin:8px 0 16px">▲ camera glides through positions the photographer never stood in — correct parallax, lighting, occlusion</div>
+
+  <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#8fa3a6;margin-bottom:6px">Fidelity check — real photo (left) vs. splat render (right)</div>
+  <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#000"><img src="assets/gaussian-splatting/garden_gt_vs_render.png" alt="Garden: ground truth vs. Gaussian Splatting render" style="width:100%;max-width:100%;display:block"></div>
+  <p style="color:#C6D0D2;font-size:12px;margin:12px 0 0;line-height:1.6">The table slats, the vase and dried frond, the hexagonal paving, even the Buddha statue in the border — all reconstructed. The render is faintly softer in fine grass and far foliage: the signature look of a splat, where regions many cameras saw are crisp and under-observed regions go slightly cotton-wool.</p>
+
+  <p style="color:#D9C089;font-size:12px;margin:12px 0 0;line-height:1.6;border-top:1px solid #2a3a3f;padding-top:12px"><b>Honest caveat:</b> a 15k-step train (vs. 30k for a polished result) on one scene — enough to demonstrate the method faithfully, not a benchmark score. Look for faint floating blobs in empty space; those "floaters" are the method's honest artifacts, not bugs.</p>
+</div>
+
+<h2>How we actually ran it — a torch-version gauntlet</h2>
+<p>Getting the core engine running was less about the algorithm and more about a fragile modern toolchain. In order:</p>
+<h3>1 · The bleeding-edge-torch wall</h3>
+<p>The cloud VM ships <strong>torch 2.11 / CUDA 12.8</strong> — too new for gsplat's CUDA backend to build (it silently installed as an empty namespace package, faking success). Fix: pin a version gsplat actually supports.</p>
+<pre><code>pip install torch==2.4.0 torchvision==0.19.0 --index-url https://download.pytorch.org/whl/cu121
+pip install gsplat            # 1.5.3 — installs clean on torch 2.4, JIT-compiles CUDA at first use</code></pre>
+<h3>2 · The dependency dominoes</h3>
+<p>The example trainer then failed one import at a time — each only visible after clearing the last: <span class="mono">tyro</span> → <span class="mono">jaxtyping</span> → the <strong>wrong</strong> <span class="mono">pycolmap</span> (the official COLMAP bindings lack <span class="mono">SceneManager</span>; gsplat wants <span class="mono">rmbrualla/pycolmap</span>) → Colab's pre-installed HuggingFace <span class="mono">datasets</span> package <em>shadowing</em> gsplat's local <span class="mono">datasets/</span> folder → <span class="mono">numpy&lt;2</span> (the COLMAP parser stores "no point" as <span class="mono">uint64(-1)</span>, which NumPy 2 rejects).</p>
+<h3>3 · The SSIM kernel — swapped for pure torch</h3>
+<p>The trainer needs <span class="mono">fused_ssim</span>, a CUDA extension that wouldn't build. Since it's just a fast version of standard SSIM, we dropped in a pure-PyTorch equivalent (same math, differentiable, no compile):</p>
+<pre><code># fused_ssim.py shim — Gaussian-window SSIM via conv2d
+ssim_map = ((2*mu1_mu2+C1)*(2*sigma12+C2)) / ((mu1_sq+mu2_sq+C1)*(sigma1_sq+sigma2_sq+C2))
+return ssim_map.mean()</code></pre>
+<h3>4 · Train &amp; render</h3>
+<pre><code>python simple_trainer.py default --data_dir data/360_v2/garden --data_factor 4 \
+       --max_steps 15000 --result_dir results/garden --disable_viewer
+# -> optimizes the Gaussians, then auto-renders the interpolated fly-through above</code></pre>
+<p><strong>In one line:</strong> the algorithm is simple and elegant; the real work was rebuilding a coherent 2024-era GPU toolchain around it and reconstructing the pieces the examples assume you already have.</p>
+<hr>
+</article>
+
+<article class="page walk"><h1>We actually ran it — SeaSplat, underwater color restoration</h1>
+<p>Thread ④ (survive hard environments), live. <em>SeaSplat</em> takes the same 3D Gaussian Splatting core and adds a physically-grounded <strong>underwater image-formation model</strong> — it learns, <em>while</em> reconstructing the scene, how the water absorbs and scatters light at each depth. That lets it mathematically strip the water away and recover the reef's true colors. We trained it on the <span class="mono">Curasao</span> coral-reef scene from the SeaThru-NeRF dataset (21 photos) on an L4.</p>
+
+<div style="background:var(--ink);color:#E7ECED;border-radius:12px;padding:20px 22px;margin:14px 0 6px;border:1px solid #000">
+  <div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-lite);margin-bottom:6px">Live run · SeaSplat on Curasao reef</div>
+  <h2 style="color:#fff;margin:0 0 8px;font-size:18px;border:0;padding:0">RAW underwater  →  medium removed</h2>
+  <p style="color:#C6D0D2;font-size:13.5px;margin:0 0 14px;line-height:1.62">Each pair: <strong>left</strong> = the reef as the camera saw it (blue-green haze, colors gone, distance fading to murk); <strong>right</strong> = SeaSplat's render with the learned water model removed. Reconstruction quality PSNR&nbsp;34.2 / SSIM&nbsp;0.96.</p>
+  <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#000;margin-bottom:10px"><img src="assets/seasplat/curasao_beforeafter_1.png" alt="SeaSplat before/after — reef 1" style="width:100%;max-width:100%;display:block"></div>
+  <div style="overflow-x:auto;border-radius:8px;border:1px solid #2a3a3f;background:#000"><img src="assets/seasplat/curasao_beforeafter_2.png" alt="SeaSplat before/after — reef 2" style="width:100%;max-width:100%;display:block"></div>
+  <p style="color:#C6D0D2;font-size:12px;margin:12px 0 0;line-height:1.6">Watch the far background: a dark void in the raw image resolves into visible coral once the water is removed — even a second color-reference chart appears in the distance. The warm brown/orange corals were completely masked by the blue attenuation.</p>
+  <p style="color:#D9C089;font-size:12px;margin:12px 0 0;line-height:1.6;border-top:1px solid #2a3a3f;padding-top:12px"><b>Honest caveat:</b> the "restored" render is the model's <em>estimate</em> of true color from a jointly-fit water model — physically grounded, but not a calibrated measurement. 20k-step train on one scene.</p>
+</div>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+
+<p style="margin:0 0 10px"><strong>Start with a plain fact: an underwater photo is a lie.</strong> Not because the camera is bad, but because the water <em>between</em> the camera and the reef edits the light on its way to the lens. Two things happen at once, and both get worse the farther the light has to travel through water:</p>
+<ul style="margin:0 0 10px">
+<li><strong>The water eats color</strong> — and it eats warm colors first. Red is gone within a few meters, then orange, then yellow; blue survives longest. So a red coral ten meters away doesn't look dim red — it looks brown, or grey. The loss depends on distance.</li>
+<li><strong>The water adds a veil</strong> — floating particles scatter ambient light back into the lens, like headlights in fog. This lays a blue-green haze over everything, thicker the farther you look.</li>
+</ul>
+<p style="margin:0 0 10px">The key word in both is <strong>distance</strong>. The same coral looks different depending on how far it is from the camera, because the light travelled through more water. That's the trap: the background is always murkier and bluer than the foreground, and an object's apparent colour changes as you swim around it.</p>
+
+<p style="margin:0 0 10px"><strong>Why this is a real problem, not just an ugly one.</strong> A scientist measuring coral health needs the coral's <em>true</em> colour (bleaching shows up as colour change) — but the colour in the photo is corrupted by however much water happened to be in the way. And any attempt to build a 3D model assumes a point looks the same from every angle; underwater it doesn't, so the reconstruction gets confused and tries to "explain" the water's effect as if it were a property of the coral. The water and the scene are tangled together.</p>
+
+<p style="margin:0 0 10px"><strong>So the real question is: can you pull them apart?</strong> Given nothing but ordinary photos — no special lights, no distance sensors — can you recover <em>both</em> the true scene <em>and</em> a description of how this particular water distorts light, at the same time? This is a chicken-and-egg: to know a point's true colour you must know its distance (to undo the right amount of water); to know its distance you must build the geometry, which needs consistent colour across views — which you don't have, because of the water. Each answer needs the other.</p>
+
+<p style="margin:0 0 10px"><strong>The unlock.</strong> A method that builds a 3D scene from photos already hands you the one thing the water problem was missing: the <em>distance to every point</em>. Gaussian Splatting is exactly that — a 3D model, so it knows how far away everything is. So SeaSplat runs <strong>two models locked together</strong>: a <em>clean-scene</em> model (the blobs, as if there were no water) and a small <em>water</em> model (how much this water eats each colour per metre, and how much haze it adds per metre).</p>
+
+<p style="margin:0 0 10px"><strong>How they're forced to separate.</strong> To match a real photo, SeaSplat renders the clean scene (getting a colour <em>and</em> a distance for every pixel), then pushes that render <em>through</em> the water model — eating the right colour and adding the right haze for each pixel's distance — producing a <em>simulated</em> murky photo. It compares that to the <em>real</em> murky photo, and tunes both models to close the gap. The elegant part: because the distortion depends on distance, and the geometry ties distance to viewpoint, there is only <em>one</em> way to match every photo from every angle at once — the clean model must hold the actual true colours, and the water model must hold the actual water. The system is forced to write every pixel as "true colour (fixed) + water effect (varies with distance)," and that split <em>is</em> the answer.</p>
+
+<p style="margin:0"><strong>Then restoration is free:</strong> render the clean scene and simply <em>don't</em> pass it through the water — that's the reef with the ocean removed, from any viewpoint. And the deeper idea that ties this back to the whole theme: a good representation doesn't just store <em>what the world looks like</em>, it separates <em>what the world is</em> from <em>what's between you and it</em>. That scene-vs-medium split is what lets you see truthfully through any corrupting channel — water, fog, haze, smoke — and it only became tractable because splatting gives you geometry, and geometry gives the physics the distance it needed. <strong>The honest limit:</strong> the recovered colours are the model's best <em>explanation</em> of the photos, not a calibrated measurement — physically grounded and self-consistent, but still an estimate.</p>
+</div>
+
+<h2>How we ran it — inria base + a distortion step</h2>
+<p>Unlike gsplat, SeaSplat builds on the <strong>original INRIA 3DGS</strong> (compiles <span class="mono">diff-gaussian-rasterization</span> + <span class="mono">simple-knn</span>), which happily built against the VM's torch. The gotchas were data-shaped: (1) the water model needs <span class="mono">kornia</span> for RGB→LAB; (2) SeaThru-NeRF ships <em>distorted</em> COLMAP cameras, but the 3DGS loader only takes pinhole — so we install COLMAP and run <span class="mono">image_undistorter</span> first.</p>
+<pre><code>colmap image_undistorter --image_path Curasao/images_wb \
+    --input_path Curasao/sparse/0 --output_path Curasao/undistorted
+python train.py -s Curasao/undistorted --images images \
+    --do_seathru --seathru_from_iter 10000 --iterations 20000
+# the water model engages at 10k; train.py auto-renders render/ (clean) + with_water/ (murky) at the end</code></pre>
+<p>It's ~2–3× slower per step than a plain splat (it trains backscatter + attenuation networks alongside the Gaussians), so budget accordingly.</p>
+<hr>
+</article>
+
+<article class="page walk"><h1>CGS-SLAM — code walkthrough</h1>
+<h2>What the repo is / how you&#x27;d run it</h2>
+<p>CGS-SLAM is a dense visual SLAM system that replaces the traditional point-cloud or neural-radiance-field map with a <strong>Scaffold-GS style anchor-based Gaussian</strong> map. Each anchor point spawns <code>n_offsets</code> (default 5) child Gaussians whose colors, opacities, and covariances are decoded on the fly by three small MLPs. This keeps the explicit geometry count lower than vanilla 3DGS while still letting the rasterizer run in full CUDA.</p>
+<p><strong>Entry command:</strong></p>
+<pre><code>
+python run_slam.py \
+    --config_path configs/Replica/room0.yaml \
+    --input_path /data/Replica/room0 \
+    --output_path output/replica/room0
+</code></pre>
+<p>The YAML is the primary dial: <code>mapping.map<em>every</code> (how often to update the map, default every 5 frames), <code>mapping.new</em>submap<em>every</code> / <code>mapping.submap</em>using<em>motion</em>heuristic</code> (submap splitting), <code>tracking.iterations</code>, <code>tracking.odometry<em>type</code> (<code>gt</code>, <code>const</em>speed</code>, or <code>odometer</code>), and <code>tracking.w<em>color</em>loss</code>. Wandb logging is optional; set <code>DISABLE_WANDB=true</code> to skip it.</p>
+<hr>
+<h2>Architecture — the module map</h2>
+<p>| File | Class / role |</p>
+<p>|---|---|</p>
+<p>| <code>run_slam.py</code> | CLI entry; instantiates <code>GaussianSLAM</code>, calls <code>.run()</code>, then <code>Evaluator.run()</code> |</p>
+<p>| <code>src/entities/gaussian<em>slam.py</code> | <code>GaussianSLAM</code> — master loop; decides when to track vs. map vs. start a new submap; owns <code>estimated</em>c2ws</code> (trajectory buffer) |</p>
+<p>| <code>src/entities/tracker.py</code> | <code>Tracker</code> — gradient-based camera pose optimizer; holds the <code>VisualOdometer</code> for initial pose guess |</p>
+<p>| <code>src/entities/mapper.py</code> | <code>Mapper</code> — seeds new Gaussians from depth, grows the submap, runs <code>optimize_submap</code> |</p>
+<p>| <code>src/entities/gaussian<em>model.py</code> | <code>GaussianModel</code> — the Scaffold-GS anchor representation; three MLPs (<code>mlp</em>opacity</code>, <code>mlp<em>cov</code>, <code>mlp</em>color</code>); voxelizes incoming points; handles optimizer state |</p>
+<p>| <code>src/entities/visual_odometer.py</code> | <code>VisualOdometer</code> — Open3D multi-scale RGBD odometry; provides a relative pose prior between consecutive frames |</p>
+<p>| <code>src/entities/lc.py</code> | <code>Loop_closure</code> — NetVLAD descriptor retrieval + Gaussian-registration-based pose-graph optimization for loop closing |</p>
+<p>| <code>src/utils/utils.py</code> | <code>render<em>gaussian</em>model</code> + <code>generate<em>neural</em>gaussians</code> — the per-frame render path that feeds both tracker and mapper |</p>
+<p>| <code>src/gsr/renderer.py</code> | Thin wrapper that calls <code>diff<em>gaussian</em>rasterization.GaussianRasterizer</code>; used inside the <code>src/gsr</code> loop-closure registration pipeline |</p>
+<p>| <code>src/Scaffold<em>GS/gaussian</em>renderer/<em>_init</em><em>.py</code> | Reference Scaffold-GS renderer (used by <code>src/gsr</code>); shows the canonical <code>generate</em>neural_gaussians</code> → rasterizer flow |</p>
+<p>| <code>src/utils/mapper_utils.py</code> | Geometric helpers: frustum corners, point-cloud overlap, gradient-based pixel sampling, PSNR |</p>
+<p>| <code>src/entities/losses.py</code> | L1, SSIM, <code>isotropic_loss</code> (penalizes anisotropic Gaussians during mapping) |</p>
+<p>| <code>configs/</code> | Per-dataset YAML configs (Replica, TUM, ScanNet, KITTI, ScanNet++) |</p>
+<hr>
+<h2>The main loop</h2>
+<p><code>GaussianSLAM.run()</code> (<code>gaussian_slam.py</code>, line 226) iterates over every frame index:</p>
+<h3>1. Pose initialization</h3>
+<p>For each frame, a pose candidate is built <strong>before</strong> Gaussian optimization:</p>
+<pre><code>
+# odometry_type = &quot;gt&quot;: take ground-truth pose directly (used for the KITTI branch in the current code)
+estimated_c2w = self.dataset[frame_id][-3]
+
+# odometry_type = &quot;const_speed&quot;: extrapolate from the last two poses
+init_c2w = extrapolate_poses(prev_c2ws[1:])
+
+# odometry_type = &quot;odometer&quot;: use Open3D RGBD odometry
+odometer_rel = self.odometer.estimate_rel_pose(image, depth)
+init_c2w = prev_c2ws[-1] @ odometer_rel
+</code></pre>
+<p>Note: the tracking loop below (<code>Tracker.track</code>) is present but the <code>GaussianSLAM.run()</code> method as committed uses ground-truth pose for KITTI and has the rendered-render tracking calls commented out — the gt-pose branch is active in the committed code.</p>
+<h3>2. Submap boundary decision</h3>
+<p><code>GaussianSLAM.should<em>start</em>new<em>submap(frame</em>id)</code> — triggered either by a fixed frame count (<code>new<em>submap</em>every</code>) or when the accumulated translation/rotation since the last submap start exceeds thresholds (50° or 5 m). On a new submap:</p>
+<ul>
+<li><code>save<em>current</em>submap()</code> serializes anchor tensors + MLP weights to a <code>.ckpt</code> file.</li>
+<li><code>start<em>new</em>submap()</code> reinitializes a fresh <code>GaussianModel</code> but <strong>transfers the three MLPs</strong> from the old model — so color/opacity/covariance knowledge is warm-started into the new submap.</li>
+</ul>
+<h3>3. Mapping (every <code>map_every</code> frames)</h3>
+<p><code>Mapper.map(frame<em>id, estimate</em>c2w, gaussian<em>model, is</em>new_submap)</code> (<code>mapper.py</code>, line 214):</p>
+<p>a. <strong>Compute seeding mask</strong> — <code>compute<em>seeding</em>mask()</code>:</p>
+<p>   - New submap: a color-gradient edge mask (<code>geometric<em>edge</em>mask</code>) seeds boundary-rich regions.</p>
+<p>   - Existing submap: pixels where rendered alpha is below threshold <strong>or</strong> depth error is anomalously high get marked for new Gaussian seeding.</p>
+<p>   - In the current committed code the mask is overridden by a fixed stride-2 grid (<code>mask[::2, ::2] = True</code>) before use.</p>
+<p>b. <strong>Seed new 3D points</strong> — <code>seed<em>new</em>gaussians()</code>: unprojected to 3D via <code>create<em>point</em>cloud</code> using the depth map and current c2w; gradient-sampled pixels are blended in to preserve edges.</p>
+<p>c. <strong>Grow the submap</strong> — <code>grow_submap()</code>:</p>
+<p>   Computes camera frustum corners, finds which existing Gaussian anchors fall inside the frustum (<code>compute<em>frustum</em>point<em>ids</code>), then keeps only new candidate points that are farther than <code>new</em>points<em>radius</code> from any existing anchor (<code>compute</em>new<em>points</em>ids</code>). New anchors are voxelized and appended via <code>GaussianModel.add<em>points()</code> → <code>densification</em>postfix()</code>.</p>
+<p>d. <strong>Optimize</strong> — <code>optimize<em>submap(keyframes, gaussian</em>model, iterations)</code>:</p>
+<p>   Randomly samples from the keyframe set on each iteration (weighted to prefer the current frame). Renders via <code>render<em>gaussian</em>model</code>, computes <code>color<em>loss + 0.05 * depth</em>loss + isotropic<em>loss</code>, backpropagates, and calls <code>gaussian</em>model.optimizer.step()</code>. The optimizer only touches the anchor/offset/anchor<em>feat/scaling tensors (MLPs are frozen during mapping via <code>fix</em>mlp()</code>).</p>
+<h3>4. Tracking (when enabled)</h3>
+<p><code>Tracker.track(frame<em>id, gaussian</em>model, prev_c2ws)</code> (<code>tracker.py</code>, line 113):</p>
+<ul>
+<li>Initializes the camera pose from the odometry prior.</li>
+<li>Sets up <code>training<em>setup</em>camera()</code> on the Gaussian model: all Gaussian/MLP parameter group learning rates are set to 0.0; only <code>cam<em>unnorm</em>rot</code> and <code>cam_trans</code> get non-zero LRs.</li>
+<li>Iterates <code>tracking.iterations</code> times: calls <code>compute<em>losses()</code>, which transforms Gaussian centers by the current relative-pose estimate (<code>rel</em>transform @ pts4.T</code>), renders via <code>render<em>gaussian</em>model</code>, computes a weighted color+depth L1 loss, and backpropagates <strong>only through the camera parameters</strong>.</li>
+<li>Keeps track of the minimum-loss pose across all iterations and returns that as <code>best_w2c</code>.</li>
+</ul>
+<hr>
+<h2>Where the core idea lives — the &quot;compact&quot; trick</h2>
+<p>The key compactness mechanism is the <strong>anchor-based neural Gaussian</strong> representation inherited from Scaffold-GS, implemented in <code>GaussianModel</code> (<code>src/entities/gaussian<em>model.py</code>) and decoded in <code>generate</em>neural_gaussians</code> (<code>src/utils/utils.py</code>, line 229).</p>
+<p>Instead of storing a separate position, color, opacity, and full covariance for every rendered Gaussian, the model stores:</p>
+<ul>
+<li><code>_anchor</code>: (N, 3) — one 3D anchor per voxel cell</li>
+<li><code><em>offset</code>: (N, n</em>offsets, 3) — per-anchor offsets for <code>n_offsets=5</code> child Gaussians</li>
+<li><code><em>anchor</em>feat</code>: (N, feat_dim=15) — compact feature vector per anchor</li>
+<li>Three tiny MLPs: <code>mlp<em>opacity</code> (feat+view → n</em>offsets opacities), <code>mlp<em>cov</code> (feat+view → 7*n</em>offsets scale+rotation), <code>mlp<em>color</code> (feat+view → 3*n</em>offsets RGB)</li>
+</ul>
+<p>At render time, <code>generate<em>neural</em>gaussians</code> runs:</p>
+<pre><code>
+# Compute view-direction and distance for each anchor
+ob_view = anchor - viewpoint_camera.campos
+ob_dist = ob_view.norm(dim=1, keepdim=True)
+ob_view = ob_view / ob_dist
+
+cat_local_view_wodist = torch.cat([feat, ob_view], dim=1)  # [N, c+3]
+
+# MLPs predict per-offset attributes
+neural_opacity = pc.get_opacity_mlp(cat_local_view_wodist)   # [N*k, 1]
+scale_rot      = pc.get_cov_mlp(cat_local_view_wodist)       # [N*k, 7]
+color          = pc.get_color_mlp(cat_local_view_wodist)     # [N*k, 3]
+
+# Derive child Gaussian centers from anchor + scaled offsets
+offsets = offsets * scaling_repeat[:, :3]
+xyz = repeat_anchor + offsets
+</code></pre>
+<p>Opacity masking further prunes the render list: child Gaussians with <code>neural<em>opacity &lt;= 0</code> are dropped before rasterization (<code>mask = (neural</em>opacity &gt; 0.0)</code>).</p>
+<p><strong>Why this is compact:</strong> N anchors produce up to N×5 rendered Gaussians, but with far less stored state than N×5 independent Gaussians. The anchor grid is voxel-snapped (see <code>voxelize<em>sample</code>, <code>voxel</em>size=0.01</code>), preventing duplicate anchor insertion and keeping the count bounded to the unique voxels that have been observed. The <code>add_points</code> method voxelizes before appending:</p>
+<pre><code>
+points = self.voxelize_sample(points, voxel_size=self.voxel_size)
+</code></pre>
+<p>An <code>isotropic_loss</code> in the mapper additionally pushes each Gaussian toward a sphere rather than a long needle, which improves both quality and prevents degenerate splats that would require more Gaussians to cover the same area.</p>
+<p>Additionally, the MLPs are <strong>shared across submaps</strong>: <code>start<em>new</em>submap()</code> copies <code>mlp<em>color</code>, <code>mlp</em>cov</code>, <code>mlp_opacity</code> from the old model to the new one. This means the MLP weights encode scene-agnostic rendering priors that carry over, reducing how much the new submap needs to learn from scratch.</p>
+<hr>
+<h2>Dependencies and why it needs a GPU</h2>
+<p><strong>CUDA rasterizer</strong> — the entire differentiable rendering path depends on two custom CUDA extensions:</p>
+<ul>
+<li><code>gaussian<em>rasterizer</code> — installed from <code>github.com/VladimirYugay/gaussian</em>rasterizer</code> (imported in <code>src/utils/utils.py</code> line 8). This is a fork of the 3DGS rasterizer that adds depth output and alpha output as returns from <code>GaussianRasterizer.<em>_call</em>_</code>.</li>
+</ul>
+<ul>
+<li><code>diff-gaussian-rasterization-w-pose</code> — installed from <code>github.com/rmurai0610/diff-gaussian-rasterization-w-pose</code>, used in <code>src/gsr/renderer.py</code> for the loop-closure registration path. This variant adds differentiable camera pose deltas (<code>theta</code> and <code>rho</code> arguments to the rasterizer).</li>
+</ul>
+<ul>
+<li><code>simple<em>knn</code> — CUDA k-nearest-neighbor used inside <code>GaussianModel.create</em>from<em>pcd</code> / <code>add</em>points</code> to initialize Gaussian scales as <code>log(sqrt(nearest<em>neighbor</em>dist))</code>.</li>
+</ul>
+<p>Without a GPU these custom C++/CUDA extensions simply will not compile or run. The alpha-composite rasterization requires GPU parallelism to be tractable; on CPU it would be O(pixels × Gaussians).</p>
+<p><strong>Other key dependencies:</strong></p>
+<ul>
+<li><code>open3d==0.18.0</code> — RGBD odometry in <code>VisualOdometer</code>, point cloud I/O and statistical outlier removal in <code>Mapper.grow_submap</code></li>
+<li><code>pygicp</code> — ICP used in <code>Tracker.track_icp</code> (the faster-GICP tracking branch, currently present but unused in the committed main loop)</li>
+<li><code>faiss-gpu</code> — used in <code>mapper<em>utils.py</code> for large-scale nearest-neighbor queries when computing new point insertion (<code>compute</em>new<em>points</em>ids</code>)</li>
+<li><code>roma</code> — unit-quaternion and rotation-matrix conversions, used throughout tracker and <code>rigid<em>transform</em>gaussians</code></li>
+<li><code>torch<em>scatter</code> — <code>scatter</em>max</code> in <code>GaussianModel.anchor_growing</code> to aggregate features from candidate child Gaussians to new anchors</li>
+</ul>
+<hr>
+<h2>Read-it-in-this-order</h2>
+<p>To understand the full method from the ground up, open files in this sequence:</p>
+<ul>
+<li><code>configs/Replica/replica.yaml</code> — understand what all the knobs are before reading code</li>
+<li><code>run_slam.py</code> — 120 lines; see the top-level structure (init, run, evaluate)</li>
+<li><code>src/entities/gaussian<em>slam.py</code> — the master orchestrator; read <code></em><em>init</em><em></code> then <code>run()</code>; focus on the submap lifecycle (<code>should</em>start<em>new</em>submap</code>, <code>save<em>current</em>submap</code>, <code>start<em>new</em>submap</code>)</li>
+<li><code>src/entities/gaussian<em>model.py</code> — read <code></em><em>init</em><em></code> to see what is stored; then <code>create</em>from<em>pcd</code> / <code>add</em>points</code> to see anchor initialization; then <code>voxelize<em>sample</code> for the compactness mechanism; then <code>fix</em>mlp</code> vs <code>training_setup</code> to understand how tracker vs mapper freeze different parts</li>
+<li><code>src/utils/utils.py</code> — read <code>generate<em>neural</em>gaussians</code> (line 229) and <code>render<em>gaussian</em>model</code> (line 332); this is where anchors expand into rendered Gaussians</li>
+<li><code>src/entities/mapper.py</code> — read in order: <code>compute<em>seeding</em>mask</code> → <code>seed<em>new</em>gaussians</code> → <code>grow<em>submap</code> → <code>optimize</em>submap</code> → <code>map</code> (the top-level call that chains them)</li>
+<li><code>src/entities/tracker.py</code> — read <code>compute_losses</code> then <code>track</code>; notice that all Gaussian parameters are zeroed-lr and only camera rotation+translation are optimized</li>
+<li><code>src/entities/visual_odometer.py</code> — brief; shows the Open3D RGBD multi-scale odometry that provides pose priors</li>
+<li><code>src/Scaffold<em>GS/gaussian</em>renderer/<em>_init</em><em>.py</code> — the reference Scaffold-GS render path; compare <code>generate</em>neural_gaussians</code> here with the version in <code>utils.py</code> to see what CGS-SLAM adapted vs. kept</li>
+<li><code>src/entities/losses.py</code> — last; very short; note the <code>isotropic_loss</code> which is the mapping-time regularizer that keeps Gaussians compact</li>
+</ul></article>
+<article class="page walk"><h1>SplatSim — code walkthrough</h1>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:6px 0 18px">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+
+<p style="margin:0 0 10px"><strong>Start from how a robot gets good at anything: practice.</strong> To learn to pick up a cup, an arm needs thousands to millions of tries — grabbing, missing, dropping, colliding. Doing that with a <em>real</em> robot is brutal: each attempt takes seconds, the hardware wears out, things break, and a bad move can damage the arm or whatever's near it. A million real attempts is a non-starter.</p>
+
+<p style="margin:0 0 10px"><strong>So you practice in a simulator instead</strong> — a physics video-game world you can run faster than real time, in thousands of parallel copies, with no wear and no danger. Train the skill there, then move it to the real robot. Simple idea. It mostly doesn't work, for one stubborn reason: <strong>the world in the simulator is not the real world.</strong> The skill gets tuned to the sim's quirks, and then reality doesn't match.</p>
+
+<p style="margin:0 0 10px">For a robot that sees through <strong>cameras</strong>, the worst mismatch is how things <em>look</em>. In a normal simulator the images are computer graphics — clean, flat-textured, perfectly lit, a bit cartoonish. Real camera images are messy, richly textured, uneven light. A vision policy trained only on the cartoon images has <em>never seen a real photograph</em>; hand it a real camera feed and it's a student who studied from crude sketches being shown a photo — it doesn't recognise what it's looking at, and the skill falls apart. This is the <strong>reality gap</strong>, and its visual half is what breaks camera-based robots.</p>
+
+<p style="margin:0 0 10px"><strong>The two usual escapes are both unsatisfying.</strong> You can make the sim images vary wildly on purpose — random colours, textures, lighting — so the policy learns to <em>ignore</em> appearance and just be robust. But that throws away useful visual information and needs delicate tuning. Or you can hire artists to hand-build photorealistic 3D models of every object and room — accurate, but hopelessly expensive and it still never quite matches <em>your</em> actual workspace. The whole problem lives in the gap between "cheap but fake-looking" and "real-looking but unaffordable."</p>
+
+<p style="margin:0 0 10px"><strong>The unlock: Gaussian Splatting captures reality itself.</strong> Instead of an artist <em>modelling</em> a fake workspace, you just take a video of your <em>actual</em> workspace, and splatting reconstructs it into a photorealistic, renderable 3D scene — the real table, the real objects, the real light. It looks real because it <em>is</em> real, rebuilt from real photos. That single fact dissolves the appearance gap almost for free.</p>
+
+<p style="margin:0 0 10px"><strong>So SplatSim builds a bridge:</strong> capture the real workspace as a splat → drop that splat into a physics engine, so now the simulated world both <em>obeys physics</em> (the arm can practice touching, pushing, grasping) <em>and</em> <em>renders images that look like real camera feeds</em> → train the vision policy there for as many attempts as you like → put it on the real robot. Because everything it ever "saw" already looked like reality, there's no appearance shock on deployment, and the skill transfers with little or no real-world retraining. That's the "zero-shot" in the title.</p>
+
+<p style="margin:0 0 10px"><strong>The subtle hard part</strong> is motion. A splat is a frozen snapshot, but the arm moves and objects move when grasped — so you have to tie the blobs to the physical parts, so that when a joint rotates in the physics engine, the matching blobs move with it and the render stays truthful. (This is exactly what <em>Robo-GS</em> pushes further, welding blobs to a mesh so look and geometry move as one.) And splatting only fixes how things <em>look</em>, not how they physically <em>behave</em> — contact and friction realism is a separate battle.</p>
+
+<p style="margin:0"><strong>Why this ties back to the whole theme:</strong> the same splat is doing double duty — it's a photorealistic <em>renderer</em> for the policy's eyes <em>and</em> a manipulable <em>object</em> for the physics engine, at the same time. That's the field's core bet again — one representation that many jobs can share — turned into a loop between <em>imagining</em> a skill cheaply and <em>acting</em> it out for real. <strong>The honest framing:</strong> SplatSim doesn't close the whole reality gap — it closes the <em>appearance</em> half cheaply, which happens to be the half that most breaks vision-based robots. The physics half is still yours to earn.</p>
+</div>
+
+<h2>What the repo is / how you&#x27;d run it</h2>
+<p><strong>The paper in one sentence</strong>: instead of building a textured mesh simulator, SplatSim uses 3D Gaussian Splatting (3DGS) — a learned volumetric scene representation — to turn a video of a real robot into a photorealistic simulator. A manipulation policy trained purely on rendered SplatSim images transfers to the real robot without any real-world training data (zero-shot sim2real).</p>
+<h3>Workflow at a glance</h3>
+<ul>
+<li><strong>Scan</strong> the scene (robot + workspace) once with a smartphone. Train a Gaussian splat with the <code>gaussian-splatting</code> sub-repo. This gives you a <code>point_cloud.ply</code> containing millions of Gaussians representing the whole scene.</li>
+</ul>
+<ul>
+<li><strong>Calibrate</strong> the splat to the simulator. You hand-align the splat point cloud to the URDF skeleton in CloudCompare, then copy the resulting 4×4 transformation matrix into <code>configs/object_configs/objects.yaml</code>.</li>
+</ul>
+<ul>
+<li><strong>Label</strong> robot Gaussians by link. Run <code>articulated<em>robot</em>pipeline.py</code>, which renders each link independently in PyBullet, runs a KNN in 3D to label every splat Gaussian with a link index, and saves the result to <code>data/labels<em>path/&lt;robot</em>name&gt;_labels.npy</code>.</li>
+</ul>
+<ul>
+<li><strong>Generate demonstration trajectories</strong> (or load provided ones). Launch a PyBullet server that auto-plans pick-and-place motions and records joint states + object poses as <code>.pkl</code> files in <code>configs/folder<em>configs.yaml &gt; traj</em>folder</code>.</li>
+</ul>
+<ul>
+<li><strong>Render</strong> training images. Replay recorded joint-state trajectories; at each step, run the FK→Gaussian transform→rasterizer pipeline to produce a photorealistic RGB image. Images land in <code>&lt;traj<em>folder&gt;/&lt;N&gt;/images</em>1/</code>.</li>
+</ul>
+<h3>Entry commands (from the README)</h3>
+<pre><code>
+# Terminal 1: physics server + splat renderer
+python scripts/launch_nodes.py --robot sim_ur_pybullet_apple_interactive --robot_name robot_iphone
+
+# Terminal 2: send trajectories, save images
+python scripts/run_env_sim.py --agent replay_trajectory_and_save
+</code></pre>
+<p>The <code>--robot</code> flag picks which <code>PybulletRobotServer</code> subclass to instantiate. <code>--robot_name</code> points to the calibration entry in <code>objects.yaml</code>. For the data download / path setup, see <code>README.md §1–2</code>.</p>
+<hr>
+<h2>Architecture — the module map</h2>
+<pre><code>
+SplatSim/
+├── configs/
+│   ├── folder_configs.yaml           # traj_folder path
+│   └── object_configs/objects.yaml   # per-robot/object calibration (transform matrix, URDF, AABB, ply_path)
+├── data/
+│   ├── labels_path/                  # per-Gaussian link labels (.npy), produced by articulated_robot_pipeline.py
+│   └── pcds_path/                    # URDF point clouds (.ply) used in CloudCompare alignment
+├── scripts/
+│   ├── articulated_robot_pipeline.py # one-time calibration: labels each Gaussian with its robot link
+│   ├── launch_nodes.py               # start the PyBullet+splat server (picks robot class from --robot)
+│   ├── run_env_sim.py                # client: send actions, receive obs (images), drive agents
+│   ├── quick_run.py                  # older entry for real-robot GELLO teleoperation (no splat)
+│   ├── run_env_policy.py             # run a trained diffusion policy against the sim server
+│   └── run_env_servo.py              # visual servoing variant
+├── splatsim/
+│   ├── agents/
+│   │   ├── agent.py                  # Agent base class, DummyAgent, BimanualAgent
+│   │   ├── gello_agent.py            # reads joint angles from GELLO hardware
+│   │   ├── replay_trajectory_agent.py# replays recorded .pkl trajectories; optionally saves rendered images
+│   │   ├── policy_agent.py           # wraps a trained diffusion policy
+│   │   ├── interface_agent.py / slider_interface_agent.py / text_interface_agent.py  # GUI/text control
+│   │   └── spacemouse_agent.py / quest_agent.py   # hardware teleoperation agents
+│   ├── robots/
+│   │   ├── sim_robot_pybullet_base.py    # PybulletRobotServerBase — the core class; owns physics, splat, render
+│   │   ├── sim_robot_pybullet_object_on_plate.py  # ObjectOnPlatePybulletRobotServer + Apple/Banana/Orange subclasses
+│   │   ├── sim_robot_pybullet_splat.py   # older monolithic splat server (single robot, T-object)
+│   │   ├── sim_robot_pybullet_splat_6DOF.py / _servoing*.py  # variants
+│   │   ├── sim_robot_pybullet_push.py / _cup.py / _assembly.py etc.  # task-specific servers
+│   │   ├── robot.py / ur.py / panda.py / xarm_robot.py       # real-robot drivers
+│   │   └── sim_robot_pybullet_base.py    # (same as above — the main base)
+│   └── utils/
+│       ├── robot_splat_render_utils.py   # THE core splat math: segmentation, FK transform, SH rotation, compositing
+│       ├── utils_fk.py                   # compute_transformation(): relative SE(3) between two link poses
+│       ├── cameras.py                    # PyBullet multi-view depth→point cloud (used by articulated_robot_pipeline)
+│       ├── sh_utils.py                   # spherical harmonic helpers
+│       └── transform_utils.py            # rotation matrix ↔ Euler angles
+├── submodules/
+│   ├── gaussian-splatting-wrapper/       # 3DGS training + GaussianModel + diff-gaussian-rasterization CUDA kernel
+│   ├── pybullet-playground-wrapper/      # URDF assets, UR5+gripper URDF
+│   ├── pybullet-URDF-models/             # library of object URDFs (apple, banana, plate, …)
+│   ├── gello_software/                   # GELLO hardware driver + ZMQ robot/camera node framework
+│   ├── simple-knn/                       # fast GPU KNN (used inside 3DGS training)
+│   └── ghalton/                          # Halton sequence sampler (used in 3DGS)
+└── setup.py                              # installs the `splatsim` package in editable mode
+</code></pre>
+<hr>
+<h2>The pipeline — traced through the actual code</h2>
+<h3>Step 0: one-time calibration (<code>articulated<em>robot</em>pipeline.py</code>)</h3>
+<p>Before any rendering, you must label every Gaussian in the robot&#x27;s splat with its robot link index.</p>
+<ul>
+<li>Load the trained splat into a <code>GaussianModel</code> object (<code>gaussians = GaussianModel(dataset.sh<em>degree); scene = Scene(...)</code>). Extract the 3D means: <code>robot</em>xyz = gaussians.get_xyz.cpu().detach().numpy()</code>.</li>
+<li>Load the robot URDF into PyBullet at the joint angles recorded at scan time (<code>joint_states</code> in <code>objects.yaml</code>).</li>
+<li>For each link <code>i</code>, hide every other link (<code>changeVisualShape(..., rgbaColor=[1,1,1,0])</code>), then call <code>get<em>overall</em>pcd()</code> (nine synthetic PyBullet cameras → depth images → 3D points). This gives a point cloud that is geometrically exactly link <code>i</code>.</li>
+<li>Combine all link clouds into <code>(X, y)</code> and train a <code>KNeighborsClassifier(n_neighbors=10)</code> on URDF space.</li>
+<li>Transform the real splat Gaussians into URDF space using the calibration matrix from <code>objects.yaml</code>, apply the AABB filter to exclude non-robot Gaussians, then call <code>knn.predict(splat_points)</code> — each Gaussian gets a link label.</li>
+<li>Save as <code>data/labels<em>path/&lt;robot</em>name&gt;_labels.npy</code>.</li>
+</ul>
+<p>This is the only step that requires the calibration matrix to be already correct. The AABB bounding box is also auto-computed here and written back into <code>objects.yaml</code>.</p>
+<hr>
+<h3>Step 1: server startup (<code>launch<em>nodes.py</code> → <code>PybulletRobotServerBase.</em><em>init</em>_</code>)</h3>
+<p><code>launch<em>nodes.py</code> reads <code>--robot</code> and instantiates the matching server subclass, e.g. <code>AppleOnPlatePybulletRobotServer</code>. The base class constructor (<code>PybulletRobotServerBase.</em><em>init</em>_</code>) does several things in sequence:</p>
+<ul>
+<li>Loads <code>data/labels<em>path/&lt;robot</em>name&gt;<em>labels.npy</code> and parks it on GPU as <code>self.robot</em>labels</code> (a long tensor).</li>
+<li>Starts the ZMQ server (pickling protocol: <code>command<em>joint</em>state</code>, <code>get<em>observations</code>, <code>set</em>object_pose</code>).</li>
+<li>Loads the robot URDF into PyBullet as <code>self.dummy_robot</code>.</li>
+<li>Reads <code>joint_states</code> from <code>objects.yaml</code> and sets the initial configuration.</li>
+<li>For every object in <code>ENV<em>CONFIG[&quot;objects&quot;]</code> (e.g. <code>plastic</em>apple</code>, <code>plate</code>), loads its <code>.ply</code> into a <code>GaussianModel</code> via <code>self.object<em>gaussians[i].load</em>ply(ply_path)</code>.</li>
+<li>Loads the robot&#x27;s trained scene (colmap cameras + splat) via <code>Scene(dataset, self.gaussians<em>backup, ...)</code>. <code>self.gaussians</em>backup</code> now holds the static full-scene Gaussian cloud.</li>
+<li>Pre-computes and caches the calibration transformation tensors (<code>populate<em>transformations</em>cache</code>) on GPU to avoid recomputation every frame.</li>
+<li>Picks camera <code>cam<em>i</code> from the colmap dataset as the fixed base camera (<code>self.base</em>camera</code>).</li>
+</ul>
+<p>Then <code>serve()</code> sets initial joint positions, calls <code>get<em>curr</em>link<em>states()</code> to record <code>self.initial</em>link_states</code> (the reference FK pose), and enters the main loop.</p>
+<hr>
+<h3>Step 2: receiving a joint command (<code>command<em>joint</em>state</code>)</h3>
+<p>The client (e.g. <code>ReplayTrajectoryAgent</code>) sends a joint state over ZMQ. The server receives it and calls <code>self.robot.command<em>joint</em>state(joint_state)</code>, which in <code>PybulletRobotServerBase</code>:</p>
+<pre><code>
+for i in range(1, self.num_dofs()):
+    self.pybullet_client.setJointMotorControl2(
+        self.dummy_robot, i, p.POSITION_CONTROL,
+        targetPosition=joint_state[i - 1], force=1000,
+    )
+</code></pre>
+<p>PyBullet now knows the new joint angles and will compute their FK when asked.</p>
+<hr>
+<h3>Step 3: computing link transforms (<code>get<em>transfomration</em>list</code> in <code>robot<em>splat</em>render_utils.py</code>)</h3>
+<p>At render time, <code>prep<em>image</em>rendering</code> calls <code>get<em>transfomration</em>list(self.dummy<em>robot, self.initial</em>link_states)</code>:</p>
+<pre><code>
+def get_transfomration_list(robot_uid, initial_link_states, use_link_centers=True):
+    new_joints = get_curr_link_states(robot_uid, use_link_centers=use_link_centers)
+    transformations_list = []
+    for joint_index in range(num_joints):
+        input_1 = (initial_link_states[joint_index][&quot;pos&quot;], initial_link_states[joint_index][&quot;q&quot;])
+        input_2 = (new_joints[joint_index][&quot;pos&quot;], new_joints[joint_index][&quot;q&quot;])
+        r_rel, t = compute_transformation(input_1, input_2)
+        ...
+        transformations_list.append((r_rel, t))
+    return transformations_list
+</code></pre>
+<p><code>get<em>curr</em>link<em>states</code> calls <code>p.getLinkState(..., computeForwardKinematics=True)</code> for every joint — this is PyBullet running the full forward kinematics chain. <code>compute</em>transformation</code> (in <code>utils_fk.py</code>) derives the relative SE(3) between the initial and current link pose:</p>
+<pre><code>
+def compute_transformation(pose_a, pose_b):
+    r1 = quaternion_to_rot_matrix(q1)
+    r2 = quaternion_to_rot_matrix(q2)
+    r_rel = np.matmul(r2, r1.T)               # relative rotation
+    T = [x2,y2,z2] - r_rel @ [x1,y1,z1]      # relative translation
+    return r_rel, T
+</code></pre>
+<p>Result: one <code>(R<em>rel, t</em>rel)</code> pair per link, living on GPU as float32 tensors.</p>
+<hr>
+<h3>Step 4: segmenting and moving robot Gaussians (<code>get<em>segmented</em>indices</code>, <code>transform_means</code>)</h3>
+<p><code>prep<em>image</em>rendering</code> calls <code>get<em>segmented</em>indices(...)</code>, which:</p>
+<ul>
+<li>Transforms all Gaussian means from splat space into URDF space using the calibration matrix <code>Trans</code>.</li>
+<li>Filters to the robot AABB (discards background Gaussians).</li>
+<li>For each link <code>i</code>, selects the subset of in-AABB Gaussians whose <code>.npy</code> label equals <code>i</code>:</li>
+<pre><code>
+   condition = torch.where(condition)[0]
+   for i in range(p.getNumJoints(robot_uid)):
+       segmented_points.append(condition[robot_labels == i])
+</code></pre>
+</ul>
+<p>Then <code>transform<em>means(robot</em>uid, pc, xyz, segmented<em>list, transformations</em>list, ...)</code> applies the per-link rigid transform to each group of Gaussians:</p>
+<pre><code>
+for joint_index in range(p.getNumJoints(robot_uid)):
+    r_rel, t = transformations_list[joint_index]
+    segment = segmented_list[joint_index]
+    # Move Gaussian centers
+    xyz[segment] = torch.matmul(r_rel, xyz[segment].T).T + t
+    # Rotate Gaussian orientations (stored as quaternions → matrix → rotate → back)
+    rot_rotation_matrix = (inv_rotation_matrix * scale_robot) @ r_rel @ rotation_matrix
+    tranformed_rot = o3.quaternion_to_matrix(rot[segment])
+    transformed_rot = rot_rotation_matrix @ tranformed_rot
+    rot[segment] = o3.matrix_to_quaternion(transformed_rot)
+    # Rotate spherical harmonics (view-dependent color)
+    shs_feat = transform_shs(shs_featrest[segment], rot_rotation_matrix)
+    shs_featrest[segment] = shs_feat
+</code></pre>
+<p>After the loop, the entire cloud is transformed back to splat space via <code>inv<em>rotation</em>matrix</code>.</p>
+<p>The SH rotation deserves special mention. Each Gaussian stores its color as spherical harmonics coefficients (degree 0–3, 15 coefficients × 3 RGB channels). When the Gaussian rotates, those coefficients must rotate too, or the view-dependent highlights will be wrong. <code>transform<em>shs</code> builds Wigner-D matrices for degrees 1, 2, 3 using <code>e3nn.o3.wigner</em>D</code> and applies them as a block-diagonal matrix to the SH bands:</p>
+<pre><code>
+D = torch.block_diag(D_1, D_2, D_3)   # (15, 15)
+sh = einops.rearrange(shs_feat[..., :15, :], &#x27;... s r -&gt; ... r s&#x27;)
+sh_rot = torch.einsum(&#x27;...ij, ...rj -&gt; ...ri&#x27;, D, sh)
+shs_feat[..., :15, :] = einops.rearrange(sh_rot, &#x27;... r i -&gt; ... i r&#x27;)
+</code></pre>
+<hr>
+<h3>Step 5: placing object Gaussians (<code>transform_object</code>)</h3>
+<p>For each manipulated object (e.g. the apple), <code>transform<em>object(self.object</em>gaussians[i], object_config, pos, quat, ...)</code> does:</p>
+<ul>
+<li>Apply the object&#x27;s own calibration matrix (<code>Trans_canonical</code>) to put its Gaussian means into a canonical frame.</li>
+<li>Apply the object&#x27;s AABB filter to discard splat noise outside the object boundary.</li>
+<li>Apply <code>quat</code> (the current PyBullet rigid-body pose) to rotate and translate the object, then map back into robot-splat space via the inverse of the robot calibration matrix.</li>
+<li>Rotate the object&#x27;s SH coefficients by the same combined rotation via <code>transform_shs</code>.</li>
+</ul>
+<p>Result: a set of Gaussian attributes <code>(xyz<em>obj, rot</em>obj, opacity<em>obj, scales</em>obj, features<em>dc</em>obj, features<em>rest</em>obj)</code> in splat space, at the correct current pose.</p>
+<hr>
+<h3>Step 6: compositing and rendering</h3>
+<p>Back in <code>prep<em>image</em>rendering</code>, robot Gaussians and all object Gaussians are concatenated into the single <code>self.robot_gaussian</code> placeholder:</p>
+<pre><code>
+self.robot_gaussian._xyz = torch.cat([xyz] + xyz_obj_list, dim=0)
+self.robot_gaussian._rotation = torch.cat([rot] + rot_obj_list, dim=0)
+# ... same for _opacity, _features_rest, _features_dc, _scaling
+</code></pre>
+<p>Then <code>render_image</code> calls the 3DGS rasterizer:</p>
+<pre><code>
+rendering = render(camera, self.robot_gaussian, self.pipeline, self.background)[&quot;render&quot;]
+</code></pre>
+<p><code>render</code> is <code>gaussian<em>splatting.gaussian</em>renderer.render</code> — the standard 3DGS forward pass: sort Gaussians by depth, project to screen, alpha-blend. The CUDA kernel (<code>diff-gaussian-rasterization</code>) does this efficiently on GPU.</p>
+<p>The result is a <code>(3, H, W)</code> float32 tensor; <code>render<em>image</code> returns it. <code>get</em>observations</code> packs it as <code>observations[&quot;base_rgb&quot;]</code>.</p>
+<hr>
+<h3>Step 7: saving training data (<code>ReplayTrajectoryAgent</code> / <code>follow<em>trajectory</em>and_record</code>)</h3>
+<p><code>ReplayTrajectoryAgent.act()</code> reads the next <code>.pkl</code> frame from the recorded trajectory, restores object poses via <code>env.<em>robot.set</em>object<em>pose(...)</code>, and returns the joint angles. When <code>save</em>images=True</code> it also saves every <code>*<em>rgb</code> image from <code>obs</code> to <code>&lt;traj</em>folder&gt;/&lt;N&gt;/images_1/</code>.</p>
+<p>In <code>GENERATE<em>DEMOS</code> mode, <code>follow</em>trajectory<em>and</em>record</code> (in <code>sim<em>robot</em>pybullet<em>base.py</code>) saves a full <code>observations</code> dict as a <code>.pkl</code> every 50 physics steps; this includes <code>base</em>rgb</code> (the rendered frame), joint positions, EE pose, and object poses. That pickle file is the training sample for the downstream diffusion policy.</p>
+<hr>
+<h2>Where the core idea lives</h2>
+<p>The core contribution — making a static learned scene representation behave like an articulated robot — is implemented in:</p>
+<p><strong><code>splatsim/utils/robot<em>splat</em>render_utils.py</code></strong></p>
+<p>The key functions:</p>
+<ul>
+<li><strong><code>get<em>segmented</em>indices</code></strong> (line 208): groups Gaussian indices by link using the pre-computed KNN labels. This is what allows treating each link&#x27;s Gaussians as a separate rigid body.</li>
+</ul>
+<ul>
+<li><strong><code>transform<em>means</code></strong> (line 52): the main loop that applies one SE(3) per link to the corresponding Gaussian subset. Three quantities are transformed: the 3D mean positions (<code>xyz</code>), the orientation quaternions (<code>rot</code>, which determine the covariance ellipsoid shape and orientation), and the spherical harmonic coefficients (<code>shs</em>featrest</code>, which determine view-dependent color). All three must be transformed consistently or the rendered appearance will be wrong.</li>
+</ul>
+<ul>
+<li><strong><code>transform_shs</code></strong> (line 160): rotates SH coefficients using Wigner-D matrices. This is the mathematically subtle part — naive SH rotation is expensive; using the block-diagonal Wigner-D structure makes it a single batched einsum.</li>
+</ul>
+<ul>
+<li><strong><code>transform_object</code></strong> (line 101): maps a separately-scanned object splat from its own canonical frame into the correct world pose, respecting scale differences between the robot-splat and object-splat calibration matrices.</li>
+</ul>
+<p>The bridge to PyBullet is in <code>get<em>transfomration</em>list</code> + <code>compute<em>transformation</code> in <code>utils</em>fk.py</code> (line 40):</p>
+<pre><code>
+r_rel = np.matmul(r2, r1.T)
+T = np.array([x2, y2, z2]) - np.matmul(r_rel, np.array([x1, y1, z1]))
+</code></pre>
+<p>This gives the relative rigid-body transform of each link from its reference pose, which is then applied to that link&#x27;s Gaussians.</p>
+<p>The actual call chain per rendered frame in <code>PybulletRobotServerBase.prep<em>image</em>rendering</code>:</p>
+<pre><code>
+PyBullet FK  →  get_transfomration_list  →  get_segmented_indices
+→  transform_means (robot Gaussians)
+→  transform_object (for each object)
+→  torch.cat all into self.robot_gaussian
+→  render(camera, self.robot_gaussian, ...)  →  RGB tensor
+</code></pre>
+<hr>
+<h2>Dependencies &amp; why it needs a GPU</h2>
+<p>| Dependency | Role |</p>
+<p>|---|---|</p>
+<p>| <strong><code>diff-gaussian-rasterization</code></strong> (CUDA, in <code>submodules/gaussian-splatting-wrapper/gaussian_splatting/submodules/</code>) | GPU rasterizer: projects Gaussians, sorts by depth, alpha-blends. Must be compiled against your CUDA/PyTorch. This is the reason the repo requires a GPU — CPU inference is orders of magnitude too slow for interactive use. |</p>
+<p>| <strong><code>simple-knn</code></strong> (CUDA submodule) | Used internally during 3DGS training for neighbor queries. |</p>
+<p>| <strong><code>e3nn</code></strong> | Equivariant neural network library. Used here only for its Wigner-D matrix computation (<code>o3.wigner<em>D</code>) and <code>quaternion</em>to<em>matrix</code> / <code>matrix</em>to_quaternion</code>. |</p>
+<p>| <strong><code>einops</code></strong> | Tensor reshape/rearrange shorthand used in <code>transform_shs</code>. |</p>
+<p>| <strong><code>pybullet</code></strong> | Physics engine: FK via <code>getLinkState(computeForwardKinematics=True)</code>, IK, collision, trajectory planning. Runs CPU-only; it is the &quot;simulator&quot; that drives joint motion. |</p>
+<p>| <strong><code>pybullet<em>planning</code></strong> | Motion planning on top of PyBullet (<code>plan</em>joint_motion</code>) used in demo generation. |</p>
+<p>| <strong><code>open3d</code></strong> | Point cloud visualization and I/O used in <code>articulated<em>robot</em>pipeline.py</code> and <code>cameras.py</code>. |</p>
+<p>| <strong><code>sklearn</code> KNeighborsClassifier</strong> | One-time use in <code>articulated<em>robot</em>pipeline.py</code> to propagate link labels from URDF point cloud to splat Gaussians. |</p>
+<p>| <strong><code>zmq</code></strong> | Socket transport between the server (physics + render) and client (agent). |</p>
+<p>| <strong><code>gello_software</code></strong> (submodule) | ZMQ <code>RobotEnv</code> / <code>ZMQClientRobot</code> / <code>ZMQServerRobot</code> node framework that the entire client-server architecture is built on. |</p>
+<p>| <strong>PyTorch 2.7 + CUDA 12.6</strong> | All Gaussian operations (transform, render) run on GPU tensors. |</p>
+<p>The GPU bottleneck is the rasterizer. Each <code>render()</code> call projects and alpha-composites potentially hundreds of thousands of Gaussians. On a modern GPU (RTX 3090 class) this is ~30–100ms depending on resolution and Gaussian count, which determines the achievable rendering rate for data collection.</p>
+<hr>
+<h2>Read-it-in-this-order</h2>
+<ul>
+<li><strong><code>README.md</code></strong> — understand the three-phase workflow (scan → calibrate → render) before reading code.</li>
+<li><strong><code>configs/object_configs/objects.yaml</code></strong> — see the data structure: calibration matrix, AABB, URDF path, joint states, ply paths. Every subsequent file reads from this.</li>
+<li><strong><code>splatsim/utils/utils<em>fk.py</code></strong> — tiny file, but <code>compute</em>transformation</code> is the mathematical primitive the whole FK step rests on.</li>
+<li><strong><code>splatsim/utils/robot<em>splat</em>render<em>utils.py</code></strong> — read <code>get</em>segmented<em>indices</code>, then <code>transform</em>means</code>, then <code>transform<em>shs</code>, then <code>transform</em>object</code>. This is the heart of the paper.</li>
+<li><strong><code>scripts/articulated<em>robot</em>pipeline.py</code></strong> — the one-time calibration script; it explains how the KNN labels in step 4 are produced.</li>
+<li><strong><code>splatsim/robots/sim<em>robot</em>pybullet<em>base.py</code></strong> — the server base class: <code></em><em>init</em><em></code> for startup, <code>prep</em>image<em>rendering</code> for how steps 3–6 are wired together, <code>follow</em>trajectory<em>and</em>record</code> for how training data is saved.</li>
+<li><strong><code>splatsim/robots/sim<em>robot</em>pybullet<em>object</em>on<em>plate.py</code></strong> — <code>ObjectOnPlatePybulletRobotServer</code>: shows how a concrete task (apple → plate) is specified via <code>ENV</em>CONFIG</code> and how <code>plan<em>given</em>this_state</code> generates motion plans.</li>
+<li><strong><code>scripts/launch_nodes.py</code></strong> — the dispatcher that selects and starts the right server class.</li>
+<li><strong><code>scripts/run<em>env</em>sim.py</code></strong> — the client loop: how actions are sent and observations (including rendered images) are consumed.</li>
+<li><strong><code>splatsim/agents/replay<em>trajectory</em>agent.py</code></strong> — how pre-recorded trajectories are replayed and how rendered images are saved to disk as the training dataset.</li>
+</ul></article></div>
+  <footer>Repos cloned under analysis/detail/gs/code/ (gitignored — GPU/CUDA needed to run) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

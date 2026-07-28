@@ -1,0 +1,1562 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaussian Splatting for Robots — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Safety · attacks Topic deep dive · with codeamp; guarantees · with code</div>
+  <h1>Making training examples cheaper</h1>
+  <p>Teaching robots by example is slow and costly. Four ways the field cuts that cost: better recording rigs, squeezing more from few demos, faking data in simulation, and refining a policy after the demos run out. This page: the idea, the key 2025 papers with their real code, and hands-on walkthroughs of two cloned codebases.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Making training examples cheaper</h1>
+<p><em>506 papers · a rule across everything (sense / decide / move) — cuts the cost of teaching robots</em></p>
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">The core fact is simple: <strong>teaching a robot by watching a person is extraordinarily expensive</strong>. Every robot that learns by imitation needs hundreds or thousands of human demonstrations, and collecting each one costs time, wages, equipment, and the risk of repetitive strain on the person demonstrating. The single bet running through almost every paper here is that <strong>you can move the cost somewhere cheaper than human time</strong> — move it to smarter recording rigs that give better data per human session, move it to algorithms that squeeze more learning from fewer examples, move it to computers in simulators that generate examples for free, or move it to the robot itself by letting it refine what it learned without asking for more human demos. The field is not trying to eliminate the cost entirely; it is just trying to move it away from the expensive part (expert humans repeating motions) to the parts you can automate or parallelize.</p>
+<p style="margin:0 0 8px"><strong>Four ways people are actually relocating the cost:</strong></p>
+<ul style="margin:0 0 12px">
+<li><strong>① Better recording rigs.</strong> <em>ARCap</em> puts an augmented reality headset on the demonstrator and shows them live feedback about whether their motion is good enough — they fix bad takes instantly instead of re-recording later. <em>How to Train Your Robots?</em> systematically compares kinesthetic teaching, VR controllers, and spacemouse input to figure out which method produces data worth paying for.</li>
+<li><strong>② Making one demonstration do more work.</strong> <em>SPOT</em> records the motion of the target object in 3D space rather than the robot's joint angles, so the same recording teaches any robot body — you can even learn from bare-hand videos. <em>Human-Agent Joint Learning</em> puts a trained helper agent in control with the human, gradually taking over more of the work so each hour of human time produces more training signal.</li>
+<li><strong>③ Generating unlimited fake examples in simulation.</strong> <em>Stonefish</em> and <em>OceanSim</em> build realistic simulators for underwater robots, which are expensive to collect real examples for, so every robot learns mostly on simulated data. <em>Domain Randomization for Object Detection in Manufacturing</em> generates synthetic training images by varying appearance, lighting, and angle, then tests what random variations matter most.</li>
+<li><strong>④ Letting the robot improve itself after demos end.</strong> <em>FLaRe</em> takes an initial policy learned from demonstrations and continues training it with trial-and-error learning driven by a sparse reward signal — just whether the task succeeded, with no detailed human guidance. <em>ExploRLLM</em> uses a large language model to suggest a good initial exploration strategy, so the robot's self-improvement phase learns faster.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> <em>demonstration data is expensive, so every paper here pushes a different cost lever — recording quality, multi-robot reuse, simulation scale, or robot-driven refinement</em> — to get a working policy without demanding unlimited human time. The 2025 work is testing which levers actually move far enough to matter in the real world, and whether any single one (or combination of them) can scale from tabletop tasks to the full range of things a general-purpose robot needs to do. <strong>Still open:</strong> whether object-centric demonstrations (like SPOT's recordings of object motion) can actually replace hand-tuning for radically different robot morphologies; whether simulators built automatically from real environments have enough fidelity to train robust policies without fine-tuning; and whether trial-and-error refinement (FLaRe, ExploRLLM) can converge reliably on real hardware in reasonable time without constant human supervision.</p>
+<h2>The problem — in depth</h2>
+<p>Every robot that learns to do something by watching people needs a large set of recorded examples. A person physically guides the robot through the task, or the person does the task themselves while sensors record every movement. Then those recordings are fed to a learning algorithm that builds a policy — a set of rules for what to do in each situation.</p>
+<p>The core trouble is that this process is slow, expensive, and does not scale. A single arm task, like picking up a cup and placing it on a shelf, might need hundreds of good recordings before a robot can do it reliably. Getting those recordings means finding willing people, setting up equipment, running the session, checking the recordings, and throwing away the ones that are noisy or wrong. Scale that to dozens of tasks and multiple robot bodies, and the cost becomes the main thing blocking the whole field from moving forward.</p>
+<p>Why is collecting examples so hard? Three reasons compound each other.</p>
+<p>First, robots are clumsy to operate. Moving a robot arm by hand, or through a controller, is tiring and unintuitive. The person giving the demonstration does not move the way they would move their own hand, so the motion they produce is often jerky or imprecise. A learning algorithm trained on bad motion data learns bad habits.</p>
+<p>Second, the person giving the demonstration has no feedback while they are doing it. They cannot see whether their movement was clean enough, or whether the sensor data it produced will actually be useful for training. They find out the data was bad only after the session ends and someone checks the files. That means repeating the whole session.</p>
+<p>Third, examples collected from one robot body usually cannot directly teach a different robot body, and examples from a person&#x27;s bare hands usually cannot teach a robot at all without extra conversion steps. So even if you have thousands of examples, you may not be able to reuse them across the robots you have.</p>
+<p>This matters because it connects directly to the one thing every robot must do: take in a world it does not fully understand, decide what to do, and move a physical body to carry that action out — all quickly, cheaply, and without failing. The example-collection bottleneck slows all three parts. Without enough examples, the robot does not learn to sense the world well. It does not learn to make good decisions. And it does not learn the precise physical motions that actually work. Every other advance in robot learning — better algorithms, bigger models, faster computers — hits a ceiling if there are not enough good examples to learn from.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>1. Better rigs for recording demonstrations</h3>
+<p>One approach is to make the act of recording a demonstration easier and higher quality — better tools so each example a person gives is more likely to be usable.</p>
+<p>ARCap takes this direction directly: an augmented reality headset shows the person live visual signals while they are demonstrating. The signals tell them in the moment whether their motion is clean enough for training. This means the person can adjust on the fly instead of discovering the recording was bad afterward. The result is fewer wasted sessions and cleaner data from each one.</p>
+<p>The paper &quot;How to Train Your Robots?&quot; takes a more analytical approach: the researchers recorded the same set of tasks using three different methods — moving the arm by hand, using a VR controller, and using a joystick — then trained and tested robot policies from each set. Understanding which method produces data that leads to better learning is itself a way to stop wasting effort on the wrong recording approach.</p>
+<p>Diff-DAgger (from &quot;Diff-Dagger: Uncertainty Estimation With Diffusion Policy for Robotic Manipulation&quot;) attacks a related problem: when to ask a human to step in and give more examples during live operation. Most systems ask too often, which is tiring, or too rarely, which means the robot stays stuck. Diff-DAgger measures how uncertain the robot&#x27;s own internal process is at each moment and calls for a human only when that uncertainty is genuinely high. This means human effort is spent only where it is most needed.</p>
+<h3>2. Making one demonstration go further</h3>
+<p>A second approach keeps the number of demonstrations small and instead finds ways to squeeze more learning out of each one.</p>
+<p>SPOT (&quot;SE(3) Pose Trajectory Diffusion for Object-Centric Manipulation&quot;) makes demonstrations more portable. Instead of recording what the robot&#x27;s joints did, it records how the target object moved in 3D space. That description of the task is body-independent — it can teach a different robot, or even learn from videos of a person&#x27;s bare hands, with as few as eight demonstrations. This dramatically widens the pool of possible recordings.</p>
+<p>The Human-Agent Joint Learning paper takes a related approach during collection itself. A trained helper agent shares control of the robot with the human operator, gradually taking over more of the work as it improves. The operator does less and less over time while still producing useful demonstrations. Each hour of human effort produces more training signal than it would if the person were working alone.</p>
+<p>&quot;From Imitation to Refinement&quot; addresses what happens when the examples run out and the policy still is not good enough. Instead of collecting more demonstrations, it freezes the policy learned from the existing demonstrations and trains a second, lighter policy that watches the robot in action and makes small corrections. The corrections are learned through trial and error, not more human demonstrations. This extends the value of the original data.</p>
+<h3>3. Generating fake training data in simulation</h3>
+<p>A third direction bypasses real-world collection entirely: build a computer simulation that is realistic enough to generate useful training examples automatically, at almost no cost per example.</p>
+<p>The Stonefish simulator and OceanSim both do this for underwater robots, a domain where real collection is especially expensive. Stonefish adds realistic sensor models — including cameras that report only changes rather than full frames — and automatic labeling of every simulated frame. OceanSim runs on graphics cards and models how underwater cameras and sonar physically work, creating realistic sensor data without ever getting a real robot wet.</p>
+<p>&quot;Domain Randomization for Object Detection in Manufacturing Applications&quot; applies the same idea to factory robots. It generates synthetic training images by randomly varying material appearance, lighting, camera angle, and background — a technique called domain randomization. A detector trained only on these generated images then works on real factory scenes. The paper systematically tests which random variations matter most, giving future researchers a guide for building their own synthetic datasets.</p>
+<p>&quot;Learning to Swim&quot; and AnyCar both use simulation to train control policies that transfer to real robots. The underwater vehicle paper trains in a fast parallel physics simulator with randomly varied conditions, then deploys the policy directly on a real vehicle with no extra tuning. AnyCar trains a single neural network on many different virtual vehicles with different physics, then fine-tunes it to a real vehicle using only a small number of real examples.</p>
+<h3>4. Refining policies after the examples run out</h3>
+<p>A fourth approach trains an initial policy from whatever demonstrations exist, then improves it further through trial and error — so the robot keeps getting better without needing more human recordings.</p>
+<p>FLaRe takes a general robot policy trained by copying demonstrations and continues training it using reinforcement learning (trial-and-error learning) driven by sparse signals — just a signal for whether the task succeeded or not, with no detailed instructions. This extends the value of the original demonstrations by letting the robot practice on its own.</p>
+<p>ExploRLLM uses a large language model to write an initial control program and simplify what the robot senses, giving the trial-and-error learner a far better starting point than random exploration. The result learns faster and transfers to a real robot without extra training.</p>
+<h2>Where it stands</h2>
+<p>The field has made real progress on all four fronts: better recording tools reduce the cost of each human session, portability tricks like object-centric representations let one demonstration teach more than one robot, simulation closes gaps in domains where real collection is dangerous or slow, and trial-and-error fine-tuning extends the life of the examples that do exist. What is still open is whether any of these approaches can scale to the full range of tasks a general robot needs — most systems are still tested on a narrow set of table-top tasks, and none have shown that a single example-collection strategy covers everything from precise assembly to outdoor navigation to helping people eat. The combination of cheaper recording and cheaper simulation is narrowing the gap, but the gap remains large.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">ARCap: Collecting High-Quality Human Demonstrations for Robo</td><td>ICRA</td><td><a href="https://github.com/Ericcsr/ARCap" target="_blank" rel="noopener">Ericcsr/ARCap</a></td><td class="mono">data_processing/data_collection_server.py</td><td><span class="run">robot</span></td></tr>
+<tr><td class="tt">How to Train Your Robots? The Impact of Demonstration Modali</td><td>ICRA</td><td>—</td><td class="mono">diffusion_policy/policy/diffusion_policy.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Diff-DAgger: Uncertainty Estimation with Diffusion Policy fo</td><td>ICRA</td><td><a href="https://github.com/sean1295/DiffDAgger" target="_blank" rel="noopener">sean1295/DiffDAgger</a></td><td class="mono">diffdagger/sim_train.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">SPOT: SE(3) Pose Trajectory Diffusion for Object-Centric Man</td><td>ICRA</td><td><a href="https://github.com/NVlabs/object_centric_diffusion" target="_blank" rel="noopener">NVlabs/object_centric_diffusion</a></td><td class="mono">diffusion_policy_3d/</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Human-Agent Joint Learning for Efficient Robot Manipulation </td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">From Imitation to Refinement - Residual Rl for Precise Assem</td><td>ICRA</td><td><a href="https://github.com/ankile/robust-rearrangement" target="_blank" rel="noopener">ankile/robust-rearrangement</a></td><td class="mono">src/train/residual_ppo.py</td><td><span class="run">sim</span></td></tr>
+<tr><td class="tt">Stonefish: Supporting Machine Learning Research in Marine Ro</td><td>ICRA</td><td><a href="https://github.com/patrykcieslak/stonefish" target="_blank" rel="noopener">patrykcieslak/stonefish</a></td><td class="mono">Library/include/sensors/vision/EventBasedCamera.h</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">OceanSim: A GPU-Accelerated Underwater Robot Perception Simu</td><td>IROS</td><td><a href="https://github.com/umfieldrobotics/OceanSim" target="_blank" rel="noopener">umfieldrobotics/OceanSim</a></td><td class="mono">isaacsim/oceansim/</td><td><span class="run">sim</span></td></tr>
+<tr><td class="tt">Domain Randomization for Object Detection in Manufacturing A</td><td>ICRA</td><td><a href="https://github.com/jacobhenningsson95/SynMfg_Code" target="_blank" rel="noopener">jacobhenningsson95/SynMfg_Code</a></td><td class="mono">generation_main.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Learning to Swim: Reinforcement Learning for 6-DOF Control o</td><td>ICRA</td><td><a href="https://github.com/warplab/isaac-auv-env" target="_blank" rel="noopener">warplab/isaac-auv-env</a></td><td class="mono">warpauv_env.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">AnyCar to Anywhere: Learning Universal Dynamics Model for Ag</td><td>ICRA</td><td><a href="https://github.com/LeCAR-Lab/anycar" target="_blank" rel="noopener">LeCAR-Lab/anycar</a></td><td class="mono">car_foundation/car_foundation/jax_models.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">FLaRe: Achieving Masterful and Adaptive Robot Policies with </td><td>ICRA</td><td><a href="https://github.com/JiahengHu/FLaRe" target="_blank" rel="noopener">JiahengHu/FLaRe</a></td><td class="mono">training/online/dinov2_vits_tsfm_rgb_augment_objectnav.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">ExploRLLM: Guiding Exploration in Reinforcement Learning wit</td><td>ICRA</td><td>—</td><td class="mono">src/</td><td><span class="run">sim</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>ARCap: Collecting High-Quality Human Demonstrations for Robot Learning with Augmented Reality Feedback</h1>
+<p>ICRA 2025 · 7 citations · strategy: better recording rig</p>
+<h2>What it does</h2>
+<p>ARCap is a wearable data-collection rig that gives a human demonstrator live augmented-reality feedback — a virtual robot superimposed on the real scene — while they perform a manipulation task, so the data they record is kinematically valid and collision-free before it ever reaches the training pipeline. The strategy is <strong>better recording rig</strong>: the insight is that the cost of fixing bad demonstrations (re-recording, filtering, extra data) is higher than the cost of preventing them in real time. Compared to the closest prior system (DexCap, which has no live feedback), ARCap-trained policies achieve 70% vs 25% success on cluttered pick-and-place, and novice-collected data goes from 0% to 60% success.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs at collection time.</strong> A person wears a Meta Quest 3 headset, a Rokoko motion-capture glove on each hand, and a mounted Intel RealSense D435 RGB-D camera on their wrist. The Quest 3 controllers are fixed to the glove mounts so wrist 6-DOF pose is tracked. The RealSense captures colored point clouds of the scene. A laptop in a backpack runs the Python server.</p>
+<p><strong>Kinematic retargeting (the core loop).</strong> At each timestep the server reads wrist pose from the Quest controllers and finger joint angles from the Rokoko gloves, then runs an inverse-kinematics (IK) solver to find joint angles for the target robot (e.g. LEAP dexterous hand, or a parallel-jaw gripper). For dexterous hands the IK matches human fingertips to robot fingertip positions; a null-space IK term simultaneously keeps the robot out of self-collision. For parallel-jaw grippers, the aperture is derived from the thumb–index separation distance, mapped to the gripper&#x27;s 1 Hz open/close speed limit. The resulting virtual robot model is rendered in the AR view, exactly overlaid on the real scene.</p>
+<p><strong>Three real-time quality signals.</strong></p>
+<ul>
+<li>*Scene visibility frame*: a rectangle in the AR display shows the robot&#x27;s RGB-D camera field of view. If the demonstrator&#x27;s hand drifts out of it, they see the frame go red — so objects stay in the robot&#x27;s perceptual range.</li>
+<li>*Speed warning*: if the human moves faster than the robot can actuate (joint speed limit exceeded), a yellow frame appears and the virtual robot visibly lags behind the hand, giving intuitive feedback to slow down.</li>
+<li>*Collision warning*: the Quest 3&#x27;s built-in scene-reconstruction mesh is used for real-time collision checking between the virtual robot body and the pre-scanned environment. A blue blinking frame + controller haptic vibration alert the user before a collision is captured as data.</li>
+</ul>
+<p><strong>Data pipeline.</strong> Recorded streams: colored point cloud from RealSense, virtual robot joint angles and end-effector poses, headset world pose, and glove finger data — all time-stamped and stored as <code>.npz</code> files per trajectory. Post-processing (<code>convert<em>data</em>with_robot.py</code>) applies point-cloud cropping, superimposes the virtual robot&#x27;s own point cloud to reduce the visual domain gap at training time, and outputs files in robomimic-compatible HDF5 format.</p>
+<p><strong>Policy training.</strong> A diffusion policy with a PointNet encoder processes the cropped point cloud; the observation is the PointNet embedding concatenated with current joint angles. Action chunks are predicted. No large language model or external API is involved. The specific data-cost saving: because feedback prevents bad demonstrations at collection time, fewer total demos are needed — novice users produce usable data rather than requiring expert re-collection.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/Ericcsr/ARCap" target="_blank" rel="noopener">https://github.com/Ericcsr/ARCap</a></p>
+<p><strong>Language / framework:</strong> Python 3.11 (server-side data processing) + Unity (VR app, C#). No ROS required; communication is over raw UDP/TCP sockets between the Quest and the laptop.</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+ARCap/
+├── ARCap_Unity/          # Unity project — VR app source (C#); builds the Quest 3 .apk
+├── Packages/             # Unity package manifest
+├── data_processing/      # Python server — the substantive code
+│   ├── data_collection_server.py          # main entry point: starts sensor threads, records streams
+│   ├── data_collection_server_bimanual.py # dual-arm variant
+│   ├── convert_data_with_robot.py         # post-processing to robomimic HDF5
+│   ├── convert_data_with_robot_bimanual.py
+│   ├── camera_calibration.py              # intrinsic/extrinsic calibration
+│   ├── compute_extrinsic.py               # sensor-to-robot frame transforms
+│   ├── realsense_module.py                # pyrealsense2 wrapper
+│   ├── quest_robot_module.py              # Quest pose receiver
+│   ├── rokoko_module.py                   # Rokoko glove stream parser
+│   ├── process_point_clouds.py            # cropping, filtering, superimposition
+│   ├── virtual_replay_traj.py             # visualize a recorded trajectory
+│   ├── gen_traj.py                        # trajectory utilities
+│   ├── solve_depth_mount.py               # optimize camera-mount extrinsic
+│   ├── ip_config.py                       # headset and laptop IP config
+│   └── requirements.txt                   # numpy, scipy, pybullet, open3d, pyrealsense2
+├── media/                # README images
+└── arcap_release.apk     # pre-built Quest 3 app (sideload directly)
+</code></pre>
+<p><strong>File to open first:</strong> <code>data<em>processing/data</em>collection<em>server.py</code> — it is the top-level entry point and shows exactly how sensor threads are started, how UDP packets from the Quest are parsed, and where data gets written to disk. Reading it alongside <code>quest</em>robot<em>module.py</code> and <code>realsense</em>module.py</code> reveals the full synchronization scheme.</p>
+<p><strong>Dependencies:</strong> numpy, scipy, pybullet (used for IK and collision geometry), open3d (point cloud processing), pyrealsense2 (camera driver). No GPU needed for data collection. The Unity project requires Unity Hub + Meta Quest Developer Hub on Windows 10/11.</p>
+<p><strong>Hardware needed:</strong> Meta Quest 3 headset, Intel RealSense D435, Rokoko Smart Gloves, a Windows 10/11 laptop (for Unity build), and 3D-printed mounts (STL files provided). A physical robot is not needed for data collection itself; it is only needed for replay/evaluation.</p>
+<p><strong>No simulator, no dataset, no LLM API required</strong> for data collection. The IK solver runs via pybullet with the robot&#x27;s URDF.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+cd data_processing
+pip install -r requirements.txt
+# Edit ip_config.py with your Quest IP and laptop IP
+# Sideload arcap_release.apk onto Quest 3 via Meta Quest Developer Hub
+python data_collection_server.py               # LEAP dexterous hand
+python data_collection_server.py --handedness left  # parallel jaw, left hand
+# After recording:
+python convert_data_with_robot.py              # outputs robomimic HDF5
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>data<em>processing/data</em>collection<em>server.py</code> to understand the threading model and data layout. Then read <code>quest</em>robot<em>module.py</code> to see how wrist pose is decoded from Quest packets, and <code>rokoko</em>module.py</code> for glove parsing. The IK logic lives in <code>quest<em>robot</em>module.py</code> via pybullet calls — this is the hardest part conceptually (null-space IK with the robot URDF). <code>process<em>point</em>clouds.py</code> is straightforward numpy/open3d. The Unity C# code in <code>ARCap_Unity/</code> handles the AR rendering and collision checking on the headset side; you would need Unity familiarity to read it, but it is not needed to understand the data format.</p>
+<p><strong>Code difficulty:</strong> moderate. The Python server is clean and task-oriented (~500–800 lines total across the modules). The trickiest parts are the coordinate frame transforms between Quest world frame, camera frame, and robot base frame (<code>compute<em>extrinsic.py</code> + <code>solve</em>depth_mount.py</code>). The Unity side requires C# and Meta XR SDK knowledge.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run meaningfully on a CPU-only box without the physical hardware.</strong> The Python server depends on <code>pyrealsense2</code> (requires a plugged-in RealSense D435) and expects live UDP packets from a Meta Quest 3 headset running the app. The pybullet IK runs fine on CPU; open3d point-cloud operations are CPU-bound and will work. But without the Quest 3 and RealSense, <code>data<em>collection</em>server.py</code> will block or error at sensor initialization. The Unity build also requires Windows. You can read and inspect all the Python post-processing code (<code>convert<em>data</em>with<em>robot.py</code>, <code>process</em>point<em>clouds.py</code>, <code>virtual</em>replay_traj.py</code>) on any Linux CPU box if you have pre-recorded <code>.npz</code> files. Policy training (diffusion policy + PointNet) requires a GPU and a separate training codebase not included in this repo.</p></article>
+<article class="page" id="gp1"><h1>How to Train Your Robots? The Impact of Demonstration Modality on Imitation Learning</h1>
+<p>ICRA 2025 · 4 citations · strategy: squeeze more from few demos (mixed-modality reuse)</p>
+<h2>What it does</h2>
+<p>Collecting robot demonstrations is expensive partly because we do not know which recording method — physically guiding the robot by hand (kinesthetic teaching), using a VR headset controller, or using a 6-axis mouse called a spacemouse — produces the best downstream learning. This paper runs a controlled empirical study across all three methods on three tabletop tasks and measures both learning performance and human effort. The central punchline is that a small number of kinesthetic demos mixed into a larger teleoperation dataset outperforms using any single modality at the same total demo count, letting you get more policy quality from fewer total recordings.</p>
+<p>Strategy: <strong>squeeze more from few demos</strong> (mixed-modality data reuse — the insight is that kinesthetic traces are cleaner but fatiguing, so you use a handful of them to anchor the dataset rather than collecting hundreds).</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> Each demonstration is a time-series of end-effector Cartesian poses and a binary gripper signal, recorded on a 7-DoF Franka Emika Panda arm. Two RGB cameras (one wrist-mounted, one external) feed into the policy. The three collection modes differ in how a human produces those poses:</p>
+<ul>
+<li>*Kinesthetic teaching* — the robot is put in gravity-compensated mode; the operator physically moves the arm and releases it, recording joint positions at each step.</li>
+<li>*VR teleoperation* — an Oculus Quest controller tracks the operator&#x27;s hand pose via IMU; the controller&#x27;s 6-DoF motion is mapped to end-effector delta pose commands sent in real-time over a Cartesian impedance controller (Polymetis).</li>
+<li>*Spacemouse teleoperation* — a 6-axis desk mouse outputs velocity commands along three translational and three rotational axes, scaled to end-effector delta poses.</li>
+</ul>
+<p><strong>Policy architecture.</strong> The authors use a Diffusion Policy (Chi et al., RSS 2023): a denoising diffusion probabilistic model (DDPM) that takes stacked RGB frames encoded by a ResNet plus the robot&#x27;s proprioceptive state, and outputs a chunk of 16 consecutive actions, of which 8 are executed before the next inference step. This action-chunking trick reduces inference calls but creates open-loop execution between steps. Training runs for 800 K gradient steps with MSE loss on denoised noise predictions.</p>
+<p><strong>Data quality measurement.</strong> The key analytic tool is K-nearest-neighbor (KNN) variance in proprioceptive space: for each timestep, find the K most similar robot states across all demonstrations and measure how spread the corresponding actions are. Low variance means the demos agree on what to do in each state — &quot;cleaner&quot; data for imitation learning. They also measure jerkiness (second derivative of actions) and state-space diversity. Kinesthetic demos consistently show lower action variance and lower jerkiness than both teleoperation modes, except for high-contact tasks where physical limits of kinesthetic teaching cause drop-outs.</p>
+<p><strong>The specific trick that saves data.</strong> The mixed-modality scheme: collect a *small* kinesthetic subset (e.g. 20–30 demos) — enough to capture smooth, consistent trajectories without operator fatigue — then blend it with a *larger* VR or spacemouse dataset. The blended set trains a single diffusion policy without any reweighting or separate heads. On the Flip Glass task, 100 mixed demos (20 kinesthetic + 80 VR) reach 75% success vs. 70% for 100 kinesthetic-only, while the kinesthetic-only condition requires far more physical effort per demo. The insight is that kinesthetic data anchors the action distribution in contact-free phases, while teleoperation data provides coverage at scale.</p>
+<p><strong>Tasks.</strong> Three real-robot tabletop tasks: *Open Drawer* (free-space reach, alignment, constrained linear pull), *Flip Glass* (pick, 180-degree rotation, place), *Push Sanitizer* (contact-force pressing). Each modality contributed 100 expert trajectories. A user study with 12 participants (6 expert, 6 novice) compared 5 demos per person per modality using NASA-TLX subjective load and practice-time-to-confidence metrics.</p>
+<h2>The code</h2>
+<p><strong>Repo URL.</strong> No official public GitHub repository was released for this paper; neither the arXiv page (2503.07017) nor ICRA proceedings link to one as of the research date. The authors built on the open-source Diffusion Policy codebase (github.com/real-stanford/diffusion_policy) and Polymetis (github.com/facebookresearch/polymetis) for robot control, plus an Oculus Quest reader library for VR input.</p>
+<p><strong>Language / framework.</strong> Python; PyTorch (inherited from Diffusion Policy). Robot control via Polymetis (gRPC-based Franka controller). Data collection scripts likely use Oculus Reader (Python + ZMQ) and SpaceMouse driver (pyspacemouse or similar).</p>
+<p><strong>Repo structure (Diffusion Policy, the upstream base).</strong> The paper&#x27;s implementation would follow this layout:</p>
+<pre><code>
+diffusion_policy/
+  config/              # Hydra configs per task / modality
+  dataset/             # Dataset loaders (Zarr or HDF5 trajectories)
+  env/                 # Environment wrappers (real robot or sim)
+  model/
+    diffusion/         # UNet / transformer denoising networks
+    vision/            # ResNet encoders
+  policy/
+    diffusion_policy.py  # Core DDPM policy: predict_action(), compute_loss()
+  workspace/           # Training loop (train.py)
+eval.py
+train.py
+</code></pre>
+<p><strong>File to open first.</strong> <code>diffusion<em>policy/policy/diffusion</em>policy.py</code> — specifically the <code>predict_action</code> method shows the full inference chain: encode images with ResNet, concatenate proprioception, run the denoising loop for N steps, output the 16-action chunk.</p>
+<p><strong>Dependencies.</strong> PyTorch, diffusers (HuggingFace), Hydra-core, zarr/h5py for datasets, Polymetis (for real Franka arm), OpenCV, robosuite (optionally for simulation eval). No LLM API is required.</p>
+<p><strong>Simulator.</strong> Not required for this paper&#x27;s experiments — all evaluations are on a real Franka arm. Diffusion Policy also supports robosuite (MuJoCo-backed) for sim experiments but this paper does not use it.</p>
+<p><strong>GPU.</strong> Required for training (800 K steps with ResNet + DDPM is not CPU-feasible in reasonable time). Inference on a single image pair may work on CPU but would be too slow for real-time robot control (target: 20 Hz policy rate).</p>
+<p><strong>How to run.</strong> Using the upstream Diffusion Policy codebase:</p>
+<pre><code>
+# install
+conda create -n dp python=3.9 &amp;&amp; conda activate dp
+pip install -e . -r requirements.txt
+
+# train (robot data must be collected separately and saved as Zarr)
+python train.py --config-name=train_diffusion_unet_real_image_workspace \
+    task=real_pusht \
+    training.num_epochs=3000
+
+# the mixed-modality experiment would require concatenating Zarr datasets
+# from kinesthetic and VR collection before training
+</code></pre>
+<p>No out-of-the-box data is released; you would need a Franka arm, Polymetis, and Oculus Quest (or spacemouse) to reproduce data collection.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with the arXiv HTML version (arxiv.org/html/2503.07017v1), Section III (Experimental Setup) and Section IV (Results). The paper is 8 pages and quite readable — it is primarily empirical, so the methods are described in prose rather than algorithm boxes. Then read Section II for the data quality metrics (KNN variance, jerkiness formulas).</p>
+<p><strong>How hard is the code to follow.</strong> The Diffusion Policy codebase (the effective implementation base) is moderately complex — it uses Hydra for all config management and PyTorch Lightning conventions. The core policy logic in <code>diffusion_policy.py</code> is clean and well-commented. The robot interface (Polymetis) is the steeper learning curve if you do not have Franka experience. Estimated reading time to understand the policy: 2–3 hours. Reproducing the data collection pipeline without the paper&#x27;s own scripts: 1–2 days.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: cannot meaningfully run.</strong> Training 800 K steps of a DDPM with ResNet encoders on image sequences requires a GPU (the original work likely used a single A100 or similar). A forward pass for inference is technically possible on CPU but runs at ~1–2 Hz — far below the 20 Hz required for real-time robot control. Additionally, the experiment requires a physical Franka Emika Panda arm, Polymetis server, and either an Oculus Quest or spacemouse for data collection. There is no simulation fallback and no pre-collected dataset released publicly. A GPU workstation with Linux + Polymetis + Franka FCI license is the minimum viable setup.</p></article>
+<article class="page" id="gp2"><h1>Diff-DAgger: Uncertainty Estimation with Diffusion Policy for Robotic Manipulation</h1>
+<p>ICRA 2025 · 8 citations · strategy: refine the policy after demos run out (interactive DAgger loop that solicits expert corrections during live rollout)</p>
+<hr>
+<h2>What it does</h2>
+<p>Diff-DAgger is an interactive imitation learning system that lets a diffusion policy ask for expert help exactly when it is genuinely confused, rather than whenever its internal action proposals disagree. A standard diffusion policy is trained on a small seed dataset; during robot rollout the system monitors the policy&#x27;s own denoising reconstruction error (the training loss evaluated on the current observation). When that error spikes above a threshold, the robot pauses and hands control to a human expert, appends the corrected trajectory to the dataset, and retrains. The key claim is that using denoising loss as the query signal correctly identifies real out-of-distribution states, whereas ensemble disagreement falsely fires at natural multimodal decision points (places where several valid actions exist and the ensemble branches).</p>
+<p>Strategy: <strong>refine the policy after demos run out</strong> — a robot-gated DAgger (Dataset Aggregation) loop that acquires new expert demonstrations on-demand during deployment.</p>
+<hr>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> A seed set of offline demonstrations, a robot arm, and a human expert on standby. Observations are typically robot proprioception plus an image encoded by R3M (a frozen ResNet pretrained on human video).</p>
+<p><strong>Core policy: DDPM diffusion policy.</strong> The policy is a U-Net denoiser trained to predict noise added to action sequences (the DDPM objective). At inference it runs a reverse diffusion chain (64 denoising steps in the released config) starting from Gaussian noise to produce a smooth action chunk.</p>
+<p><strong>Uncertainty signal — denoising loss.</strong> This is the paper&#x27;s key trick. During rollout, after the policy generates an action chunk, the system also evaluates the denoising mean-squared error on that (observation, generated action) pair — essentially asking: &quot;how well does the trained denoiser reconstruct its own output from this observation?&quot; High MSE means the observation is far from the training manifold. The code captures this as <code>action<em>dict[&quot;diffusion</em>loss&quot;]</code> returned alongside the action. No additional model (no ensemble, no separate classifier) is needed.</p>
+<p><strong>Why this beats ensemble disagreement.</strong> At a multimodal decision point (e.g., the robot can grasp left or right), an ensemble spreads probability mass across both modes; their disagreement is high even though the policy &quot;knows&quot; the state well. Denoising loss stays low in both modes because the denoiser can reconstruct either valid action cleanly. Only genuinely OOD (out-of-distribution) states, where no training trajectory covers the current configuration, produce high denoising loss.</p>
+<p><strong>The DAgger loop, step by step.</strong></p>
+<ul>
+<li>Collect <code>num<em>init</em>ep</code> full expert demonstrations to bootstrap the dataset D.</li>
+<li>Roll out the current diffusion policy. At every timestep, compute denoising loss. If loss exceeds threshold τ, set <code>query = True</code>.</li>
+<li>When <code>query</code> fires, the expert takes over (or the episode is flagged for expert re-labelling). Corrected (observation, expert-action) pairs are collected.</li>
+<li>New trajectories are appended to the replay buffer: <code>dataset.rb.extend(TensorDict(...))</code>. Normalizer statistics (mean/std per observation/action dimension) are updated incrementally.</li>
+<li>The diffusion policy is retrained from scratch (or fine-tuned) on D ∪ D_new using the standard DDPM noise-prediction loss.</li>
+<li>Repeat from step 2 for the next rollout round.</li>
+</ul>
+<p><strong>Threshold τ.</strong> Treated as a hyperparameter tuned empirically. The paper sweeps τ and reports AUROC for failure prediction; τ is not derived analytically.</p>
+<p><strong>Data-saving mechanism.</strong> Because the query signal is accurate, the expert is interrupted far less often than with ensemble methods. The authors report a 7.8× reduction in wall-clock expert time for equivalent task completion rates. The policy converges with fewer total expert interactions because noisy, unnecessary queries (at multimodal branch points) are suppressed.</p>
+<p><strong>Simulator and tasks.</strong> Experiments use ManiSkill3 (a fork is bundled as <code>mani_skill/</code> in the repo) for simulated tasks (push-T; stacking; plugging). Real-world experiments also appear in the paper. The Vulkan graphics driver is required by ManiSkill3 for GPU-accelerated rendering.</p>
+<p><strong>Results.</strong> Compared to Ensemble-DAgger and behavioral cloning baselines: +39 % failure prediction accuracy, +20.6 % task completion, 7.8× faster in wall-clock expert time.</p>
+<hr>
+<h2>The code</h2>
+<p><strong>Repo.</strong> <a href="https://github.com/sean1295/DiffDAgger" target="_blank" rel="noopener">https://github.com/sean1295/DiffDAgger</a></p>
+<p><strong>Language / framework.</strong> Python · PyTorch · HuggingFace Accelerate (multi-GPU distributed training) · ManiSkill3 (forked, bundled) · R3M vision encoder (bundled as <code>r3m/</code>).</p>
+<p><strong>Repo structure.</strong></p>
+<pre><code>
+diffdagger/
+  agents/          # agent wrappers (policy + query logic)
+  assets/          # robot URDF / mesh assets
+  config/
+    test/
+      bread_toast.yml   # example config: dataset_dir, model path, hyperparams
+  dataset/         # replay buffer, normalizer, data loading
+  model/           # diffusion policy U-Net; get_action() returns action + diffusion_loss + query flag
+  util/            # misc helpers
+  sim_train.py     # MAIN entry: DAgger loop over ManiSkill3 sim environment
+  sim_run.py       # evaluation-only rollout in sim
+  real_train.py    # DAgger loop for real robot (uses accelerate)
+  train.py         # distributed training wrapper (accelerate launch)
+mani_skill/        # forked ManiSkill3 simulator (pip install -e . required)
+r3m/               # R3M ResNet vision encoder (frozen)
+tests/
+  example_dataset.py       # shows dataset format
+  example_data_collection.py
+  example_rollout.py       # evaluate a saved policy checkpoint
+environment.yml    # conda env spec
+setup.py
+README.md
+</code></pre>
+<p><strong>File to open first.</strong> <code>diffdagger/sim<em>train.py</code> — it contains the full DAgger loop. The critical lines are the <code>get</em>action(dagger=True, return<em>dict=True)</code> call that returns <code>diffusion</em>loss</code> and the <code>query</code> flag, the conditional <code>if pbar.n &lt; num<em>init</em>ep or query or timestep &gt;= cfg.max<em>episode</em>steps</code> that triggers expert takeover, and the <code>dataset.rb.extend(...)</code> call that aggregates new data. The denoising loss computation itself lives inside the policy&#x27;s <code>get_action</code> method in <code>diffdagger/model/</code>.</p>
+<p><strong>Dependencies.</strong></p>
+<ul>
+<li>CUDA 11.8, cuDNN 8.9.7, GCC 13.3 (HPC module-load style)</li>
+<li>Vulkan drivers (for ManiSkill3 GPU rendering)</li>
+<li>PyTorch, HuggingFace Accelerate, TensorDict</li>
+<li><code>conda env create -f environment.yml</code> then <code>cd mani_skill &amp;&amp; pip install -e .</code></li>
+<li>No LLM API required; no internet-fetched dataset (you record your own demos or use the provided example scripts)</li>
+</ul>
+<p><strong>How to run (simulation).</strong></p>
+<pre><code>
+conda env create -f environment.yml
+conda activate diffdagger
+cd mani_skill &amp;&amp; pip install -e . &amp;&amp; cd ..
+# edit diffdagger/config/test/bread_toast.yml to set dataset_dir
+python tests/example_data_collection.py   # collect seed demos
+python diffdagger/sim_train.py            # run DAgger loop in sim
+python tests/example_rollout.py           # evaluate saved checkpoint
+</code></pre>
+<p>Distributed real-world training: <code>accelerate launch --main<em>process</em>port 6006 diffdagger/train.py</code></p>
+<hr>
+<h2>Reviewing it yourself</h2>
+<p><strong>Read in this order.</strong></p>
+<ul>
+<li><code>diffdagger/sim_train.py</code> — understand the DAgger loop structure and when queries fire.</li>
+<li><code>diffdagger/model/</code> (whichever file defines the diffusion U-Net and <code>get<em>action</code>) — find where <code>diffusion</em>loss</code> is computed and what the threshold looks like.</li>
+<li><code>diffdagger/dataset/</code> — understand the replay buffer and normalizer update to see how data accumulates.</li>
+<li><code>diffdagger/config/test/bread_toast.yml</code> — concrete numbers: episode budget, max steps, threshold.</li>
+</ul>
+<p><strong>Code difficulty.</strong> Moderate. The DAgger loop itself (in <code>sim<em>train.py</code>) is straightforward once you recognize the TensorDict-based replay buffer pattern. The harder part is the diffusion model internals: understanding how <code>get</em>action</code> simultaneously runs the reverse diffusion chain AND evaluates the forward (noising) loss requires familiarity with DDPM. ManiSkill3 integration adds another layer — the Vulkan rendering dependency makes the sim hard to run without the right GPU drivers. The authors themselves note &quot;code is not super optimized for performance.&quot;</p>
+<p><strong>Gotchas.</strong></p>
+<ul>
+<li>The <code>query</code> flag is returned by <code>get_action</code> but the threshold τ that triggers it is set inside the model, not exposed as a top-level config parameter in the loop script — you need to trace into the model code to tune it.</li>
+<li>ManiSkill3&#x27;s Vulkan requirement means this does not run in a headless CPU-only container without Xvfb or software rendering workarounds.</li>
+<li>Checkpoints are saved every 5k steps after initial 50k steps of pretraining — the first usable checkpoint takes a while.</li>
+</ul>
+<hr>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: cannot run the full system.</strong> Three blockers:</p>
+<ul>
+<li><strong>GPU required for training.</strong> The diffusion U-Net training (50k+ steps) is only practical on a GPU; CUDA 11.8 is explicitly required.</li>
+<li><strong>GPU required for simulation.</strong> ManiSkill3 uses Vulkan-based GPU rendering for the physics simulator. Without a GPU (or at minimum a Vulkan-capable software renderer), the environment cannot be instantiated.</li>
+<li><strong>Real-robot path needs hardware.</strong> The <code>real_train.py</code> path needs a physical arm.</li>
+</ul>
+<p>On a GPU box with CUDA 11.8, Vulkan drivers, and a conda environment set up correctly, the simulated DAgger loop (<code>sim_train.py</code>) should run end-to-end on the push-T task without any external dataset download or API key.</p></article>
+<article class="page" id="gp3"><h1>SPOT: SE(3) Pose Trajectory Diffusion for Object-Centric Manipulation</h1>
+<p>ICRA 2025 · 5 citations · strategy: squeeze more from few demos (object-centric representation makes 8 iPhone demos sufficient)</p>
+<h2>What it does</h2>
+<p>SPOT replaces robot-specific action sequences with SE(3) object pose trajectories — 6D rigid-body transforms of the manipulated object relative to a target object — as the intermediate task representation. A diffusion policy is conditioned on these pose trajectories instead of on raw sensor readings or joint angles, which decouples the policy completely from robot embodiment. Because the representation is embodiment-agnostic, demonstrations can come from either a teleoperated robot arm or from a person&#x27;s bare hands filmed on an iPhone (no action labels needed), and the policy still achieves 100% success on tested tasks with only 8 real-world demos.</p>
+<p>This is the &quot;squeeze more from few demos&quot; strategy: the object-centric representation eliminates embodiment-specific noise, so the policy generalizes from far fewer examples than pixel- or joint-space methods require.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> At training time SPOT consumes RGBD video clips of task demonstrations. For real-world demos, these are 8 short recordings taken with an iPhone 12 Pro (RGB + LiDAR). For simulation benchmarks (RLBench), 100 episodes per task are used. Each clip can be either action-labeled robot teleoperation or completely action-free human hand video.</p>
+<p><strong>Step 1 — Object mesh acquisition.</strong> A 3D mesh of the manipulated object is scanned once using the iPhone LiDAR sensor (BundleSDF in simulation). This mesh is needed by FoundationPose in subsequent steps.</p>
+<p><strong>Step 2 — 6D pose extraction (FoundationPose).</strong> FoundationPose, a zero-shot 6D pose estimator and tracker, runs on every frame of each demo clip. It produces, for each frame t, a 4x4 homogeneous transform T<em>a (pose of the source/manipulated object in camera frame) and T</em>b (pose of the target object or surface). YOLO-World provides the 2D bounding box detection needed to initialize FoundationPose on the first frame.</p>
+<p><strong>Step 3 — Canonical pose trajectory.</strong> The raw per-frame poses are converted to a canonical relative pose: tau = {T^b<em>a}</em>0^l, i.e., the source object&#x27;s pose expressed in the target object&#x27;s coordinate frame. This normalization makes the trajectory invariant to where in the scene the demonstration was recorded. Keyframe selection then filters the dense stream: a frame is kept when the relative velocity drops to zero (grasp/release moment) or when translation or rotation displacement exceeds a threshold, yielding a compact trajectory of ~10-30 keyframes per task.</p>
+<p><strong>Step 4 — Diffusion policy on SE(3).</strong> A lightweight 3-layer MLP with LayerNorm encodes the current object pose (6D) into a 64-dimensional feature. A DDIM diffusion model (100 noise steps during training, 10 during inference) learns to denoise the next-pose distribution conditioned on that feature. The denoising loss is standard MSE over predicted noise: L = MSE(epsilon<em>k, epsilon</em>theta(T<em>t, T</em>{t+1}^0 + epsilon_k, k)). A separate binary MLP classifier predicts task-end state (sigmoid threshold 0.95) to decide when to open the gripper.</p>
+<p><strong>Multi-task extension.</strong> For multi-task RLBench training, task descriptions are encoded with a frozen CLIP encoder; the sentence embedding is concatenated with the object-pose feature before the diffusion backbone. Multi-stage tasks additionally receive a one-hot stage encoding.</p>
+<p><strong>Step 5 — Action conversion at deployment.</strong> During robot execution, FoundationPose tracks object poses in real time from a live RGBD camera. The diffusion policy predicts the next SE(3) waypoint for the object. That object-space waypoint is converted to an end-effector Cartesian target via a known hand-eye calibration: A<em>{t:t+h} = T^obj</em>EE · T<em>{t:t+h}, where T^obj</em>EE = T^cam<em>EE · T^obj</em>cam. A Cartesian impedance controller then moves the arm to each waypoint.</p>
+<p><strong>The specific trick that saves data.</strong> By representing tasks entirely in object-relative SE(3) space, the policy never sees robot joint angles, pixel coordinates, or scene-specific visual features. The same 8-demo dataset simultaneously covers action-less human hand data and robot arm data because the representation collapses both to the same trajectory format. This is in contrast to visuomotor policies (e.g., Diffusion Policy, DP3) that must learn the mapping from raw images to joint commands and therefore need many more demonstrations to cover appearance variation.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/NVlabs/object" target="_blank" rel="noopener">https://github.com/NVlabs/object</a><em>centric</em>diffusion</p>
+<p><strong>Language / framework.</strong> Python 3.8; PyTorch 2.3.1; PyTorch3D for SE(3) operations; RLBench (PerAct branch) over CoppeliaSim v4.1.0 for simulation; FoundationPose (compiled C++/CUDA extensions via CMake) for pose tracking; YOLO-World for object detection.</p>
+<p><strong>Repo structure (top-level):</strong></p>
+<pre><code>
+object_centric_diffusion/
+  config/                   # Hydra YAML configs — task defs, training HPs
+    task/
+      rlbench_multi.yaml    # multi-task RLBench config (edit tasks + demo counts here)
+      rlbench_single.yaml
+  diffusion_policy_3d/      # Core: SE(3) diffusion policy training + inference
+  env_real/                 # Real-robot deployment
+    utils/
+      realworld_objects.py  # object-name → mesh-path + YOLO-label mapping (edit this for new tasks)
+  env_rlbench/              # RLBench integration (demo generation, episode replay)
+  env_rlbench_peract/       # PerAct-flavored RLBench variant
+  foundation_pose/          # FoundationPose submodule (pose estimator + tracker)
+  scripts/                  # Shell entry points
+    gen_demonstration_rlbench.sh
+    gen_demonstration_real.sh
+    train_policy.sh
+    eval_policy.sh
+    eval_policy_multi.sh
+  tools/                    # Misc utilities (mesh conversion, visualization)
+  utils/                    # Shared Python helpers
+  dp3_requirements.txt      # pip deps for diffusion_policy_3d
+  fp_requirements.txt       # pip deps for foundation_pose
+</code></pre>
+<p><strong>File to open first:</strong> <code>diffusion<em>policy</em>3d/</code> — specifically the policy network file inside it (likely <code>policy/spot<em>policy.py</code> or equivalent) which contains the 3-layer MLP encoder, DDIM diffusion loop, and end-state classifier. The pose-extraction pipeline entry point is <code>scripts/gen</em>demonstration<em>rlbench.sh</code> / <code>gen</em>demonstration<em>real.sh</code> which call into <code>env</em>rlbench/</code> or <code>env_real/</code> to extract and store the canonical SE(3) trajectories.</p>
+<p><strong>Dependencies summary:</strong></p>
+<ul>
+<li>GPU + CUDA 12.1 required (RTX 4090 tested)</li>
+<li>CoppeliaSim v4.1.0 for simulation evaluation</li>
+<li>PyRep + RLBench (PerAct branch) — install from GitHub</li>
+<li>FoundationPose CUDA extensions — compile with CMake inside conda env</li>
+<li>FoundationPose pretrained weights — Google Drive download</li>
+<li>PerAct RLBench demo dataset — ~100 eps/task, Google Drive download</li>
+<li>No external LLM API needed (CLIP is used locally from HuggingFace for multi-task)</li>
+<li>For real-world: iPhone 12 Pro (RGB+LiDAR), AR Code app (mesh scan), Record3D app (.r3d video)</li>
+</ul>
+<p><strong>How to run (simulation):</strong></p>
+<pre><code>
+# 1. Generate demonstrations with pose tracking
+bash scripts/gen_demonstration_rlbench.sh
+
+# 2. Train on a single task
+bash scripts/train_policy.sh close_jar
+
+# 3. Evaluate
+bash scripts/eval_policy.sh close_jar
+</code></pre>
+<p><strong>How to run (real-world):</strong></p>
+<pre><code>
+# 1. Process iPhone recordings → canonical SE(3) trajectories
+bash scripts/gen_demonstration_real.sh
+
+# 2. Train
+bash scripts/train_policy.sh mug_on_coaster
+
+# 3. Deploy on robot (requires ROS or equivalent arm controller)
+# Entry point in env_real/
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with <code>diffusion<em>policy</em>3d/</code> to understand the core model: the MLP encoder for SE(3) input, the DDIM noise schedule, and how the end-state classifier is attached. Then read <code>env<em>real/utils/realworld</em>objects.py</code> to see how object meshes and detection labels are registered — this is where you would add a new task. The Hydra YAML in <code>config/task/rlbench_multi.yaml</code> shows exactly which hyperparameters the paper used.</p>
+<p><strong>How hard is the code to follow.</strong> Moderate. The diffusion policy architecture itself is simple (3-layer MLP + DDIM is far lighter than transformer-based policies like PerAct or 3D Diffuser Actor). The complexity is in the surrounding infrastructure: FoundationPose requires compiling CUDA extensions and downloading pretrained weights; RLBench setup requires CoppeliaSim path configuration and multiple GitHub-only installs. Someone comfortable with PyTorch and conda can understand the core model in an afternoon, but getting the full simulation pipeline to run end-to-end takes a day or two of environment setup. The real-world path additionally requires specific iOS apps and a compatible robot arm (Franka Panda in the paper).</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on a CPU-only box.</strong> FoundationPose requires CUDA (the C++/CUDA extensions must be compiled against a CUDA toolkit) and is tested only on an RTX 4090. The diffusion training is also GPU-only. The simulation path additionally requires CoppeliaSim v4.1.0. A CPU-only machine cannot run any meaningful part of SPOT — not even inference, because FoundationPose&#x27;s pose tracking is CUDA-dependent at the library level. Minimum viable hardware: a single CUDA-capable GPU (likely 16 GB+ VRAM for training), Ubuntu 22, and either a real RGBD camera or the full CoppeliaSim+RLBench stack for evaluation.</p></article>
+<article class="page" id="gp4"><h1>Human-Agent Joint Learning for Efficient Robot Manipulation Skill Acquisition</h1>
+<p>ICRA 2025 · 4 citations · strategy: better recording rig (shared control to ease teleoperation and collect cleaner data)</p>
+<h2>What it does</h2>
+<p>Teleoperating a dexterous robot arm is exhausting: the operator must track high-dimensional joint states continuously while the robot kinematics fight against human intuition. HAJL solves this by splitting the robot&#x27;s end-effector command between the human and a diffusion-model agent that gradually takes over the easy parts, reducing operator fatigue and producing cleaner trajectories. The human can dial a control-ratio knob to hand off more or less of the motion to the agent as it improves, and both the demonstrations and the agent policy are collected and updated in the same loop. <strong>Strategy: better recording rig</strong> — specifically, a shared-control teleoperation system that lowers the effort barrier so fewer, higher-quality demos can be gathered in less wall-clock time.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> The operator uses a hand-pose estimation device (a glove or camera-based tracker); the system reads the human&#x27;s intended end-effector delta-action <code>a^h ∈ ℝ^m</code> plus the current robot state <code>s ∈ ℝ^n</code> (joint positions, gripper state, vision-derived object pose).</p>
+<p><strong>The diffusion blending core.</strong> Rather than a classical weighted average, HAJL blends human and agent commands inside the denoising chain of a Denoising Diffusion Probabilistic Model (DDPM). The human action is injected as a noisy starting point: <code>a^k = a^h + ε^k</code>, where <code>ε^k</code> is Gaussian noise at denoising timestep <code>k</code>. The learned noise-prediction network <code>ε_θ(a^k, s, k)</code> then denoises this toward the policy&#x27;s preferred action. After K denoising steps the output <code>a^s</code> is the fully agent-driven action; stopping at step <code>k &lt; K</code> yields an interpolation.</p>
+<p><strong>Control-ratio γ.</strong> The operator&#x27;s contribution is controlled by γ = k/K: at γ = 1 the output is pure agent, at γ = 0 the output is pure human. Two scheduling rules are provided: (1) manual adjustment by the operator in real time; (2) automatic cosine alignment, γ = ½(1 + cos θ), where θ is the angle between the previous human delta and the shared output — if human and agent already agree, the agent takes over more.</p>
+<p><strong>Training loss.</strong> Standard DDPM noise-prediction MSE: <code>L = E[‖ε − ε<em>θ(a</em>i + ε, s_i, k)‖²₂]</code>, trained on the growing mixed dataset of human-only and shared-control demonstrations.</p>
+<p><strong>The iterative loop — where data savings come from.</strong> (i) Collect a small seed set (~40 simulation demos, ~20 real-world demos) of pure human teleoperation. (ii) Pre-train <code>ε_θ</code> on that seed. (iii) Resume data collection with shared control active: the agent handles the routine parts of the motion while the human corrects edge cases, producing 30 sim / 10–20 real additional demos. (iv) Retrain on the enlarged dataset. Repeat. Because the agent absorbs cognitive load, operators succeed more often and faster, so each session yields more usable demonstrations per hour.</p>
+<p><strong>Simulation platform.</strong> Six tasks are tested across two simulation environments (exact engine not named in the paper, but references to rigid-body kinematics and gripper/dexterous-hand morphologies are consistent with MuJoCo or a similar physics engine). Tasks include Pick-and-Place, Articulated-Manipulation (door and drawer opening), Push-cube, and Tool-Use (hammering), each run with both a parallel gripper and a multi-finger dexterous hand.</p>
+<p><strong>Real robot.</strong> A gripper-equipped robot arm on a tabletop; hand pose estimation provides the human command stream via a vision-based tracker (references cite Dex-Retargeting and MediaPipe-style estimators).</p>
+<p><strong>Key numbers.</strong> Shared control raises collection success rate by ~30 % and doubles collection speed (samples/hour) versus unaided teleoperation, while downstream imitation-learning task success is comparable to or better than pure human data.</p>
+<h2>The code</h2>
+<p><strong>Repo URL.</strong> No public code repository has been released. The project page (<a href="https://norweig1an.github.io/HAJL.github.io/" target="_blank" rel="noopener">https://norweig1an.github.io/HAJL.github.io/</a>) links to video demos and a PDF but not to a code release. The author&#x27;s GitHub profile (github.com/norweig1an) pins dependency libraries (Dex-Retargeting, Pinocchio) but not HAJL source.</p>
+<p><strong>Language / framework.</strong> Inferred from the paper: Python; PyTorch for the DDPM noise-prediction network; likely relies on <code>dexsuite/dex-retargeting</code> for hand-to-robot retargeting and <code>stack-of-tasks/pinocchio</code> for inverse kinematics.</p>
+<p><strong>Repo structure (inferred from paper description — no actual repo to inspect).</strong></p>
+<pre><code>
+(no public repo)
+├── agent/          # diffusion policy: ε_θ network, DDPM train/sample loops
+├── teleop/         # hand-pose reader, IK solver (pinocchio), shared-control blending
+├── envs/           # simulation task definitions (6 tasks × 2 morphologies)
+├── data/           # demo storage and replay buffer
+├── scripts/        # collect_demos.py, train_agent.py, eval.py
+└── configs/        # control-ratio schedules, hyperparameters
+</code></pre>
+<p><strong>File to open first.</strong> If code is released: the shared-control blending loop in <code>teleop/</code> (the function that implements <code>a^k = a^h + ε^k</code> and calls the denoiser at step k). That is the entire technical contribution in ~30 lines.</p>
+<p><strong>Dependencies (inferred).</strong> PyTorch, NumPy, dexsuite/dex-retargeting, stack-of-tasks/pinocchio, a physics simulator (likely MuJoCo + dm_control or similar), a hand-pose estimation backend (MediaPipe or LeapMotion SDK).</p>
+<p><strong>Needs simulator?</strong> Yes for the full evaluation (six sim tasks). Real-robot experiments need the physical arm and a hand-tracking camera.</p>
+<p><strong>Needs GPU?</strong> Yes for training the DDPM; inference at K denoising steps also benefits from a GPU to stay within the control loop latency.</p>
+<p><strong>LLM API?</strong> No.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Section III (System Overview) of the arXiv paper (2407.00299) gives the blending formula and the iterative loop in two pages. Figure 2 (the shared-control pipeline diagram) and Figure 3 (the control-ratio scheduling) are the fastest entry points.</p>
+<p><strong>How hard is the code to follow?</strong> If released, the implementation would be moderate difficulty. The diffusion agent is a standard DDPM conditioned on robot state — the novel part (action injection as noisy init) is a ~5-line modification to a normal denoising loop, conceptually straightforward. The harder parts are the simulator task definitions and the real-robot teleoperation stack (IK, hand retargeting, latency management). Anyone familiar with diffusion policy (Chi et al. 2023) and a teleoperation stack could read it in a day. Without a public repo the only reference implementation is the text description in the paper.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: no.</strong> The DDPM must run at control frequency during live teleoperation, which requires GPU inference to keep latency acceptable (the paper does not state the loop rate, but manipulation control loops are typically 20–50 Hz). Training the noise-prediction network also requires a GPU. Additionally, the simulation tasks require a physics engine that is typically GPU-accelerated for parallelism. On a CPU-only machine you could in principle run training very slowly and the sim, but real-time teleoperation blending would fail the latency budget. No code is publicly available in any case, making an actual run impossible without contacting the authors.</p></article>
+<article class="page" id="gp5"><h1>From Imitation to Refinement — Residual RL for Precise Assembly</h1>
+<p>ICRA 2025 · 9 citations · strategy: <strong>refine the policy after demos run out</strong></p>
+<h2>What it does</h2>
+<p>Behavior cloning (BC) for precise assembly tasks — plugging pegs, mating furniture joints — hits a performance ceiling that more demonstration data cannot fix. The ceiling comes from two compounding problems: the policy was trained on static offline data so it drifts when small errors accumulate (distribution shift), and it executes long &quot;chunks&quot; of pre-planned actions open-loop so it cannot react to those errors mid-chunk. ResiP (Residual for Precise Manipulation) freezes the BC policy entirely and trains a second, small neural network on top of it using reinforcement learning; this network sees the current robot state plus the BC chunk currently playing and outputs a corrective delta that is added to each BC action in real time, restoring closed-loop reactivity without discarding the long-horizon planner that BC provides.</p>
+<p>Strategy: <strong>refine the policy after demos run out</strong> (residual RL layered on a frozen BC base).</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs to the system</strong></p>
+<ul>
+<li>A pre-trained, frozen diffusion-based BC policy (U-Net, 66 M parameters, predicts chunks of 8 actions, trained on 50 teleoperated demonstrations).</li>
+<li>A simulation environment (Isaac Gym) that can run 1024 parallel rollouts.</li>
+<li>A sparse binary reward: +1 when a part-pair is fully assembled, 0 otherwise.</li>
+</ul>
+<p><strong>Step 1 — BC pre-training (offline)</strong></p>
+<p>Demonstrations are collected via SpaceMouse teleoperation and stored as <code>.pkl</code> files. A preprocessing script (<code>src/data<em>processing/process</em>pickles.py</code>) converts them to flat <code>.zarr</code> arrays. A Diffusion Policy is trained with DDPM (100 denoising steps at training time, 4 DDIM steps at inference) on proprioceptive state observations; it outputs an action chunk of length 8 which the robot plays open-loop.</p>
+<p><strong>Step 2 — Residual policy definition</strong></p>
+<p>The residual policy is a small Gaussian MLP. At each timestep during a chunk, its input is the concatenation of the current robot state and the BC action for that timestep: <code>s<em>res = [s</em>t, a<em>base</em>t]</code>. Its output <code>a<em>res</em>t</code> is a corrective delta. The final executed action is:</p>
+<pre><code>
+a_t = a_base_t + α · a_res_t
+</code></pre>
+<p>where α ≤ 1 clips the correction magnitude. This keeps the residual policy from overriding the BC planner entirely; it can only nudge, not steer.</p>
+<p><strong>Step 3 — PPO fine-tuning in simulation (online)</strong></p>
+<p>The frozen BC policy rolls out chunks in Isaac Gym. At each step inside a chunk, the residual MLP also runs and its correction is applied. The combined trajectory is evaluated against the sparse assembly reward. PPO (discount γ = 0.999, GAE λ = 0.95, clip ε = 0.2, target KL = 0.1) trains only the residual MLP. Because 1024 environments run in parallel, enough completions appear even under a sparse reward for a useful gradient signal. The number of simulation steps varies by task difficulty: 200 for the 0.2 mm-clearance peg-in-hole, 1000 for longer tasks like lamp assembly.</p>
+<p><strong>The specific trick that saves data</strong></p>
+<p>Fifty demonstrations are enough for BC to learn the global shape of the task (where to reach, which parts to grasp, sequencing). Simulation-based residual RL then corrects the last-mile precision errors that more demos would not fix anyway, because distribution shift is structural rather than data-quantity limited. No new human demonstrations are needed during the RL phase.</p>
+<p><strong>Results</strong></p>
+<p>On the 0.2 mm-clearance peg-in-hole task (FurnitureBench / Factory): BC alone achieves 5% success; ResiP achieves 99%. On five other assembly tasks, ResiP improves over BC by 20–40 percentage points. Real-world transfer uses 10–40 real demonstrations for BC and then the same simulation-trained residual policy is transferred zero-shot.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/ankile/robust-rearrangement" target="_blank" rel="noopener">https://github.com/ankile/robust-rearrangement</a></p>
+<p><strong>Language / framework:</strong> Python 3.8, PyTorch, Isaac Gym Preview 4, PPO implemented from scratch (no stable-baselines), Hydra for config, WandB for logging, FurnitureBench as a git submodule.</p>
+<p><strong>Top-level structure</strong></p>
+<pre><code>
+robust-rearrangement/
+├── src/
+│   ├── train/
+│   │   ├── bc.py               # diffusion BC training
+│   │   ├── bc_ddp.py           # multi-GPU BC training
+│   │   ├── residual_ppo.py     # THE core file: residual RL loop
+│   │   ├── residual_ppo_w_bc.py# joint BC+residual variant
+│   │   ├── dagger.py           # DAgger baseline
+│   │   ├── ppo.py              # direct RL baseline
+│   │   └── vas.py              # value-aware scheduling
+│   ├── models/                 # network definitions (diffusion U-Net, residual MLP)
+│   ├── data_processing/        # process_pickles.py → .zarr conversion
+│   ├── dataset/                # zarr data loaders
+│   ├── eval/                   # rollout evaluation scripts
+│   ├── gym/                    # IsaacGym env wrappers
+│   ├── sim2real/ real/         # domain transfer utilities
+│   └── config/                 # Hydra YAML configs
+├── furniture-bench/            # submodule: FurnitureBench sim
+├── scripts/                    # data download (S3 bucket)
+├── notebooks/                  # analysis
+└── setup.py
+</code></pre>
+<p><strong>File to open first:</strong> <code>src/train/residual_ppo.py</code>. It contains the full training loop: how the frozen BC policy generates base chunks, how the residual MLP is queried at each sub-step, how the combined action is passed to Isaac Gym, how PPO gradients are computed over the residual parameters only, and how logging and checkpointing are handled.</p>
+<p><strong>Dependencies</strong></p>
+<ul>
+<li>Isaac Gym Preview 4: requires NVIDIA developer account (not pip-installable; manual download from developer.nvidia.com)</li>
+<li>FurnitureBench: included as a git submodule, <code>pip install -e furniture-bench</code></li>
+<li>PyTorch (CUDA), diffusers or custom DDPM, hydra-core, wandb</li>
+<li>Optional: R3M or VIP vision encoders for image-based experiments</li>
+<li>Optional: SpaceMouse driver for data collection</li>
+</ul>
+<p><strong>Simulator:</strong> Yes — Isaac Gym is mandatory for the RL fine-tuning phase. MuJoCo is used for the bimanual insertion task variant.</p>
+<p><strong>Dataset:</strong> Pre-collected demonstrations are available from the authors&#x27; S3 bucket (download via <code>scripts/</code>). The <code>.pkl</code> files must be converted to <code>.zarr</code> before BC training.</p>
+<p><strong>LLM API:</strong> None.</p>
+<p><strong>GPU:</strong> Mandatory. The repo mentions GTX 3070 as a minimum; 1024 parallel Isaac Gym environments will saturate a 3070. An A100 or similar is needed for comfortable training.</p>
+<p><strong>Running it</strong></p>
+<pre><code>
+# 1. install IsaacGym manually, then:
+conda create -n rr python=3.8 &amp;&amp; conda activate rr
+git clone --recursive https://github.com/ankile/robust-rearrangement
+cd robust-rearrangement
+pip install -e furniture-bench
+pip install -e .
+
+# 2. download data
+bash scripts/download_data.sh  # fetches .pkl files from S3
+python src/data_processing/process_pickles.py  # → .zarr
+
+# 3. train BC base policy
+python src/train/bc.py task=one_leg
+
+# 4. residual RL fine-tuning
+python src/train/residual_ppo.py task=one_leg bc_checkpoint=&lt;path&gt;
+</code></pre>
+<p>WandB entity must be set via <code>WANDB<em>ENTITY</code>; data paths via <code>DATA</em>DIR<em>PROCESSED</code> and <code>DATA</em>DIR_RAW</code>.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>Read first:</strong> <code>src/train/residual<em>ppo.py</code> — it is the paper in code form. Look for (a) where the BC policy&#x27;s <code>forward()</code> is called with <code>torch.no</em>grad()</code> to confirm the base is frozen, (b) where <code>alpha * residual<em>action</code> is added to the base action, and (c) where <code>ppo</em>update()</code> only passes residual-MLP parameters to the optimizer. The Hydra config files in <code>src/config/</code> explain which hyperparameters (alpha, num<em>envs, num</em>env_steps, reward scale) correspond to which task.</p>
+<p><strong>Code clarity:</strong> Moderate. The repo is research code but reasonably organized by concern. The diffusion policy implementation and the Isaac Gym environment wrappers in <code>src/gym/</code> are the hardest parts; they assume familiarity with DDPM internals and Isaac Gym&#x27;s tensor-based parallelism API. The residual PPO loop itself is clean and short once you locate it. The Hydra config layering (base + task override + experiment override) requires reading a few YAML files to understand what a given training run actually uses.</p>
+<h2>Run verdict</h2>
+<p><strong>GPU-only: cannot run on a CPU-only box.</strong> Isaac Gym requires CUDA and the PPO training relies on 1024 parallel GPU-resident environments. Even BC pre-training on the <code>.zarr</code> data is feasible on a laptop CPU in principle (diffusion policy with 50 demos is small), but there is no way to run or validate the full ResiP pipeline without an NVIDIA GPU and Isaac Gym. Additionally, Isaac Gym Preview 4 requires a manual download behind an NVIDIA developer login, which adds a setup friction beyond what a simple <code>pip install</code> covers.</p></article>
+<article class="page" id="gp6"><h1>Stonefish: Supporting Machine Learning Research in Marine Robotics</h1>
+<p>ICRA 2025 · 6 citations · Strategy: generate data in simulation</p>
+<h2>What it does</h2>
+<p>Stonefish is an open-source C++ simulator for marine robots (AUVs and ROVs) that was extended in this paper with new ML-oriented capabilities: three new vision sensors (event-based camera, thermal camera, optical flow camera), visual light communication between agents, tethered vehicle support, a reworked thruster and hydrodynamics model, improved sonar accuracy, and an automated annotation tool that produces pixel-level ground-truth labels alongside synthetic imagery. The core idea is that real underwater data is prohibitively expensive and dangerous to collect, so you generate unlimited labelled training data in simulation and transfer learned models to real hardware. This is the <strong>generate data in simulation</strong> strategy — the simulator itself is the contribution, lowering the cost of labelled data to essentially zero for underwater ML.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> Users define a simulated world (vehicles, terrain, lighting, water properties) in XML. The simulator ingests this description and runs a real-time physics loop.</p>
+<p><strong>Physics engine.</strong> The core is Bullet Physics, extended with custom hydrodynamic forces. Version 1.4/1.5 reimplemented the hydrodynamics layer: drag, added-mass effects, and directional buoyancy are computed from the actual surface mesh geometry of each body, not from hand-tuned coefficients. Thruster models now include nonlinear response curves, command saturation, deadbands, and response delays that match real underwater thrusters. Tether dynamics (tension, drag, cable entanglement) are modelled for ROVs connected to a surface vessel.</p>
+<p><strong>Rendering pipeline.</strong> Built on OpenGL 4.3. The renderer models wavelength-dependent light absorption and scattering in water, producing physically-plausible underwater imagery for training color cameras and — new in v1.5 — the three ML-targeted vision sensors:</p>
+<ul>
+<li><strong>Event-based camera</strong> (<code>EventBasedCamera.h</code>): simulates a neuromorphic (dynamic vision) sensor that fires asynchronous per-pixel events when pixel brightness changes by a threshold. This gives high-temporal-resolution training data without motion blur.</li>
+<li><strong>Thermal camera</strong> (<code>ThermalCamera.h</code>): renders infrared signatures from object temperature properties, enabling heat-contrast detection tasks.</li>
+<li><strong>Optical flow camera</strong> (<code>OpticalFlowCamera.h</code>): computes dense per-pixel motion vectors from consecutive frames, providing ground-truth flow without any post-processing.</li>
+<li><strong>Segmentation camera</strong> (<code>SegmentationCamera.h</code>): renders semantic instance masks, one integer label per pixel.</li>
+</ul>
+<p><strong>Automated annotation tool.</strong> The paper introduces a pipeline that simultaneously captures RGB, depth, segmentation, and event streams from the same simulated scene. Because all labels (bounding boxes, instance masks, pixel flow, depth) are derived algebraically from the simulation state, they are exact — no human annotator required. This is the specific trick that eliminates the annotation cost that dominates real underwater dataset creation.</p>
+<p><strong>Sonar.</strong> Forward-looking sonar (FLS), mechanical scanning imaging sonar (MSIS), side-scan sonar (SSS), and multibeam sonar are all simulated with acoustic absorption and scattering in the water column, enabling training of sonar-based perception models.</p>
+<p><strong>Visual light communication (VLC).</strong> A new comms module lets multiple simulated agents exchange data via optical wireless links, enabling multi-robot coordination research.</p>
+<p><strong>Companion dataset.</strong> The paper produced <strong>eStonefish-scenes</strong>, a synthetic event-based optical flow dataset generated with Stonefish. Scenes contain event streams, grayscale frames, and ground-truth optical flow stored as HDF5 files under the eWiz format (<code>events.hdf5</code>, <code>gray.hdf5</code>, <code>flow.hdf5</code>). This dataset validates that Stonefish-generated data can train models that transfer to real hardware.</p>
+<p><strong>Sim-to-real transfer.</strong> Evaluation compares Stonefish-trained object detectors and segmentation models against real-world baselines, showing the synthetic data closes a meaningful portion of the domain gap for underwater scenes.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/patrykcieslak/stonefish" target="_blank" rel="noopener">https://github.com/patrykcieslak/stonefish</a></p>
+<p><strong>Language / framework.</strong> C++17, CMake build system. ROS 1/2 integration via the companion package <code>stonefish_ros</code> (separate repo). No Python API in the core library; Python is used only in ROS wrapper nodes and data processing scripts.</p>
+<p><strong>Repo structure (top-level).</strong></p>
+<pre><code>
+stonefish/
+├── Library/
+│   ├── include/
+│   │   ├── StonefishCommon.h          # shared type definitions
+│   │   ├── actuators/                 # thruster, servo, motor headers
+│   │   ├── comms/                     # VLC and acoustic comms
+│   │   ├── core/                      # simulation loop, scene graph
+│   │   ├── entities/                  # rigid bodies, robots, terrain
+│   │   ├── graphics/                  # OpenGL renderer, shaders
+│   │   ├── joints/                    # Bullet joint wrappers
+│   │   ├── sensors/
+│   │   │   ├── Sensor.h               # base class
+│   │   │   ├── VisionSensor.h         # base for all cameras
+│   │   │   ├── ScalarSensor.h         # IMU, DVL, pressure etc.
+│   │   │   └── vision/
+│   │   │       ├── ColorCamera.h
+│   │   │       ├── EventBasedCamera.h # NEW: neuromorphic sensor
+│   │   │       ├── ThermalCamera.h    # NEW: IR sensor
+│   │   │       ├── OpticalFlowCamera.h# NEW: dense flow sensor
+│   │   │       ├── SegmentationCamera.h
+│   │   │       ├── DepthCamera.h
+│   │   │       ├── FLS.h              # forward-looking sonar
+│   │   │       ├── MSIS.h
+│   │   │       ├── SSS.h
+│   │   │       └── Multibeam2.h
+│   │   └── utils/
+│   ├── src/                           # mirrors include/ structure
+│   └── shaders/                       # GLSL shaders for underwater rendering
+├── 3rdparty/                          # vendored Bullet Physics
+├── Tests/                             # standalone test scenarios
+├── docs/                              # Sphinx source → readthedocs
+├── CMakeLists.txt
+└── README.md
+</code></pre>
+<p><strong>First file to open.</strong> Start with <code>Library/include/sensors/vision/EventBasedCamera.h</code> — it is the most novel sensor and reveals how the simulator abstracts asynchronous event generation. Then look at <code>Library/src/sensors/vision/EventBasedCamera.cpp</code> for the implementation: it computes log-luminance differences per pixel each step and fires events when the threshold is crossed. From there, <code>Library/include/core/</code> shows how the simulation loop drives all sensors at each time step.</p>
+<p><strong>Dependencies.</strong></p>
+<ul>
+<li>OpenGL 4.3+ (mandatory; no software fallback)</li>
+<li>libglm-dev &gt;= 0.9.9.0</li>
+<li>libsdl2-dev</li>
+<li>libfreetype6-dev</li>
+<li>Bullet Physics (vendored in <code>3rdparty/</code>)</li>
+<li>Linux Ubuntu (no Windows, no macOS)</li>
+<li>For ROS integration: ROS Noetic or ROS 2 Humble + <code>stonefish_ros</code></li>
+</ul>
+<p><strong>Does it need a simulator?</strong> It *is* the simulator. No external simulator required. No LLM API. No pre-existing dataset required to run; scenarios are defined in XML.</p>
+<p><strong>GPU requirement.</strong> Hard requirement: a GPU with OpenGL 4.3 support and up-to-date manufacturer drivers. The renderer makes direct OpenGL calls and has no CPU fallback. A modern NVIDIA or AMD GPU is needed; integrated graphics may work if OpenGL 4.3 is supported but will be slow.</p>
+<p><strong>How to run.</strong></p>
+<pre><code>
+git clone https://github.com/patrykcieslak/stonefish
+cd stonefish &amp;&amp; mkdir build &amp;&amp; cd build
+cmake ..
+make -j$(nproc)
+sudo make install
+# then build a scenario using the ROS wrapper:
+# clone stonefish_ros, build with catkin/colcon, launch an example .launch file
+</code></pre>
+<p>Standalone (non-ROS) usage requires writing a C++ application that links against the installed library, creates a <code>SimulationManager</code> subclass, populates the scene in <code>BuildScenario()</code>, and calls the main <code>Run()</code> loop.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong></p>
+<ul>
+<li>The arXiv paper (2502.11887) — Section III covers the new sensors with mathematical models; Section IV covers the annotation tool pipeline; Section V shows the eStonefish-scenes dataset structure.</li>
+<li><code>Library/include/sensors/vision/EventBasedCamera.h</code> — the most novel interface.</li>
+<li><code>Library/include/core/</code> — <code>SimulationApp.h</code> and <code>SimulationManager.h</code> explain the main loop that drives sensors and physics.</li>
+<li><code>Library/shaders/</code> — the GLSL shaders show how underwater optical properties are computed on the GPU.</li>
+</ul>
+<p><strong>How hard is the code to follow.</strong> Moderate for C++ practitioners, harder for ML researchers with no robotics background. The architecture is clean and modular: each sensor type is a self-contained class with a <code>Process()</code> method that fires each tick. The physics layer wraps Bullet Physics — knowing Bullet helps. The rendering layer uses raw OpenGL with custom GLSL shaders; understanding it requires familiarity with the OpenGL pipeline. There are no Python bindings, so ML researchers must interface through the ROS topic layer or write C++ glue code. Documentation on readthedocs (stonefish.readthedocs.io) is thorough and covers all sensor parameters.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on a CPU-only box.</strong> The rendering pipeline requires OpenGL 4.3 hardware acceleration with real GPU drivers. There is no headless CPU fallback and no software rasterizer path. On a GPU machine running Linux with a capable NVIDIA/AMD card and current drivers, the build is straightforward (CMake, standard system deps). On a CPU-only machine (cloud VM without GPU passthrough, MacBook, etc.) it will fail at runtime when OpenGL 4.3 is not available. A Docker container with <code>--gpus all</code> and <code>nvidia-docker</code> can work. No internet access, LLM API, or proprietary dataset is needed at runtime — just the GPU driver.</p></article>
+<article class="page" id="gp7"><h1>OceanSim: A GPU-Accelerated Underwater Robot Perception Simulation Framework</h1>
+<p>IROS 2025 · 6 citations · Strategy: generate data in simulation (sim-to-real)</p>
+<h2>What it does</h2>
+<p>OceanSim is an open-source underwater robot simulator built on NVIDIA Isaac Sim that generates physics-accurate synthetic sensor data — RGB camera imagery and imaging sonar scans — at real-time speed by running the entire sensor pipeline on the GPU. The core problem it solves is the high cost and logistical difficulty of collecting annotated underwater robot data: real-world trials require ships, tanks, and divers, so training data is scarce. OceanSim replaces that with a simulator that renders underwater imagery at 28–32 frames per second and sonar at real-time rates, making it cheap to generate large labelled datasets for training perception models. The strategy is: <strong>generate data in simulation</strong> — fake it with a high-fidelity simulator, then transfer learned models to a real robot.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> A USD (Universal Scene Description) 3D scene file — either a photogrammetry scan of a real environment or a hand-built scene — plus a robot model with sensors attached. The user configures water-column parameters (light attenuation coefficient β<em>attn per RGB channel, backscatter coefficient β</em>bs, veiling luminance B<em>∞) and sonar parameters (acoustic attenuation α, acoustic reflectance A</em>r per material, beam pattern, noise model).</p>
+<p><strong>Camera image formation model.</strong> For each pixel the rendered image follows:</p>
+<p>    Ic = J · exp(−β<em>attn,c · d) + B</em>∞,c · (1 − exp(−β_bs,c · d))</p>
+<p>where J is the clear-water radiance from the scene (computed by Isaac Sim&#x27;s GPU ray tracer), d is the pixel&#x27;s depth, β<em>attn,c is the per-channel signal attenuation in water, and β</em>bs,c is the backscatter (veiling luminance) coefficient. The first term makes objects dim and lose colour with distance; the second term adds the characteristic blue-green haze from suspended particles. Parameters are tuned interactively in a GUI with real-time preview, letting users match a specific water body.</p>
+<p><strong>Imaging sonar model.</strong> Sonar (a 2D fan-beam device that returns a range-azimuth intensity image) is the hardest sensor to simulate because it is purely acoustic. OceanSim uses NVIDIA Warp and Omniverse Replicator to ray-trace the scene on the GPU and compute per-hit intensity:</p>
+<p>    I<em>sonar = A</em>r · (−v<em>in/|v</em>in| · v<em>n/|v</em>n|) · exp(−α · d)</p>
+<p>where v<em>in is the incident ray direction, v</em>n is the surface normal at the hit, A_r is the acoustic reflectance of the material (tunable per semantic label), and α is the water-column acoustic attenuation. The dot product captures the angle-of-incidence effect (surfaces facing away from the sonar return low signal). Speckle noise is Rayleigh-distributed with beam-pattern-dependent gain, plus multiplicative Gaussian noise. The 3D hit points are then binned into a 2D range × azimuth polar grid to produce the sonar image a real device would output.</p>
+<p><strong>Additional sensors.</strong> DVL (Doppler Velocity Log) with adaptive rate and beam dropout; barometer; IMU (from Isaac Sim&#x27;s native models).</p>
+<p><strong>The data-cheapening trick.</strong> The entire rendering pipeline (ray-tracing, intensity computation, binning, noise) runs in parallel on the GPU via NVIDIA Warp. This gives 28–32 FPS sonar rendering vs 1.5–3.8 FPS in HoloOcean (the previous best open tool), with zero octree pre-computation overhead (HoloOcean needs 317–502 seconds of cache build time per scene). Fast rendering means a researcher can generate thousands of labelled sonar-image frames in minutes rather than hours, making simulation a practical substitute for real dives.</p>
+<p><strong>Sim-to-real validation approach.</strong> The authors built a digital twin of the University of Michigan Marine Hydrodynamics Laboratory (MHL) towing tank using photogrammetry from a stereo camera survey. They placed the same rock platform in both real and virtual environments, captured synchronized camera+sonar pairs, and compared them. Colour accuracy is measured with RGB angular error (mean deviation in degrees between rendered and real colour patches): OceanSim scores 7.88°/13.78° across two viewpoints vs HoloOcean&#x27;s 19.01°/16.72° — roughly 2× more accurate colour reproduction.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/umfieldrobotics/OceanSim" target="_blank" rel="noopener">https://github.com/umfieldrobotics/OceanSim</a></p>
+<p><strong>Language / framework:</strong> Python, built as an extension to NVIDIA Isaac Sim 5.0.0 (which bundles its own Python). The Omniverse ecosystem provides USD scene management and Replicator provides the GPU ray-tracing annotation pipeline. NVIDIA Warp (a GPU-parallel array computing library similar to CuPy) implements the sonar intensity and noise kernels.</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+OceanSim/
+├── isaacsim/oceansim/   # main extension package — all sensor models live here
+├── demo/                # example USD scenes and runnable scripts
+├── config/
+│   └── register_asset_path.py   # one-time asset path registration
+├── data/                # sample data / reference captures
+├── docs/
+│   ├── subsections/installation.md
+│   ├── subsections/running_example.md
+│   └── subsections/building_own_digital_twin.md
+├── media/               # figures for README
+├── .github/ISSUE_TEMPLATE/
+├── .gitignore
+└── LICENSE
+</code></pre>
+<p><strong>File to open first:</strong> <code>isaacsim/oceansim/</code> — this is the Isaac Sim extension directory. Inside it you will find the sensor node implementations (camera post-processing pass that applies the attenuation/backscatter formula, and the Warp-based sonar kernel). Look for files named something like <code>sonar<em>sensor.py</code> or <code>underwater</em>camera.py</code> (exact filenames are inside the extension but not enumerated in the public docs).</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>NVIDIA Isaac Sim 5.0.0 (tested on Ubuntu 20.04/22.04/24.04)</li>
+<li>NVIDIA Warp (bundled with Isaac Sim)</li>
+<li>Omniverse Replicator (bundled with Isaac Sim)</li>
+<li>Assets (robot + environment USD files) downloaded separately from Google Drive</li>
+</ul>
+<p><strong>Does it need a simulator?</strong> Yes — Isaac Sim is mandatory. There is no headless CPU fallback.</p>
+<p><strong>Does it need a GPU?</strong> Yes — tested on RTX 3090, RTX A6000, RTX 4080 Super, RTX 5070Ti. The sonar kernel is explicitly CUDA-parallel; the GUI preview also requires a display or virtual framebuffer.</p>
+<p><strong>Does it need a dataset or LLM API?</strong> No. It generates its own data. No external model weights or APIs needed.</p>
+<p><strong>How to run:</strong></p>
+<ul>
+<li>Install Isaac Sim 5.0.0 following NVIDIA&#x27;s guide.</li>
+<li>Clone the repo into Isaac Sim&#x27;s <code>extsUser</code> directory.</li>
+<li>Download <code>OceanSim_assets</code> from Google Drive; register the path:</li>
+<pre><code>
+   python3 config/register_asset_path.py /path/to/OceanSim_assets
+</code></pre>
+<li>Open Isaac Sim → Window → Extensions → search OceanSim → Enable.</li>
+<li>Load the MHL example scene via OceanSim → Examples → Sensor Example, select sensors, click Load then Run.</li>
+<li>Use W/A/S/D + arrow keys to drive the robot; sensor streams render live.</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with <code>docs/subsections/installation.md</code> to understand the Isaac Sim dependency chain, then open <code>isaacsim/oceansim/</code> and find the sonar sensor file — the Warp kernel that computes the intensity formula is the intellectual core of the paper and is short enough to read in full. Then look at the camera post-processing pass that applies the attenuation equation channel-by-channel.</p>
+<p><strong>How hard is the code to follow?</strong> Moderate difficulty for anyone comfortable with Python and GPU programming. The physics formulas are simple (two closed-form equations with a handful of scalar parameters) and are faithfully implemented as element-wise operations. The main complexity is the Isaac Sim / Omniverse Replicator API, which has significant boilerplate and requires understanding USD scene graphs — not trivial if you have not used Omniverse before. NVIDIA Warp syntax is clean and readable (similar to NumPy with GPU decorators). The demo scripts abstract away most of the API surface, so running an example is easier than reading the internals.</p>
+<h2>Run verdict</h2>
+<p><strong>Not runnable on a CPU-only box.</strong> OceanSim is hard-wired to NVIDIA Isaac Sim 5.0, which itself requires an NVIDIA RTX GPU (ray tracing is hardware-accelerated). The sonar kernel is an explicit GPU-parallel Warp program. On a CPU-only machine — or on a non-NVIDIA GPU — the extension will not load. You need at minimum an RTX 3090 (24 GB VRAM) or equivalent, a Linux machine, a local Isaac Sim licence (free to download from NVIDIA), and the downloaded asset pack. Even with the right hardware, first-time setup involves installing Isaac Sim (~20 GB), registering the extension, and sourcing assets from Google Drive — plan for an hour of environment setup before running the first example.</p></article>
+<article class="page" id="gp8"><h1>Domain Randomization for Object Detection in Manufacturing Applications Using Synthetic Data: A Comprehensive Study</h1>
+<p>ICRA 2025 · 5 citations · strategy: generate data in simulation</p>
+<h2>What it does</h2>
+<p>The paper shows you can train competitive industrial object detectors using only synthetic images — no real annotated training data — by carefully randomizing a Blender rendering pipeline across object textures, lighting, camera pose, background, and post-processing. The authors introduce a new dataset of 15 manufacturing parts (SIP15-OD), run a structured ablation to identify which randomization factors matter most (PBR material rendering and distractors dominate), and train YOLOv8 detectors that reach 94–99% mAP@50 on held-out real images. <strong>Strategy: generate data in simulation</strong> (sim-to-real via domain randomization; no demonstrations involved).</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> CAD models of industrial parts (supplied by Scania as OBJ/FBX files), three texture libraries (random RGB colors; Flickr 8K image textures; CG Texture PBR material library with metalness and roughness maps), a background image library (BG-20K), and a config JSON that controls every randomization range.</p>
+<p><strong>Core mechanism: fully scriptable Blender pipeline.</strong></p>
+<ul>
+<li><strong>Scene initialization.</strong> A ground plane (z=0) and four vertical walls are created. Each wall and ground surface is assigned a random background image from BG-20K. Six primitive 3D meshes (cubes, spheres, cones) are scattered without gravity constraints as visual distractors — these turned out to be one of the two most important factors in ablation.</li>
+</ul>
+<ul>
+<li><strong>Object placement.</strong> The number of part instances is sampled uniformly (0 to the full count). Each instance is placed at a random 3D position and rotation, with a non-overlap constraint enforced. Gravity is simulated by zeroing the lowest z-coordinate of each object so parts rest on the floor.</li>
+</ul>
+<ul>
+<li><strong>Texture assignment.</strong> Each object is independently assigned one of three texture types: (a) flat RGB with random hue/saturation/value, (b) an image texture from Flickr 8K wrapped onto the mesh UV, or (c) a PBR material from CG Texture with randomized metalness and roughness. PBR with the Cycles path-tracer engine was found to be the single largest performance driver.</li>
+</ul>
+<ul>
+<li><strong>Camera sampling.</strong> The camera position is sampled in spherical coordinates (radius r, polar angle θ, azimuthal angle φ) and converted to Cartesian. Radius is computed from camera sensor parameters and the area of the object cluster. The focus point is the center of mass of the scene, with a random XYZ shift. Focal length is randomized to vary apparent zoom.</li>
+</ul>
+<ul>
+<li><strong>Illumination.</strong> Area lights are placed; count is proportional to scene size. Each light has an independently randomized RGB color and intensity (energy).</li>
+</ul>
+<ul>
+<li><strong>Rendering.</strong> Either Cycles (path tracing, slower, more realistic specular/metallic appearance) or Eevee (rasterization, fast). The paper conclusively shows Cycles+PBR outperforms Eevee by a large margin; this is the specific trick that closes the sim-to-real gap for shiny metal parts.</li>
+</ul>
+<ul>
+<li><strong>Post-processing.</strong> Salt-and-pepper noise and Gaussian blur are applied at randomized strength and probability, mimicking sensor noise and motion blur.</li>
+</ul>
+<ul>
+<li><strong>Annotation.</strong> Segmentation masks and YOLO-format bounding boxes are derived from 2D pixel coordinates in the Blender camera viewport; masks are saved alongside images automatically.</li>
+</ul>
+<p><strong>Training.</strong> YOLOv8 (pre-trained on COCO) is fine-tuned on the synthetic set for 500 epochs, batch 80, image size 720, IoU 0.6. Rendering runs across 10 parallel Blender instances (1–3 seconds/image); generating 4000 images + training on a single A100 takes ~4 hours total.</p>
+<p><strong>What saves labeling cost.</strong> Real images require manual bounding-box annotation per image. Here, annotation is generated automatically by the renderer, so the only human labor is preparing CAD models — which manufacturing companies already have — and running the Blender script. Zero real annotated images are needed for training.</p>
+<p><strong>Ablation structure.</strong> The authors systematically turn factors on and off: material type (RGB vs. image texture vs. PBR) × renderer (Cycles vs. Eevee) × distractors on/off × post-processing on/off × dataset size (500/1000/2000/4000 images). PBR+Cycles and distractors were the two dominant factors; post-processing gave a smaller boost; more than ~2000 images yielded diminishing returns.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/jacobhenningsson95/SynMfg_Code" target="_blank" rel="noopener">https://github.com/jacobhenningsson95/SynMfg_Code</a></p>
+<p><strong>License:</strong> GPL-3.0</p>
+<p><strong>Language/framework:</strong> Python 3 + Blender 3.4 (bpy API); PyTorch via Ultralytics (YOLOv8); Conda environment.</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+SynMfg_Code/
+├── generation_main.py      # entry point — launches Blender instances, reads config
+├── config-sample.json      # all randomization ranges live here (texture weights, light count ranges, camera angles, etc.)
+├── environment.yml         # conda dependencies
+├── Blender/                # bpy scripts called by generation_main.py
+│   └── (scene setup, object sampling, texture assignment, camera/light placement, post-processing, annotation export)
+├── data/
+│   ├── Objects/            # your CAD models go here; README.md explains required format
+│   ├── (backgrounds, textures — downloaded separately, see below)
+└── Figures/                # paper visualisation images
+</code></pre>
+<p><strong>File to open first:</strong> <code>generation_main.py</code> — it is the orchestrator. It spawns multiple <code>blender --background --python</code> subprocesses, each receiving a slice of the config. Understanding it tells you how jobs are parallelized and how config maps to Blender script arguments. Then read <code>Blender/</code> scripts in the order they are called.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>Blender 3.4 (installed separately from blender.org — not pip installable)</li>
+<li><code>conda env create -f environment.yml</code> installs the Python side (Ultralytics YOLOv8, numpy, etc.)</li>
+<li>Three external asset downloads: BG-20K backgrounds (Google Drive), Flickr 8K textures (Kaggle), CC0 PBR textures (BlenderProc/ambientCG via a blenderproc utility)</li>
+<li>CAD models prepared per <code>data/Objects/README.md</code></li>
+</ul>
+<p><strong>Needs:</strong> GPU (strongly recommended for Blender Cycles rendering and YOLOv8 training). No simulator beyond Blender itself. No LLM API. No robot hardware.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+conda env create -f environment.yml
+conda activate SynMfg_Code
+# populate data/ with assets per README
+python generation_main.py --config config-sample.json
+# then train: yolo train data=... model=yolov8n.pt epochs=500 ...
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>config-sample.json</code> to understand the parameter space (2–3 minutes to read). Then open <code>generation_main.py</code> to see how it fans out Blender subprocesses and passes config slices. The Blender scripts in <code>Blender/</code> use the bpy API which has non-obvious syntax if you have not used it before — the scene setup and object-sampling sections are the densest parts. The overall logic is linear (initialize → place objects → assign textures → set camera → render → annotate) and each step is clearly separated, so the code is moderately easy to follow for anyone familiar with 3D rendering concepts. The main learning curve is Blender&#x27;s scripting API, not the machine learning code.</p>
+<p><strong>Code difficulty:</strong> Low-to-medium. The ML portion (YOLOv8 via Ultralytics) is high-level. The bpy scripting is moderately arcane but well-structured here. The biggest practical hurdle is assembling the three external asset datasets.</p>
+<h2>Run verdict</h2>
+<p><strong>GPU only — cannot run meaningfully on CPU alone.</strong></p>
+<p>Blender Cycles can render on CPU, but the paper uses 10 parallel instances and reports 1–3 s/image on GPU; CPU rendering would be roughly 10–50x slower per image (minutes per image on a modern CPU), making generation of even a small dataset (500 images) take many hours. YOLOv8 training for 500 epochs on even 4000 images is impractical without a GPU. On a CPU-only box you could test the pipeline end-to-end with 1–2 synthetic images using Eevee (faster renderer), but any real experiment requires a CUDA-capable GPU — the paper used an A100.</p></article>
+<article class="page" id="gp9"><h1>Learning to Swim: Reinforcement Learning for 6-DOF Control of Thruster-Driven Autonomous Underwater Vehicles</h1>
+<p>ICRA 2025 · 9 citations · strategy: generate data in simulation (sim-to-real, domain randomization)</p>
+<h2>What it does</h2>
+<p>Training a PID controller for an autonomous underwater vehicle (AUV) requires hand-tuning for every new payload or hull configuration; this paper replaces it with a PPO reinforcement learning policy trained entirely inside a GPU-parallelized simulator of underwater hydrodynamics, then deployed zero-shot to a real AUV with no real-world data collected at all.</p>
+<p>The core data-savings trick is domain randomization: the simulator randomizes buoyancy offset and vehicle volume during training so the resulting policy tolerates the physical variations that would otherwise demand repeated real-world re-tuning.</p>
+<p>This is firmly the &quot;generate data in simulation&quot; strategy — no human demonstrations are collected; all training experience is synthetic.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs at runtime:</strong> A 17-dimensional observation vector: 3D position offset (desired minus current position, expressed in the vehicle&#x27;s own coordinate frame), desired orientation as a quaternion (4D), current orientation as a quaternion (4D), linear velocity (3D), angular velocity (3D).</p>
+<p><strong>Action space:</strong> Six continuous thruster commands, normalized to [−1, 1], then scaled to PWM (pulse-width modulation) values that drive the physical motor controllers directly. There is no intermediate force decomposition — the network learns the thruster mixing itself.</p>
+<p><strong>Simulator:</strong> A custom environment built on NVIDIA Isaac Lab (version 2.2.0, which sits on top of Isaac Sim 4.5.0). Isaac Lab uses GPU-based parallel simulation; 2048 independent underwater vehicle environments run simultaneously on one GPU. Each episode lasts 3 simulated seconds. The hydrodynamic model (<code>rigid<em>body</em>hydrodynamics.py</code>) applies simplified Morison-equation drag and an explicit buoyancy force at the center of buoyancy (CoB). The thruster model (<code>thruster_dynamics.py</code>) converts PWM commands to rotor velocities to thrust forces, capturing first-order lag.</p>
+<p><strong>Domain randomization (the specific data-saving trick):</strong> At the start of every episode, <code><em>reset</em>domain</code> samples:</p>
+<ul>
+<li>CoB-to-CoM (center of mass) offset: a random vector drawn uniformly from a sphere of radius 0.05 m. This mimics adding new pressure housings or shifting payload.</li>
+<li>Vehicle volume: uniform draw from [0.0197, 0.0257] m³. This changes the net buoyancy force magnitude.</li>
+</ul>
+<p>Mass is held fixed at 22.701 kg. The paper also tests &quot;Small&quot; and &quot;Large&quot; randomization regimes (radii up to 0.5 m, volume range up to ±1.5 L) to characterize sensitivity.</p>
+<p><strong>RL algorithm:</strong> PPO (Proximal Policy Optimization) via the RSL-RL library, an on-policy algorithm that collects rollouts across all 2048 environments in parallel, computes advantages with GAE, and updates a shared policy network. Training converges in approximately 400 iterations; wall-clock time is 10–20 minutes on an NVIDIA A6000 GPU using ~11.4 GB VRAM.</p>
+<p><strong>Policy network:</strong> A 2-layer MLP taking the 17-D observation and outputting 6 thruster commands. Specific hidden-layer sizes are not reported in the paper.</p>
+<p><strong>Reward function</strong> (three weighted Gaussian terms):</p>
+<ul>
+<li>Position accuracy: <code>exp(−‖offset‖²)</code> × 0.2</li>
+<li>Orientation accuracy: <code>exp(−quat<em>error)</code> × 0.5, where <code>quat</em>error</code> is the angle between desired and current quaternion</li>
+<li>Energy penalty: <code>exp(−‖actions‖²)</code> × 0.2 (encourages low thruster effort)</li>
+</ul>
+<p><strong>Sim-to-real transfer:</strong> Policy is deployed zero-shot — no real-world fine-tuning — onto a CUREE AUV running on a Jetson Orin NX at ~20 Hz. State estimation uses an EKF fusing an AprilTag camera, a DVL (Doppler velocity log), and an IMU. One small engineering patch for stability: the desired quaternion is smoothed with SLERP (spherical linear interpolation) to handle unmodeled motor lag.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/warplab/isaac-auv-env" target="_blank" rel="noopener">https://github.com/warplab/isaac-auv-env</a></p>
+<p><strong>Language / framework:</strong> Python 3; NVIDIA Isaac Lab (DirectRL API) + RSL-RL for PPO; no PyTorch code is written by hand — Isaac Lab wraps it.</p>
+<p><strong>Repository structure:</strong></p>
+<pre><code>
+isaac-auv-env/
+├── warpauv_env.py            # Main gym environment (WarpAUVEnv class)
+├── rigid_body_hydrodynamics.py  # Buoyancy + drag physics
+├── thruster_dynamics.py      # PWM → thrust force model
+├── asymmetric_noise_cfg.py   # Sensor noise configuration dataclass
+├── __init__.py               # Task registration with Isaac Lab
+├── agents/                   # RSL-RL PPO agent configs (YAML/JSON)
+├── assets/                   # Robot URDF/USD asset files for WarpAUV / CUREE
+├── custom_workflows/         # Helper scripts for Isaac Lab launch
+├── data/warpauv/             # WarpAUV model data (meshes, inertia files)
+├── imgs/                     # README images
+└── weights/                  # Pretrained policy weights (.pt files)
+</code></pre>
+<p><strong>File to open first:</strong> <code>warpauv_env.py</code>. It contains the three core methods that define everything:</p>
+<ul>
+<li><code><em>get</em>observations</code> — builds the 17-D tensor</li>
+<li><code><em>compute</em>rewards</code> — the three Gaussian reward terms</li>
+<li><code><em>compute</em>dynamics</code> — calls <code>thruster<em>dynamics</code> and <code>rigid</em>body_hydrodynamics</code>, returns combined thrust+torque</li>
+<li><code><em>reset</em>domain</code> — domain randomization (CoB offset + volume sampling)</li>
+</ul>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>Isaac Sim 4.5.0 (NVIDIA Omniverse, closed-source, ~15 GB download)</li>
+<li>Isaac Lab 2.2.0 (open-source, validated at commit <code>0d520b2</code>)</li>
+<li>RSL-RL (open-source PPO library from ETH Zurich)</li>
+<li>Python packages: <code>gym</code>, <code>numpy</code> (Isaac Lab pulls in PyTorch internally)</li>
+</ul>
+<p><strong>Setup:</strong> Clone into <code>&lt;IsaacLab<em>Path&gt;/source/isaaclab</em>tasks/isaaclab_tasks/direct/</code>, soft-link Isaac Sim into Isaac Lab, then run <code>./isaaclab.sh --install</code>. Isaac recommends no conda environment during setup.</p>
+<p><strong>Training command:</strong></p>
+<pre><code>
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py \
+  --task Isaac-WarpAUV-Direct-v1 --num_envs 2048
+</code></pre>
+<p><strong>Needs a simulator?</strong> Yes — NVIDIA Isaac Sim. No external dataset. No LLM API. <strong>GPU required</strong> (A6000 cited; any modern CUDA GPU with ≥12 GB VRAM should work).</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Open <code>warpauv<em>env.py</code>. The <code></em>compute<em>dynamics</code> method is the heart — it chains <code>thruster</em>dynamics.py</code> (PWM to thrust) into <code>rigid<em>body</em>hydrodynamics.py</code> (drag + buoyancy) and returns net forces/torques that Isaac Lab integrates. Once you understand that pipeline, the reward and observation code is straightforward.</p>
+<p><strong>How hard is the code to follow:</strong> Moderate. The physics files are well-separated and relatively short. The main complexity is Isaac Lab&#x27;s DirectRL API, which has unconventional conventions (no <code>step()</code> — instead <code>pre<em>physics</em>step</code>, <code>post<em>physics</em>step</code>, <code><em>get</em>observations</code> etc.). If you have not used Isaac Lab before, budget an hour to understand the API before the AUV-specific logic makes sense. The reward and domain randomization code are simple and readable. The <code>agents/</code> YAML configs for RSL-RL require familiarity with that library&#x27;s hyperparameter naming.</p>
+<p><strong>Code quality notes:</strong> The environment is essentially a single-file implementation of one task, which keeps it readable but means there is no abstraction for trying a different AUV model without editing <code>warpauv<em>env.py</code> directly. The <code>asymmetric</em>noise_cfg.py</code> file sets up a noise configuration that is defined but the angular velocity penalty is disabled by default (weight 0.0), suggesting the code was prepared for a more general study that was partially simplified before release.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on a CPU-only box.</strong> Isaac Sim requires an NVIDIA GPU; it will not launch without CUDA. Even training inference-only from the pretrained weights in <code>weights/</code> requires Isaac Sim&#x27;s runtime. A minimum practical setup is a machine with a modern NVIDIA GPU (≥12 GB VRAM, e.g., RTX 3090 or A6000), Ubuntu (Isaac Sim does not support Windows for headless RL training), and ~20 GB of disk space for Isaac Sim. The training itself is fast once the infrastructure is in place (10–20 minutes), but the environment setup takes several hours on a clean machine.</p></article>
+<article class="page" id="gp10"><h1>AnyCar to Anywhere: Learning Universal Dynamics Model for Agile and Adaptive Mobility</h1>
+<p>ICRA 2025 · 6 citations · Strategy: <strong>generate data in simulation</strong> (multi-simulator synthetic pre-training + few-shot real fine-tuning)</p>
+<h2>What it does</h2>
+<p>AnyCar trains a single transformer-based forward dynamics model across data from four different simulators — each with different physics engines and vehicle parameter distributions — so the learned model generalizes across wheeled robot morphologies without per-robot re-tuning. At deployment, the model acts as the internal predictor inside a sampling-based model-predictive controller called MPPI (Model Predictive Path Integral control), which rolls out thousands of candidate action sequences through the learned model and picks the best one online. When the zero-shot transferred model is not precise enough, a small batch of real trajectories collected on the target vehicle is used to fine-tune the model in minutes. This is a <strong>generate data in simulation</strong> strategy: the core training-data cost is eliminated by running diverse simulators instead of collecting real-world demonstrations.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> The dynamics model takes as input a short history window of vehicle states (position, heading, velocity, acceleration, steering angle) and a proposed action (throttle, steering command). It predicts the next vehicle state one step ahead.</p>
+<p><strong>Multi-simulator data generation.</strong> Training data comes from four simulators: Assetto Corsa (a racing-game-derived vehicle dynamics engine), IsaacSim (NVIDIA GPU-accelerated robot sim), MuJoCo, and a Numeric DBM (a parametric bicycle-model simulator). Each simulator exposes different physics fidelity and vehicle-parameter ranges, so the aggregate dataset covers a wide distribution of vehicle masses, wheelbases, tire stiffnesses, and friction coefficients without the researcher ever touching a real robot. Data collection scripts (<code>isaacsim<em>collect</em>data.py</code>, <code>parallel<em>mujoco</em>collect<em>data.py</code>) run autonomously inside each sim, and <code>collect</em>data<em>on</em>policy.py</code> can collect data by running MPPI inside the sim so the distribution of visited states matches what the deployed controller will actually see.</p>
+<p><strong>Model architecture.</strong> The core model is a transformer (implemented in JAX) defined in <code>car<em>foundation/jax</em>models.py</code>. The transformer processes a sequence of past (state, action) pairs and predicts the next state residual. Using a transformer rather than a fixed-structure bicycle model allows the network to implicitly identify which vehicle is being controlled from the recent trajectory context — a form of in-context system identification. The architecture is trained with a supervised prediction loss (mean-squared error on next-state prediction) over shuffled mini-batches from all four simulators.</p>
+<p><strong>Robustness augmentation (the sim-to-real trick).</strong> During pre-training, inputs are corrupted with three techniques: random masking of input channels, additive noise injection, and adversarial input perturbation (&quot;attacking the inputs&quot;). This is not standard domain randomization of visual textures; it is sensor-level noise augmentation applied to the state history, which teaches the model to make accurate predictions even when the on-robot state estimator is noisy or has missing channels. This single augmentation strategy accounts for a major fraction of the sim-to-real gap in state-based (non-visual) dynamics prediction.</p>
+<p><strong>MPPI controller.</strong> At runtime, MPPI samples K candidate action sequences (typically thousands) by perturbing a nominal plan with Gaussian noise, rolls each sequence forward through the learned dynamics model for a horizon H, evaluates a cost (tracking error + speed objective + safety penalty), and takes a temperature-weighted average of the samples as the control output. Because the dynamics model is fast (a compact transformer forward pass in JAX on GPU), thousands of rollouts run in real time. MPPI is model-based: it does not need any additional training, it just needs a good model, which is what the pre-training provides.</p>
+<p><strong>Few-shot fine-tuning (the data-efficiency lever).</strong> After zero-shot transfer from simulation to a new real vehicle, the user drives the robot for a short collection session — on the order of a few minutes of trajectories — and runs <code>train<em>finetune</em>jax.py</code> to fine-tune the pre-trained transformer on this small real dataset. Because the pre-trained model already has good priors, fine-tuning converges with far less data than training from scratch. The paper reports that zero-shot transfer alone already beats specialist models tuned specifically for each vehicle by up to 54% on agility metrics, and fine-tuning narrows remaining gaps further.</p>
+<p><strong>What saves data.</strong> The simulation pre-training means zero real robot data is needed for the bulk of training. The few-shot fine-tuning step needs only a handful of real trajectories — not hundreds of human demonstrations. This is purely a <strong>sim-to-real + fine-tuning</strong> data strategy with no teleoperation, no motion-capture rig, and no LLM in the loop.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/LeCAR-Lab/anycar" target="_blank" rel="noopener">https://github.com/LeCAR-Lab/anycar</a></p>
+<p><strong>Language / framework:</strong> Python 3.10, JAX (GPU-accelerated array computation and JIT compilation), ROS2 Humble (for real-robot deployment), Foxglove Studio (for visualization). No PyTorch.</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+anycar/
+  car_collect/          # Data collection scripts per simulator
+    isaacsim_collect_data.py
+    parallel_mujoco_collect_data.py
+    collect_data_on_policy.py
+    README.md           # Explains each simulator integration
+  car_dataset/          # Dataset loading and preprocessing utilities
+  car_dynamics/         # First-principle bicycle model + MPPI controller
+  car_foundation/       # Model training (the main ML code)
+    car_foundation/
+      jax_models.py     # Transformer architecture in JAX  &lt;-- OPEN FIRST
+      models.py         # Additional model definitions
+      dataset.py        # Data loader
+      train_utils.py    # Loss, optimizer, training step
+      utils.py          # General helpers
+    train_transformer_jax.py   # Pre-training entry point
+    train_finetune_jax.py      # Real-world fine-tuning entry point
+    train_ablation_jax.py      # Ablation variants
+  car_planner/          # Path planning (waypoint following)
+  car_ros2/             # ROS2 launch files for real-robot deployment
+    car_sim.launch.py   # Main sim/real launch entry point
+  hardware/             # Vehicle URDF configs, 3D-printable parts
+  requirements.txt      # Python dependencies
+  params.yaml           # Vehicle and controller parameters
+  iron.repos            # ROS2 workspace manifest
+</code></pre>
+<p><strong>File to open first:</strong> <code>car<em>foundation/car</em>foundation/jax<em>models.py</code> — this is where the transformer dynamics model is defined: input/output shapes, attention layers, and the residual state-prediction head. After that, read <code>train</em>transformer_jax.py</code> to see how the four-simulator datasets are mixed, how the noise/masking augmentation is applied, and what the training loop looks like.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>Python 3.10+, JAX with CUDA 12.3+ backend (GPU required for JAX XLA)</li>
+<li>ROS2 Humble on Ubuntu 22.04 (for deployment pipeline only; not needed for training)</li>
+<li>IsaacSim (NVIDIA Omniverse) for that simulator&#x27;s data collection; MuJoCo for the MuJoCo branch; Assetto Corsa (Windows game + a server bridge) for that branch. You do not need all four to train — a subset works.</li>
+<li>Pre-trained checkpoint available from Hugging Face: <code>wenlixiao/anycar-sim-small</code></li>
+<li>Foxglove Studio for visualization (optional for training)</li>
+</ul>
+<p><strong>How to run (training only, no ROS):</strong></p>
+<pre><code>
+mamba create -n anycar python=3.10
+pip install -r requirements.txt
+# Download checkpoint or generate sim data first
+cd car_foundation
+python train_transformer_jax.py   # pre-training
+python train_finetune_jax.py      # real-world fine-tune
+</code></pre>
+<p><strong>For full deployment:</strong></p>
+<pre><code>
+colcon build &amp;&amp; source install/setup.bash
+ros2 launch car_ros2 car_sim.launch.py
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>car<em>foundation/car</em>foundation/jax<em>models.py</code> to understand the model, then <code>train</em>transformer<em>jax.py</code> to see training. The code is JAX-idiomatic — functional transforms (<code>jit</code>, <code>vmap</code>, <code>grad</code>) rather than PyTorch&#x27;s imperative style. If you are new to JAX, expect 1-2 hours of orientation. The data pipeline (<code>dataset.py</code>) is straightforward. The MPPI controller lives in <code>car</em>dynamics/</code> and is the most complex module: it implements GPU-parallel trajectory sampling, which is readable but requires understanding the MPPI math. The ROS2 launch infrastructure (<code>car<em>ros2/</code>) is standard boilerplate and can be ignored if you only want to understand the learning method. Overall difficulty: <strong>medium</strong> — clean structure, good separation of concerns, but JAX functional style and the multi-simulator data pipeline add friction. The <code>car</em>collect/README.md</code> is essential for understanding which simulator does what.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run meaningfully on a CPU-only box.</strong> Three hard blockers:</p>
+<ul>
+<li><strong>JAX requires a CUDA GPU.</strong> The training script sets <code>XLA<em>PYTHON</em>CLIENT<em>MEM</em>FRACTION=0.3</code>, and JAX will fall back to CPU but the transformer training will be orders of magnitude slower and likely impractical for any real dataset size.</li>
+<li><strong>Data collection requires at least one simulator.</strong> IsaacSim requires an NVIDIA GPU and an Omniverse license. MuJoCo is CPU-capable but the parallel collection script assumes multi-core throughput. Assetto Corsa requires Windows.</li>
+<li><strong>Full deployment requires ROS2 Humble on Ubuntu 22.04 and a physical robot or GPU-backed ROS2 sim.</strong></li>
+</ul>
+<p>You can download the pre-trained checkpoint from Hugging Face and run inference through the JAX model on CPU for a single forward pass (to inspect outputs), but you cannot train, collect data, or run the MPPI controller at real-time rates without a GPU. A machine with an NVIDIA GPU (CUDA 12.3+) running Ubuntu 22.04 with ROS2 Humble installed is the practical minimum for end-to-end use.</p></article>
+<article class="page" id="gp11"><h1>FLaRe: Achieving Masterful and Adaptive Robot Policies with Large-Scale Reinforcement Learning Fine-Tuning</h1>
+<p>ICRA 2025 (Best Paper Finalist) · 6 citations · strategy: refine the policy after demos run out</p>
+<h2>What it does</h2>
+<p>FLaRe takes a robot policy that was pre-trained by imitating large-scale human demonstrations (behavior cloning, abbreviated BC), and then fine-tunes it with reinforcement learning (RL) using only a sparse binary reward — no extra human demonstrations required. The pre-trained policy reaches a performance ceiling because BC is offline and cannot correct its own mistakes during execution; FLaRe breaks through that ceiling by letting the robot practice in simulation with RL. The strategy is: <strong>refine the policy after demos run out</strong> — squeezing more capability from a fixed demonstration set by spending compute, not human labor.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> The method starts from a frozen SPOC checkpoint (a transformer-based BC policy pre-trained on the SPOC CHORES benchmark across four manipulation/navigation tasks: ObjectNav, PickUp, Fetch, RoomVisit). The robot runs in AI2THOR — a photorealistic indoor simulator with 150,000 procedurally generated houses (ProcTHOR) and 800,000+ annotated 3D Objaverse objects. The action space has 20 discrete choices (base movement, arm control, gripper rotation, pick/drop, done).</p>
+<p><strong>Pre-trained architecture (SPOC).</strong> Two Intel RealSense RGB cameras (384×224 pixels each) feed into a frozen DINOv2 ViT-S vision backbone, which outputs patch-level feature vectors. A 3-layer, 512-hidden-dim, 8-head transformer state encoder aggregates those features along with a T5 text embedding of the language instruction and a history of past actions. A causal Llama-2-style transformer decoder (3 layers, same dims) autoregressively outputs the action. A KV-cache trick reduces inference cost from quadratic to linear in sequence length.</p>
+<p><strong>RL fine-tuning.</strong> The algorithm is PPO (Proximal Policy Optimization), an on-policy policy gradient method. The reward is binary and sparse: 1 if the language instruction is successfully completed, 0 otherwise. Navigation tasks run for 20 million environment steps; manipulation tasks for 50 million steps.</p>
+<p><strong>The specific trick that saves data — four gradient stabilization moves.</strong> BC-pre-trained policies are fragile to naive RL fine-tuning: any one of the following omissions collapses the success rate to 0% in ablations.</p>
+<ul>
+<li><strong>On-policy algorithm.</strong> PPO instead of an off-policy method like SAC, because off-policy updates diverge from the behavior distribution the pre-trained features were built on.</li>
+<li><strong>Reduced learning rate.</strong> 2×10⁻⁵ instead of the 2×10⁻⁴ used when training from scratch — a 10× reduction that prevents rapid overwriting of the BC-learned features.</li>
+<li><strong>Disabled entropy bonus.</strong> The standard PPO entropy regularization term is zeroed out (weight = 0.0); it destabilizes the already-sensible action distribution inherited from BC.</li>
+<li><strong>Separate actor and critic networks.</strong> Rather than sharing a trunk (as is typical in PPO), actor and critic are initialized as independent networks from the same SPOC checkpoint. This prevents critic gradients — which optimize a value estimate, not robot behavior — from corrupting the policy&#x27;s representations. The DINOv2 vision backbone is kept frozen throughout, which also provides sim-to-real-transferable visual features.</li>
+</ul>
+<p>Domain randomization (random color jitter, random crops, posterization) is applied during RL training to keep the frozen DINOv2 features consistent with what will be seen on a real Stretch RE-1 robot.</p>
+<p><strong>Adaptation.</strong> After fine-tuning on seen tasks, FLaRe can rapidly adapt to unseen task types (relational attributes, affordance reasoning) and new robot bodies (LocoBot) with less than one day of additional RL — no new demonstrations needed.</p>
+<p><strong>Results.</strong> 79.5% average success rate on long-horizon mobile manipulation in unseen apartments; +23.6% over prior state-of-the-art in simulation and +30.7% on a real Stretch RE-1, zero-shot sim-to-real.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/JiahengHu/FLaRe" target="_blank" rel="noopener">https://github.com/JiahengHu/FLaRe</a></p>
+<p><strong>License:</strong> Apache 2.0</p>
+<p><strong>Language / framework:</strong> Python; PyTorch; AllenAct (an RL training framework from AI2); AI2THOR simulator; Detectron2 for perception; DINOv2 backbone from Facebook Research.</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+architecture/        model architecture definitions (actor, critic, SPOC transformer)
+docker/              Dockerfile and docker-compose; pre-built image khzeng777/spoc-rl:v2
+environment/         conda/pip environment configs
+online_evaluation/   distributed evaluation runner
+scripts/             data + checkpoint downloaders
+tasks/               task definitions (ObjectNav, Fetch, PickUp, RoomVisit, adaptation tasks)
+training/
+  offline/           IL pre-training (train_pl.py)
+  online/            RL fine-tuning (dinov2_vits_tsfm_rgb_augment_objectnav.py)
+utils/               shared helpers
+requirements.txt
+spoc_constants.py    benchmark constants (task names, action ids, reward thresholds)
+</code></pre>
+<p><strong>File to open first:</strong> <code>training/online/dinov2<em>vits</em>tsfm<em>rgb</em>augment_objectnav.py</code> — this is the PPO fine-tuning entry point. It wires together the SPOC model loaded from a pre-trained checkpoint, the PPO trainer, the stabilization hyperparameters (lr=2e-5, entropy=0, clip=0.1, γ=0.99, λ=0.95), and the AI2THOR environment rollout workers.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>PyTorch with CUDA 12.1</li>
+<li>AI2THOR (custom PyPI index)</li>
+<li>AllenAct RL framework</li>
+<li>Detectron2 (custom CUDA 12.1 build)</li>
+<li>Objaverse assets + ProcTHOR-Objaverse houses (multi-GB download via <code>scripts/download<em>objaverse</em>houses.py</code>)</li>
+<li>Pre-trained SPOC IL checkpoint (via <code>scripts/download<em>trained</em>ckpt.py</code>)</li>
+</ul>
+<p><strong>Requires:</strong> GPU (Docker config specifies <code>--gpus all</code>), 50 GB shared memory, and the AI2THOR simulator (headless rendering). No LLM API needed — T5 and DINOv2 run locally.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+# 1. Pull image
+docker pull khzeng777/spoc-rl:v2
+
+# 2. Download data
+python -m scripts.download_training_data --save_dir data --types astar
+python -m scripts.download_objaverse_houses.py
+python -m scripts.download_trained_ckpt.py
+
+# 3. RL fine-tuning (inside container)
+python training/online/dinov2_vits_tsfm_rgb_augment_objectnav.py train \
+  --il_ckpt_path &lt;path&gt; --num_train_processes 32 --output_dir runs/flare
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>spoc<em>constants.py</code> to understand the task names and action IDs, then open <code>training/online/dinov2</em>vits<em>tsfm</em>rgb<em>augment</em>objectnav.py</code> to see how PPO is configured. The stabilization hyperparameters (lr, entropy weight, separate actor/critic flag) are all set near the top of that file or in a config dict it references. Next read <code>architecture/</code> to see how the frozen DINOv2 backbone is wrapped and how the actor and critic are split from a shared SPOC checkpoint. The task reward logic lives in <code>tasks/</code>.</p>
+<p><strong>Code difficulty:</strong> moderate-to-hard. AllenAct has its own abstractions (sensors, tasks, task samplers, engine configs) that are not standard PyTorch Lightning or HuggingFace patterns. Expect 2-4 hours to orient to the framework before the RL loop itself becomes readable. The SPOC model code is clean transformer code once you find it in <code>architecture/</code>.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on CPU-only.</strong> AI2THOR requires GPU rendering (OpenGL/Vulkan via a GPU) for its photorealistic indoor scenes; the training loop uses <code>--gpus all</code> and 50 GB shared memory. Even inference through the DINOv2 + causal transformer backbone is impractically slow without a GPU. Additionally, you need the full Objaverse 3D asset library (tens of GB) and ProcTHOR houses downloaded before any training step can execute. On a cloud GPU box (A100 or similar) with the Docker image and data pre-downloaded, the RL fine-tuning runs cleanly.</p></article>
+<article class="page" id="gp12"><h1>ExploRLLM: Guiding Exploration in Reinforcement Learning with Large Language Models</h1>
+<p><strong>ICRA 2025 · 6 citations · strategy: exploration / residual-RL</strong></p>
+<p>arXiv: <a href="https://arxiv.org/abs/2403.09583" target="_blank" rel="noopener">https://arxiv.org/abs/2403.09583</a></p>
+<p>Project: <a href="https://explorllm.github.io" target="_blank" rel="noopener">https://explorllm.github.io</a></p>
+<p>Authors: Runyu Ma, Jelle Luijkx, Zlatan Ajanovic, Jens Kober (TU Delft / RWTH Aachen)</p>
+<p>Code: promised at project site; no public GitHub URL confirmed as of mid-2026.</p>
+<hr>
+<h2>What it does</h2>
+<p>ExploRLLM makes RL for tabletop robot manipulation converge faster and with fewer samples by using a large language model (GPT-4) to write executable Python policy code that immediately gives the agent a reasonable starting behavior, and by having a vision-language model collapse the raw RGB-D camera image into a small, object-centric observation of bounding-box positions and image crops. A residual RL agent (SAC) then runs on top — it learns only the small correction offset needed to fix the places where the LLM&#x27;s physical intuition is wrong (e.g., where exactly to grip a letter). Trained policies transfer zero-shot from simulation to a real Franka Panda arm without any fine-tuning.</p>
+<hr>
+<h2>The method, in detail</h2>
+<p><strong>Step 1 — Command parsing with GPT-4.</strong></p>
+<p>The natural-language task (&quot;pick the red letter O and place it in the blue bowl&quot;) is fed to GPT-4 with a few-shot prompt that maps it into a structured template: <code>{pick<em>object: &quot;letter O&quot;, place</em>target: &quot;blue bowl&quot;}</code>. This template tags the objects that matter for the current task and discards the rest of the scene.</p>
+<p><strong>Step 2 — Object detection with ViLD.</strong></p>
+<p>A Vision-Language Distillation (ViLD) model takes the current overhead RGB-D image and the tagged object labels and outputs bounding boxes with center positions <code>P_vlm</code>. During simulation training, ground-truth simulator positions are used instead (with added Gaussian noise, σ = half the crop radius, to simulate VLM error). At test time on the real robot the actual ViLD detections are used.</p>
+<p><strong>Step 3 — Compact observation construction.</strong></p>
+<p>The reformulated observation <code>ŝᵗ</code> is assembled from three parts: (a) the interpreted command vector <code>l̃</code> (a fixed-dim encoding of the template), (b) the set of detected object center positions <code>P<em>vlm</code>, and (c) RGB-D image patches <code>I</em>vlm</code> cut out around each detected bounding box. This replaces the full 640×480 RGB-D image with a handful of small crops — the observation is no longer spatially confused by irrelevant background.</p>
+<p><strong>Step 4 — LLM policy code generation (two levels).</strong></p>
+<p>*High-level policy:* GPT-4 is prompted once (few-shot) with the list of available robot motion primitives (pick, place) and a custom API for querying geometric relationships. Output: a short Python function that, given the parsed template and detected positions, returns a pick-or-place action selecting which object and which target position to use. This implements the task&#x27;s commonsense sequencing logic (pick before place, pick the right object).</p>
+<p>*Low-level affordance policy:* GPT-4-with-Vision is prompted with example images and language descriptions of the robot workspace. Output: Python code (using OpenCV and NumPy) that produces a 2D probability heatmap over an image patch — this heatmap indicates where on the object the gripper should make contact. Multiple code candidates are generated; the one with the highest empirical success rate in simulation is kept. The heatmap peak is converted to a 2D pixel coordinate and back-projected to a workspace position.</p>
+<p><strong>Step 5 — Residual action space.</strong></p>
+<p>The raw action space is <code>{prim, P}</code> — pick/place primitive plus a 2D top-down workspace position. ExploRLLM reformulates this as <code>ã = {prim, i, P_res}</code>:</p>
+<ul>
+<li><code>prim</code>: binary (0=pick, 1=place)</li>
+<li><code>i</code>: index into the detected object list (discrete, ≤3 objects in tested tasks)</li>
+<li><code>P_res</code>: a continuous 2D residual offset</li>
+</ul>
+<p>The executed position is <code>P̃ = P<em>vlm[i] + P</em>res</code>. The RL agent never has to discover object locations from scratch — it just corrects the LLM&#x27;s per-pixel prediction by a small delta.</p>
+<p><strong>Step 6 — SAC with LLM-guided exploration.</strong></p>
+<p>Training uses Soft Actor-Critic (stable-baselines3) with a modified rollout collection loop. A 20,000-step warm-up phase runs with no LLM guidance to populate the replay buffer. After warm-up, with probability ε (swept over {0.1, 0.2, 0.3, 0.5, 0.7, 0.9}; best was ε=0.2) the agent executes the LLM-generated action instead of its own — this acts like an ε-greedy bonus that biases exploration toward high-value regions from the start. The SAC network uses: two CNN layers to process the image patches → concatenation with position features and gripper state → one self-attention layer → two-layer MLP heads for actor and critic. Short-horizon tasks train for 25k steps; long-horizon for 75k steps.</p>
+<p><strong>Step 7 — Sim-to-real transfer.</strong></p>
+<p>The simulated tabletop environment matches the real setup (UR5e / Franka Panda geometry, top-down RGB-D camera). No domain randomization beyond the bounding-box noise injection during training. At deployment the EAGERx framework mediates robot control; the learned policy runs directly on real camera frames processed by ViLD. No additional fine-tuning is applied.</p>
+<hr>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> No dedicated public GitHub repository confirmed. The project page (<a href="https://explorllm.github.io" target="_blank" rel="noopener">https://explorllm.github.io</a>) states &quot;code and videos are available&quot; but links only to the arXiv PDF. The related successor paper LLM-TALE (ICRA 2026) by the same group is public at <a href="https://github.com/llm-tale/llm_tale" target="_blank" rel="noopener">https://github.com/llm-tale/llm_tale</a> and shares the same RL + EAGERx + LLM-code-generation architecture; it is the best available reference implementation.</p>
+<p><strong>Language / framework:</strong></p>
+<ul>
+<li>Python 3.10</li>
+<li>RL: stable-baselines3 (SAC)</li>
+<li>Robot abstraction: EAGERx (physics-engine-agnostic gym wrapper; swap sim↔real with one line)</li>
+<li>Vision: ViLD for object detection</li>
+<li>LLM API: OpenAI GPT-4 and GPT-4V (REST API calls, not a local model)</li>
+<li>Code generation helpers: OpenCV, NumPy</li>
+</ul>
+<p><strong>Repo structure (from LLM-TALE as closest available proxy):</strong></p>
+<pre><code>
+llm_tale/         # successor paper — same architecture pattern
+├── cache/        # LLM response caching to avoid redundant API calls
+├── demos/        # demonstration data
+├── models/       # saved checkpoints
+├── notebooks/
+│   └── code_generation/   # inspect / regenerate LLM-produced affordance code
+├── scripts/
+│   ├── run_llm_bc.sh       # baseline: LLM behavior cloning only
+│   └── run_llm_tale.sh     # full method
+├── src/          # main source: environment wrappers, SAC trainer, LLM prompt builders
+├── tests/
+│   └── test_tasks.py
+├── pyproject.toml
+└── uv.lock
+</code></pre>
+<p><strong>File to open first:</strong> <code>src/</code> — look for the SAC trainer entry point and the prompt-builder module that calls the GPT-4 API; the affordance code generation notebook is the second stop.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li><code>stable-baselines3</code></li>
+<li><code>eagerx</code> (pip install eagerx; optional CoppeliaSim or ManiSkill for simulation)</li>
+<li><code>openai</code> Python SDK (requires OPENAI<em>API</em>KEY)</li>
+<li><code>opencv-python</code>, <code>numpy</code></li>
+<li>Optional: RLBench (requires CoppeliaSim), ManiSkill</li>
+</ul>
+<p><strong>Sim needs:</strong> A physics simulator (CoppeliaSim via PyRep or ManiSkill) to run the tabletop environment. EAGERx abstracts this.</p>
+<p><strong>LLM-API needs:</strong> OpenAI API key with access to GPT-4 and GPT-4V.</p>
+<p><strong>GPU needs:</strong> SAC on a small CNN + MLP is lightweight. A GPU helps but the network is small enough (image patches, not full frames) that CPU training is not ruled out for short-horizon tasks.</p>
+<p><strong>How to run (LLM-TALE proxy):</strong></p>
+<pre><code>
+git clone https://github.com/llm-tale/llm_tale.git
+cd llm_tale
+uv venv --python 3.10 &amp;&amp; source .venv/bin/activate
+uv pip install -e .
+export OPENAI_API_KEY=sk-...
+bash scripts/run_llm_tale.sh
+</code></pre>
+<hr>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li>arXiv paper Section III (problem formulation + observation/action space) — about 2 pages, crisp.</li>
+<li>Section IV (LLM policy generation) — explains the two-level hierarchy and the GPT-4 prompting. The key insight (ε-greedy over LLM actions) is explained in about one paragraph.</li>
+<li>Section V (network architecture) — short; CNN+attention+MLP is standard.</li>
+<li>Section VI (experiments) — success rate tables and ablations over ε.</li>
+</ul>
+<p><strong>How hard to follow:</strong></p>
+<p>Moderate. The algorithm is conceptually simple: replace random ε-exploration with LLM-generated action exploration, and replace raw Cartesian actions with object-centric residuals. The paper is well-structured. The two tricky parts are (a) understanding exactly how ViLD bounding boxes feed into the observation vs. the action, and (b) the two-level (high-level primitive selector / low-level affordance heatmap) LLM code generation — Figure 2 in the paper clarifies this significantly. No math beyond standard SAC; the code generation aspect requires reading Code-as-Policy (Liang et al. 2023) as background.</p>
+<hr>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: probably not runnable end-to-end.</strong></p>
+<p>Three hard blockers:</p>
+<ul>
+<li><strong>OpenAI API key required</strong> — GPT-4 and GPT-4V are called to generate the initial policy code. No local LLM fallback is described. Without an API key (or a significant rewrite to use a local model) the method cannot initialize.</li>
+<li><strong>Physics simulator required</strong> — EAGERx wraps CoppeliaSim (or ManiSkill). CoppeliaSim requires a license and a display; ManiSkill is open but needs setup. Neither runs trivially on a headless CPU box without extra work.</li>
+<li><strong>Code not publicly released</strong> — there is no confirmed public GitHub repo for ExploRLLM itself. The LLM-TALE successor is public and shares the architecture, but tasks and environment configs differ.</li>
+</ul>
+<p>If you have an OpenAI API key and can stand up ManiSkill or CoppeliaSim, CPU training for the short-horizon task (25k SAC steps on a small net) is plausible but slow (hours). The residual RL part itself is lightweight; the bottleneck is the simulator step rate and the occasional GPT-4 API call during rollout collection (ε=0.2 → 1 in 5 steps is an LLM call; these are cached after the first generation).</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div><article class="page walk"><h1>SPOT — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;SPOT: SE(3) Pose Trajectory Diffusion for Object-Centric Manipulation&quot; (ICRA 2025, NVIDIA)</p>
+<p><strong>Repo root:</strong> <code>object<em>centric</em>diffusion/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p>SPOT is an imitation learning system where the policy does not learn joint trajectories or end-effector paths. Instead it learns to predict how a target object should move through space — a trajectory of SE(3) poses — and then converts that into robot commands at execution time. This lets the same diffusion model be trained on human-hand iPhone videos and deployed on a robot arm.</p>
+<p><strong>Entry scripts</strong></p>
+<p>| Script | Purpose |</p>
+<p>|---|---|</p>
+<p>| <code>scripts/gen<em>demonstration</em>rlbench.sh</code> | Replay PerAct demos through RLBench, extract object poses, save as zarr |</p>
+<p>| <code>scripts/gen<em>demonstration</em>real.sh</code> | Run FoundationPose on iPhone RGBD recordings, extract object poses, save as zarr |</p>
+<p>| <code>scripts/train<em>policy.sh &lt;task&gt;</code> | Calls <code>tools/train</em>dp3.py</code> via Hydra |</p>
+<p>| <code>scripts/eval<em>policy.sh &lt;task&gt;</code> | Calls <code>tools/eval</em>dp3.py</code> via Hydra |</p>
+<p>| <code>scripts/eval<em>policy</em>multi.sh</code> | Loop eval over multiple tasks |</p>
+<p><strong>Config system</strong></p>
+<p>Hydra, with two levels:</p>
+<ul>
+<li><code>config/simple_dp3.yaml</code> — top-level: policy architecture, noise scheduler, optimizer, training loop settings</li>
+<li><code>config/task/rlbench<em>multi.yaml</code> or <code>config/task/rlbench/&lt;task&gt;.yaml</code> — shape</em>meta (action dim, obs dim), dataset paths, env runner</li>
+</ul>
+<p>The key YAML fact: <code>action.shape: [8]</code> — seven numbers for the SE(3) delta pose plus one progress scalar.</p>
+<p><strong>Environments</strong></p>
+<ul>
+<li><strong>Sim:</strong> RLBench (PerAct branch) on top of CoppeliaSim v4.1.0 via PyRep. Ubuntu 22, RTX 4090 tested.</li>
+<li><strong>Real:</strong> Record3D iPhone app for RGBD demos; YOLO-World for object segmentation masks; FoundationPose for 6-DoF pose tracking.</li>
+</ul>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+diffusion_policy_3d/
+  policy/
+    simple_dp3.py       SimpleDP3 — the policy class (train + inference)
+    dp3.py              Alternative policy (point-cloud variant; not used in default config)
+    base_policy.py      Abstract base
+  model/
+    diffusion/
+      simple_conditional_unet1d.py     ConditionalUnet1D — the denoising backbone
+      simple_conditional_unet1d_progress.py  Variant that handles progress as binary
+      conv1d_components.py             1D conv blocks used in UNet
+      ema_model.py                     Exponential-moving-average model wrapper
+    vision/
+      pointnet_extractor.py            DP3Encoder / PointNetEncoderXYZRGB — encodes point cloud obs
+    common/
+      normalizer.py                    LinearNormalizer — per-key min/max normalization
+      geodesic_loss.py                 Geodesic / rotation loss (used in evaluation only)
+  dataset/
+    rlbench_base_dataset.py            RLBenchBaseDataset — loads zarr, augments SE(3) poses
+    rlbench_dataset.py                 Thin subclass of the above
+    rlbench_dataset_list.py            Multi-task wrapper
+
+env_rlbench/
+  runner/
+    rlbench_runner.py                  RLBenchRunner — outer eval loop, per-episode rollout
+    rl_bench_env.py                    CustomRLBenchEnv — wraps RLBenchEnv, calls FoundationPose
+  policy/
+    dp3_policy.py                      RLBenchDP3Policy — stage machine (reach/grasp/move/leave/end)
+    subgoal_policy.py                  Base subgoal execution helpers
+
+env_rlbench_peract/
+  data/collect_zarr_rlbench_peract.py  Replay PerAct demos → extract object poses → zarr
+  utils/rlbench_utils.py               MyEnvironmentPeract
+  utils/rlbench_objects.py             task_object_dict (maps task name → grasp/target object names)
+
+env_real/
+  data/
+    prepare_pose.py     Run FoundationPose on r3d recordings → object_poses.npy
+    prepare_mask.py     YOLO-World → object masks for FoundationPose init
+    prepare_rgbd.py     Unpack r3d → RGB + depth frames
+    collect_zarr_real.py  Convert npy poses → zarr with same schema as RLBench path
+
+foundation_pose/
+  wrapper.py            FoundationPoseWrapper — loads .obj mesh, creates FoundationPose estimator
+  estimater.py          Core FoundationPose tracker (register / track_one)
+  Utils.py              Visualization helpers
+
+utils/
+  pose_utils.py         get_rel_pose / relative_to_target_to_world / calculate_action / calculate_goal_pose
+  transform_utils.py    quat2mat / mat2quat / pose2mat / mat2pose
+  collect_utils.py      clean_keyframe, collect_narr_function, save_zarr
+  collect_utils_rlbench.py  keypoint_discovery
+  vis_utils.py          dp3_visualize
+
+tools/
+  train_dp3.py          TrainDP3Workspace.run()
+  eval_dp3.py           TrainDP3Workspace.eval()
+</code></pre>
+<hr>
+<h2>The pipeline — step-by-step trace through the actual code</h2>
+<h3>Phase 1 — Dataset construction</h3>
+<p><strong>RLBench path:</strong></p>
+<p><code>env<em>rlbench</em>peract/data/collect<em>zarr</em>rlbench_peract.py</code></p>
+<p>The script replays PerAct pre-generated demos inside CoppeliaSim. For each frame, it reads the 7-DoF world-frame pose of both the grasp object and the target object (position xyz + quaternion xyzw). It then calls <code>get<em>rel</em>pose(target<em>obj</em>pose, grasp<em>obj</em>pose)</code> from <code>utils/pose<em>utils.py</code> to express the grasp object&#x27;s pose *in the coordinate frame of the target object*. That relative SE(3) pose (shape <code>[7]</code>) is the state. The next-frame version is <code>state</em>next</code>. The action is <code>calculate<em>action(state, state</em>next)</code> — a delta: translation difference plus the relative rotation quaternion <code>Qp = QW * Qch.inverse</code>. Progress is a scalar in <code>[0,1]</code> tracking task completion. Everything is packed into a zarr archive under keys <code>state</code>, <code>state<em>next</code>, <code>action</code>, <code>progress</code>, <code>progress</em>binary</code>, <code>variation</code>, <code>task_stage</code>.</p>
+<p><strong>Real-world path:</strong></p>
+<p><code>env<em>real/data/prepare</em>pose.py</code> → runs <code>FoundationPoseWrapper.create<em>estimator()</code> → calls <code>estimater.register(K, rgb, depth, ob</em>mask)</code> for the first frame then <code>estimater.track<em>one(rgb, depth, K)</code> for subsequent frames on both the grasp object and the target object from iPhone RGBD video. Results saved as <code>.npy</code>. Then <code>env</em>real/data/collect<em>zarr</em>real.py</code> does the same <code>get<em>rel</em>pose</code> conversion and writes identical zarr schema.</p>
+<h3>Phase 2 — Training</h3>
+<p><code>tools/train_dp3.py</code>, class <code>TrainDP3Workspace</code></p>
+<ul>
+<li><strong>Hydra</strong> instantiates <code>SimpleDP3</code> from <code>config/simple<em>dp3.yaml</code> (policy.</em>target_).</li>
+<li><strong>Dataset:</strong> <code>RLBenchBaseDataset.<em>_getitem</em><em></code> calls <code>self.sampler.sample</em>sequence(idx)</code> to get a window of <code>horizon=4</code> consecutive frames. <code><em>sample</em>to<em>data()</code> returns <code>obs[&#x27;agent</em>pos&#x27;]</code> (shape <code>[4, 7]</code>) and <code>action</code> (shape <code>[4, 8]</code>, the 7 delta-pose values plus the binary progress scalar).</li>
+</ul>
+<p>   Optional data augmentation: <code><em>add</em>random<em>noise</em>to_pos</code> applies a small random rotation (Rodrigues formula) + translation jitter to all poses in a window. Symmetric augmentation applies a fixed-axis rotation for tasks like placing cups that are rotationally symmetric.</p>
+<ul>
+<li><strong>Loss:</strong> <code>SimpleDP3.compute_loss(batch)</code></li>
+</ul>
+<p>   - <code>custom_normalize</code>: translates only the <code>xyz</code> part through <code>LinearNormalizer</code>; the quaternion <code>[qx,qy,qz,qw]</code> is separately L2-normalized via <code>F.normalize</code> (unit quaternion constraint).</p>
+<p>   - Encodes observation via <code>obs<em>encoder = DP3Encoder</code> (a PointNet that handles point clouds or a simple MLP when only <code>agent</em>pos</code> is present).</p>
+<p>   - Randomly samples a diffusion timestep <code>t</code> and adds noise: <code>noisy<em>trajectory = noise</em>scheduler.add_noise(trajectory, noise, t)</code>.</p>
+<p>   - Passes <code>noisy_trajectory</code> through <code>ConditionalUnet1D</code>, conditioning via FiLM modulation on the observation features (scale + bias per channel).</p>
+<p>   - Computes MSE loss on the noise/sample prediction (DDIM scheduler, <code>prediction<em>type: sample</code>). When <code>use</em>progress=True</code>, the last channel (progress/gripper) uses binary cross-entropy with a 0.1 weight.</p>
+<h3>Phase 3 — Inference / evaluation</h3>
+<p><code>tools/eval<em>dp3.py</code> → <code>TrainDP3Workspace.eval()</code> creates a <code>FoundationPoseWrapper</code> and an <code>RLBenchRunner</code>, loads the checkpoint, then calls <code>env</em>runner.run(policy)</code>.</p>
+<p><code>RLBenchRunner.run()</code>:</p>
+<ul>
+<li>For each test episode, resets the RLBench env to the demo initial state.</li>
+<li>Instantiates <code>RLBenchDP3Policy(env, policy, use<em>fp, enable</em>stage)</code>.</li>
+<li>Steps through a stage machine in <code>RLBenchDP3Policy.get_action(obs)</code>:</li>
+</ul>
+<p>  <strong>&quot;reach&quot; stage:</strong> Replays the first two waypoints from the recorded demo to bring the gripper to the grasp position. Calls <code>env.start<em>tracking()</code> which initializes <code>FoundationPoseWrapper.create</em>estimator()</code> (if <code>use_fp=True</code>).</p>
+<p>  <strong>&quot;grasp&quot; stage:</strong> Records the transform <code>T<em>obj</em>to<em>gripper = get</em>rel<em>pose(grasp</em>obj<em>pose, gripper</em>pose)</code> — the rigid offset from object to gripper, used for closed-loop control.</p>
+<p>  <strong>&quot;move&quot; stage — the core loop:</strong></p>
+<p>  1. <code><em>update</em>history<em>buffer(obs)</code>: Reads the current object pose. If <code>use</em>fp=True</code>, this comes from <code>CustomRLBenchEnv.<em>get</em>pose<em>est()</code> which calls <code>pose</em>estimator.track<em>one(rgb, depth, K)</code> and converts the result to world frame via <code>fp</em>frame<em>to</em>world<em>frame(fp</em>mat, R)</code>. Otherwise, it reads the simulator ground-truth. Calls <code>get<em>rel</em>pose(target<em>obj</em>pose, grasp<em>obj</em>pose)</code> to get the current state relative to the target.</p>
+<p>  2. <code><em>get</em>sub<em>goal(obs)</code>: Builds <code>obs</em>dict[&#x27;agent<em>pos&#x27;]</code> from the history buffer and calls <code>sub</em>goal<em>policy.predict</em>action(obs<em>dict</em>input)</code>.</p>
+<p>  3. <code>SimpleDP3.predict<em>action(obs</em>dict)</code>:</p>
+<p>     - Normalizes observation via <code>custom_normalize</code>.</p>
+<p>     - Encodes observation: <code>nobs<em>features = self.obs</em>encoder(this<em>nobs)</code>, shape <code>[B, obs</em>feature<em>dim]</code> → becomes <code>global</em>cond</code>.</p>
+<p>     - Runs <code>conditional<em>sample()</code>: starts from Gaussian noise of shape <code>[B, horizon, action</em>dim]</code>, iterates DDIM denoising steps, at each step calling <code>model(sample=trajectory, timestep=t, global<em>cond=global</em>cond)</code>.</p>
+<p>     - Slices the output: <code>action = action<em>pred[:, n</em>obs<em>steps-1 : n</em>obs<em>steps-1+n</em>action_steps]</code>, returns shape <code>[B, 3, 8]</code>.</p>
+<p>  4. Back in <code><em>get</em>sub<em>goal</code>: takes <code>pred[0]</code> — the first predicted step — and splits into <code>select</em>action = select<em>pred[:7]</code> (delta SE(3)) and <code>select</em>progress = select_pred[7]</code>.</p>
+<p>  5. Converts the predicted delta back to an absolute object pose:</p>
+<p>     <code>subgoal<em>relative</em>to<em>target = calculate</em>goal<em>pose(obj</em>pose<em>relative</em>to<em>target, select</em>action)</code></p>
+<p>     (adds translation, composes quaternions: <code>Qp * Qch</code>).</p>
+<p>  6. Converts from target frame back to world frame:</p>
+<p>     <code>subgoal<em>in</em>world = relative<em>to</em>target<em>to</em>world(subgoal<em>relative</em>to<em>target, target</em>obj_pose)</code></p>
+<p>     (matrix multiplication: <code>T<em>WA = T</em>WB @ T_BA</code>).</p>
+<p>  7. Converts from object pose to gripper pose using <code>T<em>obj</em>to_gripper</code>.</p>
+<p>  8. Returns this as a 7-DoF end-effector pose action to RLBench&#x27;s <code>EndEffectorPoseViaPlanning</code> action mode, which solves IK and moves the arm.</p>
+<p>  <strong>&quot;leave&quot; stage:</strong> When <code>select_progress &gt; 0.9</code>, opens gripper and lifts.</p>
+<hr>
+<h2>Where the core idea lives — the SE(3) representation and the diffusion model</h2>
+<h3>SE(3) representation</h3>
+<p><strong>File:</strong> <code>utils/pose_utils.py</code></p>
+<pre><code>
+def get_rel_pose(pose1, pose2):
+    # pose1 = target object, pose2 = grasp object
+    pos1, quat1 = np.array(pose1[:3]), np.array(pose1[3:])
+    pos2, quat2 = np.array(pose2[:3]), np.array(pose2[3:])
+    mat1 = T.quat2mat(quat1)
+    mat2 = T.quat2mat(quat2)
+    pos, mat = compute_rel_transform(pos1, mat1, pos2, mat2)
+    quat = T.mat2quat(mat)
+    return np.concatenate([pos, quat])
+</code></pre>
+<p>This is the representation: the grasp object&#x27;s SE(3) pose in the <strong>coordinate frame of the target object</strong>. A 7-vector <code>[x, y, z, qx, qy, qz, qw]</code>. Because it is relative to the target, it is invariant to the absolute position of the scene, the camera, and crucially the robot embodiment. A human hand doing a pour and a robot arm doing the same pour produce the same trajectory in this space.</p>
+<p>The action between two consecutive states is:</p>
+<pre><code>
+def calculate_action(current_pose, goal_pose):
+    # translation delta + relative rotation (left-multiply convention)
+    Qp = QW * Qch.inverse   # relative rotation quaternion
+    a_x, a_y, a_z = x2-x1, y2-y1, z2-z1
+    return [a_x, a_y, a_z, a_qx, a_qy, a_qz, a_qw]
+</code></pre>
+<p><strong>File:</strong> <code>diffusion<em>policy</em>3d/policy/simple<em>dp3.py</code>, function <code>custom</em>normalize</code></p>
+<pre><code>
+pose_ori = pose[key][:, :, 3:7]
+pose[key] = pose[key][:, :, :3]          # strip quat
+pose_ori = F.normalize(pose_ori, dim=2)  # unit quaternion
+npose = normalizer.normalize(pose)       # normalize xyz only
+npose[key] = torch.concat([npose[key], pose_ori], dim=-1)
+</code></pre>
+<p>This is how the quaternion is handled differently from the translation: the xyz part goes through <code>LinearNormalizer</code> (min-max scaling to [-1,1]), while the quaternion is L2-normalized to lie on the unit sphere. Both are kept in the same 7-dim action vector. The separate treatment is needed because ordinary min-max normalization would destroy the quaternion constraint.</p>
+<h3>The diffusion model</h3>
+<p><strong>File:</strong> <code>diffusion<em>policy</em>3d/model/diffusion/simple<em>conditional</em>unet1d.py</code>, class <code>ConditionalUnet1D</code></p>
+<p>The model is a 1-D temporal UNet over the action horizon (length 4 in default config). The conditioning mechanism is FiLM (Feature-wise Linear Modulation):</p>
+<pre><code>
+# In ConditionalResidualBlock1D.forward():
+embed = self.cond_encoder(cond)
+embed = embed.reshape(embed.shape[0], 2, self.out_channels, 1)
+scale = embed[:, 0, ...]
+bias  = embed[:, 1, ...]
+out = scale * out + bias
+</code></pre>
+<p>The observation features (the encoded current object pose history, optionally plus CLIP language embedding and stage one-hot) are broadcast into every residual block of the UNet as scale/bias modulations. Down-dims are <code>(128, 256, 384)</code> by default.</p>
+<p><strong>File:</strong> <code>diffusion<em>policy</em>3d/policy/simple<em>dp3.py</code>, function <code>conditional</em>sample</code></p>
+<pre><code>
+trajectory = torch.randn(size=condition_data.shape, ...)  # start from noise
+scheduler.set_timesteps(self.num_inference_steps)         # 10 DDIM steps
+for t in scheduler.timesteps:
+    trajectory[condition_mask] = condition_data[condition_mask]
+    model_output = model(sample=trajectory, timestep=t, global_cond=global_cond)
+    trajectory = scheduler.step(model_output, t, trajectory).prev_sample
+</code></pre>
+<p>Ten DDIM denoising steps decode a Gaussian sample into a predicted object-pose-delta trajectory. The scheduler (<code>DDIMScheduler</code>, 100 training steps, 10 inference steps, cosine beta schedule) is a standard diffusers scheduler.</p>
+<hr>
+<h2>What you&#x27;d need to run it</h2>
+<p><strong>Simulation (RLBench):</strong></p>
+<ul>
+<li>CoppeliaSim v4.1.0 (specific version; v4.3+ breaks PyRep compatibility)</li>
+<li>PyRep (MohitShridhar fork)</li>
+<li>YARR</li>
+<li>RLBench (PerAct/MohitShridhar branch)</li>
+<li>PerAct pre-generated datasets (~100 episodes per task, ~10 GB per task)</li>
+<li>RLBench object meshes (exported from CoppeliaSim or downloaded)</li>
+</ul>
+<p><strong>GPU and libraries:</strong></p>
+<ul>
+<li>NVIDIA GPU required — FoundationPose uses CUDA kernels (nvdiffrast, custom C++ extensions compiled via CMake). The README states RTX 4090. There is no CPU-only path. The FoundationPose C++ extensions (<code>foundation<em>pose/mycpp/</code>) must be compiled: <code>CMAKE</em>PREFIX<em>PATH=... bash build</em>all_conda.sh</code>.</li>
+<li>PyTorch 2.3.1 + pytorch3d + CUDA 12.1</li>
+<li>Python 3.8 (the conda env)</li>
+<li><code>fp<em>requirements.txt</code> (FoundationPose deps: nvdiffrast, open3d, trimesh, etc.) + <code>dp3</em>requirements.txt</code> (diffusion deps: diffusers, hydra, zarr, einops, etc.)</li>
+</ul>
+<p><strong>Real robot path:</strong></p>
+<ul>
+<li>iPhone 12 Pro (or any lidar-capable device) + Record3D app for RGBD demos</li>
+<li>AR Code iOS app + Blender for .obj mesh scanning</li>
+<li>YOLO-World for object segmentation at training/deployment time</li>
+<li>A robot arm with a known URDF and an IK solver (not included in the repo; the rlbench path uses RLBench&#x27;s <code>EndEffectorPoseViaPlanning</code>)</li>
+</ul>
+<p><strong>CPU-only verdict:</strong> Not viable. FoundationPose will not compile or run without CUDA. The diffusion model training is also GPU-only (<code>training.device: &quot;cuda:0&quot;</code> hardcoded in the config, and no CPU fallback).</p>
+<hr>
+<h2>Read-it-in-this-order — numbered file list</h2>
+<p>Read in this order to understand the full system from idea to implementation:</p>
+<ul>
+<li><code>README.md</code> — abstract, installation sequence, dataset/training/eval commands</li>
+<li><code>utils/pose<em>utils.py</code> — the SE(3) math: <code>get</em>rel<em>pose</code>, <code>calculate</em>action</code>, <code>calculate<em>goal</em>pose</code>, <code>relative<em>to</em>target<em>to</em>world</code></li>
+<li><code>utils/transform_utils.py</code> — quaternion/matrix conversion primitives used throughout</li>
+<li><code>config/simple_dp3.yaml</code> — policy hyperparameters, noise scheduler, training settings; the action shape <code>[8]</code> tells you the full output spec</li>
+<li><code>config/task/rlbench<em>multi.yaml</code> — <code>shape</em>meta</code> showing the observation dictionary structure</li>
+<li><code>env<em>rlbench</em>peract/data/collect<em>zarr</em>rlbench_peract.py</code> — how demonstrations are converted from robot state to SE(3) relative object poses stored in zarr</li>
+<li><code>utils/collect<em>utils.py</code> — <code>collect</em>narr<em>function</code> and <code>save</em>zarr</code>; see how <code>state</code>, <code>action</code>, <code>progress</code> arrays are built</li>
+<li><code>diffusion<em>policy</em>3d/dataset/rlbench<em>base</em>dataset.py</code> — <code>RLBenchBaseDataset</code>: zarr loading, <code><em>sample</em>to_data</code>, augmentation methods, normalizer fitting</li>
+<li><code>diffusion<em>policy</em>3d/model/diffusion/simple<em>conditional</em>unet1d.py</code> — <code>ConditionalUnet1D</code> and <code>ConditionalResidualBlock1D</code>; the FiLM conditioning in <code>forward()</code></li>
+<li><code>diffusion<em>policy</em>3d/policy/simple<em>dp3.py</code> — <code>SimpleDP3</code>: <code>custom</em>normalize</code>, <code>compute<em>loss</code>, <code>conditional</em>sample</code>, <code>predict_action</code></li>
+<li><code>tools/train_dp3.py</code> — <code>TrainDP3Workspace.run()</code>: the full training loop</li>
+<li><code>foundation_pose/wrapper.py</code> — <code>FoundationPoseWrapper</code>: how the mesh is loaded and the estimator is created</li>
+<li><code>env<em>rlbench/runner/rl</em>bench<em>env.py</code> — <code>CustomRLBenchEnv</code>: <code>start</em>tracking</code>, <code><em>get</em>pose<em>est</code>, <code></em>my_callback</code>; where FoundationPose results enter the loop</li>
+<li><code>env<em>rlbench/policy/dp3</em>policy.py</code> — <code>RLBenchDP3Policy</code>: the stage machine (<code>reach/grasp/move/leave/end</code>) and <code><em>get</em>sub_goal</code>; the place where diffusion output is converted to a robot action</li>
+<li><code>env<em>rlbench/runner/rlbench</em>runner.py</code> — <code>RLBenchRunner.run()</code>: the outer evaluation loop</li>
+<li><code>tools/eval_dp3.py</code> — <code>TrainDP3Workspace.eval()</code>: how the runner and policy are wired together at evaluation time</li>
+<li><code>env<em>real/data/prepare</em>pose.py</code> and <code>env<em>real/data/collect</em>zarr_real.py</code> — real-world data collection path using iPhone video</li>
+</ul>
+<hr>
+<p>*Written from direct source inspection. All class names, function names, file paths, and code quotes are from the actual repo files.*</p></article>
+<article class="page walk"><h1>Residual RL (From Imitation to Refinement) — code walkthrough</h1>
+<h2>What the repo is / how you&#x27;d run it</h2>
+<p><strong>Paper:</strong> &quot;From Imitation to Refinement — Residual RL for Precise Visual Assembly&quot; (Ankile et al., arXiv 2407.16677). The idea is that behavior cloning from ~50 human demonstrations gives a solid but imprecise base policy; RL then adds a thin correction layer on top, recovering closed-loop precision without collecting more demonstrations.</p>
+<p><strong>Simulator:</strong> FurnitureBench running on top of NVIDIA IsaacGym. Tasks are furniture assembly pieces (<code>one<em>leg</code>, <code>lamp</code>, <code>round</em>table</code>, <code>mug<em>rack</code>, <code>factory</em>peg_hole</code>). The sim runs up to 1024 parallel environments on a single GPU using IsaacGym&#x27;s GPU-pipeline physics.</p>
+<p><strong>Two-stage workflow:</strong></p>
+<p>Stage 1 — behavior cloning (BC) pre-training:</p>
+<pre><code>
+python -m src.train.bc +experiment=state/diff_unet task=one_leg randomness=low dryrun=false
+</code></pre>
+<p>Stage 2 — residual RL fine-tuning (the main contribution), pointing at the saved BC checkpoint:</p>
+<pre><code>
+python -m src.train.residual_ppo \
+    base_policy.wt_path=/path/to/actor_chkpt.pt \
+    env.task=one_leg env.randomness=low \
+    num_env_steps=700 \
+    debug=false
+</code></pre>
+<p>Configuration is managed by Hydra. The root config for residual RL is <code>src/config/base<em>residual</em>rl.yaml</code>; actor architecture details live in <code>src/config/actor/residual<em>diffusion.yaml</code> (or <code>residual</em>mlp.yaml</code>). Key knobs: <code>num<em>envs=1024</code>, <code>update</em>epochs=50</code>, <code>discount=0.999</code>, <code>clip<em>coef=0.2</code>, <code>residual</em>l1/l2</code> regularizers. WandB is used for experiment tracking and weight storage; <code>base<em>policy.wandb</em>id</code> or <code>base<em>policy.wt</em>path</code> must be supplied to locate the frozen base.</p>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+src/
+  train/
+    bc.py                  — BC pre-training loop (standard supervised cloning)
+    residual_ppo.py        — THE main RL fine-tuning script (entry point for stage 2)
+    residual_ppo_w_bc.py   — variant that co-trains BC alongside PPO
+    ppo.py                 — vanilla PPO baseline (no residual)
+    dagger.py              — DAgger baseline
+
+  behavior/
+    base.py                — Actor base class (normalizer, obs handling)
+    diffusion.py           — DiffusionPolicy: DDPM/DDIM-based BC actor (the typical base)
+    mlp.py                 — MLPActor: simpler MLP-based BC actor
+    residual_diffusion.py  — ResidualDiffusionPolicy: wraps DiffusionPolicy + adds ResidualPolicy
+    residual_mlp.py        — ResidualMlpPolicy: wraps MLPActor + adds ResidualPolicy
+
+  models/
+    residual.py            — ResidualPolicy: lightweight actor-critic MLP (the RL-trained head)
+    unet.py / transformer.py — diffusion backbone architectures for the base policy
+    value.py               — value head utilities
+
+  gym/
+    __init__.py            — get_env() / get_rl_env() — wraps FurnitureSimEnv / FurnitureRLSimEnv
+    env_rl_wrapper.py      — FurnitureEnvRLWrapper / RLPolicyEnvWrapper: reward clipping,
+                             episode termination logic, running reward normalization
+    observation.py         — DEFAULT_STATE_OBS key list
+
+  config/
+    base_residual_rl.yaml  — top-level Hydra config for residual PPO
+    actor/
+      residual_diffusion.yaml — ResidualPolicy hyperparameters (hidden size, action_scale=0.1)
+
+furniture-bench/           — git submodule: custom fork of FurnitureBench
+                             contains FurnitureRLSimEnv (IsaacGym GPU env) and
+                             the DiffIK controller used during rollout
+
+notebooks/
+  09_la_test_trained_residual_policy.ipynb  — interactive eval of a trained residual policy
+  14_as_residual_viz_videos.ipynb           — video visualization of residual corrections
+  00_results_plots*.ipynb                   — paper figures
+</code></pre>
+<p>The base policy (<code>DiffusionPolicy</code> / <code>MLPActor</code>) is a standard sequence-to-action BC policy with a <code>LinearNormalizer</code> that maps observations and actions to roughly [-1, 1]. The residual head (<code>ResidualPolicy</code>) is a small two-layer MLP that sits on top and is trained entirely by PPO.</p>
+<hr>
+<h2>The training loop — traced through residual_ppo.py</h2>
+<h3>1. Load and freeze the base policy</h3>
+<p><code>main()</code> (line 75) begins by resolving a base checkpoint:</p>
+<pre><code>
+# lines 146–158
+base_cfg, base_wts = get_model_from_api_or_cached(
+    cfg.base_policy.wandb_id,
+    wt_type=cfg.base_policy.wt_type,
+    ...
+)
+merge_base_bc_config_with_root_config(cfg, base_cfg)
+</code></pre>
+<p>Then it builds the composite agent:</p>
+<pre><code>
+# lines 197–202
+if cfg.base_policy.actor.name == &quot;diffusion&quot;:
+    agent = ResidualDiffusionPolicy(device, base_cfg)
+elif cfg.base_policy.actor.name == &quot;mlp&quot;:
+    agent = ResidualMlpPolicy(device, base_cfg)
+</code></pre>
+<p><code>load<em>base</em>state<em>dict(base</em>wts)</code> (line 264) loads BC weights into <code>agent.model</code> and <code>agent.normalizer</code>; no weights are loaded into <code>agent.residual_policy</code> at this point (it starts from scratch).</p>
+<p>Critically, the optimizers are constructed *only* over the residual policy&#x27;s parameters:</p>
+<pre><code>
+# lines 222–248
+optimizer_actor = optim.AdamW(
+    agent.actor_parameters,   # &lt;- property returns only residual_policy params sans &#x27;critic&#x27;
+    ...
+)
+optimizer_critic = optim.AdamW(
+    agent.critic_parameters,  # &lt;- property returns only residual_policy critic params
+    ...
+)
+</code></pre>
+<p><code>agent.actor<em>parameters</code> and <code>agent.critic</em>parameters</code> are defined in <code>ResidualDiffusionPolicy</code> / <code>ResidualMlpPolicy</code> (e.g., <code>src/behavior/residual_diffusion.py</code> lines 259–266):</p>
+<pre><code>
+@property
+def actor_parameters(self):
+    return [p for n, p in self.residual_policy.named_parameters() if &quot;critic&quot; not in n]
+
+@property
+def critic_parameters(self):
+    return [p for n, p in self.residual_policy.named_parameters() if &quot;critic&quot; in n]
+</code></pre>
+<p>Because the base policy parameters are never added to any optimizer, they receive zero gradient updates. The base is frozen by optimizer exclusion, not by <code>requires_grad=False</code>.</p>
+<h3>2. The data-collection rollout (steps<em>per</em>iteration loop, lines 347–380)</h3>
+<p>Each outer iteration collects <code>steps<em>per</em>iteration</code> (= <code>num<em>env</em>steps</code>, e.g. 700) environment steps across <code>num_envs</code> (e.g. 1024) parallel environments:</p>
+<pre><code>
+for step in range(0, steps_per_iteration):
+    # Step A: ask the frozen base what it would do
+    base_naction = agent.base_action_normalized(next_obs)
+
+    # Step B: build the residual policy&#x27;s input = [normalized_state, base_action]
+    next_nobs = agent.process_obs(next_obs)
+    next_residual_nobs = torch.cat([next_nobs, base_naction], dim=-1)
+
+    # Step C: residual policy samples a correction + its value estimate
+    with torch.no_grad():
+        residual_naction_samp, logprob, _, value, naction_mean = (
+            residual_policy.get_action_and_value(next_residual_nobs)
+        )
+
+    # Step D: combine base + scaled residual -&gt; actual action sent to sim
+    residual_naction = residual_naction_samp if not eval_mode else naction_mean
+    naction = base_naction + residual_naction * residual_policy.action_scale
+
+    action = agent.normalizer(naction, &quot;action&quot;, forward=False)
+    next_obs, reward, next_done, truncated, info = env.step(action)
+</code></pre>
+<p>The stored <code>actions[step]</code> is the *residual* action (<code>residual<em>naction</code>), not the combined action. The stored <code>obs[step]</code> is the *augmented* observation (<code>next</em>residual<em>nobs</code>). This is important for the PPO update: the policy re-evaluates its log-probability over <code>(augmented</em>obs, residual_action)</code> pairs.</p>
+<h3>3. Advantage estimation</h3>
+<p>After collecting the rollout, GAE advantages are computed (lines 470–486):</p>
+<pre><code>
+next_value = residual_policy.get_value(next_residual_nobs).reshape(1, -1).cpu()
+advantages, returns = calculate_advantage(
+    values, next_value, rewards, dones, next_done,
+    steps_per_iteration, cfg.discount, cfg.gae_lambda,
+)
+</code></pre>
+<p><code>calculate<em>advantage</code> (lines 42–67) is a standard GAE implementation with <code>discount=0.999</code> and <code>gae</em>lambda=0.95</code>.</p>
+<h3>4. PPO update on the residual policy only (lines 494–590)</h3>
+<p>For <code>update_epochs=50</code> epochs, the flat buffer is shuffled into minibatches:</p>
+<pre><code>
+_, newlogprob, entropy, newvalue, action_mean = (
+    residual_policy.get_action_and_value(mb_obs, mb_actions)
+)
+logratio = newlogprob - mb_logprobs
+ratio = logratio.exp()
+
+pg_loss1 = -mb_advantages * ratio
+pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - cfg.clip_coef, 1 + cfg.clip_coef)
+pg_loss  = torch.max(pg_loss1, pg_loss2).mean()
+
+residual_l1_loss = torch.mean(torch.abs(action_mean))
+residual_l2_loss = torch.mean(torch.square(action_mean))
+
+policy_loss = ppo_loss + cfg.residual_l1 * residual_l1_loss + cfg.residual_l2 * residual_l2_loss
+loss = policy_loss + v_loss * cfg.vf_coef
+</code></pre>
+<p>Gradients flow only through <code>residual_policy</code> (the only subgraph whose parameters are in the optimizers):</p>
+<pre><code>
+optimizer_actor.zero_grad()
+optimizer_critic.zero_grad()
+loss.backward()
+nn.utils.clip_grad_norm_(residual_policy.parameters(), cfg.max_grad_norm)
+optimizer_actor.step()
+optimizer_critic.step()
+</code></pre>
+<p>L1/L2 regularizers on <code>action_mean</code> penalize large residuals, keeping the correction small and the combined action close to what the base policy intended.</p>
+<p>An early-stop on approximate KL (<code>target_kl=0.1</code>) prevents over-updating within an epoch.</p>
+<hr>
+<h2>Where the core idea lives — base + residual combination</h2>
+<p><strong>File:</strong> <code>src/train/residual_ppo.py</code>, lines 353–368 (the rollout inner loop).</p>
+<p>The exact lines:</p>
+<pre><code>
+# Get the base normalized action
+base_naction = agent.base_action_normalized(next_obs)          # frozen base inference
+
+# Process the obs for the residual policy
+next_nobs = agent.process_obs(next_obs)
+next_residual_nobs = torch.cat([next_nobs, base_naction], dim=-1)   # augmented obs
+
+with torch.no_grad():
+    residual_naction_samp, logprob, _, value, naction_mean = (
+        residual_policy.get_action_and_value(next_residual_nobs)    # residual MLP
+    )
+
+residual_naction = residual_naction_samp if not eval_mode else naction_mean
+naction = base_naction + residual_naction * residual_policy.action_scale   # KEY LINE
+</code></pre>
+<p><code>residual<em>policy.action</em>scale = 0.1</code> (from <code>src/config/actor/residual_diffusion.yaml</code>). This hard cap means the residual can shift the action by at most ±10% of the normalized action range — deliberately limiting how far the RL correction can move from the demonstration-derived base.</p>
+<p>The augmented observation <code>[normalized<em>state, base</em>action]</code> means the residual policy always *sees* what the base intends to do, not just where the robot is. This is why the residual can learn targeted corrections (e.g., &quot;the base is about to insert but is 2 mm left; move right&quot;) rather than trying to rediscover the whole task structure from scratch.</p>
+<p><strong>Why only the residual gets gradients:</strong></p>
+<p><code>base<em>action</em>normalized()</code> is decorated <code>@torch.no<em>grad()</code> in both <code>ResidualDiffusionPolicy</code> and <code>ResidualMlpPolicy</code> (e.g., <code>residual</em>diffusion.py</code> line 157). The base inference is additionally wrapped in <code>with torch.no<em>grad():</code> in the rollout loop. The optimizers only hold references to <code>agent.actor</em>parameters</code> / <code>agent.critic<em>parameters</code>, which are filtered to <code>residual</em>policy</code> parameters exclusively. No mechanism in PyTorch&#x27;s autograd connects <code>loss.backward()</code> to the base model weights.</p>
+<p>The corresponding inference-time combination lives in <code>ResidualDiffusionPolicy.action()</code> (lines 111–143 of <code>src/behavior/residual_diffusion.py</code>):</p>
+<pre><code>
+residual = self.residual_policy.get_action(residual_nobs)  # scaled by action_scale inside get_action
+naction = base_naction + residual
+return self.normalizer(naction, &quot;action&quot;, forward=False)
+</code></pre>
+<p><code>ResidualPolicy.get_action()</code> (<code>src/models/residual.py</code> line 161):</p>
+<pre><code>
+def get_action(self, nobs: torch.Tensor) -&gt; torch.Tensor:
+    return self.actor_mean(nobs) * self.action_scale
+</code></pre>
+<p>So the scale is applied identically at train time (via <code>residual<em>naction * residual</em>policy.action<em>scale</code> in the PPO loop) and at inference time (via <code>get</em>action</code>).</p>
+<hr>
+<h2>What you&#x27;d need to run it</h2>
+<p><strong>Hard requirements:</strong></p>
+<ul>
+<li>NVIDIA GPU with CUDA support — IsaacGym Preview 4 is CUDA-only; there is no CPU physics backend.</li>
+<li>Linux (Ubuntu 18.04 / 20.04 tested). IsaacGym does not run on Windows or macOS.</li>
+<li>The custom FurnitureBench fork (included as a git submodule under <code>furniture-bench/</code>). It must be installed with <code>pip install -e furniture-bench/</code>.</li>
+<li>IsaacGym Preview 4 (downloaded separately from NVIDIA&#x27;s developer portal, or from the project&#x27;s S3 bucket). Install with <code>pip install -e isaacgym/python</code>.</li>
+<li>Python 3.8 (pinned in the README&#x27;s conda environment).</li>
+<li>A Conda environment with the packages in <code>requirements.txt</code> plus <code>pip install -e .</code> for the project itself.</li>
+<li>WandB account (or <code>--wandb.mode=disabled</code> / <code>debug=true</code>) for tracking and weight storage.</li>
+<li>Demo data: download from <code>https://iai-robust-rearrangement.s3.us-east-2.amazonaws.com/</code> using <code>scripts/download<em>data.py</code>, set <code>DATA</em>DIR_PROCESSED</code> env var.</li>
+<li>Pre-trained BC checkpoints are available at the same S3 bucket under <code>checkpoints/bc/&lt;task&gt;/&lt;randomness&gt;/actor_chkpt.pt</code>.</li>
+</ul>
+<p><strong>CPU-only verdict:</strong> Not runnable. IsaacGym&#x27;s simulation and rendering pipeline is fully GPU-resident; there is no fallback path. Even a single-environment test would fail at import time without a CUDA device.</p>
+<p><strong>GPU memory:</strong> With <code>num<em>envs=1024</code> (the default), expect 20–40 GB VRAM for <code>one</em>leg</code>. The repo&#x27;s SLURM scripts use A100-80GB nodes. A smaller <code>num_envs</code> (e.g., 64 or 128) should work on a 16 GB card at the cost of higher gradient variance.</p>
+<hr>
+<h2>Read-it-in-this-order</h2>
+<p>A practitioner who wants to understand the full system should read files in this order:</p>
+<ul>
+<li><code>README.md</code> — installation, data download commands, BC + RL launch commands; gives the end-to-end picture in 5 minutes.</li>
+<li><code>src/config/base<em>residual</em>rl.yaml</code> — every tunable hyperparameter in one place; anchors the reading of the code.</li>
+<li><code>src/config/actor/residual<em>diffusion.yaml</code> — <code>action</em>scale=0.1</code>, hidden sizes, init logstd; defines the residual policy&#x27;s architectural footprint.</li>
+<li><code>src/models/residual.py</code> — <code>ResidualPolicy</code> class: <code>build<em>mlp</code>, <code>get</em>action<em>and</em>value</code>, <code>get<em>value</code>, <code>get</em>action</code>; the RL-trained component in isolation.</li>
+<li><code>src/behavior/base.py</code> — <code>Actor</code> base class; understand <code>LinearNormalizer</code>, <code>obs<em>horizon</code>, <code>action</em>horizon</code>, and the observation preprocessing shared by all policies.</li>
+<li><code>src/behavior/diffusion.py</code> — <code>DiffusionPolicy</code>: DDPM/DDIM inference via <code><em>normalized</em>action()</code>; how the base policy produces a chunk of actions for an observation window.</li>
+<li><code>src/behavior/residual<em>diffusion.py</code> — <code>ResidualDiffusionPolicy</code>: how the base and residual are wired together; <code>load</em>base<em>state</em>dict</code>, <code>base<em>action</em>normalized</code>, <code>process<em>obs</code>, <code>action</code>, <code>actor</em>parameters</code> / <code>critic_parameters</code> properties.</li>
+<li><code>src/gym/<em>_init</em><em>.py</code> — <code>get</em>rl<em>env()</code>: how <code>FurnitureRLSimEnv</code> is instantiated with <code>num</em>envs</code>, <code>ctrl<em>mode=&quot;diffik&quot;</code>, <code>action</em>type=&quot;pos&quot;</code>.</li>
+<li><code>src/gym/env<em>rl</em>wrapper.py</code> — <code>RLPolicyEnvWrapper</code>: episode termination logic (reward &gt; 0 = assembly success), reward normalisation via <code>RunningMeanStdClip</code>.</li>
+<li><code>src/train/residual_ppo.py</code> — <code>main()</code>: the complete training loop; read after understanding all the above so each line is immediately interpretable.</li>
+<li><code>src/train/bc.py</code> — BC pre-training loop; useful to understand what the base policy has already learned before RL starts.</li>
+<li><code>notebooks/09<em>la</em>test<em>trained</em>residual_policy.ipynb</code> — interactive sanity check; shows how to load a saved checkpoint and run evaluation rollouts manually.</li>
+<li><code>notebooks/14<em>as</em>residual<em>viz</em>videos.ipynb</code> — visualizes the magnitude and direction of residual corrections over a rollout; the best way to build intuition for what the RL head actually learns to do.</li>
+</ul></article></div>
+  <footer>Repos cloned under analysis/detail/cheapdata/code/ (gitignored — GPU/CUDA needed to run) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

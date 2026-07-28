@@ -1,0 +1,1641 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Getting several robots to work together — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive · with code</div>
+  <h1>Getting several robots to work together</h1>
+  <p>Coordinating a team of robots — allocating tasks, planning missions, avoiding collisions, and letting useful group behavior emerge. This page: the idea, the key 2025 papers with their real code, and hands-on walkthroughs of two cloned codebases.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Getting several robots to work together</h1>
+<p><em>145 papers · decide — how a team of robots picks who does what and stays coordinated</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">The hard part of multi-robot work is not the robots — it is the coordination. One robot decides its own next move and lives with the consequences. Ten or ten thousand robots must all know what the others are planning, detect when a plan breaks, and regroup without a person telling each one what to do. The central tension running through this group of papers is simple: <strong>coordination cannot live on a single central server, and yet it cannot work if every robot acts alone</strong>. A plan that works on paper — robot A picks up the object while robot B clears the path — will fail the moment robot B gets stuck or the network hiccups. The field's answer is converging on <strong>hybrid strategies: use a central LLM to propose a sensible decomposition once, then drop the work to distributed solvers or learned policies that can handle real-time failures without calling home</strong>. Everything below is people testing where that boundary belongs.</p>
+<p style="margin:0 0 8px"><strong>Five distinct angles of attack:</strong></p>
+<ul style="margin:0 0 12px">
+<li><strong>① Propose once, execute distributed.</strong> <em>COHERENT</em> uses an LLM to break a task into robot-specific assignments, then watches each robot execute and feeds failures back to the model for re-planning. <em>DELTA</em> splits reasoning across two layers: LLM proposes sub-goals, a classical planner fills in verified action sequences, no LLM running live on the robot. <em>LaMMA-P</em> adds a logic checker so proposed plans are guaranteed feasible before robots move.</li>
+<li><strong>② Move thousands without crashing.</strong> <em>SIGMA</em> uses mathematics (sheaf theory) to let each robot act as though it sees the global picture using only local information. <em>Deploying Ten Thousand Robots</em> learns to copy a fast classical planner and runs it on GPU for throughput classical methods cannot match. A learned planner with a collision-fixer outperforms both, trading bulk compute for post-hoc correction.</li>
+<li><strong>③ Hold formation, reshape on command.</strong> <em>Coordinated Multi-Robot Navigation with Formation Adaptation</em> layers graph neural networks to decide reshaping with rigid collision avoidance at the bottom. <em>ZeroCAP</em> interprets a spoken instruction ("form a ring") by combining vision-language and language models to compute target positions with zero task-specific training.</li>
+<li><strong>④ Mix people and robots as one team.</strong> <em>Adaptive Task Allocation in Multi-Human Multi-Robot Teams</em> trains two coupled learning loops: who-does-what at the top, real-time reassignment at the bottom when someone is slow or gone. <em>Hypergraph-Based Coordinated Task Allocation</em> models people, robots, and locations in one graph, training all three to pick tasks together. <em>TriHRCBot</em> solves the specific case of a robot holding an object steady for two people simultaneously.</li>
+<li><strong>⑤ Survive network and robot failure.</strong> <em>Cooperative Distributed Model Predictive Control</em> runs the planning algorithm on every robot at once, using a message-passing trick (ADMM) so neighbors trade answers until all agree — no central server needed. <em>FogROS2-PLR</em> floods requests to multiple cloud servers and uses whichever reply arrives first, treating latency as the constraint, not reliability.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> the field is learning to separate <em>what should happen</em> (LLM or logic layer) from <em>how to handle the mess when reality diverges</em> (distributed execution, learned shortcuts, failure detection). No single paper has solved true real-time coordination of thousands of diverse robots in dynamic environments, but the 2025 work is productively messy: tighter feedback loops, better logic checkers, faster learned solvers, and growing acceptance that some work belongs distributed and some belongs in the cloud. <strong>Still open:</strong> teams recovering from cascading multi-robot failures without re-planning; truly scalable collision-free paths for more than ten thousand robots; and coordination layers that work as fast as the environment changes — environments that rewrite themselves in seconds still overwhelm the fastest planning systems.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>A single robot already has a hard job. It must read its sensors, figure out where it is, decide what to do next, and then move its body — all in real time, in a world that keeps changing. Now multiply that by ten, or a hundred, or ten thousand robots that must all share a single goal.</p>
+<p>The new difficulties are not just more of the same. They are different in kind.</p>
+<p>First, the team may be made of different robot types. A drone can fly over a wall; a wheeled robot cannot. A robot arm can pick up a box; a drone cannot. When a shared task needs several of these steps in order — fly here, pick this up, carry it there — someone or something must figure out who does which part. Do it wrong and the whole job stalls.</p>
+<p>Second, each robot can only see a small patch of the world at once. What one robot learns — an obstacle just appeared, a path is blocked — the others do not automatically know. The team must share information, but passing everything to everyone all the time is too slow and uses too much radio bandwidth.</p>
+<p>Third, when a task has many steps across many robots, the number of possible orderings and assignments grows extremely fast. A plan that looks fine at the top level can turn out to be physically impossible once you check the details: the robot assigned to step four is already busy with step three and cannot be in two places at once.</p>
+<p>Fourth, real robots fail. A battery dies. A sensor glitches. A drone falls. The rest of the team must notice this and keep going — without a person stepping in every time.</p>
+<p>All of this connects directly to the central problem every robot faces: the world is messy and incomplete, time is short, and bodies are fragile. One robot managing its own slice of reality is already hard. A team that must coordinate slices is harder by an order of magnitude, because a mistake by one robot can cascade and ruin the work of every other.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Using a language model to divide and assign work</h3>
+<p>Several papers take a large language model (LLM) — the same kind of system behind chat tools — and use it as a coordinator that reads a plain-language mission description and breaks it into smaller jobs, one for each robot. The key insight is that LLMs already know a great deal about tasks and sequences from the text they were trained on, so they can produce sensible splits without being programmed with every possible rule.</p>
+<p>The difficulty is that language models do not automatically know what is physically possible. Left unchecked, they produce plans that sound fine but cannot be carried out — a robot assigned to lift something it cannot reach, or two robots sent to the same place at the same time. The field&#x27;s answer is to pair the LLM with a second system that checks feasibility. In <strong>COHERENT</strong>, the LLM proposes a plan, each robot tries its part, and reports back what worked and what did not, so the LLM can revise. In <strong>LaMMA-P</strong>, the LLM hands its assignments to a logic planner (PDDL) that finds step-by-step actions only if they are actually valid. <strong>DELTA</strong> does something similar: the LLM sets sub-goals one at a time while a classical planner fills in the low-level moves, keeping the LLM away from physics it cannot reliably reason about. <strong>YOLO-MARL</strong> takes a different angle — ask the LLM once before training starts to write out strategies and helper functions, then let the robots train using those written rules without calling the model again during the whole learning process, which is much faster.</p>
+<h3>Moving many robots without collisions</h3>
+<p>Getting dozens or thousands of robots to move through a shared space without hitting each other is its own hard problem, separate from who does what. Each robot&#x27;s path must not cross another&#x27;s at the same moment, and when plans conflict the system must resolve the conflict fast.</p>
+<p><strong>SILLM</strong> trains a neural network to copy the move decisions of a classical search-based planner on many scenarios at once, adds a way for nearby robots to share information, and runs on a graphics processor so it can plan for ten thousand robots in parallel — something classical methods cannot do at speed. <strong>SIGMA</strong> uses a branch of mathematics (sheaf theory) that describes how each robot&#x27;s local view of the world connects to every other robot&#x27;s view; a neural network then lets each robot act as though it can see the bigger picture, even though it can only see a small area. <strong>Work Smarter Not Harder</strong> takes a simpler path: a small neural network learns from a good classical planner, and a lightweight collision-fixer checks and corrects any one-step conflict in the network&#x27;s output before it actually happens — and this simple setup outperforms far more elaborate learned methods.</p>
+<h3>Holding a formation and reshaping it</h3>
+<p>A group of robots often needs to move as a unit — a triangle, a line, a ring — while still fitting through narrow gaps and avoiding obstacles. The formation shape that works in open ground may be wrong for a corridor. <strong>Coordinated Multi-Robot Navigation with Formation Adaptation</strong> handles this with two layers of control: one layer uses a graph neural network to decide when and how to reshape the group, while each robot independently steers itself and avoids collisions at the lower layer. A spring-damper model (borrowed from physics) makes the shape change smooth rather than abrupt. <strong>ZeroCAP</strong> handles the related task of placing robots into a shape that fits a spoken command — &quot;form a ring around that object&quot; — by combining a vision-language model that understands the scene with a language model that interprets the instruction, then computing target positions for each robot without any task-specific training.</p>
+<h3>Splitting jobs across a mixed team including people</h3>
+<p>Some teams are not all robots. A person and several robots must share a workspace and divide tasks in real time. When someone on the team is slower, or unavailable, or the task changes mid-way, the assignment must be updated. <strong>Adaptive Task Allocation in Multi-Human Multi-Robot Teams</strong> uses a two-level learning system: the top level assigns tasks based on who is best at what; the bottom level watches for changes and reassigns when needed. <strong>Hypergraph-Based Coordinated Task Allocation</strong> models robots, people, and task locations all together as a hypergraph — a kind of graph where one connection can link several nodes at once — and trains the robots to pick tasks and avoid people at the same time, using a single shared learning process. <strong>TriHRCBot</strong> focuses on the very specific case of a robot holding an object for two people simultaneously, watching both with cameras and continuously moving the object to a spot where both can reach it.</p>
+<h3>Running the plan when the network or a robot fails</h3>
+<p>A robot team that needs a central server to function will stop the moment that server is unavailable. Several papers remove that single point of failure. <strong>Cooperative Distributed Model Predictive Control</strong> has each robot solve the shared control problem on its own chip and trade partial answers with neighbors using a mathematical splitting method (ADMM) until all robots agree — no central computer needed. <strong>FogROS2-PLR</strong> handles unreliable networks by sending each computation request to several cloud servers over several paths at once and using whichever answer arrives first, throwing the slower ones away.</p>
+<h2>Where it stands</h2>
+<p>Language models have made it much easier to write a sensible first plan for a mixed robot team from plain instructions, especially when paired with a logic checker that catches impossible steps. Moving many robots without collisions has improved sharply, with learned methods now approaching classical planners in quality and beating them in speed at large scale. Formation control and reshaping in real environments works in tested settings. What remains hard: teams that must reorganize themselves fully after multiple failures at once, teams that are much larger than tested so far (the jump from a hundred to ten thousand is still not smooth for many methods), and coordination in dynamic spaces where the environment changes faster than any plan can keep up with.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">COHERENT: Collaboration of Heterogeneous Multi-Robot System </td><td>ICRA</td><td><a href="https://github.com/MrKeee/COHERENT" target="_blank" rel="noopener">MrKeee/COHERENT</a></td><td class="mono">main.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">DELTA: Decomposed Efficient Long-Term Robot Task Planning Us</td><td>ICRA 2025</td><td><a href="https://github.com/boschresearch/DELTA" target="_blank" rel="noopener">boschresearch/DELTA</a></td><td class="mono">prompt.py</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">LaMMA-P: Generalizable Multi-Agent Long-Horizon Task Allocat</td><td>ICRA</td><td><a href="https://github.com/tasl-lab/LaMMA-P" target="_blank" rel="noopener">tasl-lab/LaMMA-P</a></td><td class="mono">scripts/pddlrun_llmseparate.py</td><td><span class="run">api</span></td></tr>
+<tr><td class="tt">Enhancing Multi-Agent Systems via Reinforcement Learning wit</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Generalized Mission Planning for Heterogeneous Multi-Robot T</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">api</span></td></tr>
+<tr><td class="tt">Escaping Local Minima: Hybrid Artificial Potential Field wit</td><td>ICRA 2025</td><td>—</td><td class="mono">local_minima_detector.py (rule-based) + transformer_switch.py (learned encoder)</td><td><span class="run">sim</span></td></tr>
+<tr><td class="tt">Adaptive Task Allocation in Multi-Human Multi-Robot Teams Un</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">Realizing Emergent Collective Behaviors Through Robotic Swar</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">sim</span></td></tr>
+<tr><td class="tt">Deploying Ten Thousand Robots: Scalable Imitation Learning f</td><td>ICRA</td><td><a href="https://github.com/DiligentPanda/Scalable-Imitation-Learning-for-LMAPF" target="_blank" rel="noopener">DiligentPanda/Scalable-Imitation-Learning-for-LMAPF</a></td><td class="mono">light_malib/envs/LMAPF/env.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">SIGMA: Sheaf-Informed Geometric Multi-Agent Pathfinding</td><td>ICRA 2025</td><td><a href="https://github.com/marmotlab/SIGMA" target="_blank" rel="noopener">marmotlab/SIGMA</a></td><td class="mono">model.py</td><td><span class="run">gpu</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>COHERENT: Collaboration of Heterogeneous Multi-Robot System with Large Language Models</h1>
+<p>ICRA 2025 · 14 citations · llm-task-allocation</p>
+<h2>What it does</h2>
+<p>A language model breaks down a complex task into subtasks and assigns each to the right robot type (drone, legged robot, or arm), then watches as each robot acts and reports back, adjusting the plan in a loop until the task is done. This solves the problem that simpler LLM planners only work on teams of identical robots doing simple tasks.</p>
+<p>Sub-approach: <strong>llm-task-allocation</strong> — a centralized LLM decomposes and allocates tasks across a heterogeneous robot team.</p>
+<h2>The method, in detail</h2>
+<p><strong>Input and setup:</strong> You give the system a task description (e.g., &quot;fetch the apple from the table and place it on the shelf&quot;), a description of each robot&#x27;s capabilities (quadrotor can fly and grasp, legged robot can climb stairs, robotic arm can reach high), and a scene representation as a graph (facts like &quot;apple is on coffee table&quot;).</p>
+<p><strong>Proposal step:</strong> GPT-4 (specifically gpt-4-0125-preview) acts as the centralized task assigner. It receives a composite prompt containing the task, robot capabilities, scene facts, and a dialogue history of recent iterations (the system keeps only the last five loops to stay efficient). GPT-4 reads all this and outputs a decomposition: subtasks assigned to specific robot types, e.g., &quot;quadrotor: fly to kitchen, legged_robot: fetch apple from table, arm: place apple on shelf.&quot;</p>
+<p><strong>Execution step:</strong> Each robot executor (also using GPT-4) receives its assigned subtask, its own action list (a predefined set of feasible actions for the current state), and partial observations of its environment. It picks one action to execute from that list, e.g., selecting &quot;[grab] apple&quot; from actions like \[move\], \[grab\], \[release\].</p>
+<p><strong>Feedback step:</strong> After acting, each robot reports self-reflection feedback to the task assigner, categorizing what happened: (1) failure (wrong step, wrong assignment, or the robot cannot execute), (2) success with partial progress (subtask partially done, needs more steps), or (3) success complete (subtask fully done).</p>
+<p><strong>Adjustment step:</strong> The task assigner reads all the feedback, appends it to its dialogue history, and generates a new proposal. The cycle repeats until all subtasks succeed.</p>
+<p><strong>The trick that makes it work:</strong> The system does not try to plan everything at once (which LLMs are bad at). Instead, it uses a tight feedback loop: propose one layer of subtasks, see what breaks, adjust, repeat. This keeps the reasoning focused and lets each robot report actionable information.</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> <a href="https://github.com/MrKeee/COHERENT" target="_blank" rel="noopener">https://github.com/MrKeee/COHERENT</a></p>
+<p><strong>Language/framework:</strong> Python 3.10; built on top of NVIDIA Omniverse Isaac Sim 2022.2.0 (a physics simulation engine); custom OmniGibson wrapper for robot simulation; ROS1 Noetic for robot middleware.</p>
+<p><strong>Repo structure:</strong></p>
+<ul>
+<li><code>src/experiment/</code> — implementations of COHERENT and baseline methods</li>
+<li><code>OmniGibson/</code> — modified simulation environment (core physics)</li>
+<li><code>OmniGibson/Benchmark/</code> — 100 task scenarios, robot assets, 5 real-world scenes (apartment, grocery store, restaurant)</li>
+<li><code>main.py</code> — entry point for running experiments</li>
+<li><code>mcts_agent.py</code> — Monte Carlo Tree Search variant (optional advanced method)</li>
+<li><code>args.py</code> — configuration, OpenAI API keys, environment/task selection</li>
+<li><code>sim.py</code> — simulator interface</li>
+<li><code>requirement.txt</code> — Python dependencies</li>
+</ul>
+<p><strong>First file to open:</strong> <code>main.py</code> (entry point). Then read <code>args.py</code> to understand configuration. Then look at the prompt templates in <code>src/experiment/</code> to see how GPT-4 is prompted for task assignment and execution.</p>
+<p><strong>Dependencies:</strong> OpenAI API (for GPT-4 calls; requires API key and costs money per token), NVIDIA Isaac Sim 2022.2.0 (proprietary, must be installed separately), standard Python packages (listed in requirement.txt).</p>
+<p><strong>Run command:</strong></p>
+<pre><code>
+python main.py --env env0 --task 2 --rounds 1 --openai_key YOUR_API_KEY
+python mcts_agent.py --env env0 --task 2 --rounds 1  # for MCTS variant
+</code></pre>
+<p>The <code>--rounds</code> argument is the number of PEFA loops to run before stopping (default 1).</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with the arXiv paper (<a href="https://arxiv.org/abs/2409.15146" target="_blank" rel="noopener">https://arxiv.org/abs/2409.15146</a>) abstract and Section 3 (Method) to understand the PEFA loop conceptually. Then read <code>main.py</code> to see how the simulator is set up and how robot states are fed to GPT-4. The prompt templates in <code>src/experiment/</code> show exactly what text is sent to GPT-4 at each step.</p>
+<p><strong>Code difficulty:</strong> Medium. The simulation setup is complex (you need to understand Isaac Sim and OmniGibson), but the core task-assignment logic is straightforward: construct a prompt, call OpenAI API, parse the response, wait for robot feedback, repeat. The hardest part is understanding how robot states and scene graphs are converted into prompt text.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box:</strong> No, this cannot run on CPU.</p>
+<p><strong>Why:</strong></p>
+<ul>
+<li><strong>Simulator mandatory:</strong> NVIDIA Omniverse Isaac Sim 2022.2.0 requires a modern NVIDIA GPU with CUDA support. The physics simulation for multiple robots in complex scenes is GPU-only.</li>
+<li><strong>API dependency:</strong> Every prompt sent to GPT-4 costs money and requires internet access to OpenAI&#x27;s servers. You cannot run this offline.</li>
+<li><strong>Dataset/benchmark:</strong> The system ships with 100 pre-built tasks in the BEHAVIOR-1K scene database (apartments, grocery stores). If you add new tasks, you must manually design them in Isaac Sim.</li>
+</ul>
+<p><strong>Minimum requirements:</strong></p>
+<ul>
+<li>NVIDIA GPU (RTX 2080 or better recommended for smooth simulation of multiple robots)</li>
+<li>Ubuntu 20.04 with ROS1 Noetic installed</li>
+<li>CUDA toolkit and cuDNN</li>
+<li>OpenAI API account with GPT-4 access and sufficient credits</li>
+<li>50+ GB disk space for Isaac Sim and simulation assets</li>
+</ul>
+<p><strong>Realistic scenario:</strong> You can run simple validation experiments (1-2 task scenarios) in under 1 hour if you have the hardware. Full evaluation on all 100 benchmark tasks takes many hours and costs hundreds of dollars in OpenAI API calls.</p></article>
+<article class="page" id="gp1"><h1>DELTA: Decomposed Efficient Long-Term Robot Task Planning Using Large Language Models</h1>
+<p>ICRA 2025 · 12 citations · LLM-based task decomposition and sequential planning</p>
+<h2>What it does</h2>
+<p>DELTA solves the problem of long-horizon robot planning by having an LLM break a complex task into a sequence of simpler sub-goals, which are then solved one at a time by a traditional automated planner. Instead of asking the LLM to generate every single action (which causes hallucinations), DELTA uses the LLM only for high-level reasoning and delegates low-level action sequencing to a formal planner. This is the <strong>llm-task-allocation</strong> sub-approach: the LLM decomposes and allocates sub-tasks, leaving the planner to handle the details.</p>
+<h2>The method, in detail</h2>
+<p>DELTA&#x27;s pipeline has five sequential steps:</p>
+<p><strong>1. Domain Generation.</strong> The system takes a natural-language description of the robot&#x27;s capabilities and the environment rules, then prompts an LLM (GPT or Llama) to generate a formal PDDL domain file—a declarative specification of what actions are possible and what their preconditions and effects are. This is a one-shot prompt; no training happens here.</p>
+<p><strong>2. Scene Graph Pruning.</strong> The environment is represented as a 3D scene graph (3DSG), which captures objects and their spatial relationships. The LLM is prompted to read this graph and prune away irrelevant objects—if the task is &quot;pick up a fork,&quot; the LLM filters out furniture that has nothing to do with the task, leaving only objects, receptacles, and surfaces that matter.</p>
+<p><strong>3. Problem Generation.</strong> Given the pruned scene graph and the task goal in natural language, the LLM generates a PDDL problem file—a concrete specification of the initial state (which objects are where) and the goal condition (what state must be reached). Again, one-shot prompting; the LLM grounds its knowledge into the specific environment snapshot.</p>
+<p><strong>4. Goal Decomposition.</strong> The LLM is prompted to break the overall goal into an ordered sequence of intermediate sub-goals. For example, &quot;clear the table&quot; might decompose into: (1) locate all dirty dishes, (2) move each dish to the sink, (3) fill sink with water, (4) wash dishes, (5) dry and return. The LLM generates these as textual sub-goals.</p>
+<p><strong>5. Autoregressive Sub-task Planning.</strong> For each sub-goal in sequence, the system runs a classical automated task planner (such as FastDownward or similar) on the PDDL domain and a new PDDL problem derived from that sub-goal. The planner generates a concrete action sequence. If planning fails or the planner finds the sub-goal infeasible, this failure is reported; otherwise, the plan for that sub-goal is executed (in simulation or on the real robot), and the system moves to the next sub-goal.</p>
+<p><strong>The trick that makes it work:</strong> By decomposing via LLM and then delegating to a classical planner, DELTA avoids the LLM&#x27;s tendency to hallucinate infeasible action sequences. The LLM&#x27;s strength (understanding high-level task intent) is separated from the planner&#x27;s strength (finding provably feasible, collision-free, physics-respecting action sequences). Scene graphs ground the LLM&#x27;s reasoning to actual environment state, preventing the LLM from making unfounded assumptions.</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> <a href="https://github.com/boschresearch/DELTA" target="_blank" rel="noopener">https://github.com/boschresearch/DELTA</a></p>
+<p><strong>Language/Framework:</strong> Python; uses OpenAI GPT (Azure OpenAI API) or Hugging Face Llama for LLM calls; integrates with automated task planners (implementation details are in the repo).</p>
+<p><strong>Repo structure:</strong></p>
+<ul>
+<li><code>llm/</code> — LLM integration and prompting logic</li>
+<li><code>scripts/</code> — automation and experiment runner scripts</li>
+<li><code>data/</code> — benchmark domains and problems</li>
+<li><code>baselines/</code> — comparative baseline implementations</li>
+<li><code>delta.py</code> — main entry point for running experiments</li>
+<li><code>planner.py</code> — task planning logic and planner interface</li>
+<li><code>prompt.py</code> — LLM prompt templates for domain/problem generation</li>
+<li><code>eval.py</code> — evaluation and result analysis</li>
+<li><code>requirements.txt</code> — Python dependencies</li>
+<li><code>README.md</code> — setup instructions</li>
+</ul>
+<p><strong>First file to open:</strong> Start with <code>README.md</code> for setup instructions (Azure OpenAI API configuration, Hugging Face Llama access), then read <code>delta.py</code> to see the overall control flow, then dive into <code>prompt.py</code> to see the exact LLM prompts used for each of the five stages.</p>
+<p><strong>Dependencies:</strong> Python 3.7+; OpenAI API key (or Hugging Face Llama model access); a classical task planner is likely integrated or called as a subprocess. The repo likely has a <code>requirements.txt</code> listing PyYAML, requests, and planning-related packages.</p>
+<p><strong>Simulator/Dataset/GPU:</strong> No GPU required for the core algorithm, but LLM inference (GPT or Llama) has its own computational cost. The benchmark includes 100 long-horizon household tasks in a simulated AI2-THOR 3D environment; you do not need to run a real robot, but the method is designed to work with real robots once plans are generated.</p>
+<p><strong>How to run:</strong> <code>python delta.py -h</code> to see options, then select a domain (household tasks), a problem, and which LLM to use. The system generates PDDL files, calls the planner, and logs results to the <code>result/</code> folder. No training loop; it is a zero-shot/one-shot prompting method.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with the GitHub <code>README.md</code> for the big picture. Then read the actual ICRA paper abstract and introduction to understand the problem and why five-stage decomposition helps. Then open <code>prompt.py</code> to see the exact natural-language prompts sent to the LLM for each stage—this is where the intellectual work lives. Finally, skim <code>delta.py</code> to see how the stages are orchestrated and how the planner is called.</p>
+<p><strong>Code difficulty:</strong> Moderate. The core logic is relatively straightforward—call LLM, parse response, call planner, check success—but understanding the domain-specific prompt engineering and the planner&#x27;s PDDL interface requires some familiarity with task planning (PDDL syntax, planner APIs). If you know Python, PDDL, and have used an OpenAI API before, the code is readable. If not, expect to spend time learning PDDL syntax and how FastDownward or similar planners work.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box:</strong> Mostly yes, with caveats. The algorithm itself (LLM prompting + classical planning) runs on CPU. However, the bottleneck is LLM inference: if you use GPT via Azure OpenAI, you need an API key and internet connectivity; if you use Llama locally, you need enough VRAM to load the model (7B or 13B parameter models are feasible on a decent GPU, or use CPU inference which is slow). Classical planners like FastDownward are fast on CPU.</p>
+<p><strong>Specific requirements:</strong></p>
+<ul>
+<li><strong>LLM API:</strong> OpenAI GPT (paid API, requires key) or local Llama (requires Hugging Face access; local inference is free but slower).</li>
+<li><strong>Planner:</strong> Likely uses FastDownward or similar; CPU-friendly; no GPU needed.</li>
+<li><strong>Scene graphs:</strong> If you use the AI2-THOR benchmark, you need to render 3D scenes (CPU possible but slow; GPU recommended for throughput, not required for correctness).</li>
+<li><strong>No real robot needed</strong> to evaluate the method—simulation is sufficient.</li>
+</ul>
+<p><strong>Feasibility:</strong> The method is runnable on CPU-only if you accept network calls to GPT (+ cost) or if you run a small Llama model locally. For full reproduction of the 100-task benchmark, having a GPU for scene rendering would speed things up, but the core pipeline works without one.</p></article>
+<article class="page" id="gp2"><h1>LaMMA-P: Generalizable Multi-Agent Long-Horizon Task Allocation and Planning with LM-Driven PDDL Planner</h1>
+<p>ICRA · 10 citations · llm-task-allocation</p>
+<h2>What it does</h2>
+<p>LaMMA-P combines a large language model with a classical logic planner (PDDL) to break down complex, multi-step household tasks and automatically assign each piece to the right robot in a heterogeneous team. The LLM handles high-level reasoning about what needs to happen; the logic planner converts those decisions into concrete, verifiable action sequences each robot can execute. This is a hybrid approach that avoids the hallucinations of pure LLM planning while keeping the flexibility LLMs bring to natural language understanding.</p>
+<p>Sub-approach: <strong>llm-task-allocation</strong></p>
+<h2>The method, in detail</h2>
+<p>The system runs as a pipeline with five steps:</p>
+<p><strong>1. Task Decomposition (Precondition Identifier):</strong> The LLM receives the raw task description (e.g., &quot;Put the egg in the fridge&quot;) in a few-shot prompt that teaches it to output structured subtasks. For each subtask, the model identifies preconditions (e.g., the robot must reach the egg first) and expected effects (e.g., egg is now in hand). The key insight is that LLMs often generate sensible action sequences better than classical relaxed planning heuristics, because they have seen countless examples of real-world task flows.</p>
+<p><strong>2. Task Allocation:</strong> A dedicated module matches each decomposed subtask to the right robot based on its capabilities (a quadrotor can pick things up from high shelves; a legged robot can navigate rough terrain). The system also identifies which subtasks can run in parallel to speed up overall execution.</p>
+<p><strong>3. PDDL Problem Generation:</strong> Each allocated subtask becomes a formal Planning Domain Definition Language problem. Objects (Robot, Egg, Plate, Fridge) are declared with types; the initial state specifies where each object is; the goal specifies what must be true at the end (egg inside fridge). This formal structure is what lets the classical planner reason with mathematical certainty.</p>
+<p><strong>4. Fast Downward Planning:</strong> The Fast Downward planner takes the PDDL problem and produces a guaranteed collision-free, feasible sequence of concrete actions (e.g., Move(Robot, Kitchen), Pickup(Egg), Move(Robot, Fridge), Open(Fridge), Place(Egg, Fridge)). Classical planners are slow for very large problems, but excellent at finding correct solutions for medium-scale ones.</p>
+<p><strong>5. Validation and Iterative Refinement:</strong> The generated plan is checked against the domain rules. If it fails validation (e.g., the robot tries to pick up an object it cannot reach), the LLM is asked to regenerate the subtasks with corrected preconditions. This loop repeats until a valid plan emerges.</p>
+<p><strong>The specific trick:</strong> Most systems choose either pure LLM planning (fast, flexible, but often infeasible) or pure classical planning (slow, correct, but rigid). LaMMA-P structures LLM outputs so they fit exactly into PDDL format, gaining LLM flexibility for reasoning *and* classical planner correctness for execution. The LLM becomes a high-level decomposer; the logic planner becomes the low-level verifier and action generator. Neither the LLM nor the planner operates alone.</p>
+<h2>The code</h2>
+<p><strong>Repository URL:</strong> <a href="https://github.com/tasl-lab/LaMMA-P" target="_blank" rel="noopener">https://github.com/tasl-lab/LaMMA-P</a></p>
+<p><strong>Language/Framework:</strong> Python 3.9+; integrates OpenAI API (GPT-3.5-turbo, GPT-4o), Fast Downward planner (classical AI planning), and AI2-THOR (3D household simulation).</p>
+<p><strong>Repository structure:</strong></p>
+<ul>
+<li><code>scripts/</code> — Main execution scripts (pddlrun<em>llmseparate.py for PDDL generation, execute</em>plan.py for task execution)</li>
+<li><code>resources/</code> — Robot definitions and PDDL domain files (the rules that define what each robot can do)</li>
+<li><code>data/</code> — Test datasets and the MAT-THOR benchmark (household tasks at two difficulty levels)</li>
+<li><code>downward/</code> — Fast Downward planner (included as a Git submodule; must be built separately)</li>
+<li><code>docs/</code> — Documentation and images</li>
+</ul>
+<p><strong>Specific file to open first:</strong> <code>README.md</code> — outlines setup, dependencies, and the quickstart workflow (generate PDDL plans, then execute).</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>OpenAI API key (for LLM calls; GPT-3.5-turbo is cheaper, GPT-4o is more capable)</li>
+<li>Fast Downward planner (included as submodule; requires compilation)</li>
+<li>AI2-THOR simulator (requires download)</li>
+<li>Python packages in requirements.txt (likely includes numpy, pyyaml, etc.)</li>
+</ul>
+<p><strong>What it needs to run:</strong></p>
+<ul>
+<li><strong>Simulator:</strong> Yes — AI2-THOR is mandatory for testing plans in simulated household environments</li>
+<li><strong>Dataset:</strong> Yes — MAT-THOR benchmark (100 tasks at two difficulty levels) is in <code>data/final_test/</code></li>
+<li><strong>GPU:</strong> Not strictly required, but beneficial for LLM inference speed; Fast Downward runs on CPU</li>
+<li><strong>API key:</strong> Yes — OpenAI API key for GPT calls (costs money per inference)</li>
+</ul>
+<p><strong>How to run it:</strong> (from README quickstart)</p>
+<ul>
+<li>Install dependencies: <code>pip install -r requirements.txt</code></li>
+<li>Set OpenAI API key as environment variable</li>
+<li>Run PDDL plan generation: <code>python scripts/pddlrun<em>llmseparate.py --task &lt;task</em>description&gt;</code></li>
+<li>Execute generated plans in AI2-THOR: <code>python scripts/execute<em>plan.py &lt;plan</em>file&gt;</code></li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li>The <code>README.md</code> for the end-to-end workflow</li>
+<li>The arXiv paper (<a href="https://arxiv.org/abs/2409.20560" target="_blank" rel="noopener">https://arxiv.org/abs/2409.20560</a>) Sections 3–4 for the algorithm pseudocode and prompt engineering details</li>
+<li><code>scripts/pddlrun_llmseparate.py</code> — the main orchestrator that calls the LLM, generates PDDL, and runs Fast Downward</li>
+</ul>
+<p><strong>How hard is the code to follow:</strong></p>
+<ul>
+<li><strong>Medium difficulty.</strong> The orchestration is straightforward (call LLM → generate PDDL → call planner → validate). The tricky part is understanding PDDL syntax if you have never seen it before. PDDL is a declarative logic format, not a programming language; reading a domain file requires patience but is doable. The prompt engineering (what exactly to ask the LLM) is not in the code itself — it is embedded in string templates; you have to trace through the code to find all the prompts. The Fast Downward planner is a compiled binary, so you cannot read its source easily, but you do not need to — it is a black box that consumes PDDL and returns a plan.</li>
+</ul>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box: Probably not easily.</strong></p>
+<p>Here is why:</p>
+<ul>
+<li><strong>OpenAI API is required:</strong> Every task decomposition and plan refinement makes an LLM call. You need an OpenAI API key and a valid account with credit. This is a hard dependency; there is no fallback to a local model.</li>
+<li><strong>AI2-THOR simulator is resource-intensive:</strong> While it runs on CPU, AI2-THOR is a full 3D physics engine and can be slow on weak hardware. Testing 100 tasks would take hours on a laptop.</li>
+<li><strong>Fast Downward compiles from source:</strong> The setup requires compiling Fast Downward, which involves C++ toolchain. Doable but not trivial on all systems.</li>
+<li><strong>GPU helps, not required:</strong> If you skip the AI2-THOR testing and only run the LLM + PDDL pipeline (proof-of-concept), a CPU works fine. But validating against the benchmark requires the simulator.</li>
+</ul>
+<p><strong>Verdict:</strong> Can *technically* run on CPU, but you need internet (for OpenAI API), patience (simulator is slow), and the compilation toolchain. For serious experimentation, a GPU and a fast internet connection make a huge difference. Cost: ~$5–50 depending on how many LLM calls you make.</p></article>
+<article class="page" id="gp3"><h1>Enhancing Multi-Agent Systems via Reinforcement Learning with LLM-Based Planner and Graph-Based Policy</h1>
+<p>ICRA 2025 · 5 citations · multi-agent-rl</p>
+<h2>What it does</h2>
+<p>LGC-MARL (LLM-based Graph Collaboration MARL) teaches a team of robots to split up complex tasks and coordinate in real time by combining an LLM planner with a graph neural network policy. The LLM breaks down high-level instructions into executable subtasks and maps which agents must work together, then each robot uses a graph-aware policy to decide its own actions without constant LLM queries. This is multi-agent reinforcement learning that inherits reasoning from LLMs but scales faster than pure LLM-based methods.</p>
+<h2>The method, in detail</h2>
+<p><strong>The LLM planner</strong> takes a natural language task description and the current environmental state (what agents see). It generates an ordered list of executable subtasks—concrete actions like &quot;go to the kitchen&quot; or &quot;pick up the object&quot;—rather than leaving decisions to chance. Crucially, it also builds a directed acyclic graph (DAG) encoding *which agents must coordinate with which others*. For example, if Agent 1 must pick up an object before Agent 2 can move it, the graph captures that dependency. If the planner generates something wrong, a second LLM instance (the critic) flags factual errors and sends feedback back, so the planner can fix its plan in a loop. This avoids long, wasteful LLM tokens spent on dialogue.</p>
+<p><strong>The action dependency graph</strong> is the core innovation. The LLM outputs this as text describing decision dependencies among agents (e.g., &quot;Agent 1&#x27;s action must precede Agent 2&#x27;s action&quot;), which gets converted to an adjacency matrix <strong>M</strong>. Each row/column represents an agent, and the matrix encodes the partial order of who acts when. Agents read this graph like a schedule.</p>
+<p><strong>The graph-based collaboration policy</strong> is where the actual robot control happens. Each agent i receives: (1) its own local observation o^i, (2) the adjacency matrix M (the dependency graph), and (3) the set of assigned subtasks T. The agent&#x27;s policy π<em>m^i reads M to find which other agents&#x27; actions it should condition on (its &quot;parents&quot; in the graph), observes those actions, and then picks its own action—a</em>i. Mathematically: π<em>m^i(a^i | o^i, a^parents(i)~M; T). The policy is a neural network trained with policy gradient: ∇log π</em>m^i(a^i | ...) × Q^pi<em>m(s, a), where Q^pi</em>m is a learned value function. Multiple agents train in parallel using a centralized critic (which sees all observations and actions for better value estimates) but decentralized execution (each robot runs its own policy locally).</p>
+<p><strong>Meta-learning</strong> is the trick for handling new environments. Instead of retraining from scratch on each new AI2-THOR scene, the agents use meta-learning algorithms (similar to MAML) so the policy can rapidly adapt within a few gradient steps when placed in a new task or environment. The policy parameters are tuned by experience, not by asking the LLM again.</p>
+<p><strong>Reward function design</strong> is also LLM-driven. The planner generates modular reward functions that balance individual robot rewards (e.g., &quot;get to location X&quot;) with team rewards (e.g., &quot;minimize total time&quot;). The LLM reasons through intermediate steps explaining why each component matters, grounding the rewards in the task semantics. This replaces hand-tuned reward engineering.</p>
+<p><strong>Training setup</strong>: Experience from all agents is collected into a replay buffer <strong>D</strong>. Batches are sampled, and Q-function is updated via: Q^pi<em>m(s, a) ← r + γ × max Q^pi</em>m-(s&#x27;, a&#x27;), where Q^pi_m- is a target network (frozen copy updated periodically). Policy is updated using the gradient from the Q-function.</p>
+<h2>The code</h2>
+<ul>
+<li><strong>Repository</strong>: <a href="https://arxiv.org/abs/2503.10049" target="_blank" rel="noopener">https://arxiv.org/abs/2503.10049</a> · No official GitHub repository found.</li>
+<li><strong>Language/Framework</strong>: Python; likely PyTorch or TensorFlow for deep RL; GPT-4 API for LLM planner.</li>
+<li><strong>Core file</strong>: Unknown (repo not published).</li>
+<li><strong>Dependencies</strong>: OpenAI GPT-4 API, AI2-THOR simulator, deep RL library (PyTorch/TF), graph neural network library (e.g., PyG).</li>
+<li><strong>Simulator/Dataset/GPU</strong>: AI2-THOR (3D home environments, 4 pre-defined scenes); 100+ experimental runs per scene; 4-agent configurations. Requires GPU for policy training and GNN inference.</li>
+<li><strong>How to run</strong>: Not available; code not released yet.</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>Read first</strong>: The arXiv abstract and the method section (Sections 3.1–3.3 on the LLM planner, critic loop, dependency graph construction, and policy architecture).</p>
+<p><strong>Hard points</strong>:</p>
+<ul>
+<li>The interaction between the LLM critic loop and the graph construction is subtle—how many planner-critic loops happen before the DAG is final? How does error in the DAG affect learning?</li>
+<li>The meta-learning integration is stated but not heavily detailed; unclear if it&#x27;s MAML, Reptile, or a custom variant.</li>
+<li>The reward design by LLM is interesting but underspecified—does the LLM always generate semantically correct modular rewards, or do some fail?</li>
+</ul>
+<p><strong>Ease</strong>: Medium difficulty. Requires understanding MARL (policy gradients, centralized-critic-decentralized-execution), graph neural networks, and meta-learning. The LLM planner part is conceptually simple, but the interplay with RL training is non-trivial.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only</strong>: Very unlikely. AI2-THOR requires modern GPU for rendering and the GNN policy inference. RL training of multiple agents with experience replay will thrash on CPU. GPT-4 API calls (not local inference) mean internet dependency, but API calls themselves are not the bottleneck.</p>
+<p><strong>Feasible setup</strong>: GPU machine (NVIDIA A40 or better recommended), GPU RAM ≥16 GB for multi-agent batch training, GPT-4 API key, and local install of AI2-THOR. Training a single task likely takes hours to a few days depending on agent count and environment complexity.</p></article>
+<article class="page" id="gp4"><h1>Generalized Mission Planning for Heterogeneous Multi-Robot Teams via LLM-Constructed Hierarchical Trees</h1>
+<p><strong>ICRA 2025 · 4 citations · Mission-planning via LLM hierarchical task decomposition</strong></p>
+<h2>What it does</h2>
+<p>This work solves the problem of planning complex, long-horizon missions for teams that mix different robot types—quadrotors, legged robots, and arms. Unlike prior LLM-based planners that assume robots are all identical or handle simple tasks, this method grounds the LLM&#x27;s reasoning in the actual constraints and action spaces of each robot type. It uses an LLM to decompose the overall mission into subtasks, assigns each subtask to the robot best suited for it, and then refines the plan as robots report back what actually worked during execution. This is a <strong>mission-planning</strong> approach: the LLM stays at the high level, deciding *what* each robot should do given its capabilities, while a scheduler ensures each assignment respects robot constraints.</p>
+<h2>The method, in detail</h2>
+<p><strong>Three stages: Subtask Generation, Subtask Assignment, Subtask Refinement</strong></p>
+<ul>
+<li><strong>Input Setup</strong>: The system receives (a) a natural-language mission goal like &quot;carry the package from Room A to Room B and place it on the shelf,&quot; and (b) a structured description of the team: for each robot, its name, type, capabilities (traversability, perception, manipulation), and constraints (e.g., a UAV cannot manipulate objects, a wheeled robot cannot climb stairs).</li>
+</ul>
+<ul>
+<li><strong>Subtask Generation</strong> (the LLM&#x27;s job): The LLM reads the mission and the capability list, then generates a sequence of subtasks. For example: &quot;Subtask 1: Navigate to Room A (any mobile robot), Subtask 2: Pick up the package (robotic arm), Subtask 3: Navigate to Room B with the package (mobile manipulator), Subtask 4: Place the package on the shelf (robotic arm).&quot;  The LLM does this using specialized APIs that expose robot capabilities as callable tools—these APIs ground the LLM&#x27;s reasoning so it cannot suggest impossible actions.</li>
+</ul>
+<ul>
+<li><strong>Subtask Assignment</strong>: Each subtask is matched to one or more robots. The system checks feasibility: Can this robot actually do this task given its action space? For instance, if a task is &quot;fly to 50 meters altitude,&quot; only quadrotors can do it. The assignment also considers sequencing: some subtasks may need to happen in parallel, others in sequence.</li>
+</ul>
+<ul>
+<li><strong>Online Execution and Feedback</strong>: Robots execute their assigned subtasks. Each robot reports back: &quot;I succeeded at Task X&quot; or &quot;I failed because I hit an obstacle&quot; or &quot;The shelf is at height 2.5m but my arm only reaches 2.2m.&quot; This feedback is critical.</li>
+</ul>
+<ul>
+<li><strong>Refinement Loop</strong>: The LLM receives this feedback and adjusts the plan. If a task fails, the LLM re-decomposes: &quot;Instead of placing the package on the high shelf, place it on the lower shelf,&quot; or &quot;Dispatch the larger arm robot instead of the smaller one.&quot; The system loops until the mission completes or declares failure.</li>
+</ul>
+<p><strong>The key trick</strong>: The LLM is never asked to predict the exact low-level actions (joint angles, velocity commands). Instead, it reasons at the subtask level using the API tools, which act as guardrails. This keeps the LLM out of the weeds and lets it focus on *strategic decomposition and assignment*—exactly what LLMs are good at. The actual motion control and feasibility checking stay with classical robot planners or hand-coded controllers on each robot.</p>
+<h2>The code</h2>
+<p><strong>Repository</strong>: No public code released yet. The paper appears not to have an open repository as of July 2026. Contact Piyush Gupta (piyush_gupta@honda-ri.com, Honda Research Institute USA) for implementation details or code access.</p>
+<p><strong>Frameworks</strong>: Python (assumed, for the LLM interface); likely uses an LLM API (GPT-4, Claude, or similar) via OpenAI or Anthropic SDK; simulation likely runs on Gazebo or similar.</p>
+<p><strong>Repository structure</strong>: (Not available; code not public)</p>
+<p><strong>Core file to read first</strong>: (Not available; code not public)</p>
+<p><strong>Dependencies</strong>:</p>
+<ul>
+<li>A large language model (GPT-4 or equivalent) with API access</li>
+<li>Simulation environment (Gazebo likely) for benchtesting</li>
+<li>Robot middleware (ROS 2 probably) to interface with real robots</li>
+<li>Custom Python wrapper around the LLM to implement the API-tool layer</li>
+</ul>
+<p><strong>Simulator / Dataset / Hardware</strong>: Requires both simulation (AI2-THOR-like environment for household tasks) and real robots (the paper tested on Clearpath Jackal, Clearpath Husky, Boston Dynamics Spot, and a high-altitude UAV). The benchmark contains 100 complex long-horizon household tasks. GPU not strictly required for planning (LLM is remote API), but a local GPU would speed up any local neural network components if present.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first</strong>: Start with the arXiv paper (arxiv.org/abs/2501.16539). Read the abstract, method section, and the experimental results table showing 87% success rate on real robot teams. Then read the paper&#x27;s detailed breakdown of the three stages.</p>
+<p><strong>Code difficulty</strong>: Since no code is available, can&#x27;t assess directly. Based on the method description: moderately difficult. The API tool layer (exposing robot capabilities to the LLM) is the core engineering challenge—this needs careful design to ensure the LLM sees only feasible actions. Once that&#x27;s in place, the PEFA loop (Proposal-Execution-Feedback-Adjustment) is straightforward state machine logic. The real complexity is in integration: connecting the LLM to your robot middleware, defining subtask representations that both the LLM and robot controllers understand, and implementing the feedback parsing to extract why a task failed.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box: Could it run? Unknown.</strong> Without public code, we can&#x27;t test. But here&#x27;s the honest breakdown:</p>
+<ul>
+<li><strong>LLM inference</strong>: Requires API calls to GPT-4 or similar (costs money, requires internet, no GPU needed for the user&#x27;s machine).</li>
+<li><strong>Simulation</strong>: Likely can run on CPU (Gazebo runs on CPU), but slower. For the benchmark&#x27;s 100 tasks, this might take hours on a laptop CPU instead of minutes on a machine with a GPU.</li>
+<li><strong>Real robots</strong>: Obviously needs real hardware (Jackal, Husky, Spot, UAV). No getting around it.</li>
+<li><strong>Datasets</strong>: The 100-task benchmark is probably bundled with the code; can&#x27;t find it standalone.</li>
+</ul>
+<p><strong>In practice</strong>: If code becomes available, you could run pure simulation on a CPU with an LLM API key. But testing on real hardware requires the robot platform (worth $50k–$200k+). The paper shows real results only; sim-only results not published, so feasibility on CPU simulation alone is unknown.</p>
+<hr>
+<p><strong>Sources:</strong></p>
+<ul>
+<li>[arXiv 2501.16539](<a href="https://arxiv.org/abs/2501.16539" target="_blank" rel="noopener">https://arxiv.org/abs/2501.16539</a>)</li>
+<li>[ICRA Proceedings](<a href="https://ieeexplore.ieee.org/iel8/11127273/11127223/11128711.pdf" target="_blank" rel="noopener">https://ieeexplore.ieee.org/iel8/11127273/11127223/11128711.pdf</a>)</li>
+<li>[Honda Research Institute Page](<a href="https://usa.honda-ri.com/w/mission-planning-for-multi-robot-teams" target="_blank" rel="noopener">https://usa.honda-ri.com/w/mission-planning-for-multi-robot-teams</a>)</li>
+<li>[Semantic Scholar Paper](<a href="https://www.semanticscholar.org/paper/Generalized-Mission-Planning-for-Heterogeneous-via-Gupta-Isele/16b2312a084254f71a8c87f6953b43687dcb420b" target="_blank" rel="noopener">https://www.semanticscholar.org/paper/Generalized-Mission-Planning-for-Heterogeneous-via-Gupta-Isele/16b2312a084254f71a8c87f6953b43687dcb420b</a>)</li>
+</ul></article>
+<article class="page" id="gp5"><h1>Escaping Local Minima: Hybrid Artificial Potential Field with Wall-Follower for Decentralized Multi-Robot Navigation</h1>
+<p>ICRA 2025 · 4 citations · pathfinding sub-approach</p>
+<h2>What it does — 2-3 plain sentences</h2>
+<p>A team of robots each uses only its own sensors (no shared map, no central planner) to navigate together without collisions in complex spaces full of weird-shaped obstacles. The catch: when using simple force-field navigation (each robot is pushed away from obstacles and pulled toward its goal), robots get stuck in dead-ends or corners. This paper solves that by switching to wall-following mode when a robot detects it is trapped. The system learns when to switch using either simple rules or a trained neural network (pathfinding sub-approach: decentralized multi-agent pathfinding with collision avoidance).</p>
+<h2>The method, in detail — step by step</h2>
+<p><strong>Setup:</strong> Each robot is equipped with a 360-degree range sensor (e.g., LiDAR) and knows its own pose and goal. The robot has no map of the environment and cannot talk to other robots about long-term plans; it only reacts to what it senses right now.</p>
+<p><strong>Hybrid APF-WF core:</strong></p>
+<ul>
+<li><strong>Artificial Potential Field (APF) phase:</strong> Each robot computes a total force by:</li>
+</ul>
+<p>   - Attractive force: pulls the robot toward its goal (proportional to distance)</p>
+<p>   - Repulsive force: pushes the robot away from obstacles and other robots detected within sensor range</p>
+<p>   - The robot moves in the direction of this total force vector</p>
+<ul>
+<li><strong>Local minimum detection:</strong> The robot continuously checks if it is stuck. A local minimum occurs when:</li>
+</ul>
+<p>   - The net force magnitude drops near zero (robot is being pushed and pulled equally)</p>
+<p>   - The robot is not at its goal (position is far from goal)</p>
+<p>   - This is detected by checking if force magnitude falls below a threshold for consecutive sensor frames</p>
+<ul>
+<li><strong>Wall-following (WF) phase – Rule-based switch (RS):</strong> When trapped, the robot switches to following obstacle boundaries:</li>
+</ul>
+<p>   - The robot continues moving along the wall (left-hand or right-hand rule)</p>
+<p>   - While wall-following, the attractive force vector is gradually rotated to point away from the wall</p>
+<p>   - The robot remembers &quot;Hit Points&quot; (where it touched the wall) and &quot;Leave Points&quot; (where it escaped)</p>
+<p>   - This prevents the robot from looping back to the same dead-end</p>
+<p>   - Once the attractive force vector rotates far enough, the robot returns to APF mode and continues toward the goal</p>
+<ul>
+<li><strong>Wall-following phase – Learned switch (LS):</strong> A Vision Transformer encoder network is trained offline on human expert demonstrations:</li>
+</ul>
+<p>   - Input: local sensor readings (range data, relative positions of obstacles, distance to goal)</p>
+<p>   - Output: binary decision—stay in APF or switch to WF</p>
+<p>   - Solves &quot;false WF&quot; problem: robots sometimes treat nearby other robots as walls and follow them instead of avoiding them</p>
+<p>   - The encoder learns which situations actually benefit from wall-following vs. pushing through</p>
+<p><strong>Training:</strong> The learned switch uses expert demonstrations where a human (or optimal algorithm) controls a robot and the network learns when wall-following helps. This is done offline; no online learning during deployment.</p>
+<p><strong>Execution loop:</strong> At each sensor update:</p>
+<ul>
+<li>Measure obstacles and other robots in sensor range</li>
+<li>Compute APF forces</li>
+<li>Check if trapped using rule-based heuristic (or learned network)</li>
+<li>If trapped: switch to WF and rotate attractive force gradually</li>
+<li>If not trapped (or escaped): continue moving under APF</li>
+<li>Repeat until goal reached or max iterations</li>
+</ul>
+<p><strong>The trick that makes it work:</strong> The &quot;Leave Point&quot; memory prevents infinite loops—once a robot escapes a local minimum via wall-following, it marks where it escaped and never goes back to the same stuck spot. Combining geometric rules (wall-following) with learning (when to switch) gives the best of both worlds: guaranteed escape from local minima plus adaptation to robot-robot interactions.</p>
+<h2>The code</h2>
+<p><strong>Code URL:</strong> No public GitHub repository found (paper released arXiv Sept 2024, official code not yet public as of July 2026).</p>
+<p><strong>Language/framework:</strong> Not explicitly stated in paper abstract or HTML version; likely Python with NumPy/PyTorch for the Vision Transformer encoder; ROS likely used for robot integration (standard in multi-robot research).</p>
+<p><strong>Repo structure (inferred from paper):</strong></p>
+<ul>
+<li><code>apf_controller/</code> – Core APF force computation</li>
+<li><code>wf_controller/</code> – Wall-following logic (Hit/Leave point tracking)</li>
+<li><code>switch_detector/</code> – Rule-based detection of local minima</li>
+<li><code>transformer_switch/</code> – Vision Transformer model for learned switch</li>
+<li><code>experiments/</code> – Gazebo simulation environments and real TurtleBot4 setup</li>
+<li><code>data/</code> – Training data for encoder (human demonstrations)</li>
+</ul>
+<p><strong>Key file to open first:</strong> The rule-based switch logic (force magnitude check + Hit/Leave point tracking); then the Vision Transformer encoder that decides when to activate wall-following.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>Python 3.8+</li>
+<li>NumPy, SciPy (force computation)</li>
+<li>PyTorch (Vision Transformer encoder)</li>
+<li>ROS (robot integration, sensor drivers)</li>
+<li>Gazebo (simulation)</li>
+</ul>
+<p><strong>Simulator or dataset:</strong> Requires Gazebo simulation environments with nonconvex obstacles (complex building layouts, symmetric mazes designed to induce deadlocks). Real validation done on TurtleBot4 physical robots with 2D LiDAR.</p>
+<p><strong>GPU needed:</strong> GPU helpful for Vision Transformer inference, but rule-based switch runs on CPU-only hardware.</p>
+<p><strong>How to run:</strong></p>
+<ul>
+<li>Install ROS, Gazebo, Python packages</li>
+<li>Launch Gazebo with a test environment (e.g., building with dead-ends)</li>
+<li>Spawn multiple TurtleBot4 robots with different goals</li>
+<li>Run the hybrid controller node</li>
+<li>Observe whether robots escape local minima and reach goals without collisions</li>
+</ul>
+<h2>Reviewing it yourself — what to read first, and how hard</h2>
+<p><strong>Read first:</strong></p>
+<ul>
+<li>The local minima detection logic (force magnitude thresholding and goal check)</li>
+<li>The Hit/Leave point data structure and wall-following escape logic</li>
+<li>The Vision Transformer training loop and inference code</li>
+</ul>
+<p><strong>Code difficulty:</strong> Moderate. The rule-based switch is straightforward geometry and threshold checks. The Vision Transformer part is standard PyTorch but requires understanding of attention mechanisms. The main complexity is in the control loop integration with ROS and handling real sensor noise (LiDAR spikes, moving obstacles). Simulation should be much simpler than real robots.</p>
+<p><strong>Hardest parts:</strong></p>
+<ul>
+<li>Tuning the force magnitude threshold for reliable local minima detection (too low and false positives, too high and misses real traps)</li>
+<li>Training the encoder to generalize across team sizes, obstacle shapes, and sensor noise without overfitting to the training scenarios</li>
+<li>Synchronizing wall-following between multiple robots (one robot&#x27;s wall-following can confuse neighbors)</li>
+</ul>
+<h2>Run verdict — on a CPU-only box</h2>
+<p><strong>Could it actually run on CPU-only:</strong> Yes, mostly.</p>
+<ul>
+<li><strong>Rule-based switch (RS):</strong> Absolutely runs on CPU. Force computation and Hit/Leave tracking are simple arithmetic.</li>
+<li><strong>Learned switch (LS):</strong> Marginal on CPU. Vision Transformer inference is fast enough on modern CPUs for single robots (millisecond latency per decision), but running 10+ robots in parallel might stall. A GPU would make it comfortable.</li>
+<li><strong>Simulator:</strong> Gazebo can run on CPU, but multi-robot simulation with physics and sensor simulation is slow on CPU-only. Real-time factor (ratio of sim time to wall time) might drop below 0.5× (sim slower than real time), making validation tedious.</li>
+<li><strong>Sensor simulation:</strong> LiDAR simulation in Gazebo is CPU-intensive; real sensor data is much cheaper.</li>
+</ul>
+<p><strong>Blocker:</strong> No need for external APIs or cloud services. No large language model calls. Purely classical + learned control.</p>
+<p><strong>Verdict:</strong> CPU-only is viable for prototyping the rule-based switch and testing on small teams in simple simulated environments. For serious multi-robot validation or using the learned switch, invest in a GPU or run on a robot&#x27;s onboard compute (modern TurtleBots have NVIDIA Jetson chips).</p>
+<hr>
+<p><strong>Paper metadata:</strong></p>
+<ul>
+<li>DOI: 10.1109/ICRA55743.2025.11128765</li>
+<li>Conference: ICRA 2025</li>
+<li>Key authors: Joonkyung Kim (Texas A&amp;M), Sangjin Park, Wonjong Lee, Woojun Kim, Nakju Doh, Changjoo Nam (Sogang University AI Robotics Lab)</li>
+<li>arXiv: 2409.10332 (preprint Sept 2024)</li>
+</ul></article>
+<article class="page" id="gp6"><h1>Adaptive Task Allocation in Multi-Human Multi-Robot Teams Under Team Heterogeneity and Dynamic Information Uncertainty</h1>
+<p>*ICRA 2025 · 4 citations · mission-planning (task allocation)*</p>
+<h2>What it does</h2>
+<p>Assigns tasks to a mixed team of humans and robots when team members have different strengths, operational conditions change during a mission, and the system has incomplete or delayed state information. Uses two levels of learning: one to make the initial assignment at mission start, another to decide whether and how to reshuffle tasks as the mission unfolds.</p>
+<p>Sub-approach: <strong>mission-planning</strong> — dynamic task allocation.</p>
+<h2>The method, in detail</h2>
+<p><strong>Problem formulation</strong>: Casts task allocation as a Hierarchical Markov Decision Process (HMDP) with:</p>
+<ul>
+<li>Team members: i humans (with cognitive abilities, fatigue) + j robots (with sensor specialties, mechanical state)</li>
+<li>Tasks: k tasks of varying difficulty</li>
+<li>Static team heterogeneity: human skills, robot sensors, task specs</li>
+<li>Dynamic state: time-varying fatigue, robot health, task progress — all subject to noise (measurement error) and latency (delayed updates)</li>
+</ul>
+<p><strong>Two-level HRL hierarchy</strong>:</p>
+<ul>
+<li><strong>Level 1 — Initial Task Assignment (ITA)</strong> at t=0:</li>
+</ul>
+<p>   - Encodes each human/robot capability and each task requirement using learned embedding layers with positional encoding</p>
+<p>   - Applies an attention-based policy to find the globally best initial assignment</p>
+<p>   - Decision made before execution, leveraging static heterogeneity</p>
+<ul>
+<li><strong>Level 2 — Conditional Task Reallocation (CTR)</strong> during execution (t=1 to T):</li>
+</ul>
+<p>   - Two sub-policies run at each time step:</p>
+<p>     - π_C: &quot;Should we reassign tasks now?&quot; (binary decision)</p>
+<p>     - π_TR: &quot;If yes, what is the new assignment?&quot; (reallocation action)</p>
+<p>   - Feeds forward reconstructed state information (see below)</p>
+<p>   - Reallocation is costly, so the system learns when to tolerate suboptimality rather than reshuffle</p>
+<p><strong>State representation learning</strong> (handles information uncertainty):</p>
+<p>Addresses two sources of incomplete information:</p>
+<ul>
+<li><strong>Noisy observations</strong> (e.g., human fatigue measured inaccurately):</li>
+</ul>
+<p>  - A Conditional Variational Autoencoder (encoder-decoder pair, 2 FC layers each with ReLU)</p>
+<p>  - Encoder takes noisy fatigue + correlated context (hours worked, cognitive load)</p>
+<p>  - Decoder reconstructs true fatigue conditioned on that context</p>
+<p>  - Trained with MSE + KL divergence (weight 0.1)</p>
+<ul>
+<li><strong>Latency</strong> (e.g., robot health updates arrive 1-2 steps late):</li>
+</ul>
+<p>  - Stacked GRU (3 layers, 128 hidden units each) processes time series of delayed observations</p>
+<p>  - Outputs sequence fed through feedforward network</p>
+<p>  - Learns to infer current state from outdated history</p>
+<p>Final state vector: mean pool over concatenation of reconstructed values + raw observations, fed to both policies.</p>
+<p><strong>Reward structure</strong>:</p>
+<ul>
+<li><strong>ITA</strong>: Maximize team performance sum + penalty for reallocations (Frobenius norm of reassignment matrix)</li>
+<li><strong>Condition policy</strong>: Gain from performing reallocation vs. staying put, minus frequency penalty (−0.4 · reallocation count / T)</li>
+<li><strong>Task reallocation</strong>: Performance gain, minus cost of assignment changes (−0.2 · change magnitude)</li>
+<li><strong>Auxiliary losses</strong>: cVAE and GRU trained on reconstruction error + KL divergence</li>
+</ul>
+<p>Training uses PPO (Proximal Policy Optimization) with learning rate 0.0003, clip range 0.2, batch size 36, entropy coeff 0.01, 20 parallel actors, 10,000 episodes.</p>
+<p><strong>Inputs/Outputs</strong>:</p>
+<ul>
+<li>*Inputs*: Current human fatigue/capabilities, robot health/sensors, task queue with difficulty, past allocation history, noisy/delayed state observations</li>
+<li>*Outputs*: Initial task assignment matrix (humans/robots → tasks); at each step, reallocation decision + new assignment if needed</li>
+</ul>
+<p><strong>Key trick</strong>: The framework decouples heterogeneity (static, known upfront) from dynamics (uncertain, time-varying), using two separate learned policies and an auxiliary state reconstruction module. This lets it handle high uncertainty without constantly recomputing from scratch.</p>
+<h2>The code</h2>
+<p><strong>Repository</strong>: No official GitHub repository found. Project website: <a href="https://sites.google.com/view/ata-hrl" target="_blank" rel="noopener">https://sites.google.com/view/ata-hrl</a></p>
+<p><strong>Language/Framework</strong>: Python + PyTorch/TensorFlow (inferred from architecture: GRU, cVAE, PPO)</p>
+<p><strong>Repository structure</strong>: Not publicly available; would typically contain:</p>
+<ul>
+<li><code>ata_hrl/</code> (main module)</li>
+</ul>
+<p>  - <code>hrl_policy.py</code> (ITA + CTR policies, attention, GRU/cVAE)</p>
+<p>  - <code>environment.py</code> (MHMR simulator: 2km × 2km surveillance, POI classification, human fatigue model)</p>
+<p>  - <code>train.py</code> (PPO trainer)</p>
+<p>  - <code>evaluate.py</code> (test against baselines: ITA-MILP, TR-POMDP, AtRL+TR)</p>
+<p>  - <code>utils/</code> (embedding layers, reward functions)</p>
+<p><strong>File to open first</strong>: Would be <code>train.py</code> or a notebook <code>examples/quickstart.ipynb</code> showing environment setup and policy training loop.</p>
+<p><strong>Dependencies</strong>: PyTorch (for GRU, VAE), Gym (or custom environment wrapper), NumPy, OpenAI Baselines or Stable-Baselines3 (for PPO).</p>
+<p><strong>Simulator/Dataset</strong>: Custom 2km × 2km simulated urban environment with Points of Interest (POIs) representing pollution sources. POIs have low/medium/high hazard classification. Humans fatigue nonlinearly with hours worked and task difficulty; robots have failure probabilities (0.1–0.4). Includes Gaussian noise (σ² ∈ {0.05, 0.1, 0.2}) on fatigue and random latency injection (0–2 steps).</p>
+<p><strong>GPU needs</strong>: Could run on CPU for small teams (6 humans, 8 robots); evaluation on large config (12 humans, 16 robots, 130 POIs) likely benefited from GPU for PPO training speedup. Inference is CPU-friendly.</p>
+<p><strong>How to run</strong>:</p>
+<ul>
+<li>Install PyTorch, Gym, Stable-Baselines3</li>
+<li><code>python train.py --team-size large --episodes 10000 --uncertainty-level high</code></li>
+<li><code>python evaluate.py --model weights/ata_hrl.pth --baselines ITA-MILP,TR-POMDP,AtRL+TR</code></li>
+<li>View result curves (success rate, reallocation count, team utilization)</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>Read first</strong>: The arXiv paper section &quot;Hierarchical Reinforcement Learning Framework&quot; (formulates HMDP, shows attention embedding, defines two-level policies) and &quot;State Representation Learning Module&quot; (explains cVAE + GRU for uncertainty handling).</p>
+<p><strong>Difficulty</strong>: Medium-to-hard.</p>
+<ul>
+<li>The HMDP formulation is standard HRL but the two-level hierarchy and heterogeneity encoding (positional embeddings for humans/robots) require careful parsing.</li>
+<li>Reward structure is complex: three separate losses + auxiliary cVAE/GRU losses, each with different weights; tuning those weights is non-obvious.</li>
+<li>State reconstruction (noisy + latent states) is the novel technical piece; the cVAE approach is clever but adds hyperparameters (KL weight 0.1, encoder/decoder depth, hidden sizes).</li>
+<li>Experimental design is solid: two team sizes, multiple baselines, ablation studies (w/o.AUX, w/o.C) prove both components help.</li>
+</ul>
+<p><strong>Pitfalls</strong>: The paper does not release code or a reference implementation, so reproducing results requires reverse-engineering the simulator (2km grid, POI hazard types, human fatigue curve, robot failure probabilities). The auxiliary state learning module requires ground-truth state labels during training (e.g., true fatigue values, true robot health), which may not be easily available in a real deployment.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only</strong>: YES, inference only. The trained policy takes state input and outputs allocation, which is a few forward passes (~milliseconds on CPU). Training (10,000 episodes with 20 parallel actors) would be slow on CPU (hours or days) but feasible for a small team size.</p>
+<p><strong>Could it run end-to-end on CPU?</strong> For small teams (6 humans, 8 robots, 60 POIs), yes, but training would take days. For large teams (12 humans, 16 robots, 130 POIs), training would be prohibitively slow without a GPU.</p>
+<p><strong>Practical deployment</strong>: Once trained, ATA-HRL runs on CPU; latency is sub-second per reallocation decision, suitable for a real multi-human multi-robot mission where decisions are made every few seconds or minutes.</p></article>
+<article class="page" id="gp7"><h1>Realizing Emergent Collective Behaviors Through Robotic Swarmalators</h1>
+<p>ICRA 2025 · 3 citations · swarm emergent collective behavior</p>
+<h2>What it does</h2>
+<p>This paper physically realizes swarmalator theory on real robots for the first time, building a 15-robot platform where each agent couples its internal phase (oscillator state) to neighbors&#x27; positions and couples its motion to neighbors&#x27; phase differences. The robots demonstrate the full range of emergent collective patterns that theory predicts—phase waves, synchronized clusters, and chimera states—in both chiral (rotational) and non-chiral (translational) modes.</p>
+<p><strong>Sub-approach (family): swarm</strong> — Agents synchronize *and* aggregate via bidirectional coupling between spatial and phase dynamics, producing patterns from pure oscillation theory (Kuramoto) applied to moving particles (Vicsek-style swarming).</p>
+<h2>The method, in detail</h2>
+<p><strong>The swarmalator model</strong>: Each robot i has two coupled state variables:</p>
+<ul>
+<li><strong>Position x_i</strong> (spatial location in 2D)</li>
+<li><strong>Phase φ_i</strong> (internal oscillator state, often represented as angle or periodic variable)</li>
+</ul>
+<p>The governing dynamics couple these bidirectionally:</p>
+<ul>
+<li><strong>Position update</strong>: A robot moves based on attraction/repulsion to neighbors *weighted by their phase differences*. Phase mismatch determines the strength or direction of spatial interaction.</li>
+<li><strong>Phase update</strong>: A robot&#x27;s phase synchronizes based on neighbors&#x27; relative *positions*. Proximity to neighbors drives phase alignment.</li>
+</ul>
+<p>This interplay produces emergent states:</p>
+<ul>
+<li><strong>Static sync</strong>: Robots cluster in space; all phases align at a common frequency.</li>
+<li><strong>Phase wave</strong>: Robots form a rotating or traveling pattern; phases wind monotonically in space.</li>
+<li><strong>Chimera</strong>: Some robots sync, others remain incoherent.</li>
+<li><strong>Chiral motion</strong>: Under coupling asymmetry, robots spiral or orbit rather than collide.</li>
+</ul>
+<p><strong>Realization on 15 physical robots</strong>:</p>
+<ul>
+<li>Each robot is equipped with onboard sensors (position via motion capture or local sensing, neighbor detection).</li>
+<li>Control law: Each robot computes its intended motion and phase rate using only local neighbor state (positions and estimated phases).</li>
+<li><strong>Frequency coupling</strong>: Some experiments vary natural oscillation frequency across the swarm (heterogeneous) or keep it uniform.</li>
+<li><strong>Chirality</strong>: Some robots are &quot;chiral&quot; (inherent preferred rotational sense) vs. &quot;non-chiral&quot; (symmetric coupling).</li>
+<li>Decentralized execution: No central controller; each robot runs its control law independently.</li>
+</ul>
+<p><strong>Key parameters</strong>:</p>
+<ul>
+<li>Coupling strength (how much neighbors&#x27; phase affects motion, and vice versa)</li>
+<li>Sensing range (which neighbors count as &quot;close&quot;)</li>
+<li>Natural frequency (ω)</li>
+<li>Phase lag or coupling asymmetry (determines chirality)</li>
+</ul>
+<p><strong>Emergent behaviors observed</strong>:</p>
+<ul>
+<li>Synchronized phase + clustered position (all together, frequency-locked)</li>
+<li>Traveling phase waves: positions form spatial pattern; phase rotates uniformly</li>
+<li>Frequency distributions: robots maintain different individual frequencies yet form collective patterns</li>
+<li>Stability and robustness: behaviors persist under noise and model mismatch</li>
+</ul>
+<p><strong>Sim-to-real gap</strong>: Experiments reveal key differences from simulation:</p>
+<ul>
+<li>Friction, sensor noise, and latency shift bifurcation thresholds.</li>
+<li>Small coupling errors compound in decentralized control.</li>
+<li>Local collision avoidance must be layered atop the swarmalator model.</li>
+</ul>
+<h2>The code</h2>
+<p><strong>Code availability</strong>: No official GitHub repository found in public search; code_url is null. The paper does not report a released codebase.</p>
+<p><strong>Framework/language</strong>: Likely C or ROS (Robot Operating System) on robot firmware; possibly MATLAB/Python for simulation validation, but unconfirmed from available sources.</p>
+<p><strong>Repository structure</strong> (if available): Would typically include:</p>
+<ul>
+<li>Robot firmware / low-level control loop</li>
+<li>Phase estimation and neighbor tracking</li>
+<li>High-level swarmalator dynamics implementation</li>
+<li>Logging and trajectory analysis scripts</li>
+<li>Simulation validation (e.g., in Gazebo or custom Python)</li>
+</ul>
+<p><strong>Core file to run first</strong>: Would be a main control loop or test launch script (e.g., <code>main<em>swarm</em>controller.cpp</code> or <code>launch_swarmalators.py</code>), but exact filename unknown without repository.</p>
+<p><strong>Dependencies</strong>:</p>
+<ul>
+<li>Motion capture or localization system (e.g., Optitrack, Vicon, or onboard odometry)</li>
+<li>ROS (likely) for inter-robot communication and logging</li>
+<li>Real-time control stack (real-time OS or preemption-enabled Linux kernel)</li>
+<li>Possibly Python for data analysis (NumPy, Matplotlib, SciPy)</li>
+</ul>
+<p><strong>Simulator/dataset/GPU</strong>:</p>
+<ul>
+<li>Simulation: Gazebo with custom robot model or minimal physics engine (no GPU required)</li>
+<li>Hardware: Custom-built robots (details of motor, sensor specs not yet available in open literature)</li>
+<li>Computation: All on-robot processing (no cloud, no GPU)</li>
+</ul>
+<p><strong>How to run</strong>:</p>
+<ul>
+<li>Deploy control firmware to each of 15 robots (or fewer for proof-of-concept).</li>
+<li>Start motion-capture system; broadcast robot positions to swarm.</li>
+<li>Each robot runs: read neighbor positions → compute phase / velocity → execute motor command.</li>
+<li>Log trajectories; analyze emerging collective patterns.</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first</strong>:</p>
+<ul>
+<li>Start with Kuramoto model (coupled phase oscillators; synchronization) and Vicsek model (self-propelled particle swarming) separately to build intuition.</li>
+<li>Then read seminal swarmalator theory papers (e.g., Ott et al. on Kuramoto+swarms, or Couzin/Creswell on chiral collectives).</li>
+<li>Next, the experimental section: setup diagram, control law pseudocode, which swarmalator regimes were tested, which behaviors emerged.</li>
+</ul>
+<p><strong>Difficulty</strong>:</p>
+<ul>
+<li><strong>Theory</strong>: Moderate. Swarmalator bifurcations require dynamical systems literacy (phase plane, stability analysis).</li>
+<li><strong>Experiments</strong>: Moderate-to-hard. Requires understanding real-robot constraints (latency, noise, limited sensing), sim-to-real debugging, and interpretation of collective emergent phenomena.</li>
+<li><strong>Reproducibility</strong>: Hard. Building 15 identical robots and tuning decentralized control across all of them requires mechanical precision, careful sensor calibration, and patience.</li>
+</ul>
+<p><strong>Key questions to ask</strong>:</p>
+<ul>
+<li>How are neighbors identified in real robots? (Vision? IR proximity? Explicit communication range?)</li>
+<li>How is phase estimated from motion—or is it a firmware state variable?</li>
+<li>Which swarmalator behaviors were most robust to real-world noise, and which collapsed?</li>
+<li>How do the observed bifurcations in experiments map to the theory&#x27;s bifurcation diagram?</li>
+<li>What is the scalability bottleneck—communication, computation, or sensing range?</li>
+</ul>
+<h2>Run verdict</h2>
+<p><strong>CPU-only on standard laptop</strong>: <strong>Yes, simulation can run.</strong></p>
+<ul>
+<li>If you have ROS + Gazebo installed, you can simulate the swarmalator control law on a standard CPU laptop.</li>
+<li>No GPU needed; the dynamics are not high-dimensional.</li>
+<li>Typical laptop (i5/i7, 8–16 GB RAM) can simulate 15–100 agents in real-time or faster.</li>
+</ul>
+<p><strong>Building and running the real robot swarm</strong>: <strong>No, requires specialized hardware.</strong></p>
+<ul>
+<li>Needs 15 custom robots (motors, sensors, wireless stack).</li>
+<li>Needs motion-capture calibration (OptiTrack, Vicon, or equivalent—$$$).</li>
+<li>Needs real-time control stack (Linux kernel patch, or RTOS).</li>
+<li>Estimated build time: weeks to months for careful integration.</li>
+</ul>
+<p><strong>Minimal proof-of-concept on CPU</strong> (2–3 robots in simulation): <strong>Yes, feasible in 1–2 hours with ROS.</strong></p>
+<ul>
+<li>Write swarmalator control law in Python.</li>
+<li>Spawn 2–3 simulated Turtlebot3 or Jackal robots in Gazebo.</li>
+<li>Run decentralized control; visualize phase + position.</li>
+<li>Observe chimera or sync states emerging.</li>
+</ul></article>
+<article class="page" id="gp8"><h1>Deploying Ten Thousand Robots: Scalable Imitation Learning for Lifelong Multi-Agent Path Finding</h1>
+<p>ICRA 2025 · 3 citations · pathfinding</p>
+<h2>What it does</h2>
+<p>SILLM trains a neural network to learn from pre-computed plans made by a classical search-based algorithm, adds a communication module so nearby robots share local information, and runs the whole system on a GPU to move thousands of robots through a warehouse or warehouse-like space without collisions. This solves the problem that pure learning-based methods are too slow at scale and pure search methods don&#x27;t scale to ten thousand agents.</p>
+<p>Sub-approach: <strong>pathfinding</strong> — a scalable imitation-learning MAPF solver that combines fast neural-network reasoning with global guidance from search-based methods.</p>
+<h2>The method, in detail</h2>
+<p><strong>Lifelong MAPF setup:</strong> The system operates in a known 2D grid map with obstacles. Multiple agents (robots, packages) continuously spawn at different locations with goals; when an agent reaches its goal, it immediately receives a new one. The challenge is to compute collision-free, efficient paths for all agents and update them in real time without deadlock.</p>
+<p><strong>Imitation learning from PIBT:</strong> SILLM does not learn from scratch. Instead, it trains on trajectories produced by a classical search-based planner called Prioritized Implicit Biased search with Collision-Shield (PIBT+Collision-Shield). In each training episode, the search planner pre-solves many (10,000+ agent) instances and records the single-step action it would take for each agent at each timestep given its local view. The neural network learns: &quot;Given my local observations (nearby obstacles, other agents, goal direction), what action should I take?&quot; This is standard behavioral cloning or imitation learning—the network mimics the expert planner&#x27;s one-step decisions.</p>
+<p><strong>Communication module:</strong> Each agent runs a small neural network conditioned on its local view (occupancy grid around it, other agents&#x27; positions within a radius, goal direction). But isolated local decisions cause deadlock. To break deadlock, agents exchange information with neighbors within communication range—a learned message-passing module aggregates neighbors&#x27; states into a &quot;consensus&quot; or &quot;communication&quot; feature, which influences the agent&#x27;s action choice. This is akin to graph neural networks where agents are nodes and edges exist between nearby agents.</p>
+<p><strong>Single-step collision resolution and global guidance:</strong></p>
+<ul>
+<li><strong>Collision resolution:</strong> If two agents would collide according to the network&#x27;s output, a simple rule-based &quot;collision shield&quot; blocks the move and outputs a no-op or a safe alternative. This ensures collision-free execution by construction.</li>
+<li><strong>Global guidance:</strong> At longer time scales (not every step), a separate &quot;backward Dijkstra&quot; precomputed heuristic (computed once per map) suggests globally efficient directions toward agents&#x27; goals. This guides the learned network toward shorter paths, preventing the network from getting stuck in local inefficiency.</li>
+</ul>
+<p><strong>Inputs and outputs:</strong></p>
+<ul>
+<li><strong>Input per agent:</strong> Local occupancy grid (5×5 or 9×9 cells around the agent), positions of nearby agents within radius R, goal position (in relative frame), velocity/heading of nearby agents.</li>
+<li><strong>Output:</strong> One of 5 discrete actions: move up/down/left/right, or wait. The collision shield post-processes this.</li>
+</ul>
+<p><strong>Scale:</strong> The network and communication module are lightweight (fully convolutional or small recurrent). At evaluation time, the system processes all agents&#x27; observations in parallel on a GPU using batch matrix operations. This allows the same trained model to handle 1,000 to 10,000 agents without retraining, as long as they fit in GPU memory.</p>
+<p><strong>The key trick:</strong> Imitation learning avoids the sample complexity of learning from scratch (which would require millions of rollouts). Instead, by imitating an expert search planner, the network inherits the expert&#x27;s collision-avoidance and path-finding heuristics. The communication and global guidance layers then compress the expert&#x27;s computation into a single forward pass, so what takes the search planner seconds of search now takes milliseconds on a GPU.</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> <a href="https://github.com/DiligentPanda/Scalable-Imitation-Learning-for-LMAPF" target="_blank" rel="noopener">https://github.com/DiligentPanda/Scalable-Imitation-Learning-for-LMAPF</a></p>
+<p><strong>Language/framework:</strong> Python 3.x with PyTorch; C++ for performance-critical components (search planners PIBT and Parallel LNS, Backward Dijkstra heuristic computation). Distributed training via Ray (multi-GPU, multi-worker rollout).</p>
+<p><strong>Repo structure:</strong></p>
+<ul>
+<li><code>expr<em>configs/paper</em>exps_v3/</code> — experiment configuration files (YAML) for training and evaluation. Key configs specify map, agent count (600–10,000), training hyperparameters, GPU/CPU resource allocation.</li>
+<li><code>light_malib/envs/LMAPF/</code> — the environment (<code>env.py</code>, <code>map.py</code>). Map reader, LMAPF simulator, benchmark data from League of Robot Runners 2023 format.</li>
+<li><code>light<em>malib/framework/ppo</em>runner.py</code> — main training loop (though this is imitation learning, not PPO reinforcement learning; &quot;ppo_runner&quot; is a misnomer—the actual imitation learning is in other parts).</li>
+<li><code>light<em>malib/rollout/rollout</em>func_LMAPF.py</code> — rollout function: simulation of one episode, collecting transitions for training data.</li>
+<li><code>light_malib/model/LMAPF/</code> — neural network architectures for agents and communication module.</li>
+<li><code>lmapf_lib/MAPFCompetition2023/tools/</code> — C++ implementations of PIBT, Parallel LNS, Backward Dijkstra heuristics.</li>
+<li><code>lmapf<em>lib/data/paper</em>exp_v3/</code> — benchmark maps and problem instances (6 maps, up to 10,000 agent instances).</li>
+<li><code>pretrained_models/</code> — pre-trained model checkpoints ready for evaluation.</li>
+<li><code>logs/</code> — training logs (TensorBoard compatible).</li>
+</ul>
+<p><strong>First file to open:</strong> Start with a configuration file in <code>expr<em>configs/paper</em>exps<em>v3/small/</code> (e.g., <code>bootstrap</em>from<em>pibt</em>iter1<em>sortation</em>small<em>a600</em>s500<em>none</em>annotated<em>1gpu.yaml</code>). This shows the experiment setup: map, agent count, training schedule. Then read <code>light</em>malib/envs/LMAPF/env.py</code> to understand the simulation loop. Finally, examine <code>light_malib/model/LMAPF/</code> to see the network architecture.</p>
+<p><strong>Dependencies:</strong> PyTorch, Ray (distributed computing), NumPy, pyyaml, C++ compiler (g++), CUDA toolkit and cuDNN (for GPU training/evaluation). The repo includes submodules for search-based baselines (Guided-PIBT, RHCR, etc.).</p>
+<p><strong>Simulator/dataset/GPU needs:</strong></p>
+<ul>
+<li><strong>Simulator:</strong> Uses the LMAPF simulation environment (env.py), not a physics engine. It is a discrete-time grid simulation—fast but not photorealistic.</li>
+<li><strong>Dataset:</strong> Benchmark consists of 6 maps (warehouse, sortation, online, random) with pre-generated 10,000-agent problem instances. During training, the PIBT expert planner generates on-the-fly imitation data from these instances.</li>
+<li><strong>GPU:</strong> 1 GPU (RTX4090 with 24GB memory) can train with reduced batch size and fewer workers. The paper&#x27;s main results use 4 RTX4090D GPUs + 64 vCPUs for 1–2 days of training.</li>
+</ul>
+<p><strong>How to run:</strong></p>
+<pre><code>
+# Compile C++ components (PIBT, LNS, heuristics)
+./compile.sh
+
+# Training (example with 1 GPU, 16 vCPUs; default configs assume 4 GPUs)
+# First, modify expr_configs/paper_exps_v3/small/bootstrap_from_pibt_iter1_sortation_small_a600_s500_none_annotated_1gpu.yaml
+#   - Adjust rollout_manager.num_workers (&lt; total CPUs)
+#   - Adjust training_manager.num_trainers (= number of GPUs)
+#   - Adjust batch sizes and episode counts if memory is limited
+# Then run:
+bash train.sh
+
+# Evaluation on paper benchmark
+bash eval.sh
+
+# Evaluation on learn-to-follow benchmark
+bash eval_ltf.sh
+</code></pre>
+<p>The training script collects data by running PIBT on thousands of problem instances in parallel (using Ray), stores the (state, action) pairs, and trains the network via supervised learning (BCE loss per action or similar).</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with the ICRA 2025 paper abstract and Section III (Method) for the conceptual flow: imitation learning → communication module → collision shield → global guidance. The paper has a good narrative of the search vs. learning trade-off.</p>
+<p>Then read the README in the repo for a realistic view of the codebase&#x27;s complexity and available branches (static<em>guidance, dynamic</em>guidance, backward<em>dijkstra). Open <code>expr</em>configs/paper<em>exps</em>v3/small/</code> and pick a minimal config to understand what hyperparameters matter (agent count, map type, communication radius, guidance type).</p>
+<p>Finally, examine <code>light_malib/model/LMAPF/</code> to see what the neural network actually does—typically a small CNN or GNN over the occupancy and neighbor positions, outputting a categorical distribution over 5 actions.</p>
+<p><strong>Code difficulty:</strong> <strong>High</strong>. The codebase involves: (1) a complex distributed training framework (Ray), (2) C++ search-based planning integration (PIBT, LNS, Dijkstra), (3) imitation-learning training loop, (4) multiple branched versions (static vs. dynamic guidance). It is production-grade research code, not a tutorial. The paper&#x27;s ideas are straightforward, but the implementation is elaborate because it handles many baselines and large-scale distributed experiments. Expect to spend hours understanding the config system, data flow, and search-planner integration.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box:</strong> No, but with a caveat.</p>
+<p><strong>Why no:</strong></p>
+<ul>
+<li><strong>Compilation requires a C++ compiler and optional CUDA toolkit.</strong> The search-based planner components (PIBT, LNS) are written in C++ and must be compiled. This is possible on CPU, but the Backward Dijkstra heuristic computation is slow on CPU for large maps (hours vs. seconds on GPU).</li>
+<li><strong>Training absolutely requires a GPU.</strong> Imitation learning with 10,000+ agents per rollout on a CPU would take days per iteration. The system trains on GPU with mixed-precision (if available). A single RTX4090 can train on reduced-scale instances in reasonable time (hours per iteration).</li>
+<li><strong>Inference can run on CPU for small instances</strong> (&lt; 100 agents) using pre-trained weights, but even then, it is slow. For 1,000+ agents, a GPU is necessary to meet real-time or near-real-time performance.</li>
+</ul>
+<p><strong>If you insist on CPU:</strong></p>
+<ul>
+<li>Compile with <code>./compile.sh</code> (requires g++ and standard build tools, no CUDA needed for compilation itself, but Dijkstra preprocessing will be slow).</li>
+<li>Download a pre-trained model from <code>pretrained_models/</code>.</li>
+<li>Run inference on a small problem instance (e.g., 100 agents on a small map) using Python with PyTorch on CPU. It will work but will be glacially slow (seconds per step instead of milliseconds).</li>
+</ul>
+<p><strong>Minimum realistic requirements:</strong></p>
+<ul>
+<li><strong>For evaluation only:</strong> NVIDIA GPU (RTX 2080 or better), 8GB GPU memory, 16GB CPU RAM, 50GB disk for code and data.</li>
+<li><strong>For training:</strong> NVIDIA GPU (RTX4090 recommended, or RTX3090 / A100), 24GB GPU memory, 64GB CPU RAM, 100GB disk, 1–2 days of compute time on 4 GPUs for full experiments.</li>
+</ul>
+<p><strong>Time estimate:</strong></p>
+<ul>
+<li><strong>Inference on 10,000 agents:</strong> ~1–10ms per step on GPU (depending on communication radius and map complexity). On CPU, ~100–1000ms per step (unusable for real time).</li>
+<li><strong>Training a single model:</strong> 1–2 days on 4 × RTX4090D.</li>
+<li><strong>Evaluation on full benchmark:</strong> ~30 minutes on GPU with 4× parallelism.</li>
+</ul></article>
+<article class="page" id="gp9"><h1>SIGMA: Sheaf-Informed Geometric Multi-Agent Pathfinding</h1>
+<p>ICRA 2025 · 3 citations · multi-agent pathfinding</p>
+<h2>What it does</h2>
+<p>SIGMA tackles the problem of moving many robots through tight spaces without collisions when each robot can only see a limited area around itself. It combines deep reinforcement learning with sheaf theory—a mathematical framework from topology—to let robots learn a &quot;consensus view&quot; from their local observations, so each robot can act as if it sees the full picture. This is a <strong>multi-agent pathfinding</strong> approach: it solves coordinated collision-free routing at scale.</p>
+<h2>The method, in detail</h2>
+<p>The core insight is that when robots cooperate, they need to agree on what each will do next, but classical learning methods force each robot to decide based only on its own narrow field of view. Here&#x27;s the three-step process:</p>
+<p><strong>1. Sheaf-theoretic consensus model</strong>: Sheaf theory (a branch of algebraic topology) describes how local observations at one agent connect to local observations at neighboring agents. The paper proves that global consensus on movements is achievable through purely local communication. The method uses this mathematical structure to guide what the neural network learns.</p>
+<p><strong>2. Self-supervised consensus learning</strong>: A neural network learns to approximate the consensus in a latent (hidden) space by training on pairs of observations from different agents. The network sees agent A&#x27;s local view, agent B&#x27;s local view, and their relative geometry, and learns to compute what both agents would &quot;agree on&quot; in terms of safe movement directions. Self-supervision means the network never needs labeled data—it infers ground truth from the structure of the problem itself.</p>
+<p><strong>3. Decentralized decision-making</strong>: During execution, each robot independently runs the trained network to compute its own learned consensus feature alongside standard pathfinding features (distances to goals, obstacles, other robots). It then uses deep reinforcement learning policy to pick the next action. Because all robots have the same learned consensus feature, they implicitly coordinate without explicit communication.</p>
+<p>The architecture uses Ray for distributed training across multiple workers, storing experience in a replay buffer. Pre-trained models are provided for two environment types: open rooms with obstacles and maze-like corridors.</p>
+<h2>The code</h2>
+<p><strong>Repository</strong>: <a href="https://github.com/marmotlab/SIGMA" target="_blank" rel="noopener">https://github.com/marmotlab/SIGMA</a></p>
+<p><strong>Language/Framework</strong>: Python 3.10 + PyTorch 2.0.0 + Ray (distributed training)</p>
+<p><strong>Repository structure</strong>:</p>
+<ul>
+<li><code>train.py</code> — main training loop (entry point)</li>
+<li><code>model.py</code> — core neural network with sheaf-informed consensus module</li>
+<li><code>test.py</code> — evaluation and visualization</li>
+<li><code>configs.py</code> — hyperparameters and environment switching</li>
+<li><code>environment.py</code> — multi-agent simulator</li>
+<li><code>worker.py</code> — Ray worker processes for distributed training</li>
+<li><code>buffer.py</code> — experience replay</li>
+<li><code>ordm.py</code> — additional architectural components</li>
+<li><code>map_generator.py</code> — procedural obstacle generation</li>
+<li><code>models/save_model/</code> — pre-trained weights for both environment types</li>
+<li><code>house<em>test</em>set/</code>, <code>test_set/</code> — benchmark scenarios</li>
+</ul>
+<p><strong>To start</strong>: Read <code>configs.py</code> first to understand the hyperparameter space, then open <code>model.py</code> to see the sheaf-informed consensus layer. The consensus module is the novel part; standard RL components are in <code>train.py</code> and <code>worker.py</code>.</p>
+<p><strong>Dependencies</strong>: PyTorch, NumPy 1.23.5, Ray, CUDA 11.8 (for GPU acceleration).</p>
+<p><strong>Simulator vs. real robots</strong>: The code uses a custom grid-based multi-agent simulator in <code>environment.py</code>. It does not interface with real robots directly, but the paper validates the policy on real robots after training in simulation.</p>
+<h2>Reviewing it yourself</h2>
+<p>The challenge here is understanding sheaf theory enough to follow the consensus module. Start by reading the abstract and the &quot;consensus via local observation&quot; section of the paper, then look at how <code>model.py</code> instantiates that idea as a neural network. The rest is standard deep RL: distributed training with Ray, experience replay, policy gradient. If you know PyTorch + RL, the non-sheaf parts will be familiar.</p>
+<p>The code is well-structured: <code>train.py</code> is clean and readable. The sheaf-theoretic part is genuinely clever but also somewhat abstract—the paper is clearer than the code on the intuition.</p>
+<h2>Run verdict</h2>
+<p><strong>GPU required</strong>. The codebase targets CUDA 11.8, and distributed training with Ray expects GPU acceleration to be practical. The code will run on CPU for small tests (up to ~100 agents), but meaningful experiments use GPUs. No external APIs or real-world datasets needed; the simulator is self-contained. Pre-trained models are provided, so you can skip training and jump straight to <code>python test.py</code> to visualize results on a CPU if patience allows.</p>
+<p>The paper includes validation on 10 real robots in a warehouse mock-up, but the repo itself does not control real hardware—only the simulator.</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div><article class="page walk"><h1>COHERENT — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;COHERENT: Collaboration of Heterogeneous Multi-Robot System with Large Language Models&quot; (ICRA 2025)</p>
+<p><strong>Repo root:</strong> <code>COHERENT/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p><strong>Entry point:</strong> <code>src/experiment/PEFA/main.py</code> — orchestrates the PEFA (Proposal-Execution-Feedback-Adjustment) loop for a single task.</p>
+<p><strong>Running it:</strong></p>
+<pre><code>
+cd src/experiment/PEFA
+python main.py --env env0 --task 2 --source openai --lm_id gpt-4-0125-preview --api_key YOUR_KEY
+</code></pre>
+<p><strong>Config system:</strong> <code>src/experiment/PEFA/args.py</code> defines command-line arguments:</p>
+<ul>
+<li><code>--env</code> (required): one of <code>[&#x27;env0&#x27;, &#x27;env1&#x27;, &#x27;env2&#x27;, &#x27;env3&#x27;, &#x27;env4&#x27;]</code> — selects the simulation scene</li>
+<li><code>--task</code> (required): int or list of ints — task ID(s) to run from the benchmark</li>
+<li><code>--lm_id</code> (default: <code>&#x27;gpt-4-0125-preview&#x27;</code>) — OpenAI model to use for task assignment and action selection</li>
+<li><code>--api_key</code>, <code>--organization</code> — OpenAI credentials (environment variables or CLI args)</li>
+<li><code>--max<em>tokens</code> (default: 512), <code>--t</code> (temperature), <code>--top</em>p</code> — LLM sampling parameters</li>
+<li><code>--oracle<em>prompt</em>path</code>, <code>--quadrotor<em>prompt</em>path</code>, <code>--robot<em>dog</em>prompt<em>path</code>, <code>--robot</em>arm<em>prompt</em>path</code>, <code>--judge<em>prompt</em>path</code> — paths to prompt templates</li>
+</ul>
+<p><strong>Task scenarios:</strong> Loaded from JSON files in <code>env/</code> (e.g., <code>env0.json</code>), each containing:</p>
+<ul>
+<li>Task ID, environment ID, task name, scene graph (nodes + edges), task goal, goal instruction, ground-truth step count, initial agent positions</li>
+<li><strong>100 benchmark tasks total</strong> across 5 scenes (apartment, grocery store, restaurant, etc.)</li>
+</ul>
+<p><strong>Simulator &amp; API:</strong></p>
+<ul>
+<li><strong>Required:</strong> NVIDIA Omniverse Isaac Sim 2022.2.0 (GPU required; can be run headless)</li>
+<li><strong>Modified OmniGibson:</strong> Custom physics wrapper in <code>OmniGibson/</code> (cloned + modified BEHAVIOR-1K benchmark)</li>
+<li><strong>OpenAI API:</strong> Every LLM call costs money (gpt-4-0125-preview: $0.01 prompt, $0.03 completion per 1K tokens)</li>
+<li><strong>No internet needed:</strong> After model download; Isaac Sim is local</li>
+</ul>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+COHERENT/
+├── src/experiment/
+│   ├── PEFA/                      # Proposal-Execution-Feedback-Adjustment (main method)
+│   │   ├── main.py                # Entry point: loads env JSON, spawns agents, runs ArenaMP loop
+│   │   ├── args.py                # Argument parser + config
+│   │   ├── LLM.py                 # LLM client (OpenAI API) + action selection per robot
+│   │   ├── LLM_agent.py           # Individual robot agent wrapper
+│   │   ├── LLM_oracle.py          # ArenaMP: PEFA orchestrator + proposal step
+│   │   ├── get_env_info.py        # Scene graph / observation wrapper
+│   │   └── prompt/
+│   │       ├── oracle_prompt.txt       # Centralized task-decomposer prompt
+│   │       ├── quadrotor_prompt.txt    # Drone action selector
+│   │       ├── robot_dog_prompt.txt    # Legged robot action selector
+│   │       ├── robot_arm_prompt.txt    # Arm action selector
+│   │       └── judge_prompt.txt        # Feedback reflection prompt
+│   ├── PEFA_wo_history/           # Variant without dialogue history
+│   ├── CRMS/, DRMS/               # Baseline methods (for comparison)
+│   └── mcts/                      # Monte Carlo Tree Search variant
+│
+├── OmniGibson/                    # Modified simulation environment
+│   ├── omnigibson/                # Core library (physics, scene graphs, action spaces)
+│   ├── Benchmark/                 # 100 tasks, robot assets, scene definitions
+│   └── setup.py, scripts/
+│
+├── env/                           # Task scenario JSON files
+│   ├── env0.json                  # 20 tasks in apartment/grocery/restaurant scenes
+│   ├── env1.json, ..., env4.json  # More scenes
+│   └── (100 total tasks across all env files)
+│
+├── requirement.txt                # Python dependencies (openai, numpy, tqdm, etc.)
+├── README.md                      # Setup and run instructions
+└── .git/                          # Repository history
+</code></pre>
+<hr>
+<h2>The core idea in code — LLM assigns subtasks to a heterogeneous team</h2>
+<h3>Robot Capability Representation</h3>
+<p>Each robot&#x27;s capabilities and action space are <strong>hardcoded in two places:</strong></p>
+<ul>
+<li><strong>Prompt templates</strong> (e.g., <code>/prompt/oracle_prompt.txt</code> lines 4–9):</li>
+<pre><code>
+   quadrotor: The quadrotor can take off, land, and fly in the air. 
+              The quadrotor has a basket that can be used to transport objects...
+   
+   robot dog: The robot dog has a robotic arm installed on its back, so it can be 
+              used to carry and operate objects located on a lower surface...
+   
+   robot arm: Different from the robot arm of the robot dog, the robot arm is fixed 
+              on a table or platform and is used to operate objects on the surface...
+</code></pre>
+</ul>
+<ul>
+<li><strong>LLM.py — <code>get<em>available</em>plans()</code> method</strong> (lines 96–193):</li>
+<pre><code>
+   def get_available_plans(self, agent_node, next_rooms, all_landable_surfaces, 
+                          landable_surfaces, on_surfaces, grabbed_objects, 
+                          reached_objects, unreached_objecs, on_same_surface_objects):
+       &quot;&quot;&quot;
+       Build the action list for this robot&#x27;s current state.
+       Actions differ by robot type:
+       
+       quadrotor: [land_on] &lt;surface&gt;, [movetowards] &lt;room/surface&gt;, [takeoff_from] &lt;surface&gt;
+       robot dog: [open], [close], [grab], [putinto], [puton], [movetowards]
+       robot arm: [open], [close], [grab], [putinto], [puton]
+       &quot;&quot;&quot;
+       available_plans = []
+       if agent_node[&quot;class_name&quot;] == &quot;quadrotor&quot;:
+           # Lines 122-138: Build quadrotor-specific actions based on current state
+           if &quot;FLYING&quot; in agent_node[&quot;states&quot;]:
+               available_plans.append(f&quot;[land_on] &lt;{landable_surfaces[&#x27;class_name&#x27;]}&gt;({landable_surfaces[&#x27;id&#x27;]})&quot;)
+           # ... more actions
+       
+       elif agent_node[&quot;class_name&quot;] == &quot;robot dog&quot; or agent_node[&quot;class_name&quot;] == &quot;robot_dog&quot;:
+           # Lines 140-166: Build robot dog actions
+           # ...
+       
+       elif agent_node[&#x27;class_name&#x27;] == &#x27;robot arm&#x27; or agent_node[&#x27;class_name&#x27;] == &#x27;robot_arm&#x27;:
+           # Lines 169-186: Build arm actions
+           # ...
+       
+       # Format actions as numbered list (A, B, C, ...) for LLM
+       plans = &quot;&quot;
+       for i, plan in enumerate(available_plans):
+           plans += f&quot;{chr(ord(&#x27;A&#x27;) + i)}. {plan}\n&quot;
+       return plans, len(available_plans), available_plans
+</code></pre>
+</ul>
+<p>   The state machine <strong>defines what actions are valid:</strong></p>
+<p>   - A quadrotor in <code>&quot;FLYING&quot;</code> state can land or move.</p>
+<p>   - A quadrotor in <code>&quot;LAND&quot;</code> state can take off.</p>
+<p>   - A robot dog can grab an object only if it&#x27;s in <code>reached_objects</code> (within arm reach after <code>movetowards</code>).</p>
+<p>   - A robot arm can only interact with objects on its own surface (<code>on<em>same</em>surfaces</code>).</p>
+<h3>Task Assignment — Oracle Call Site</h3>
+<p>In <code>LLM_oracle.py</code>, the <code>step()</code> method (lines 177–307) contains the <strong>proposal step</strong>:</p>
+<pre><code>
+def step(self):
+    obs = self.env.get_observations()  # Get scene graph snapshot
+    
+    obs2text = &#x27;&#x27;
+    for i in range(self.num_agents):
+        obs2text += self.agent_obs2text(obs, i) + &#x27;\n&#x27;  # Convert graph → text per robot
+    
+    # Load oracle (task-assigner) prompt
+    oracle_prompt = self.oracle_prompt_path
+    with open(oracle_prompt, &#x27;r&#x27;) as f:
+        oracle_prompt = f.read()
+    
+    # Inject current state into prompt (lines 191-194)
+    oracle_prompt = oracle_prompt.replace(&#x27;#AGENT_OBSERVATIONS#&#x27;, obs2text)
+    oracle_prompt = oracle_prompt.replace(&#x27;#TASK_GOAL#&#x27;, self.env.goal_instruction)
+    oracle_prompt = oracle_prompt.replace(&#x27;#NUMBER_AGENTS#&#x27;, str(self.env.num_agent))
+    oracle_prompt = oracle_prompt.replace(&#x27;#DIALOGUE_HISTORY#&#x27;, self.dialogue_history)
+    
+    # Call GPT-4 to assign subtasks (lines 203-206)
+    chat_prompt = [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: oracle_prompt}]
+    outputs, usage = self.generator(chat_prompt, self.sampling_params)
+    self.total_cost += usage
+    message = outputs[0]  # e.g., &quot;Hello &lt;robot_dog&gt;(0): please movetowards the &lt;table&gt;(5)...&quot;
+</code></pre>
+<p>The oracle prompt template (<code>prompt/oracle_prompt.txt</code>) <strong>instructs GPT-4 to:</strong></p>
+<ul>
+<li>Read all three robots&#x27; observations (location, what they&#x27;re holding, what&#x27;s nearby)</li>
+<li>Read the task goal (e.g., &quot;fetch apple from table, place on shelf&quot;)</li>
+<li>Read dialogue history (last 10 previous subtask assignments)</li>
+<li>Output <strong>one subtask</strong> in format: <code>&quot;Hello &lt;robot_dog&gt;(0): please movetowards &lt;table&gt;(5), grab the &lt;apple&gt;(12)&quot;</code></li>
+</ul>
+<p><strong>Key detail:</strong> The prompt enforces the format so the system can extract robot type, ID, and instruction via regex (lines 232–239):</p>
+<pre><code>
+start_class_name = message.find(&#x27;&lt;&#x27;) + 1
+end_class_name = message.find(&#x27;&gt;&#x27;)
+class_name = message[start_class_name:end_class_name]  # e.g., &quot;robot_dog&quot;
+
+start_id = message.find(&#x27;(&#x27;) + 1
+end_id = message.find(&#x27;)&#x27;)
+real_id = int(message[start_id:end_id])  # e.g., 0
+</code></pre>
+<hr>
+<h2>The proposal–execution–feedback loop</h2>
+<h3>Full PEFA cycle (in <code>LLM_oracle.py.run()</code>, lines 310–364)</h3>
+<pre><code>
+def run(self):
+    self.task_goal = copy.deepcopy(self.env.task_goal)
+    saved_info = []
+    
+    success = False
+    while True:
+        # ============ PROPOSAL STEP ============
+        # (step() returns after calling GPT-4 oracle)
+        done, task_results, satisfied, unsatisfied, id, agent_action, agent_message, steps = self.step()
+        
+        # ============ EXECUTION STEP ============
+        # Already happened inside step() via self.env.step():
+        #   done, task_results, satisfied, unsatisfied, steps = self.env.step(
+        #       class_name, real_id, agent_action, self.task_goal
+        #   )
+        
+        # ============ FEEDBACK STEP ============
+        # (Embedded in step() after execution)
+        # Robot sends self-reflection: success/failure, reason, progress
+        # Dialogue history is updated (lines 272-273):
+        #   numbered_list = [f&quot;[{i+1}]、{item}&quot; for i, item in enumerate(self.total_dialogue_history)]
+        #   self.dialogue_history = &#x27;\n&#x27;.join(numbered_list[-10:])  # Keep last 10 turns
+        
+        # ============ TERMINATION CHECKS ============
+        success = done
+        
+        # Check if task is finished
+        if success:
+            self.write_log_to_file(f&#x27;success! steps: {steps}&#x27;)
+            break
+        
+        # Check if exceeded 2x ground truth steps → failure
+        max_step = 2 * self.env.ground_truth_step_num
+        if self.env.steps &gt; max_step:
+            self.write_log_to_file(f&#x27;Task failed, exceeding 2x GT steps&#x27;)
+            success = False
+            break
+        
+        # Else: loop back to PROPOSAL step with updated dialogue history
+        # GPT-4 sees previous failures and adjusts plan
+    
+    return success, steps, saved_info
+</code></pre>
+<h3>Action Execution &amp; Feedback</h3>
+<p>Within the step, after the oracle picks an agent, <strong>execution happens</strong> (lines 257–269):</p>
+<pre><code>
+agent_action, agent_message, agent_info = self.get_actions(obs, chat_agent_info)
+#  agent_action = &#x27;[movetowards] &lt;table&gt;(5)&#x27;
+#  agent_message = &#x27;YES I CAN. The robot dog is close to the table. Next I&#x27;ll grab the apple.&#x27;
+#  agent_info = {&#x27;LLM&#x27;: {&#x27;action_list&#x27;: [...], &#x27;plan&#x27;: &#x27;[movetowards] &lt;table&gt;(5)&#x27;, &#x27;cost&#x27;: 0.05, ...}}
+
+# Dialogue history records the feedback
+self.total_dialogue_history.append(f&quot;&lt;{class_name}&gt;({real_id}): &quot; + str(agent_message))
+
+# Next iteration, oracle sees this feedback in &#x27;#DIALOGUE_HISTORY#&#x27; and adjusts
+</code></pre>
+<h3>Robot Action Selection (in <code>LLM.py.run()</code>, lines 196–287)</h3>
+<p>Each robot executor <strong>also uses GPT-4</strong> to select an action:</p>
+<pre><code>
+def run(self, agent_node, chat_agent_info, current_room, next_rooms, 
+        all_landable_surfaces, landable_surfaces, on_surfaces, grabbed_objects, 
+        reached_objects, unreached_objecs, on_same_surface_objects):
+    
+    # Get valid actions for this robot&#x27;s current state
+    available_plans, num, available_plans_list = self.get_available_plans(
+        agent_node, next_rooms, all_landable_surfaces, landable_surfaces, ...
+    )
+    
+    # Load robot-specific prompt
+    prompt_path = chat_agent_info[&#x27;prompt_path&#x27;]  # e.g., &#x27;./prompt/robot_dog_prompt.txt&#x27;
+    with open(prompt_path, &#x27;r&#x27;) as f:
+        agent_prompt = f.read()
+    
+    # Inject state into prompt
+    agent_prompt = agent_prompt.replace(&#x27;#OBSERVATION#&#x27;, chat_agent_info[&#x27;observation&#x27;])
+    agent_prompt = agent_prompt.replace(&#x27;#ACTIONLIST#&#x27;, available_plans)
+    agent_prompt = agent_prompt.replace(&#x27;#INSTRUCTION#&#x27;, chat_agent_info[&#x27;instruction&#x27;])
+    
+    # First query: Can you do this?
+    chat_prompt = [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: agent_prompt}]
+    outputs, usage = self.generator(chat_prompt, self.sampling_params)
+    output = outputs[0]  # e.g., &quot;YES I CAN. The table is near me...&quot;
+    
+    sentences = output.split(&quot;.&quot;)
+    first_sentence = sentences[0].upper()
+    
+    # Second query (if &quot;YES I CAN&quot;): Which action?
+    if first_sentence == &quot;YES I CAN&quot;:
+        chat_prompt = [
+            {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: agent_prompt},
+            {&quot;role&quot;: &quot;assistant&quot;, &quot;content&quot;: output},
+            {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Answer with only one best next action. So the answer is&quot;}
+        ]
+        outputs, usage = self.generator(chat_prompt, self.sampling_params)
+        output = outputs[0]  # e.g., &quot;Option A: [movetowards] &lt;table&gt;(5)&quot;
+        
+        # Parse which action was selected
+        plan = self.parse_answer(available_plans_list, output)  # Lines 74–94
+        # Returns: &#x27;[movetowards] &lt;table&gt;(5)&#x27; (or None if parsing fails)
+    
+    # If &quot;SORRY I CANNOT&quot;: explain why
+    elif first_sentence == &quot;SORRY I CANNOT&quot;:
+        message = f&quot;Sorry, cannot perform this instruction. Possible reasons: {output[16:]}. My current actionlist is: {available_plans}&quot;
+    
+    return message, info
+</code></pre>
+<p><strong>Two-step reasoning:</strong></p>
+<ul>
+<li><strong>Feasibility check</strong> (&quot;YES I CAN&quot; / &quot;SORRY I CANNOT&quot;) — LLM verifies the instruction against its capabilities and current state</li>
+<li><strong>Action selection</strong> — if feasible, LLM picks the best action from the available list</li>
+</ul>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><strong><code>src/experiment/PEFA/main.py</code></strong> (119 lines)</li>
+</ul>
+<p>   — Entry point; shows how the simulator loads a task, creates agents, and runs <code>arena.run()</code></p>
+<ul>
+<li><strong><code>src/experiment/PEFA/args.py</code></strong> (48 lines)</li>
+</ul>
+<p>   — Configuration: understand all the command-line flags and their defaults</p>
+<ul>
+<li><strong><code>src/experiment/PEFA/LLM_oracle.py</code> — <code>class ArenaMP</code></strong> (lines 12–99, 310–364)</li>
+</ul>
+<p>   — The PEFA loop orchestrator; where the proposal-execution-feedback cycle lives</p>
+<ul>
+<li><strong><code>src/experiment/PEFA/LLM_oracle.py</code> — <code>step()</code> method</strong> (lines 177–307)</li>
+</ul>
+<p>   — One iteration of the loop: oracle call, action execution, feedback</p>
+<ul>
+<li><strong><code>src/experiment/PEFA/LLM.py</code> — <code>get<em>available</em>plans()</code> and <code>run()</code></strong> (lines 96–287)</li>
+</ul>
+<p>   — How robot capabilities are encoded and how each robot selects an action</p>
+<ul>
+<li><strong><code>src/experiment/PEFA/prompt/oracle_prompt.txt</code></strong> (50 lines)</li>
+</ul>
+<p>   — The system message for task decomposition; read to understand what context is sent to GPT-4</p>
+<ul>
+<li><strong><code>src/experiment/PEFA/prompt/robot<em>dog</em>prompt.txt</code></strong> (39 lines)</li>
+</ul>
+<p>   — Example of a robot executor&#x27;s prompt; shows how individual robots are prompted</p>
+<ul>
+<li><strong><code>src/experiment/PEFA/LLM_agent.py</code></strong> (150+ lines)</li>
+</ul>
+<p>   — Robot agent wrapper that translates scene graph observations into text for LLM</p>
+<ul>
+<li><strong><code>src/experiment/PEFA/get<em>env</em>info.py</code></strong> (100+ lines)</li>
+</ul>
+<p>   — Scene graph utilities; how object relationships (ON, INSIDE, HOLDING, CLOSE) are extracted</p>
+<ul>
+<li><strong><code>env/env0.json</code></strong> (first 20 lines)</li>
+</ul>
+<p>    — Example of a task scenario; the data structure passed to the simulator</p>
+<p><strong>Runnability note:</strong> You cannot run this without:</p>
+<ul>
+<li>NVIDIA Isaac Sim 2022.2.0 (requires GPU + licensed software)</li>
+<li>OmniGibson environment setup (see README.md setup.sh)</li>
+<li>OpenAI API key with GPT-4 access</li>
+<li>Robot asset files (licensed, must download)</li>
+</ul>
+<p>If you have the dependencies, minimal test: <code>python main.py --env env0 --task 0 --api<em>key YOUR</em>KEY --debug</code> (will cost a few dollars in API calls).</p></article>
+<article class="page walk"><h1>SIGMA — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;SIGMA: Sheaf-Informed Geometric Multi-Agent Pathfinding&quot; (ICRA 2025)</p>
+<p><strong>Repo root:</strong> <code>SIGMA/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p>| Script | Purpose | Entry point? |</p>
+<p>|--------|---------|--------------|</p>
+<p>| <code>train.py</code> | Distributed RL training loop using Ray | YES — run <code>python train.py</code> to train from scratch |</p>
+<p>| <code>test.py</code> | Evaluation and visualization on test sets | YES — run <code>python test.py</code> to test a trained model |</p>
+<p>| <code>configs.py</code> | All hyperparameters and environment settings | Imported by every other module |</p>
+<p>| <code>worker.py</code> | Ray actor definitions (Learner, Actor, GlobalBuffer) | Called from <code>train.py</code> as remote workers |</p>
+<p>| <code>model.py</code> | Core neural network (sheaf-aware policy) | Instantiated by both train and test scripts |</p>
+<p>| <code>environment.py</code> | MAPF simulator (multi-agent grid world) | Env for training and evaluation |</p>
+<p>| <code>buffer.py</code> | Experience replay with prioritized sampling | Used by training loop |</p>
+<p>| <code>map_generator.py</code> | Procedural obstacle generation (maze, warehouse, house) | Called in <code>environment.py</code> |</p>
+<p>| <code>ordm.py</code> | ODrMStar planner (alternative classical solver) | Mostly unused; study artifact |</p>
+<p><strong>Config system</strong> (<code>configs.py</code> line 1–89): Global hyperparameters set at module level:</p>
+<ul>
+<li><code>map<em>length=50</code>, <code>num</em>agents=10</code> — initial environment</li>
+<li><code>obs_radius=4</code> — each agent sees 9×9 grid centered on self</li>
+<li><code>obs<em>shape=(6, 2*obs</em>radius+1, 2*obs_radius+1)</code> — 6 channels, 9×9 spatial</li>
+<li><code>reward_fn</code> — per-step rewards (move=-0.075, collision=-0.5, finish=3)</li>
+<li><code>training<em>times=600000</code>, <code>batch</em>size=192</code>, <code>learning_starts=50000</code></li>
+<li><code>load<em>model=True</code>, <code>load</em>path=&#x27;./models/save<em>model/model</em>house/84000_house.pth&#x27;</code> — pre-trained house model</li>
+</ul>
+<p><strong>Simulator &amp; GPU</strong>: Grid-based 2D simulator (no external physics engine). GPU *strongly* recommended for Ray distributed training; CPU-only ~100 agents max.</p>
+<p><strong>Runnability</strong>: Pre-trained models provided in <code>./models/save_model/</code>. You can skip training and jump to <code>python test.py</code> after loading a checkpoint.</p>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+SIGMA/
+├── train.py                    # Entry: ray.init(), spawn Learner/Actor workers, log stats
+├── model.py                    # Core: Network class w/ CNN encoder + GRU + CommBlock + sheaf loss
+├── worker.py                   # Ray remote: GlobalBuffer (replay), Learner (train), Actor (collect)
+├── environment.py              # MAPF env: grid world, agents, goals, collision detection
+├── configs.py                  # Global config: maps, rewards, training hyperparams
+├── buffer.py                   # SumTree (prioritized replay), LocalBuffer (episode buffer)
+├── test.py                     # Test harness: load model, run on test sets, visualize
+├── map_generator.py            # Procedural map generation (maze, warehouse, house)
+├── ordm.py                     # Unused: ODrMStar classical planner (study code)
+├── models/save_model/          # Pre-trained weights
+│   └── model_house/84000_house.pth
+├── house_test_set/             # Pickled test cases
+└── test_set/
+</code></pre>
+<hr>
+<h2>The core idea in code — sheaf-informed consistency in an RL policy</h2>
+<p><strong>Sheaf theory principle</strong>: When multiple agents cooperate, their local observations should &quot;agree&quot; on the consensus view at each point. The code enforces this via an MLP that produces a learned consensus feature; MSE loss penalizes disagreement between neighbors.</p>
+<h3>1. <strong>Network Architecture</strong> (<code>model.py</code> lines 118–250)</h3>
+<pre><code>
+class Network(nn.Module):
+    def __init__(self, input_shape=configs.obs_shape, cnn_channel=configs.cnn_channel, hidden_dim=configs.hidden_dim,
+                max_comm_agents=configs.max_comm_agents):
+        super().__init__()
+        self.latent_dim = 16*7*7
+        self.hidden_dim = hidden_dim
+        
+        # CNN encoder: obs [B,6,9,9] → latent [B,784]
+        self.obs_encoder = nn.Sequential(
+            nn.Conv2d(self.input_shape[0], cnn_channel, 3, 1),
+            nn.ReLU(True),
+            ResBlock(cnn_channel),
+            ResBlock(cnn_channel),
+            ResBlock(cnn_channel),
+            nn.Conv2d(cnn_channel, 16, 1, 1),
+            nn.ReLU(True),
+            nn.Flatten(),
+        )
+        
+        # Recurrent: latent → hidden state [B,256]
+        self.recurrent = nn.GRUCell(self.latent_dim, self.hidden_dim)
+        
+        # Communication block: multi-head attention + GRU update
+        self.comm = CommBlock(hidden_dim)
+        
+        # MLP for sheaf-informed consensus feature
+        self.mlp = nn.Sequential(
+            nn.Linear(self.latent_dim, self.hidden_dim),
+            nn.Linear(self.hidden_dim, self.mlp_dim),  # mlp_dim=1
+            nn.Sigmoid()
+        )
+        
+        # Dueling DQN heads
+        self.adv = nn.Linear(hidden_dim + self.mlp_dim, 5)  # Advantage stream
+        self.state = nn.Linear(hidden_dim, 1)              # Value stream
+</code></pre>
+<p><strong>Key insight</strong>: The <code>mlp</code> module computes a scalar consensus feature per agent. All agents with the same local geometry should produce similar values—enforced by loss below.</p>
+<h3>2. <strong>Sheaf-Consistency Loss in <code>step()</code> and <code>step_test()</code> (lines 210–232, 287–310)</strong></h3>
+<p>Each step of inference computes:</p>
+<pre><code>
+# Communication mask: which agents can &quot;see&quot; each other
+agents_pos = pos  # [num_agents, 2]
+pos_mat = (agents_pos.unsqueeze(1)-agents_pos.unsqueeze(0)).abs()
+dist_mat = (pos_mat[:,:,0]**2+pos_mat[:,:,1]**2).sqrt()
+in_obs_mask = (pos_mat&lt;=configs.obs_radius).all(2)  # Within FOV?
+_, ranking = dist_mat.topk(min(self.max_comm_agents, num_agents), dim=1, largest=False)
+dist_mask = torch.zeros((num_agents, num_agents), dtype=torch.bool)
+dist_mask.scatter_(1, ranking, True)
+comm_mask = torch.bitwise_and(in_obs_mask, dist_mask)  # Final neighbor mask
+
+# Apply communication block (multi-head attention)
+self.hidden = self.comm(self.hidden, comm_mask)
+
+# MLP outputs consensus feature
+mlp_output = self.mlp(latent)  # [num_agents, 1]
+
+# Sheaf-section loss: penalize disagreement with neighbors
+sheaf_section_loss = torch.zeros(num_agents, dtype=torch.float32)
+for i in range(num_agents):
+    neighbors = comm_mask[i].nonzero(as_tuple=True)[0]
+    if len(neighbors) == 0:
+        continue
+    output_i = mlp_output[i]
+    loss = 0.0
+    for j in neighbors:
+        output_j = mlp_output[j]
+        loss += torch.nn.functional.mse_loss(output_i, output_j, reduction=&#x27;sum&#x27;)
+    sheaf_section_loss[i] = loss / len(neighbors)
+
+# Combine with dueling DQN Q-values
+if configs.Sec_cons:  # Sheaf-consistency enabled (True by default)
+    q_val = state_val - self.lambdas * sheaf_section_loss + adv_val - adv_val.mean(1, keepdim=True)
+else:
+    q_val = state_val + adv_val - adv_val.mean(1, keepdim=True)
+</code></pre>
+<p><strong>What this does</strong>:</p>
+<ul>
+<li>For each agent *i*, measure MSE between its consensus feature and all neighbors&#x27; features</li>
+<li>Penalize disagreement by subtracting <code>lambdas * sheaf<em>section</em>loss</code> from Q-values (line 243, 321)</li>
+<li><code>lambdas=0.001</code> (config line 43) is the weighting factor</li>
+<li>This forces agents to learn representations that agree when they see each other</li>
+</ul>
+<h3>3. <strong>Training Loop Sheaf Loss</strong> (<code>model.py</code> lines 379–406, in <code>forward()</code>)</h3>
+<p>During backprop training, the same sheaf loss is recomputed:</p>
+<pre><code>
+def forward(self, obs, steps, hidden, comm_mask):
+    # ... CNN encode, GRU recurrence ...
+    
+    # Sheaf section loss computed per batch, per agent
+    sheaf_section_loss = torch.zeros(configs.batch_size, num_agents, dtype=torch.float32)
+    mlp_q = mlp_output.view(max_steps, configs.batch_size, num_agents, self.mlp_dim)[steps - 1, torch.arange(configs.batch_size)]
+    comm_q = comm_mask[torch.arange(configs.batch_size), steps - 1]
+    
+    for b in range(configs.batch_size):
+        for i in range(num_agents):
+            neighbors = comm_q[b, i].nonzero(as_tuple=True)[0]
+            if len(neighbors) == 0:
+                continue
+            output_i = mlp_q[b, i]
+            loss = 0.0
+            for j in neighbors:
+                output_j = mlp_q[b, j]
+                loss += torch.nn.functional.mse_loss(output_i, output_j, reduction=&#x27;sum&#x27;)
+            sheaf_section_loss[b, i] = loss / len(neighbors)
+    
+    # Only agent 0&#x27;s loss used (line 414)
+    sheaf_section_loss = sheaf_section_loss[:, 0]
+    sheaf_section_loss = sheaf_section_loss.unsqueeze(1).to(torch.device(&quot;cuda&quot;))
+    
+    # Q-value combines state value, sheaf penalty, and advantage
+    if configs.Sec_cons:
+        q_val = state_val - self.lambdas * sheaf_section_loss + adv_val - adv_val.mean(1, keepdim=True)
+    else:
+        q_val = state_val + adv_val - adv_val.mean(1, keepdim=True)
+    
+    return q_val  # [batch_size, 5]
+</code></pre>
+<hr>
+<h2>The MAPF environment &amp; training loop</h2>
+<h3>1. <strong>Environment</strong> (<code>environment.py</code> lines 70–512)</h3>
+<pre><code>
+class Environment:
+    def __init__(self, num_agents: int = configs.init_env_settings[0], map_length: int = configs.init_env_settings[1],
+                obs_radius: int = configs.obs_radius, reward_fn: dict = configs.reward_fn, fix_density=None,
+                curriculum=False, init_env_settings_set=configs.init_env_settings):
+        
+        # Simulator state
+        self.num_agents = num_agents
+        self.map_size = (map_length, map_length)
+        self.agents_pos = np.empty((self.num_agents, 2), dtype=np.int)  # Current positions
+        self.goals_pos = np.empty((self.num_agents, 2), dtype=np.int)   # Goal positions
+        self.map = ...  # Obstacle map (0=free, 1=obstacle)
+        self.obs_radius = obs_radius
+        
+        # Precomputed: heuristic distance map for each agent (BFS from goal)
+        self.heuri_map = np.zeros((self.num_agents, 4, *self.map_size), dtype=np.bool)
+        self.get_heuri_map()
+</code></pre>
+<p><strong>Key methods</strong>:</p>
+<pre><code>
+def step(self, actions: List[int]):
+    &quot;&quot;&quot;Process joint action, detect collisions, return reward&quot;&quot;&quot;
+    # actions: [0=stay, 1=up, 2=down, 3=left, 4=right]
+    
+    # First round: out-of-bounds, obstacle collision
+    for agent_id in checking_list.copy():
+        if actions[agent_id] == 0:
+            # Stay: reward based on goal
+            if np.array_equal(self.agents_pos[agent_id], self.goals_pos[agent_id]):
+                rewards.append(self.reward_fn[&#x27;stay_on_goal&#x27;])  # 0
+            else:
+                rewards.append(self.reward_fn[&#x27;stay_off_goal&#x27;])  # -0.075
+        else:
+            # Move: check bounds &amp; obstacle
+            next_pos[agent_id] += action_list[actions[agent_id]]
+            if out-of-bounds or obstacle:
+                rewards[agent_id] = self.reward_fn[&#x27;collision&#x27;]  # -0.5
+    
+    # Second round: agent swap conflicts (A→B, B→A simultaneously)
+    # Third round: multi-agent collision (3+ agents same cell)
+    # Greedy tie-breaking by position hash
+    
+    # Update positions
+    self.agents_pos = np.copy(next_pos)
+    self.steps += 1
+    
+    # Check termination
+    done = np.array_equal(self.agents_pos, self.goals_pos)
+    
+    return self.observe(), rewards, done, info
+
+def observe(self):
+    &quot;&quot;&quot;Return multi-channel observation for each agent&quot;&quot;&quot;
+    obs = np.zeros((self.num_agents, 6, 2*self.obs_radius+1, 2*self.obs_radius+1), dtype=np.bool)
+    
+    # Channel 0: agent map (other agents in FOV)
+    # Channel 1: obstacle map (padded with 0)
+    # Channels 2-5: heuristic map (up, down, left, right arrows toward goal)
+    
+    for i, agent_pos in enumerate(self.agents_pos):
+        x, y = agent_pos
+        obs[i, 0] = agent_map[x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
+        obs[i, 0, self.obs_radius, self.obs_radius] = 0  # Blind spot at ego
+        obs[i, 1] = obstacle_map[x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
+        obs[i, 2:] = self.heuri_map[i, :, x:x+2*self.obs_radius+1, y:y+2*self.obs_radius+1]
+    
+    return obs, np.copy(self.agents_pos)
+</code></pre>
+<h3>2. <strong>Training Loop</strong> (<code>train.py</code> lines 20–52)</h3>
+<pre><code>
+def main(num_actors=configs.num_actors, log_interval=configs.log_interval):
+    ray.init(local_mode=False)  # Distributed setup
+    
+    # Create Ray remote actors
+    buffer = GlobalBuffer.remote()
+    learner = Learner.remote(buffer)
+    time.sleep(1)
+    
+    # Spawn 20 actor workers with linearly-spaced epsilon
+    actors = [Actor.remote(i, 0.4**(1+(i/(num_actors-1))*7), learner, buffer) for i in range(num_actors)]
+    
+    # Launch all workers
+    for actor in actors:
+        actor.run.remote()
+    
+    # Wait until buffer has enough transitions
+    while not ray.get(buffer.ready.remote()):
+        time.sleep(5)
+        ray.get(learner.stats.remote(5))
+        ray.get(buffer.stats.remote(5))
+    
+    print(&#x27;start training&#x27;)
+    buffer.run.remote()    # Start background data-prep thread
+    learner.run.remote()   # Start training thread
+    
+    # Loop: log stats every log_interval seconds
+    done = False
+    while not done:
+        time.sleep(log_interval)
+        done = ray.get(learner.stats.remote(log_interval))
+        ray.get(buffer.stats.remote(log_interval))
+</code></pre>
+<h3>3. <strong>Learner</strong> (<code>worker.py</code> lines 265–370)</h3>
+<pre><code>
+@ray.remote(num_cpus=1, num_gpus=1)
+class Learner:
+    def __init__(self, buffer: GlobalBuffer):
+        self.device = torch.device(&#x27;cuda&#x27; if torch.cuda.is_available() else &#x27;cpu&#x27;)
+        self.model = Network()
+        if configs.load_model:
+            state_dict = torch.load(configs.load_path, map_location=self.device)
+            self.model.load_state_dict(state_dict, strict=True)
+        self.model.to(self.device)
+        self.tar_model = deepcopy(self.model)
+        self.optimizer = Adam(self.model.parameters(), lr=1e-4)
+        self.scheduler = MultiStepLR(self.optimizer, milestones=[200000, 400000], gamma=0.5)
+        self.buffer = buffer
+        self.counter = 0
+        self.done = False
+    
+    def train(self):
+        scaler = GradScaler()
+        
+        while not ray.get(self.buffer.check_done.remote()) and self.counter &lt; configs.training_times:
+            for i in range(1, 10001):
+                # Fetch pre-sampled batch from buffer
+                data_id = ray.get(self.buffer.get_data.remote())
+                data = ray.get(data_id)
+                b_obs, b_action, b_reward, b_done, b_steps, b_seq_len, b_hidden, b_comm_mask, idxes, weights, old_ptr = data
+                
+                # Move to GPU
+                b_obs, b_action, b_reward = b_obs.to(self.device), b_action.to(self.device), b_reward.to(self.device)
+                b_done, b_steps, weights = b_done.to(self.device), b_steps.to(self.device), weights.to(self.device)
+                b_hidden = b_hidden.to(self.device)
+                b_comm_mask = b_comm_mask.to(self.device)
+                
+                # Compute n-step TD target
+                with torch.no_grad():
+                    b_q_ = (1 - b_done) * self.tar_model(b_obs, b_next_seq_len, b_hidden, b_comm_mask).max(1, keepdim=True)[0]
+                
+                # Compute current Q (up to seq_len - forward_steps)
+                b_q = self.model(b_obs[:, :-configs.forward_steps], b_seq_len, b_hidden, b_comm_mask[:, :-configs.forward_steps]).gather(1, b_action)
+                
+                # TD error with discount (0.99^forward_steps)
+                td_error = (b_q - (b_reward + (0.99 ** b_steps) * b_q_))
+                
+                # Prioritized replay: update sample priorities
+                priorities = td_error.detach().squeeze().abs().clamp(1e-4).cpu().numpy()
+                
+                # Huber loss, weighted by importance sampling
+                loss = (weights * self.huber_loss(td_error)).mean()
+                
+                # Backprop with AMP
+                self.optimizer.zero_grad()
+                scaler.scale(loss).backward()
+                scaler.unscale_(self.optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), 40)  # Grad clip
+                scaler.step(self.optimizer)
+                scaler.update()
+                self.scheduler.step()
+                
+                # Every 2000 updates: sync target network
+                if i % configs.target_network_update_freq == 0:
+                    self.tar_model.load_state_dict(self.model.state_dict())
+                
+                # Every 2000 updates: save checkpoint
+                if i % configs.save_interval == 0:
+                    torch.save(self.model.state_dict(), os.path.join(configs.save_path, &#x27;{}.pth&#x27;.format(self.counter)))
+                
+                self.counter += 1
+</code></pre>
+<h3>4. <strong>Actor</strong> (<code>worker.py</code> lines 373–437)</h3>
+<pre><code>
+@ray.remote(num_cpus=1)
+class Actor:
+    def __init__(self, worker_id: int, epsilon: float, learner: Learner, buffer: GlobalBuffer):
+        self.id = worker_id
+        self.model = Network()
+        self.model.eval()
+        self.env = Environment(curriculum=True)  # Curriculum learning
+        self.epsilon = epsilon  # Exploration rate
+        self.learner = learner
+        self.global_buffer = buffer
+    
+    def run(self):
+        done = False
+        obs, pos, local_buffer = self.reset()
+        self.update_weights()
+        
+        while True:
+            # Inference with trained model
+            actions, q_val, hidden, comm_mask = self.model.step(torch.from_numpy(obs.astype(np.float32)), torch.from_numpy(pos.astype(np.float32)))
+            
+            # Epsilon-greedy: one random action per step
+            if random.random() &lt; self.epsilon:
+                actions[0] = np.random.randint(0, 5)
+            
+            # Env step
+            (next_obs, next_pos), rewards, done, _ = self.env.step(actions)
+            
+            # Record to local buffer
+            local_buffer.add(q_val[0], actions[0], rewards[0], next_obs, hidden, comm_mask)
+            
+            # Continue or finish episode
+            if done == False and self.env.steps &lt; self.max_episode_length:
+                obs, pos = next_obs, next_pos
+            else:
+                # Compute bootstrapped Q for final state if timeout
+                if done:
+                    data = local_buffer.finish()
+                else:
+                    _, q_val, hidden, comm_mask = self.model.step(torch.from_numpy(next_obs.astype(np.float32)), torch.from_numpy(next_pos.astype(np.float32)))
+                    data = local_buffer.finish(q_val[0], comm_mask)
+                
+                # Send episode to global buffer
+                self.global_buffer.add.remote(data)
+                done = False
+                obs, pos, local_buffer = self.reset()
+            
+            # Every 400 steps: pull new weights from learner
+            self.counter += 1
+            if self.counter == configs.actor_update_steps:
+                self.update_weights()
+                self.counter = 0
+</code></pre>
+<h3>5. <strong>Experience Buffer with Prioritized Replay</strong> (<code>buffer.py</code> lines 111–186)</h3>
+<pre><code>
+def sample_batch(self, batch_size: int) -&gt; Tuple:
+    &quot;&quot;&quot;Prioritized replay: sample high TD-error transitions&quot;&quot;&quot;
+    
+    # Use SumTree for efficient sampling
+    idxes, priorities = self.priority_tree.batch_sample(batch_size)
+    
+    # For each sample: extract sequence of length seq_len (16 steps)
+    # and forward_steps (2 steps) for n-step return
+    b_obs, b_action, b_reward, b_done, b_steps, b_seq_len, b_hidden, b_comm_mask = [], [], [], [], [], [], [], []
+    
+    for idx, global_idx, local_idx in zip(idxes.tolist(), global_idxes.tolist(), local_idxes.tolist()):
+        
+        steps = min(configs.forward_steps, (self.size_buf[global_idx].item()-local_idx))
+        seq_len = min(local_idx+1, configs.seq_len)
+        
+        # Extract observation window
+        obs = self.obs_buf[...]
+        comm_mask = self.comm_mask_buf[...]
+        hidden = self.hid_buf[...]
+        
+        # Pad if short
+        if obs.shape[0] &lt; configs.seq_len+configs.forward_steps:
+            pad_len = configs.seq_len+configs.forward_steps-obs.shape[0]
+            obs = np.pad(obs, ((0,pad_len),(0,0),(0,0),(0,0),(0,0)))
+            comm_mask = np.pad(comm_mask, ((0,pad_len),(0,0),(0,0)))
+        
+        # n-step return (2-step)
+        action = self.act_buf[idx]
+        reward = 0
+        for i in range(steps):
+            reward += self.rew_buf[idx+i]*0.99**i
+        
+        b_obs.append(obs)
+        b_action.append(action)
+        b_reward.append(reward)
+        b_done.append(done)
+        b_steps.append(steps)
+        b_seq_len.append(seq_len)
+        b_hidden.append(hidden)
+        b_comm_mask.append(comm_mask)
+    
+    # Importance sampling weights
+    min_p = np.min(priorities)
+    weights = np.power(priorities/min_p, -self.beta)
+    
+    # Stack and return as PyTorch tensors
+    return (
+        torch.from_numpy(np.stack(b_obs).astype(np.float16)),
+        torch.LongTensor(b_action).unsqueeze(1),
+        torch.HalfTensor(b_reward).unsqueeze(1),
+        torch.HalfTensor(b_done).unsqueeze(1),
+        torch.HalfTensor(b_steps).unsqueeze(1),
+        torch.LongTensor(b_seq_len),
+        torch.from_numpy(np.concatenate(b_hidden)),
+        torch.from_numpy(np.stack(b_comm_mask)),
+        idxes,
+        torch.from_numpy(weights).unsqueeze(1),
+        self.ptr
+    )
+</code></pre>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><strong><code>configs.py</code></strong> (5 min) — Understand the hyperparameter landscape: map size, num agents, rewards, training settings.</li>
+</ul>
+<ul>
+<li><strong><code>environment.py</code> lines 70–145</strong> (10 min) — Understand the MAPF simulator: agent &amp; goal initialization, observation structure.</li>
+</ul>
+<ul>
+<li><strong><code>model.py</code> lines 118–175</strong> (15 min) — Understand the network: CNN encoder, GRU recurrence, communication block, dueling DQN heads.</li>
+</ul>
+<ul>
+<li><strong><code>model.py</code> lines 210–250</strong> (20 min) — <strong>Read this carefully.</strong> This is where sheaf-theoretic consistency is enforced. Note:</li>
+</ul>
+<p>   - <code>comm_mask</code> = which agents can &quot;communicate&quot; (spatial proximity)</p>
+<p>   - <code>mlp_output</code> = per-agent consensus feature</p>
+<p>   - <code>sheaf<em>section</em>loss</code> = MSE between agent i&#x27;s consensus and each neighbor j&#x27;s consensus</p>
+<p>   - <code>q<em>val = state</em>val - lambdas * sheaf<em>section</em>loss + adv<em>val - adv</em>val.mean()</code></p>
+<ul>
+<li><strong><code>train.py</code> lines 20–52</strong> (5 min) — Entry point: Ray distributed training loop.</li>
+</ul>
+<ul>
+<li><strong><code>worker.py</code> lines 265–370</strong> (15 min) — Learner: DQN gradient update, TD error, target network sync.</li>
+</ul>
+<ul>
+<li><strong><code>worker.py</code> lines 373–437</strong> (15 min) — Actor: environment interaction, epsilon-greedy exploration, weight sync.</li>
+</ul>
+<ul>
+<li><strong><code>buffer.py</code> lines 20–110</strong> (10 min) — Prioritized experience replay: SumTree, LocalBuffer, n-step returns.</li>
+</ul>
+<ul>
+<li><strong><code>test.py</code> lines 122–228</strong> (10 min) — Evaluation: load checkpoint, run episodes, compute success rate and sheaf loss.</li>
+</ul>
+<ul>
+<li><strong><code>map<em>generator.py</code> lines 319–395</strong> (skim) — <code>house</em>generator()</code> for structured environments.</li>
+</ul>
+<hr>
+<p><strong>Time investment</strong>: ~2 hours to read + understand all code. ~1 week to meaningfully modify (e.g., swap sheaf loss for a different consensus mechanism, or change network architecture).</p></article></div>
+  <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

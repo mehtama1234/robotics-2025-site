@@ -1,0 +1,1392 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaussian Splatting for Robots — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Safety · attacks Topic deep dive · with codeamp; guarantees · with code</div>
+  <h1>One flexible tool for seeing and acting (world models)</h1>
+  <p>A world model is a model the robot learns of how the world will change, so it can plan by imagining outcomes before acting. This page: the idea, the key 2025 papers with their real code, and hands-on walkthroughs of two cloned codebases.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>One flexible tool for both seeing and acting</h1>
+<p><em>12 papers · move — how the robot turns plans into physical actions</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">The core problem running through this group of papers is straightforward but hard: a robot decides what to do by imagining the future, so it needs an internal model that predicts how the world will change when it acts. But that model only works inside situations it has been trained on — the moment something new or hidden appears (a heavier object, a slippery floor, a person walking in), the model's predictions go stale and the robot does not know it, leading to failure. The field's working bet is that <strong>a world model — a learned prediction engine trained to forecast what happens next — can be both fast enough to run on a robot and honest about what it does not know</strong>, so the robot can plan safely by imagining outcomes before acting and can detect when it has stepped outside familiar territory.</p>
+<p style="margin:0 0 8px"><strong>Four things people are actually trying to do with it:</strong></p>
+<ul style="margin:0 0 12px">
+<li><strong>① Learn to predict and plan inside that prediction.</strong> <em>LUMOS</em> trains a robot to imagine task execution inside a learned world model, using language and image goals to label experience; <em>LIMT</em> extends one world model across multiple tasks so the robot can transfer learned skills; <em>X-MOBILITY</em> learns from unlabeled video, then fine-tunes control on a small set of human examples.</li>
+<li><strong>② Know when the model is wrong.</strong> <em>Privileged-Dreamer</em> watches the robot's own sensor history to estimate hidden variables (payload, friction) that shift the physics; <em>Bounding Distributional Shifts</em> detects when a planned action would venture into unfamiliar territory and discards unsafe plans.</li>
+<li><strong>③ Reduce the expensive burden of labeled data.</strong> <em>Imitation Learning with Limited Actions via Diffusion Planners</em> splits the job: a diffusion model plans over observed states without action labels, and a small learned controller translates those plans into motor commands using a compact structure that stays stable.</li>
+<li><strong>④ Plan by picturing the future, not abstract numbers.</strong> <em>RoboEnvision</em> generates a video of task steps, extracting joint angles from the snapshots; <em>Chain-of-Imagination</em> breaks long instructions into visual targets, so each step is concrete. <em>SR-AIF</em> and <em>Curiosity-Driven Imagination</em> use the robot's own uncertainty to guide what it learns — letting it explore toward things it does not yet understand.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> the field is learning to build prediction models that robots can actually trust and use on real hardware — models that admit what they do not know, run fast, and stay honest when the world surprises them. The 2025 work is people tackling speed (model compression, efficient planning), honesty (uncertainty quantification, out-of-distribution detection), and data efficiency (imagination rollouts, diffusion planning, curiosity) so a robot's internal picture of the future becomes reliable enough to base real decisions on. <strong>Still open:</strong> running good world models on tiny hardware in real time; merging predictions with true uncertainty estimates that hold across task variations; and catching distribution shift fast enough for the robot to react before committing to a bad plan.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>A robot arm reaching for a cup does not face one clear best path. There are dozens of paths that all work. A human picks one without thinking. A robot needs a method that can hold all those valid options in mind and then commit to one of them smoothly.</p>
+<p>The oldest approach is to compute an average: if a robot has learned from many examples of humans doing a task, it can try to pick the action that sits in the middle of what humans did. That works when there is one clear answer. When there are many equally good answers, averaging collapses them into something that is none of them — like averaging a vote of &quot;go left&quot; and &quot;go right&quot; and ending up going straight into a wall. The robot freezes, twitches, or follows a shaky in-between path that makes real tasks fail.</p>
+<p>The broader problem runs deeper. A robot has to do four things at once: take in a messy, changing world through cameras and sensors; build a picture of what is happening; decide what to do; and move a physical body to do it — all in real time, on limited power, without breaking anything or anyone nearby. Each of those four steps has its own hard problems. This topic sits at the crossing of all four.</p>
+<p>The specific hard point here is that the world the robot must model and act in is full of gaps. Cameras only see surfaces. Sensors go noisy. Hidden things — the weight of an object, the slip of a floor, the position of a person who just walked in — change the physics of the task. A robot that builds an internal model of what will happen next (called a world model) can plan ahead without touching the real world, but only if that model is honest about what it does not know and can update fast when something new appears.</p>
+<p>The field has spent years watching robots fail at tasks they seemed to understand in training and break completely the moment something small changed — a different table surface, a slightly heavier object, a new room layout. The root cause is almost always the same: the robot&#x27;s internal picture of the world is wrong, and it has no good way to know that it is wrong or fix it.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Building and using an internal model of the world</h3>
+<p>Several papers train the robot not just to act but to predict what happens next — to build a model inside its own computing that simulates the effects of its actions before it takes them. This internal model (a world model) lets the robot plan in its head, practice situations it has never seen in real life, and catch bad plans before they cause real damage.</p>
+<p>LUMOS uses a world model to let a robot practice tasks in simulation that never appeared in the original recorded data, using language and image goals to label that experience in new ways. LIMT extends the same idea across many tasks at once: a single world model absorbs language instructions so the robot can share what it learned in one task to help with another. X-MOBILITY trains a world model to understand environments from large amounts of unlabeled data, then adds a smaller set of human examples just for the control step, so it can handle new environments without retraining from scratch.</p>
+<p>The payoff is that a robot with a good world model is not limited to situations it has practiced. It can reason forward and reject bad options before they happen.</p>
+<h3>Catching hidden changes and unfamiliar situations</h3>
+<p>A world model is only trustworthy inside the situations it was trained on. When something new appears — a heavier load, a slippery surface, a person behaving unexpectedly — the model&#x27;s predictions go wrong and the robot does not know it.</p>
+<p>Privileged-Dreamer addresses this by having the robot watch its own recent history of sensor readings and actions and use that to estimate hidden variables (things it cannot measure directly, like payload or friction). Those estimates feed both the robot&#x27;s decision and its internal model, keeping both aligned with what is actually happening. Bounding Distributional Shifts takes a different angle: before the robot commits to a plan, a small detector checks whether the plan would take the robot into situations it has never seen. If it would, the plan is discarded. These two approaches — estimate the hidden thing, or detect when you are lost — together let the robot stay honest about the limits of its knowledge.</p>
+<h3>Reducing the need for labeled data</h3>
+<p>Training a robot usually means recording thousands of examples that log exactly what action the human took at every moment. That is expensive and slow to collect.</p>
+<p>Imitation Learning with Limited Actions via Diffusion Planners and Deep Koopman Controllers splits the job in two: a diffusion model (a method that works by starting from noise and gradually refining it into a good output) plans over states that the robot can observe, without needing action labels. A second, smaller controller — trained on only a handful of labeled examples — translates that plan into actual motor commands using a compact mathematical structure (Koopman operator) that stays well-behaved. The result is that the expensive labeled data requirement drops sharply.</p>
+<h3>Planning by imagining future pictures</h3>
+<p>Rather than reasoning in abstract numbers, some approaches plan by generating pictures of what the world should look like at each step of a task, then steering the robot toward those pictures.</p>
+<p>RoboEnvision generates a short video of a task in key snapshots, fills in the motions between them, and then reads off the joint angles the robot needs. Chain-of-Imagination uses a language model to break a long instruction into steps and an image generator to create a visual target for each step, so the robot always has a concrete picture to move toward. This approach makes long, multi-step tasks easier to handle because each step becomes a clear local target rather than a vague direction.</p>
+<h3>Letting curiosity guide what the robot learns</h3>
+<p>SR-AIF and Curiosity-Driven Imagination both address the case where the robot only gets a signal when it actually succeeds at a task — which happens rarely when it is first learning. SR-AIF uses a method called active inference, which drives the robot to act in ways that reduce its own uncertainty about the future, pushing it naturally toward goal states even without frequent rewards. Curiosity-Driven Imagination adds a curiosity module that points the robot toward situations it does not understand yet. When it finds something new, a high-level planning system adds a new rule to its knowledge and generates a training signal to teach the robot the motion that goes with it.</p>
+<h2>Where it stands</h2>
+<p>World models and diffusion-based planning have moved from research curiosities to methods that beat older approaches on real robot tasks, especially when the supply of labeled data is limited or the environment changes. The main gaps that remain are speed — world models are still expensive to run on small onboard computers — and reliability outside the situations they were trained on. Detecting when a model&#x27;s predictions have gone stale is a solved problem only in narrow cases. Combining fast models, good uncertainty awareness, and broad coverage of real-world variation in a single system is still open work.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">LUMOS: Language-Conditioned Imitation Learning with World Mo</td><td>ICRA</td><td><a href="https://github.com/nematoli/lumos" target="_blank" rel="noopener">nematoli/lumos</a></td><td class="mono">lumos/behavior_models/lumos.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">LIMT: Language-Informed Multi-Task Visual World Models</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">X-MOBILITY: End-to-End Generalizable Navigation via World Mo</td><td>ICRA</td><td><a href="https://github.com/NVlabs/X-MOBILITY" target="_blank" rel="noopener">NVlabs/X-MOBILITY</a></td><td class="mono">model/x_mobility/rssm.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Privileged-Dreamer: Explicit Imagination of Privileged Infor</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Bounding Distributional Shifts in World Modeling through Nov</td><td>IROS</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Imitation Learning with Limited Actions via Diffusion Planne</td><td>ICRA</td><td><a href="https://github.com/jxbi1010/KOAP" target="_blank" rel="noopener">jxbi1010/KOAP</a></td><td class="mono">src/run_script_koap.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">RoboEnvision: A Long-Horizon Video Generation Model for Mult</td><td>IROS</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Chain-of-Imagination for Reliable Instruction Following in D</td><td>IROS</td><td><a href="https://github.com/Zhoues/MineDreamer" target="_blank" rel="noopener">Zhoues/MineDreamer</a></td><td class="mono">imaginator/</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">SR-AIF: Solving Sparse-Reward Robotic Tasks From Pixels with</td><td>ICRA</td><td><a href="https://github.com/NACLab/self-revising-active-inference" target="_blank" rel="noopener">NACLab/self-revising-active-inference</a></td><td class="mono">raif/</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Curiosity-Driven Imagination: Discovering Plan Operators and</td><td>ICRA</td><td><a href="https://github.com/lorangpi/PRM" target="_blank" rel="noopener">lorangpi/PRM</a></td><td class="mono">operator_learners/detector.py</td><td><span class="run">sim</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>LUMOS: Language-Conditioned Imitation Learning with World Models</h1>
+<p>ICRA 2025 · 4 citations · sub-approach: build and use an internal world model to plan in latent space (imagination rollouts to reduce covariate shift)</p>
+<h2>What it does</h2>
+<p>LUMOS trains a robot manipulation policy entirely inside the latent space of a learned visual world model (a recurrent state-space model, RSSM, identical in spirit to DreamerV2), so the policy sees far more state diversity than offline demonstrations alone provide. It learns multi-task, language-steerable skills from unstructured &quot;play&quot; data — raw teleoperated recordings with fewer than 1% language annotations — by relabeling goals after the fact using images and language (hindsight relabeling). After training purely in simulation inside the world model, the final policy transfers to a real robot arm zero-shot, without any real-world fine-tuning.</p>
+<p>Sub-approach: <strong>build and use an internal world model to plan</strong> — specifically, the world model is used to generate synthetic on-policy rollouts (imagination) so the actor-critic policy trains on a much wider distribution of latent states than the offline dataset contains, directly addressing the covariate-shift problem of behavioral cloning.</p>
+<h2>The method, in detail</h2>
+<p><strong>Stage 1 — World model training (<code>scripts/train_wm.py</code>)</strong></p>
+<p>A DreamerV2-style world model is trained purely on the offline play dataset. The encoder is a CNN that takes two RGB streams simultaneously — a static overhead camera (<code>rgb<em>s</code>) and a wrist/gripper camera (<code>rgb</em>g</code>) — and outputs a combined embedding, optionally augmented with 15-dimensional proprioceptive state (joint positions/velocities). This embedding feeds into the RSSM, which maintains a recurrent deterministic hidden state <code>h<em>t</code> (GRU cell) and a stochastic categorical latent <code>z</em>t</code>. At each step the RSSM produces a prior distribution over <code>z<em>t</code> from <code>h</em>t</code> alone (the &quot;imagine&quot; path) and a posterior from <code>h<em>t</code> plus the encoder embedding (the &quot;observe&quot; path). The decoder reconstructs both camera images from the concatenation <code>[h</em>t, z<em>t]</code> using transposed convolutions. Training minimizes: (1) MSE image reconstruction loss on both camera views and (2) KL divergence between posterior and prior with a <code>kl</em>balance</code> weighting that blends exact KL on the posterior and on the prior — the same KL-balancing trick from DreamerV2. No language appears in the world model itself; it is purely visual-proprioceptive.</p>
+<p><strong>Stage 2 — Policy training in latent space (<code>scripts/train_ag.py</code>)</strong></p>
+<p>With the world model frozen (weights not updated), a LUMOS agent (<code>lumos/behavior_models/lumos.py</code>) is trained. The agent has:</p>
+<ul>
+<li>A <strong>plan encoder</strong> that embeds a goal — either an image goal or a language instruction — into a compact latent plan vector. Two plan encoders exist: a recognition encoder (uses the full observed trajectory, available during training) and a proposal encoder (uses only start observation + goal, available at test time). This is a variational goal-conditioned architecture similar to SPIRL/Play-LMP.</li>
+<li>An <strong>actor-critic</strong> that takes the current RSSM state <code>[h<em>t, z</em>t]</code> plus the plan vector and outputs a continuous action (robot joint delta or end-effector delta) and a value estimate.</li>
+</ul>
+<p>Training proceeds by &quot;dreaming&quot; forward: starting from a real transition in the dataset, <code>wm.infer_features()</code> encodes observations into the RSSM posterior, then <code>wm.dream()</code> rolls out purely in latent space for a fixed horizon (no environment interaction, no real images). At each imagined step the actor selects an action, the RSSM prior advances the latent state, and an <strong>intrinsic reward</strong> is computed as cosine similarity between the current latent state and the target latent (encoded from the goal image). This cosine similarity reward is the only training signal — there is no external simulator, no environment reward. Gradients flow through the imagined trajectory into the actor and critic via the standard Dreamer actor-critic objective (lambda-returns). Covariate shift is mitigated because the policy is trained on the distribution of states it actually visits during imagination, not just on states in the offline dataset.</p>
+<p><strong>Hindsight relabeling</strong>: To expand the sparse (&lt;1%) language annotations, LUMOS applies image-based hindsight goal relabeling — if a play sequence ends at state <code>s_T</code>, that final state is used as the image goal for all earlier states in the sequence. Language annotations are relabeled similarly: a language instruction is randomly assigned to a trajectory that achieves a matching image goal. This bootstraps language-conditioned training from almost no labeled data.</p>
+<p><strong>Inference</strong>: At test time, the human gives a language command. The proposal encoder maps (current image, language) to a plan vector. The actor then generates actions step by step using the real robot&#x27;s camera observations encoded through the frozen world model encoder — the latent state is maintained as a running RSSM posterior, updated at each real timestep. No planning search (no MCTS, no CEM) is used; it is a single forward pass per timestep.</p>
+<p><strong>Benchmark</strong>: CALVIN (robot manipulation on a tabletop with a Franka arm, 34 language-labeled tasks, evaluated as chains of up to 5 sequential tasks without human reset). LUMOS reports average number of successfully completed tasks in a chain of 5, outperforming MCIL, HULC, and other offline imitation learning baselines. The paper also demonstrates zero-shot transfer to a physical Franka robot.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/nematoli/lumos" target="_blank" rel="noopener">https://github.com/nematoli/lumos</a></p>
+<p><strong>Language / framework:</strong> Python 3.8, PyTorch 1.13.1, PyTorch Lightning 1.8.6, Hydra (config management), Weights &amp; Biases (logging), HuggingFace Transformers (CLIP for language embeddings).</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+lumos/                          # top-level Python package
+  world_models/
+    world_model.py              # abstract WorldModel (pl.LightningModule)
+    dreamer_v2.py               # DreamerV2 subclass — the actual world model
+    rssm/                       # RSSM core cell and distributions
+    encoders/                   # CNN encoder (dual-camera)
+    decoders/                   # CNN decoder (image reconstruction)
+  behavior_models/
+    lumos.py                    # LUMOS agent (pl.LightningModule + CalvinBaseModel)
+    actor_critic/               # actor and critic networks
+    plan_encoders/              # proposal and recognition plan encoders
+    auxiliary_loss_networks/    # intrinsic reward helpers
+    perceptual_encoders/        # optional perceptual feature encoders
+    decoders/                   # action decoders
+    encoders/                   # observation encoders
+  datasets/                     # dataset and datamodule classes
+  utils/                        # logging, metrics, misc
+scripts/
+  train_wm.py                   # Stage 1: train world model
+  train_ag.py                   # Stage 2: train LUMOS agent
+  evaluate_policy.py            # evaluate on CALVIN
+  featurizer.py                 # pre-encode dataset into latents
+  preprocess_calvin_dataset.py  # prepare raw CALVIN data
+config/
+  train_wm.yaml                 # world model hyperparameters
+  train_ag.yaml                 # agent hyperparameters
+  world_model/                  # sub-configs (RSSM dims, KL weights, etc.)
+  behavior_model/               # sub-configs (actor-critic, plan encoder)
+  datamodule/                   # dataset paths, augmentation
+dataset/
+  README.md                     # download instructions for CALVIN
+install.sh                      # conda env + pip install steps
+requirements.txt                # pinned: torch==1.13.1, pytorch-lightning==1.8.6
+</code></pre>
+<p><strong>File to open first:</strong> <code>lumos/behavior<em>models/lumos.py</code> — this is the top-level agent and shows exactly how the world model (<code>self.wm</code>) is called, how imagination rollouts are constructed (<code>wm</em>step</code>), how the intrinsic reward (cosine similarity in latent space) is computed, and how the plan encoder connects language/image goals to the actor.</p>
+<p><strong>After that:</strong> <code>lumos/world<em>models/dreamer</em>v2.py</code> for the RSSM + encoder/decoder wiring, then <code>lumos/world_models/rssm/</code> for the recurrent cell itself.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>PyTorch 1.13.1 + CUDA (GPU mandatory for training)</li>
+<li>PyTorch Lightning 1.8.6</li>
+<li>Hydra-core (config)</li>
+<li>HuggingFace Transformers (CLIP model for language plan encoder)</li>
+<li>wandb (logging)</li>
+<li>opencv-python, numpy, tqdm (data pipeline)</li>
+<li>CALVIN dataset (~300 GB of play data); no custom physics simulator is required — CALVIN provides pre-recorded episodes so no real-time sim is needed for world model training, but the CALVIN environment is needed to run <code>evaluate_policy.py</code></li>
+</ul>
+<p><strong>Running it (two-stage):</strong></p>
+<pre><code>
+# Stage 1: train world model on CALVIN play data
+python scripts/train_wm.py
+
+# (optional) pre-encode dataset into latent features for faster agent training
+python scripts/featurizer.py
+
+# Stage 2: train LUMOS agent in latent space
+python scripts/train_ag.py
+
+# Evaluate on CALVIN benchmark
+python scripts/evaluate_policy.py
+</code></pre>
+<p>All hyperparameters are in <code>config/train<em>wm.yaml</code> and <code>config/train</em>ag.yaml</code>; override via Hydra CLI (<code>python scripts/train<em>wm.py world</em>model.deter_dim=512</code>).</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with <code>lumos/behavior<em>models/lumos.py</code> — specifically <code>forward</em>train()</code>, <code>get<em>action</em>trajectory()</code>, and the reward computation (<code>max<em>cos(...)</code> call). This 300–400 line file tells the complete story of the method: how goals are encoded, how imagination works, and what the training signal is. Then move to <code>dreamer</em>v2.py</code> to see the reconstruction and KL losses. The RSSM cell in <code>world_models/rssm/</code> is standard and can be read last.</p>
+<p><strong>Difficulty:</strong> Moderate. Anyone familiar with DreamerV2 or a Dreamer-family codebase will recognize the RSSM patterns immediately. The novel parts (plan encoder, cosine intrinsic reward, dual-camera encoder) are clean and confined to <code>lumos.py</code> and <code>dreamer_v2.py</code>. Hydra config makes hyperparameter tracing straightforward. The main friction is the two-stage training pipeline: you must train and checkpoint the world model before the agent, and featurizing the full CALVIN dataset takes substantial time and disk. The codebase does not appear to have inline documentation beyond method names, so understanding the plan-encoder duality (recognition vs. proposal) requires reading the paper alongside the code.</p>
+<h2>Run verdict</h2>
+<p><strong>GPU required; cannot run meaningfully on CPU alone.</strong></p>
+<ul>
+<li>World model training on CALVIN play data (~300 GB, millions of frames) requires a CUDA GPU with at least 16 GB VRAM (A100 or equivalent is typical for this class of Dreamer model). Training takes hours to days.</li>
+<li>Agent training in latent space is lighter but still needs GPU for the RSSM forward pass in batch.</li>
+<li>The CALVIN dataset download itself is the first hard gate: ~300 GB.</li>
+<li><code>evaluate_policy.py</code> requires the CALVIN simulation environment (a PyBullet-based setup with a Franka arm) — not just data, but a runnable simulator.</li>
+<li><strong>On a CPU-only machine</strong>: the code will import and the architecture will initialize, but a single training step takes minutes instead of milliseconds; full training is not feasible. There is no pretrained checkpoint in the repo to run inference only, so CPU-only usage is effectively blocked.</li>
+</ul></article>
+<article class="page" id="gp1"><h1>LIMT: Language-Informed Multi-Task Visual World Models</h1>
+<p>ICRA 2025 · 1 citation · sub-approach: build and use an internal world model to plan (model-based RL with imagination rollouts in latent space, multi-task variant conditioned on language)</p>
+<h2>What it does</h2>
+<p>LIMT trains a single world model that predicts future states for six robot manipulation tasks at once, conditioning every prediction on a frozen language embedding of the task instruction so the model can exploit semantic overlap between tasks. Instead of running a separate policy in the real environment from scratch, the actor-critic policy is trained almost entirely on imagined rollouts inside the world model&#x27;s learned latent space, making it far more sample-efficient than model-free multi-task baselines. At test time the robot executes the policy directly in the real (simulated) environment, guided by a natural-language instruction.</p>
+<p>Sub-approach: build and use an internal world model to plan — the world model is trained first, then the policy learns entirely through imagination (latent-space rollouts), matching the classical model-based RL / Dreamer family.</p>
+<h2>The method, in detail</h2>
+<p><strong>Tokenizer (discrete autoencoder).</strong> A VQ-VAE-style encoder with attention blocks maps a 64x64 RGB image plus a 7-D proprioception vector into K=17 discrete tokens (16 image tokens + 1 proprioception token) drawn from a vocabulary of size 512. Training uses cross-entropy token reconstruction, an L2 reward head, binary cross-entropy for episode-end, plus a VGG16-based perceptual loss to keep the image reconstruction visually coherent. This step runs on the offline CALVIN dataset before any RL training begins.</p>
+<p><strong>Language conditioning.</strong> Task instructions (&quot;open the drawer&quot;, etc.) are embedded with Sentence-BERT MiniLM-L6-v2, a small transformer fine-tuned on semantic textual similarity and frozen throughout. The 384-D embedding is concatenated directly to the token sequence fed into both the world model transformer and the actor-critic networks — no cross-attention or FiLM, just concatenation.</p>
+<p><strong>World model (GPT-2-style autoregressive transformer).</strong> A 10-layer, 4-head, 512-D transformer takes a sliding window of H=8 past time steps, each step containing [observation tokens, language embedding, action], and autoregressively predicts the next observation tokens, scalar reward, and episode-termination flag. This is the heart of the system: it is a next-token predictor over discrete latent states, analogous to a language model predicting the next word, except the &quot;vocabulary&quot; is visual patches of a robot scene.</p>
+<p><strong>Policy training via imagination.</strong> The actor-critic is trained entirely in the world model&#x27;s latent space. Starting from a real observation token set, the actor outputs a continuous action; the world model predicts the next token set; this repeats for H=8 steps. The critic uses λ-returns (discount γ=0.65, λ=0.9) with a periodically updated target critic and a small entropy bonus (weight 1e-4) for exploration. No environment interaction is needed during actor-critic gradient updates.</p>
+<p><strong>Hybrid data mixing.</strong> The world model is first pre-trained offline on the CALVIN dataset. During RL training, 120 short online rollouts (50 steps each) are collected per epoch in the real simulator. An adaptive ratio p<em>online blends offline filtered data D</em>filtered and online data D_online to keep the world model accurate on newly visited states while retaining coverage from offline data.</p>
+<p><strong>Multi-task sharing.</strong> All six tasks share one tokenizer, one world model transformer, and one actor-critic. Task identity is communicated only through the language embedding — there are no task-specific heads or adapters. During training, data is occasionally relabeled with a different task&#x27;s instruction (probability 0.15) to force the model to use the language signal rather than memorizing task-specific patterns.</p>
+<p><strong>Evaluation.</strong> Tested on CALVIN Environment D: a Franka Panda 7-DoF arm in PyBullet, 6 tasks, success measured over 20 rollouts per task. LIMT achieves 52.12% multi-task success vs. 22.99% for a strong model-free baseline (MT-SAC with the same tokenizer + language), a ~2.3x improvement.</p>
+<h2>The code</h2>
+<p><strong>Repository URL:</strong> None found. The author&#x27;s personal page (<a href="https://eliealjalbout.github.io/publications/" target="_blank" rel="noopener">https://eliealjalbout.github.io/publications/</a>) lists only an arXiv PDF link. The author&#x27;s GitHub profile (<a href="https://github.com/ElieAljalbout" target="_blank" rel="noopener">https://github.com/ElieAljalbout</a>) contains older unrelated repos (clustering, SAC+AE fork, robosuite fork). No LIMT-specific code has been released publicly as of July 2026.</p>
+<p><strong>Language / framework:</strong> PyTorch 2.0.1 (confirmed in paper). Experiment tracking via ClearML on a GPU cluster (NVIDIA A100, V100, RTX).</p>
+<p><strong>Repo structure:</strong> Not publicly available. Based on the paper&#x27;s component decomposition, a re-implementation would need:</p>
+<pre><code>
+limt/
+  tokenizer/        # VQ-VAE encoder/decoder + perceptual loss
+  world_model/      # GPT-2 transformer, token prediction heads
+  actor_critic/     # MLP actor + critic, λ-return trainer
+  language/         # Sentence-BERT embedding wrapper
+  data/             # CALVIN dataset loader, offline/online mixing
+  train.py          # main training loop
+  eval.py           # rollout evaluation
+</code></pre>
+<p><strong>Key file to open first:</strong> Not applicable (no repo). If re-implementing, start with the world model transformer (<code>world_model/transformer.py</code>) — it is the central component that ties tokenized observations, language embeddings, and action tokens together.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>Python, PyTorch 2.0.1</li>
+<li><code>sentence-transformers</code> (for MiniLM-L6-v2 embeddings)</li>
+<li><code>torchvision</code> (VGG16 perceptual loss)</li>
+<li>CALVIN benchmark (<a href="https://github.com/mees/calvin" target="_blank" rel="noopener">https://github.com/mees/calvin</a>) — PyBullet-based robot manipulation suite</li>
+<li><code>pybullet</code></li>
+<li><code>clearml</code> (optional, for experiment tracking)</li>
+</ul>
+<p><strong>Simulator / dataset required:</strong> Yes. CALVIN Environment D must be downloaded (~100 GB of offline play data). PyBullet runs the live environment during online data collection. A GPU is required for training.</p>
+<p><strong>How you&#x27;d run it (if code existed):</strong></p>
+<pre><code>
+# 1. Download CALVIN dataset
+# 2. Pre-train tokenizer on offline data
+python train_tokenizer.py --data /path/to/calvin/task_D_D
+# 3. Pre-train world model offline
+python train_world_model.py --data /path/to/calvin/task_D_D
+# 4. Train actor-critic with online rollouts
+python train_actor_critic.py --env calvin --tasks 6 --hybrid-mixing
+# 5. Evaluate
+python eval.py --num-rollouts 20 --task open_drawer
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Section III of the arXiv paper (<a href="https://arxiv.org/abs/2407.13466" target="_blank" rel="noopener">https://arxiv.org/abs/2407.13466</a>) covers the full architecture in about four pages with a clean diagram. Read the tokenizer subsection first (it sets up the discrete latent space), then the world model subsection (the GPT-2 autoregressor), then the actor-critic training (imagination rollouts + λ-returns), then data mixing. The ablation table (Table I) is concise and makes the contribution of each component legible at a glance.</p>
+<p><strong>How hard is the code to follow:</strong> Because there is no public code, difficulty is moot for direct reading. A re-implementation would be moderate difficulty: the tokenizer is a standard VQ-VAE variant, the world model is a stock GPT-2 transformer (well-documented in PyTorch), and the actor-critic is a straightforward MLP with λ-returns (same as DreamerV3&#x27;s policy training). The trickiest part is the hybrid offline/online data mixing with adaptive ratio p_online and the relabeling scheme, which the paper describes but leaves some engineering details implicit.</p>
+<p>The paper itself is clearly written and dense — eight conference pages with minimal padding. Someone familiar with DreamerV2/V3 or RSSM-based world models will find it easy to follow; a reader new to discrete autoregressive world models will need to read the VQ-VAE and GPT-2 background first.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on a CPU-only box.</strong> Three hard blockers:</p>
+<ul>
+<li><strong>GPU required for training.</strong> The VQ-VAE tokenizer and 10-layer GPT-2 transformer are trained on a GPU cluster (A100/V100/RTX in the paper). Even inference for a single rollout through a 10-layer transformer over K=17 tokens at H=8 timesteps is fast in theory, but the full training loop is infeasible on CPU (the paper gives no timing, but comparable DreamerV3 runs take hours on a single GPU).</li>
+</ul>
+<ul>
+<li><strong>CALVIN simulator required.</strong> The environment is PyBullet-based, but the CALVIN dataset (~100 GB) must be downloaded for offline pre-training, and the live CALVIN sim must run for online data collection. PyBullet itself is CPU-runnable, but the overall pipeline is GPU-gated.</li>
+</ul>
+<ul>
+<li><strong>No public code.</strong> Even obtaining the model weights for inference-only mode is impossible without a public release.</li>
+</ul>
+<p><strong>Bottom line:</strong> GPU + CALVIN simulator + offline dataset required. A CPU-only box could run inference through a trained transformer checkpoint (the computation is not enormous), but training is GPU-mandatory and the code is not available.</p></article>
+<article class="page" id="gp2"><h1>X-MOBILITY: End-to-End Generalizable Navigation via World Modeling</h1>
+<p>ICRA 2025 · 1 citation · Sub-approach: build and use an internal world model to plan (latent imagination rollouts for navigation policy)</p>
+<h2>What it does</h2>
+<p>X-MOBILITY trains a robot to navigate cluttered, novel environments by first learning a compressed model of how the world evolves — specifically, how camera images and speed change as it takes actions — and then learning a navigation policy that acts on the outputs of that model rather than raw pixels. The key design insight is that world modeling and action policy are architecturally decoupled, so the model can consume two data streams independently: off-policy data without any expert actions (to learn dynamics) and on-policy demonstration data with expert actions (to learn control). At test time the model deploys zero-shot on a real Nova Carter robot without fine-tuning.</p>
+<p>Sub-approach: <strong>build + use an internal world model to plan</strong> — the RSSM latent state is rolled forward (imagination) during inference to predict future states; the action policy is conditioned on those latent states to choose actions.</p>
+<h2>The method, in detail</h2>
+<p><strong>1. Visual encoding.</strong></p>
+<p>Each RGB camera frame passes through a frozen pre-trained DINOv2-small (a vision transformer trained with self-supervised distillation) or, optionally, a Depth Anything backbone. The visual feature is concatenated with a learned speed embedding from a 2-layer MLP (SpeedEncoder). The combined vector is 512-dimensional (image backbone hidden_size × 2 + speed channels).</p>
+<p><strong>2. Recurrent State Space Model (RSSM).</strong></p>
+<p>The RSSM is a standard DreamerV2-style latent dynamics model with:</p>
+<ul>
+<li>A deterministic path: a single GRU receives the previous hidden state concatenated with a pre-GRU linear projection of the current latent state and action encoding.</li>
+<li>A stochastic path: two DistributionModel MLPs (2-layer, output 2 × latent_dim, split into mean and log-variance) produce a *prior* (from hidden state + latent action only, no observation) and a *posterior* (additionally conditioned on the current DINOv2 embedding).</li>
+<li>During training, a dropout switch samples from prior vs. posterior with configurable probability, forcing the prior to stay close to the posterior (regularized with KL divergence).</li>
+<li>During imagination rollout (<code>inference<em>prediction()</code>), the model calls <code>rssm.imagine</em>step()</code> repeatedly, using only the prior (no new image) to generate future latent states for multiple timesteps ahead.</li>
+</ul>
+<p><strong>3. Multi-head decoders.</strong></p>
+<p>From the composite state (GRU hidden + stochastic latent sample) several decoder heads are trained simultaneously:</p>
+<ul>
+<li><strong>StyleGanDecoder</strong> (optional): generates semantic segmentation maps and RGB reconstructions at three scales (48×48, 96×96, 192×192 pixels) using adaptive instance normalization on a learnable constant tensor — a lightweight StyleGAN-style upsampler. This is an auxiliary task; it is not used at inference time for navigation, only for representation learning.</li>
+<li><strong>DepthHead</strong> (optional): predicts depth maps using L1 + spatial-gradient loss.</li>
+<li><strong>ActionPolicy</strong>: the main control head.</li>
+</ul>
+<p><strong>4. Action policy (the control head).</strong></p>
+<p>ActionPolicy first encodes the global route plan (a series of waypoint vectors) through VectorNetSubGraph — a graph neural network that aggregates polyline segments into a single route feature. It then fuses the RSSM latent state with that route feature by concatenation (or optionally MLP-attention or scaled dot-product attention). The fused &quot;policy state&quot; is passed to either:</p>
+<ul>
+<li>A <strong>DiffusionPolicy</strong>: a U-Net 1-D denoising diffusion model (DDPM-style) that iteratively denoises from Gaussian noise to produce action + path waypoints.</li>
+<li>Or an <strong>MLPPolicy</strong>: two separate tanh-bounded MLP heads for velocity/steering commands and trajectory waypoints.</li>
+</ul>
+<p>The diffusion variant is the default and is the one used for the real-robot experiments.</p>
+<p><strong>5. Training procedure.</strong></p>
+<p>Two training stages are supported:</p>
+<ul>
+<li>Stage 1 (world model pre-training): only the encoder + RSSM + decoder heads are trained on random-action data (160k rollouts from Isaac Sim). No action policy. Loss = KL divergence (prior vs. posterior) + segmentation cross-entropy + RGB perceptual loss (VGG-16 L1 on feature blocks) + L1 pixel loss + depth loss.</li>
+<li>Stage 2 (joint training): the action policy is added and the whole model is trained end-to-end on the teacher-policy dataset (100k rollouts with Nav2 expert actions). Loss adds ActionLoss (L1/L2 on velocity commands) + PathLoss (MSE on waypoints) + DiffusionLoss (MSE on predicted noise).</li>
+</ul>
+<p><strong>6. Decoupled data training.</strong></p>
+<p>Because the world model head and action policy head have separate loss terms, data without action labels contributes only to the world model losses. This is the mechanism enabling off-policy pre-training: the model learns visual dynamics from unannotated driving data and then learns control separately.</p>
+<p><strong>7. Deployment and imagination at inference.</strong></p>
+<p>At each control step the robot calls <code>inference()</code> once to update the RSSM hidden state from the live camera frame, then optionally calls <code>inference<em>prediction()</code> N times using only <code>imagine</em>step()</code> (no new camera frame) to roll out a predicted future trajectory in latent space. The action policy reads the current latent state and outputs velocity commands and path waypoints. The path is not explicitly used as a cost in a separate optimizer — the policy is a direct regression / diffusion model, not a receding-horizon MPC planner. For sim-to-real, the model is converted to ONNX then TensorRT for real-time inference speed.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/NVlabs/X-MOBILITY" target="_blank" rel="noopener">https://github.com/NVlabs/X-MOBILITY</a></p>
+<p><strong>License:</strong> Apache 2.0</p>
+<p><strong>Language / framework:</strong> Python 3, PyTorch; Hugging Face <code>transformers</code> for DINOv2/DepthAnything; <code>gin-config</code> for hyperparameter files; Docker for reproducible training; ROS2 + NVIDIA Isaac Sim for deployment.</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+X-MOBILITY/
+├── configs/                    # gin config files (train_config.gin)
+├── images/                     # README assets
+├── model/
+│   ├── trainer.py              # training loop, optimizer, logging
+│   ├── visualization.py        # tensorboard / wandb visualizers
+│   ├── dataset/                # dataset loader for Isaac Sim rollouts
+│   ├── eval/                   # evaluation metrics and scripts
+│   ├── loss/
+│   │   └── losses.py           # ALL loss classes (KL, segmentation, perceptual, action, path, diffusion, depth)
+│   └── x_mobility/
+│       ├── x_mobility.py       # top-level XMobility nn.Module (entry point for architecture)
+│       ├── rssm.py             # RSSM: GRU + prior/posterior MLPs + imagine/observe steps
+│       ├── encoders.py         # ObservationEncoder: DINOv2/DepthAnything + SpeedEncoder
+│       ├── decoders.py         # StyleGanDecoder, SegmentationHead, RgbHead
+│       ├── action_policy.py    # ActionPolicy: VectorNetSubGraph + DiffusionPolicy or MLPPolicy
+│       ├── diffusion_policy.py # DDPM wrapper for action generation
+│       ├── conditional_unet1d.py # 1-D U-Net used by DiffusionPolicy
+│       ├── vector_net.py       # VectorNet polyline encoder for route conditioning
+│       ├── diffusion_rgb.py    # diffusion-based RGB decoder (alternative to StyleGAN)
+│       └── utils.py            # misc helpers
+├── ros2_deployment/            # ROS2 node + launch files for real robot
+├── train.py                    # CLI entry point → trainer.py
+├── evaluate.py                 # CLI entry point → eval/
+├── onnx_conversion.py          # export checkpoint → ONNX
+├── trt_conversion.py           # ONNX → TensorRT engine (hardware-specific)
+├── arg_parser.py               # shared CLI argument definitions
+├── requirements.txt
+├── setup.py
+└── Dockerfile
+</code></pre>
+<p><strong>First file to open:</strong> <code>model/x<em>mobility/rssm.py</code> — it is the architectural core; reading <code>observe</em>step()</code>, <code>imagine_step()</code>, and <code>forward()</code> shows exactly how the latent state is maintained and how imagination differs from observation.</p>
+<p><strong>Second file:</strong> <code>model/x<em>mobility/x</em>mobility.py</code> — the <code>XMobility</code> class wires all components together; <code>inference_prediction()</code> shows the imagination rollout used at deployment time.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>PyTorch (GPU build required)</li>
+<li><code>transformers</code> (Hugging Face, for DINOv2/DepthAnything weights)</li>
+<li><code>gin-config</code> (hyperparameters)</li>
+<li><code>wandb</code> or equivalent (logging)</li>
+<li>NVIDIA container toolkit (Docker GPU passthrough)</li>
+<li>TensorRT (for real-time deployment; optional for training/eval)</li>
+<li>ROS2 Humble + NVIDIA Isaac Sim (for sim deployment and data collection only)</li>
+</ul>
+<p><strong>Datasets:</strong> Downloaded separately from Hugging Face (<code>nvidia/X-Mobility</code> collection):</p>
+<ul>
+<li><code>x<em>mobility</em>isaac<em>sim</em>random_160k.zip</code> — 160k random-action rollouts (world model pre-training)</li>
+<li><code>x<em>mobility</em>isaac<em>sim</em>nav2_100k.zip</code> — 100k Nav2 expert-policy rollouts (joint training)</li>
+</ul>
+<p><strong>GPU requirement:</strong> Mandatory. Training runs inside Docker with <code>--gpus all --shm-size=512g</code>. The 512 GB shared memory hint is for large batch prefetching, not RAM.</p>
+<p><strong>How to run (training):</strong></p>
+<pre><code>
+docker build --network=host -t xmobility .
+docker run --gpus all --shm-size=512g \
+  -v &lt;dataset-path&gt;:/workspace/datasets \
+  -it xmobility bash
+# inside container:
+python3 train.py -c configs/train_config.gin \
+  -d datasets/ -o outputs/ -e myentity -n myproject -r run1
+</code></pre>
+<p><strong>How to evaluate:</strong></p>
+<pre><code>
+python3 evaluate.py -c configs/train_config.gin \
+  -d datasets/ -p outputs/checkpoint.pth
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start with:</strong> <code>model/x<em>mobility/rssm.py</code> (≈ 9 KB). The <code>DistributionModel</code> class is simple; then read <code>RSSM.</em><em>init</em><em></code> to see the GRU and the two distribution heads (prior / posterior). Then <code>observe</em>step()</code> and <code>imagine_step()</code> — each is about 10 lines and reveals the whole latent dynamics loop.</p>
+<p><strong>Then:</strong> <code>model/x<em>mobility/x</em>mobility.py</code> — <code><em>_init</em><em></code> shows how the config flags (<code>use</em>semantic</code>, <code>use<em>rgb</code>, <code>use</em>diffusion<em>policy</code>) toggle decoder branches. <code>forward()</code> is the training pass; <code>inference</em>prediction()</code> is the imagination rollout path. This file is about 8.5 KB and relatively readable.</p>
+<p><strong>Then:</strong> <code>model/loss/losses.py</code> (15 KB, the largest single file) — skim the class list; <code>XMobilityLoss</code> at the bottom assembles all weighted terms. Understanding the loss is necessary to understand what the auxiliary decoders are actually contributing.</p>
+<p><strong>Difficulty:</strong> Moderate. The codebase is well-organized and follows DreamerV2 conventions closely. Anyone familiar with DreamerV2 (Hafner et al.) or MILE (Hu et al., CVPR 2022) will orient quickly — X-MOBILITY explicitly acknowledges both as predecessors. The diffusion policy section (conditional_unet1d.py, 13 KB) is slightly harder if you are unfamiliar with 1-D denoising diffusion. The gin config system adds a layer of indirection for hyperparameters. The ROS2 deployment module is separate and only needed for real-robot work.</p>
+<p><strong>Gotcha:</strong> The StyleGAN decoder uses adaptive instance normalization on a learnable constant — this is not a standard StyleGAN discriminator, just the generator-side normalization trick. Do not expect a GAN training loop; there is no discriminator anywhere.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on CPU only.</strong> Training requires an NVIDIA GPU with the NVIDIA container toolkit; the Docker image is built assuming CUDA. The default shared memory requirement (512 GB for Docker <code>--shm-size</code>) is extreme for large datasets but is not a strict minimum — smaller batches with less shm-size would likely work.</p>
+<p>Specifically:</p>
+<ul>
+<li><strong>World model forward pass</strong> (RSSM + DINOv2 + StyleGAN decoder): DINOv2-small is small enough (~22M params) but the StyleGAN decoder at 192×192 and training with batched sequences would be very slow on CPU — impractical.</li>
+<li><strong>DiffusionPolicy</strong> during training runs many denoising steps per batch update — CPU inference would take minutes per sample.</li>
+<li><strong>Evaluation only</strong> on a single sample might technically run on CPU (PyTorch supports CPU), but no official CPU path is documented and the Dockerfile assumes GPU.</li>
+<li><strong>Pre-trained checkpoints</strong> are available from Hugging Face, which could allow CPU inference testing in principle, but real-time ROS2 deployment requires TensorRT (GPU only).</li>
+</ul>
+<p><strong>Verdict: GPU required for any practical use. A machine with at least one modern NVIDIA GPU (A100 or similar used in NVIDIA Isaac Sim setups) and Isaac Sim for data collection is the intended environment. The evaluation loop on a downloaded dataset could potentially run on a gaming GPU, but the data collection pipeline is tightly coupled to NVIDIA Isaac Sim.</strong></p></article>
+<article class="page" id="gp3"><h1>Privileged-Dreamer: Explicit Imagination of Privileged Information for Rapid Adaptation of Learned Policies</h1>
+<p>ICRA 2025 · 0 citations · sub-approach: <strong>detect unfamiliar situations &amp; hidden variables</strong> (HIP-MDP hidden-parameter estimation inside a world model)</p>
+<h2>What it does</h2>
+<p>Robotic controllers degrade when physical parameters they cannot observe — payload mass, surface friction, motor gains — shift between training simulation and real deployment. Privileged-Dreamer frames this as a hidden-parameter Markov decision process (HIP-MDP), where unobservable variables parameterize both the transition function and the reward function, and trains a dual recurrent world model that explicitly estimates those parameters from short observation histories so that the policy can adapt at test time. The sub-approach is <strong>detect unfamiliar / hidden variables</strong>: the system does not simply absorb distribution shift as extra variance (as domain randomization does); it builds an internal model that guesses what the hidden parameter is and then conditions every downstream network on that guess.</p>
+<h2>The method, in detail</h2>
+<p><strong>HIP-MDP formulation.</strong> The environment is a tuple (S, A, T(s&#x27;|s,a,ω), R(s,a,ω), ρ(ω)) where ω is a hidden vector — e.g. friction coefficient or mass — drawn once per episode from a prior ρ. The agent observes (s<em>t, a</em>t) but never ω directly.</p>
+<p><strong>Base world model — RSSM.</strong> Privileged-Dreamer inherits the Recurrent State-Space Model (RSSM) from DreamerV2. The RSSM maintains a recurrent hidden state h<em>t (a GRU cell) and splits the latent representation into a deterministic part h</em>t and a stochastic part z<em>t sampled from a categorical posterior q(z</em>t|h<em>t, x</em>t). The transition prior is p(z<em>t|h</em>t). Image observations are encoded with a CNN encoder; decoded with a CNN decoder. Rewards and episode-continuation (discount) signals are predicted by small MLP heads on (h<em>t, z</em>t).</p>
+<p><strong>Dual recurrent architecture — the key addition.</strong> A second, independent recurrent module η<em>ϕ is introduced alongside the RSSM. This module is an LSTM that reads the trajectory buffer — specifically the sequence of (observation, action) pairs from the last H=25 steps — and outputs a distribution over the hidden parameter: ω̃</em>t ~ η<em>ϕ(ω̃</em>t | x<em>{t-H:t}, a</em>{t-H:t-1}). The LSTM hidden state is separate from the RSSM GRU state; the two recurrent streams run in parallel.</p>
+<p><strong>Privileged information at training time.</strong> During training in simulation, the true ω is available (this is the &quot;privileged&quot; information). A second prediction head p<em>ϕ(ω̂</em>t | h<em>t, z</em>t) is attached to the RSSM latent and is trained with the true ω as a supervised target. This privileged head teaches the world model&#x27;s latent to carry information about the hidden parameter. The LSTM estimator η<em>ϕ is simultaneously trained with the same ω target. At test time, ω is unknown, so only the LSTM estimator η</em>ϕ is used — it infers ω̃ purely from recent observations.</p>
+<p><strong>Conditioning all downstream networks.</strong> The estimated ω̃<em>t is concatenated to h</em>t and z_t before being fed to the actor (policy), the critic (value function), and all world model prediction heads. This means the policy directly receives a belief about hidden parameters when choosing actions.</p>
+<p><strong>Loss function.</strong> The total objective is:</p>
+<p>L(ϕ) = L<em>Dreamer + E[ Σ</em>t ( −ln η<em>ϕ(ω̃</em>t | x<em>{t-H:t}, a</em>{t-H:t-1}) − ln p<em>ϕ(ω̂</em>t | h<em>t, z</em>t) ) ]</p>
+<p>where L_Dreamer is the standard RSSM ELBO (reconstruction + KL divergence between posterior z and prior z). The second term is a negative log-likelihood over the hidden-parameter predictions from both the LSTM estimator and the RSSM-latent predictor.</p>
+<p><strong>Imagination rollouts for planning.</strong> Actor and critic are trained entirely inside the world model&#x27;s imagination (latent rollouts) — the Dreamer-style &quot;dream&quot; loop. The actor maximizes expected imagined return; the critic regresses imagined values. Because ω̃ is available at each imagined step (propagated through the LSTM), imagined rollouts reflect the current parameter belief, enabling rapid within-episode adaptation.</p>
+<p><strong>Benchmark tasks.</strong> Five HIP-MDP environments, all MuJoCo-based:</p>
+<ul>
+<li>DMC Walker Run — hidden: contact friction</li>
+<li>DMC Pendulum Swingup — hidden: pendulum mass scale</li>
+<li>Throwing — custom MuJoCo, hidden: ball mass scale</li>
+<li>Franka Sorting — custom MuJoCo, hidden: object mass scale</li>
+<li>DMC Pointmass Easy — hidden: motor scales</li>
+</ul>
+<p>Baselines: DreamerV2 (no adaptation), PPO (model-free), SAC (model-free), domain randomization, RMA (Rapid Motor Adaptation — teacher-student distillation).</p>
+<p><strong>Results.</strong> Privileged-Dreamer achieves ~41% higher average reward across all five tasks vs. the next-best baseline, with the largest gains on tasks where the reward itself is parameterized by ω (e.g. Throwing, where throw accuracy depends on ball mass).</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> No public code repository has been released. The GitHub profile of the first author (github.com/morganbyrd03) contains only the project website (icra25<em>privileged</em>dreamer — a JavaScript/HTML static page) and unrelated forks. No code link appears on the project page (morganbyrd03.github.io/icra25<em>privileged</em>dreamer/) or on arXiv.</p>
+<p><strong>If the authors release code</strong>, expect it to be structured around DreamerV2 or DreamerV3 as a base. A typical DreamerV3 codebase (the closest public reference) looks like:</p>
+<pre><code>
+dreamer/
+  agent.py          # main agent: RSSM + actor + critic
+  nets.py           # CNN encoder/decoder, MLP heads, RSSM cell
+  train.py          # training loop
+  envs/             # environment wrappers
+  configs.yaml      # hyperparameters
+</code></pre>
+<p>Privileged-Dreamer would add:</p>
+<ul>
+<li><code>param_estimator.py</code> — LSTM that reads observation/action history and outputs ω̃</li>
+<li><code>rssm.py</code> — RSSM with an extra p_ϕ(ω̂|h,z) MLP head</li>
+<li>A modified <code>agent.py</code> that concatenates ω̃ to latent before actor/critic</li>
+</ul>
+<p><strong>Language/framework:</strong> Python, JAX or PyTorch (DreamerV2 is JAX; DreamerV3 has both JAX and PyTorch versions from the community).</p>
+<p><strong>Dependencies (inferred from DreamerV2/MuJoCo pipeline):</strong></p>
+<ul>
+<li>MuJoCo physics engine (license required for older versions, now free)</li>
+<li>dm_control (DeepMind Control Suite Python bindings)</li>
+<li>JAX + Haiku or PyTorch</li>
+<li>NumPy, gym/gymnasium</li>
+</ul>
+<p><strong>Simulator:</strong> MuJoCo is required for all five benchmark tasks. No real-robot dataset is needed for training — the whole method runs in simulation.</p>
+<p><strong>GPU requirement:</strong> Training DreamerV2-scale models takes ~1–2 days on a single GPU (V100/A100). The LSTM parameter estimator is small (encoder shape [256, 128], history H=25), so it adds minimal compute.</p>
+<p><strong>How to run (hypothetically, once released):</strong></p>
+<pre><code>
+python train.py --task dmc_walker_run --hidden_param friction \
+  --history_len 25 --seed 0
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Because no code is public, start with:</p>
+<ul>
+<li>The arXiv paper (2502.11377) — Section III (Method) covers the HIP-MDP setup and the dual recurrent design; Section IV covers experiments.</li>
+<li>The DreamerV2 codebase (github.com/danijar/dreamer) as the baseline — understand <code>rssm.py</code> and <code>agent.py</code> before reading Privileged-Dreamer&#x27;s additions.</li>
+<li>The RMA paper (Kumar et al., 2021) as the comparison baseline — it uses a similar teacher-student distillation idea for hidden parameters but model-free.</li>
+</ul>
+<p><strong>Code difficulty (if/when released).</strong> Moderate-to-hard. DreamerV2&#x27;s JAX implementation uses functional transforms and custom gradient checkpointing that are non-obvious if you have not worked with JAX before. The LSTM estimator addition itself is straightforward (a standard PyTorch/Haiku LSTM on a sliding window), but debugging the interaction between two parallel recurrent streams sharing gradients requires care. The MuJoCo custom environments (Throwing, Franka Sorting) will need their own setup scripts.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on a CPU-only box.</strong> Three hard blockers:</p>
+<ul>
+<li><strong>MuJoCo simulation:</strong> All five tasks require MuJoCo, which runs on CPU but is compute-heavy; the rendering pipeline for pixel observations adds further cost.</li>
+<li><strong>World model training:</strong> RSSM training with image observations (64x64 pixels, CNN encoder/decoder) requires a GPU. On CPU, a single DreamerV2 training step for one environment takes ~10–30 seconds; a full training run (1 M steps) would take weeks.</li>
+<li><strong>No public code:</strong> Without a released implementation, running is impossible regardless of hardware.</li>
+</ul>
+<p><strong>Minimum viable hardware:</strong> A single modern GPU (RTX 3090 / V100 / A100), MuJoCo installed (dm_control pip-installable), and ~24–48 GPU-hours per task. The LSTM estimator (H=25, hidden [256,128]) is lightweight, so the bottleneck is the RSSM image training, not the parameter estimation.</p></article>
+<article class="page" id="gp4"><h1>Bounding Distributional Shifts in World Modeling through Novelty Detection</h1>
+<p>IROS 2025 · 0 citations · sub-approach: <strong>detect unfamiliar situations &amp; bound hidden-variable uncertainty</strong></p>
+<h2>What it does</h2>
+<p>Visual world models break down when a planner proposes action sequences that push the model outside the state-action distribution it was trained on — the model then produces imagined futures that are confidently wrong. This paper (WM-VAE) wraps the DINO-WM world model with a variational autoencoder that acts as a novelty detector: before the robot commits to any action trajectory, every predicted future latent state is passed through the VAE, and states the VAE cannot reconstruct well are flagged as out-of-distribution (OOD). The planner (cross-entropy method) penalises OOD trajectories in its cost, steering optimisation away from unreliable model territory.</p>
+<p>Sub-approach: <strong>detect unfamiliar situations</strong> — the system does not directly imagine future images for a goal, but rather guards the world model&#x27;s own reliability boundary so that planning stays within the region where predictions can be trusted.</p>
+<h2>The method, in detail</h2>
+<p><strong>World model (DINO-WM backbone)</strong></p>
+<ul>
+<li>An RGB image is passed through a frozen, pretrained DINOv2 vision transformer to produce a patch-level latent state z (a sequence of patch embeddings). DINOv2 is never fine-tuned; only the transition model is learned.</li>
+<li>The transition model is a Vision Transformer (ViT) that takes the current latent patch sequence z<em>i and an action a</em>i, linearly projects the action into the same token dimension, appends it to each patch, and predicts the next latent state z<em>{i+1}. A dropout layer is inserted before the ViT to improve stability. Formally: z</em>{i+1} = g(z<em>{i-H+1:i}, a</em>{i-H+1:i}; θ), where H is the look-back history window (set to 1 in experiments). The transition model is trained with MSE loss on predicted vs. actual next DINOv2 patch embeddings.</li>
+</ul>
+<p><strong>Novelty detector (VAE)</strong></p>
+<ul>
+<li>A separate VAE is trained on the same latent states z that appear in the training dataset — it learns the distribution of &quot;familiar&quot; latent states. Encoder uses convolutional layers; decoder uses transposed-convolution (deconvolution) layers.</li>
+<li>The VAE is trained with a standard ELBO: reconstruction MSE plus KL divergence between the approximate posterior and the unit Gaussian prior.</li>
+<li>At planning time the VAE is frozen. Its role: the reconstruction error MSE(z, VAE(z)) is high for OOD latent states and low for in-distribution ones. No threshold or binary classifier is used; the raw reconstruction loss L_r is the novelty signal.</li>
+</ul>
+<p><strong>MPC planning loop (cross-entropy method, CEM)</strong></p>
+<ul>
+<li>CEM samples K action trajectories of length T from a multivariate Gaussian distribution N(μ, Σ).</li>
+<li>For each trajectory, the world model autoregressively rolls out predicted latent states z<em>1, …, z</em>T.</li>
+<li>Each z<em>t is fed to the frozen VAE; reconstruction loss L</em>r^{z_t} is computed.</li>
+<li>Total trajectory cost: L = L<em>g + w · Σ</em>t L<em>r^{z</em>t}, where L_g is the MSE between the predicted final state and the goal state&#x27;s latent encoding, and w is a scalar weight balancing goal-reaching vs. OOD avoidance.</li>
+<li>The top-k elite trajectories (lowest cost) update μ and Σ. CEM iterates for a fixed number of rounds; the first action of the best trajectory is executed on the robot.</li>
+<li>This receding-horizon loop runs at every timestep (model-predictive control, MPC).</li>
+</ul>
+<p><strong>Training data and simulators</strong></p>
+<p>All data is collected with a random policy in NVIDIA FleX (a GPU-accelerated particle simulator for deformable objects):</p>
+<ul>
+<li>Granular: 100 trajectories × 20 frames — a robot arm pushing a pile of small particles.</li>
+<li>Rope: 1000 trajectories × 20 frames — a robot arm pushing a rope.</li>
+<li>Cloth: 100 trajectories × 5 frames — a robot arm grabbing and placing a cloth square.</li>
+</ul>
+<p>DINO-WM is trained separately per environment; the VAE novelty detector is also trained separately per environment on the same latent dataset.</p>
+<p>Evaluation metric is Chamfer Distance between the achieved particle/vertex configuration and the goal configuration, averaged over 5 different goal scenes per environment.</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> No public repository has been released for WM-VAE itself. The authors (Eric Jing, Abdeslam Boularias, Rutgers Robot Learning Lab) do not list code on their lab page (<a href="http://rl.cs.rutgers.edu/publications.html" target="_blank" rel="noopener">http://rl.cs.rutgers.edu/publications.html</a>), and the arXiv page (<a href="https://arxiv.org/abs/2508.06096" target="_blank" rel="noopener">https://arxiv.org/abs/2508.06096</a>) contains no code link.</p>
+<p><strong>Closest related public code:</strong> The upstream DINO-WM architecture that WM-VAE extends is at <a href="https://github.com/gaoyuezhou/dino_wm" target="_blank" rel="noopener">https://github.com/gaoyuezhou/dino_wm</a> (MIT licence, PyTorch). This repo does NOT contain the novelty-detection VAE from this paper.</p>
+<p><strong>DINO-WM repo structure (upstream baseline):</strong></p>
+<pre><code>
+dino_wm/
+├── conf/            Hydra YAML configs (train, plan, env settings)
+├── datasets/        Dataset loading for each env (PointMaze, PushT, Wall, PyFlex envs)
+├── distributed_fn/  Multi-GPU training helpers
+├── env/             Gym-compatible environment wrappers
+├── metrics/         Chamfer distance and task-specific metrics
+├── models/          ViT transition model, DINOv2 feature extractor
+├── planning/        CEM and other MPC planners
+├── train.py         Entry point: train the transition model
+├── plan.py          Entry point: run MPC planning + evaluation
+├── preprocessor.py  Offline dataset pre-processing (extract DINOv2 features)
+├── utils.py         Logging, checkpoint, visualisation utilities
+└── environment.yaml Conda env: PyTorch, MuJoCo 2.1.0, optional PyFlex
+</code></pre>
+<p><strong>Key file to open first (upstream):</strong> <code>models/</code> directory — specifically the ViT transition model file; it shows exactly how action tokens are appended to patch embeddings and how the next state is predicted. Then <code>planning/</code> for the CEM implementation.</p>
+<p><strong>To implement WM-VAE on top of DINO-WM:</strong> you would add a <code>models/vae.py</code> (convolutional encoder + transposed-conv decoder, standard ELBO training) trained on the cached DINOv2 patch embeddings, then modify <code>planning/cem.py</code> to accumulate <code>w * mse(z, vae(z))</code> into the trajectory cost at each rollout step.</p>
+<p><strong>Dependencies:</strong> PyTorch, DINOv2 (loaded via torch.hub), MuJoCo 2.1.0, PyFlex (for deformable tasks — rope/granular/cloth), Hydra (config management), conda environment.yaml provided.</p>
+<p><strong>Simulator requirement:</strong> NVIDIA FleX for the deformable-object environments evaluated in this paper. FleX requires a CUDA-capable GPU to run. MuJoCo environments (PointMaze, PushT) can run on CPU but training is impractical without a GPU.</p>
+<p><strong>How you would run it (upstream DINO-WM):</strong></p>
+<pre><code>
+# 1. Create environment
+conda env create -f environment.yaml
+conda activate dino_wm
+
+# 2. Collect/preprocess data
+python preprocessor.py env=granular
+
+# 3. Train transition model
+python train.py --config-name train.yaml env=granular frameskip=5 num_hist=1
+
+# 4. Plan (MPC with CEM)
+python plan.py model_name=&lt;checkpoint&gt; n_evals=5 planner=cem
+</code></pre>
+<p>For the WM-VAE extension, you would additionally train the VAE on the saved latent dataset and pass <code>novelty_weight=&lt;w&gt;</code> into the planner.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li>The arXiv paper PDF (<a href="https://arxiv.org/pdf/2508.06096" target="_blank" rel="noopener">https://arxiv.org/pdf/2508.06096</a>) — Sections 3 (method) and 4 (experiments) are short and clearly written. Figure 1 shows the architecture overview and how the VAE sits alongside the transition model.</li>
+<li>In the upstream DINO-WM repo: <code>models/</code> then <code>planning/cem.py</code> to understand the base planner. The VAE addition is straightforward once you see the CEM cost loop.</li>
+</ul>
+<p><strong>Code difficulty:</strong> The upstream DINO-WM repo is cleanly structured and moderately easy to follow — Hydra configs make hyperparameters explicit, and the separation between <code>train.py</code> / <code>plan.py</code> / <code>models/</code> / <code>planning/</code> is logical. The WM-VAE novelty detector itself is a standard convolutional VAE; a researcher comfortable with PyTorch could implement it from the paper&#x27;s description in a few hundred lines. The main friction is PyFlex installation (requires CUDA, manual build from NVIDIA&#x27;s SDK).</p>
+<p><strong>Hard parts:</strong></p>
+<ul>
+<li>PyFlex setup is documented poorly and platform-sensitive (Linux + NVIDIA GPU required).</li>
+<li>The paper does not release code, so the exact VAE architecture depth, hidden dimensions, and w value would need to be tuned from the ablation tables.</li>
+<li>DINOv2 patch-embedding dimensionality (384 for ViT-S/14) interacts with the VAE&#x27;s convolutional design — spatial layout of patches must be handled correctly.</li>
+</ul>
+<h2>Run verdict</h2>
+<p><strong>Cannot run meaningfully on a CPU-only box.</strong> Three blockers:</p>
+<ul>
+<li><strong>PyFlex requires a CUDA GPU</strong> — the deformable-object environments (rope, granular, cloth) that the paper evaluates on cannot be instantiated without NVIDIA FleX, which itself requires CUDA. There is no CPU fallback.</li>
+<li><strong>DINO-WM transition model training</strong> on 1000 trajectories × 20 frames of DINOv2 patch embeddings (ViT transformer forward passes) is impractical on CPU — expect hours per epoch.</li>
+<li><strong>CEM planning</strong> calls the transition model ~1000 times per timestep (K trajectories × T rollout steps); on CPU each CEM iteration would take minutes, making interactive or benchmark evaluation infeasible.</li>
+</ul>
+<p>The MuJoCo-based environments (PointMaze, PushT, Wall) in the upstream DINO-WM repo can technically be installed on CPU Linux, and a single forward pass of the trained model is CPU-feasible, but training is GPU-only in practice. Bottom line: <strong>GPU + CUDA + NVIDIA FleX = required</strong> for replicating this paper&#x27;s experiments.</p></article>
+<article class="page" id="gp5"><h1>Imitation Learning with Limited Actions via Diffusion Planners and Deep Koopman Controllers</h1>
+<p><strong>ICRA 2025 · 2 citations · Sub-approach: cut labeled-data needs (data-efficient imitation)</strong></p>
+<p>Authors: Jianxin Bi, Kelvin Lim, Kaiqi Chen, Yifei Huang, Harold Soh (National University of Singapore, CLeAR lab)</p>
+<p>arXiv: <a href="https://arxiv.org/abs/2410.07584" target="_blank" rel="noopener">https://arxiv.org/abs/2410.07584</a> · DOI: 10.1109/ICRA55743.2025.11128735</p>
+<hr>
+<h2>What it does</h2>
+<p>Most diffusion-based robot policies demand large quantities of paired (observation, action) demonstrations, but action labels are expensive to collect — you need motion capture, teleoperation, or kinesthetic teaching for every frame. KOAP (Koopman Operator with Action Proxy) sidesteps this by treating the bulk of training data as observation-only: it learns a latent representation of &quot;what action must have happened&quot; purely from watching state-to-state transitions, then maps that latent representation to real joint commands with only a small amount of action-labeled data. This is the <strong>data-efficient / cut-labeled-data-needs</strong> sub-approach to world modeling: the world model here is the Koopman dynamics model, which predicts how observations evolve under actions; the diffusion component plans future observation trajectories; together they replace direct action supervision for most of training.</p>
+<hr>
+<h2>The method, in detail</h2>
+<p><strong>Problem setup.</strong> You have a large set of expert demonstrations where you recorded robot observations (images or proprioception) but did not record the joint torques or end-effector commands (the actions). You also have a small set of fully labeled demos. The goal is to learn a policy that generalizes across multi-modal behavior (e.g., pick-left vs. pick-right depending on the situation).</p>
+<p><strong>Step 1 — Koopman Autoencoder (learning latent dynamics from observations only).</strong></p>
+<p>The Koopman Operator is a classical idea from dynamical systems: any nonlinear system can be represented as a *linear* system in a (potentially infinite-dimensional) lifted space. KOAP trains a neural encoder <code>phi</code> that maps each observation <code>o<em>t</code> into a latent vector <code>z</em>t</code>, chosen so that the transition between consecutive latents is *linear*: <code>z<em>{t+1} = A z</em>t + B a<em>latent</em>t</code>, where <code>A</code> (state transition) and <code>B</code> (control matrix) are learned matrices and <code>a<em>latent</em>t</code> is a latent &quot;action proxy.&quot; The autoencoder is trained on observation-only sequences by minimizing reconstruction loss (<code>phi^{-1}(z<em>t) ≈ o</em>t</code>) and multi-step prediction loss (how well the linear dynamics roll forward). Crucially, <code>a<em>latent</em>t</code> is inferred from the *difference* <code>z<em>{t+1} - A z</em>t</code> — no action label is needed. This latent action proxy captures what the agent must have done without ever seeing the actual command.</p>
+<p><strong>Step 2 — Diffusion Planner (observation-sequence planning).</strong></p>
+<p>The planner is a denoising diffusion model conditioned on the current observation and a language or image goal. It does *not* directly output joint actions; it outputs a sequence of future latent states <code>[z<em>{t+1}, z</em>{t+2}, ..., z_{t+H}]</code> (a plan in latent space). Training uses the standard DDPM (Denoising Diffusion Probabilistic Model) objective over the observation-only dataset: learn to denoise a corrupted latent trajectory back to the clean expert trajectory. At inference, the planner draws a noise sample and runs the reverse diffusion chain (typically 50–100 denoising steps) conditioned on the current state and goal, producing a plausible future trajectory.</p>
+<p><strong>Step 3 — Linear Action Decoder (bridging latent proxy to real action).</strong></p>
+<p>Given the planned next latent state <code>z<em>{t+1}</code> and the current state <code>z</em>t</code>, the latent action proxy is recovered as <code>a<em>latent</em>t = B^+ (z<em>{t+1} - A z</em>t)</code> (pseudo-inverse of B). A linear decoder <code>W</code> then maps <code>a<em>latent</em>t</code> to the real robot action <code>a<em>t = W a</em>latent_t + b</code>. This linear decoder is trained on the *small* set of labeled demonstrations via least-squares regression. Because the Koopman space captures rich state-transition structure from the large observation-only corpus, the linear decoder generalizes to new situations despite being trained on very few labeled examples.</p>
+<p><strong>Step 4 — Execution at test time.</strong></p>
+<p>At each timestep the robot (1) encodes the current observation, (2) runs the diffusion planner to get the next planned latent state, (3) computes the latent action proxy, (4) applies the linear decoder to get the real joint command, and executes it. There are no imagination rollouts in the sense of DreamerV3; the world model is used to structure the latent space so that the planner can reason in it, not for long-horizon policy optimization.</p>
+<p><strong>Datasets and tasks.</strong> Experiments use the D3IL (Diverse Demonstrations for Imitation Learning) benchmark — a suite of simulated robotic manipulation tasks (block stacking, sorting, pushing) with multi-modal demonstrations. A real-robot experiment with a tabletop arm is also included. The key metric is task success rate as a function of *how many action-labeled demos* are provided (from 0 to ~10% of the full dataset).</p>
+<hr>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/jxbi1010/KOAP" target="_blank" rel="noopener">https://github.com/jxbi1010/KOAP</a> (MIT license; 9 commits, ~5 stars as of mid-2025)</p>
+<p><strong>Language / framework:</strong> Python, PyTorch. Uses <code>vector-quantize-pytorch</code> for the VQ component of the Koopman encoder. The D3IL benchmark is pulled as a git submodule.</p>
+<p><strong>Repository structure (from README and repo page):</strong></p>
+<pre><code>
+KOAP/
+├── asset/                      # teaser image, figures
+├── src/
+│   ├── environments/
+│   │   └── d3il/               # git submodule — D3IL sim + dataset infra
+│   ├── run_script_koap.py      # MAIN training entry point for KOAP
+│   ├── run_script_&lt;method&gt;.py  # baseline scripts (BC, IBC, BESO, etc.)
+│   └── create_small_dataset.py # generate observation-only splits
+├── LICENSE
+└── README.md
+</code></pre>
+<p>The <code>src/</code> directory likely contains agent/model definitions (Koopman encoder, diffusion planner, linear decoder) alongside the run scripts, but the repo does not expose a detailed subfolder beyond <code>environments/</code>.</p>
+<p><strong>File to open first:</strong> <code>src/run<em>script</em>koap.py</code> — it is the single training entry point and will import the model classes, dataset loaders, and training loop, giving you the full call graph from one starting point.</p>
+<p><strong>Key dependencies:</strong></p>
+<ul>
+<li><code>torch</code> (PyTorch, version not pinned in public README)</li>
+<li><code>vector-quantize-pytorch</code> (VQ-VAE style quantization for encoder)</li>
+<li>D3IL submodule (<code>pip install -e .</code> from <code>src/environments/d3il/</code>)</li>
+<li>Standard: <code>numpy</code>, <code>hydra-core</code> (likely for config), <code>einops</code>, <code>tqdm</code></li>
+</ul>
+<p><strong>Simulator / dataset:</strong> D3IL simulation (MuJoCo-based). You must clone the D3IL submodule, follow its README to register environments, and download its dataset (~several GB) to <code>environments/dataset/data/</code>. Then run <code>create<em>small</em>dataset.py</code> to generate the observation-only splits that KOAP trains on.</p>
+<p><strong>GPU:</strong> Not explicitly stated, but training a diffusion model over trajectory datasets in PyTorch requires a GPU (CUDA). A mid-range GPU (RTX 3080 or A100) is typical for this class of experiment. CPU-only training would be impractically slow (hours per epoch become days).</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+git clone https://github.com/jxbi1010/KOAP
+cd KOAP/src/environments
+git clone https://github.com/ALRhub/d3il
+cd d3il &amp;&amp; pip install -e . &amp;&amp; cd ../../..
+pip install vector-quantize-pytorch
+pip install -r requirements.txt
+# download D3IL data per their README into environments/dataset/data/
+python src/create_small_dataset.py
+python src/run_script_koap.py
+</code></pre>
+<hr>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with <code>src/run<em>script</em>koap.py</code> to see the overall training loop and which classes it instantiates. Then find the Koopman encoder definition (likely a class named something like <code>KoopmanEncoder</code> or <code>DKO</code>) and the diffusion planner class (likely <code>DiffusionPlanner</code> or similar). The linear decoder will be the simplest component — a single <code>nn.Linear</code> trained by least-squares after the encoder is frozen.</p>
+<p><strong>How hard is the code to follow:</strong> Moderate difficulty. The three-stage training (encoder, dynamics, decoder) is conceptually clean and maps directly to the paper sections. The D3IL submodule adds environment-setup overhead — you need to understand its dataset format before you can run anything. The diffusion planner component borrows standard DDPM patterns that are well-documented elsewhere (DDPM, Diffusion Policy). The Koopman operator math (eigendecomposition, <code>A</code> and <code>B</code> matrices) is the most novel part and requires reading the paper alongside the code to verify the loss terms. Overall: someone familiar with PyTorch and DDPM basics can navigate this in a day.</p>
+<hr>
+<h2>Run verdict</h2>
+<p><strong>Cannot run meaningfully on a CPU-only box.</strong> Three blockers: (1) the diffusion planner&#x27;s reverse denoising chain over trajectory batches is GPU-bound — on CPU, a single training epoch over D3IL&#x27;s dataset would take many hours; (2) the D3IL benchmark uses MuJoCo for simulation, which requires system-level MuJoCo installation and may require a license for older versions; (3) even inference (running the policy on a single episode) chains a diffusion model forward pass (50+ denoising steps) with a Koopman encoder, which is slow without CUDA. You could confirm that the code *imports* and that <code>create<em>small</em>dataset.py</code> runs on CPU, but any actual training or evaluation needs a GPU + MuJoCo.</p></article>
+<article class="page" id="gp6"><h1>RoboEnvision: A Long-Horizon Video Generation Model for Multi-Task Robot Manipulation</h1>
+<p>IROS 2025 · 0 citations · sub-approach: plan by imagining future images (video-plan)</p>
+<h2>What it does</h2>
+<p>RoboEnvision uses a learned video diffusion model as a world model: given a high-level language instruction, it generates a sequence of photorealistic future frames showing the robot completing multiple manipulation sub-tasks, then extracts joint-angle commands from those imagined frames using a lightweight policy network. The key insight is that planning through imagined video sidesteps error accumulation because frames are generated in parallel (keyframe then fill) rather than autoregressively one step at a time. This places it squarely in the &quot;plan by imagining future images&quot; sub-approach: the world model is the planner, and execution follows the imagined trajectory.</p>
+<h2>The method, in detail</h2>
+<p><strong>Stage 0 — Task decomposition.</strong> A vision-language model (GPT-4o is used at inference time) receives the high-level goal (&quot;pick the red cube, then place it in the bin&quot;) and outputs K ordered atomic sub-instructions, one per manipulation primitive.</p>
+<p><strong>Stage 1 — Keyframe generation (world model, first diffusion pass).</strong> A video Diffusion Transformer (DiT) built on the Open-Sora codebase takes the K sub-instructions and generates exactly K keyframes — one target image per sub-task. The model compresses frames through a VAE (variational autoencoder) into a latent space and denoises from Gaussian noise conditioned on text. A diagonal block-masked cross-attention matrix ensures keyframe i attends only to instruction i, not to instructions for other steps, preventing semantic bleed between tasks. A Semantics-Preserving Attention (SPA) module reinjets the VAE features of the initial observed frame into every spatial attention layer; this anchors object identity (shape, color, position) across large inter-keyframe motions where purely temporal attention would lose track of objects. Full 3D spatio-temporal attention (instead of factored spatial + temporal attention) is used to handle large displacements between keyframes.</p>
+<p><strong>Stage 2 — Frame interpolation (filling diffusion model).</strong> A second, separate diffusion model takes two consecutive keyframes (the boundary conditions) plus the connecting sub-instruction and generates the dense intermediate frames between them. All K-1 filling passes run in parallel, so the full video is assembled without any autoregressive chaining. Training uses the standard denoising diffusion objective (predict added noise epsilon at each timestep) conditioned on the boundary frames via concatenation in the latent channel dimension.</p>
+<p><strong>Stage 3 — Policy model (joint extraction).</strong> A transformer-based policy model with spatial-temporal attention blocks plus a ResNet-style decoder processes the full generated video (keyframes and filled frames) and regresses 7-DoF joint angles plus a binary gripper state for each frame. It is trained independently on simulator ground-truth data. At inference time the robot executes the predicted joint sequence open-loop.</p>
+<p><strong>Training data.</strong> Two datasets: (a) LanguageTable — 50k short-horizon clip sequences concatenated into multi-step videos (360x640); (b) LHMM (Long-Horizon Manipulation in MuJoCo), a new 90k-sequence dataset the authors construct with keyframe annotations derived by detecting grasp/release events (180x320, 3-18 instructions per video). The keyframe diffusion model and the filling model are trained separately on these datasets.</p>
+<p><strong>Evaluation.</strong> Video quality: LPIPS, SSIM, PSNR, FVD (Frechet Video Distance), CLIP score. Policy quality: task success rate on 45 held-out long-horizon LHMM tasks. Baselines include OpenSora in naive autoregressive, hierarchical autoregressive, and flat modes, plus AVDC (Action Video Diffusion with Control).</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> No public repository has been released as of July 2026. The paper does not state a project page or code URL (arXiv:2506.22007 lists no link). The base video diffusion framework (Open-Sora) is open-source at github.com/hpcaitech/Open-Sora, which gives you the DiT backbone and VAE.</p>
+<p><strong>Language / framework:</strong> Python, PyTorch. The video diffusion backbone is built on Open-Sora (DiT, ~800M parameters). Likely uses Hugging Face Diffusers for scheduler utilities.</p>
+<p><strong>Repo structure (inferred from Open-Sora, the stated codebase):</strong></p>
+<ul>
+<li><code>opensora/</code> — model definitions (DiT blocks, spatial/temporal attention, VAE encoder/decoder)</li>
+<li><code>opensora/models/stdit/</code> — core Spatial-Temporal DiT architecture (the file to open first for the keyframe generator)</li>
+<li><code>configs/</code> — YAML config files for training runs (resolution, batch size, conditioning)</li>
+<li><code>scripts/train.py</code> — main training entry point</li>
+<li><code>scripts/inference.py</code> — inference / video generation</li>
+<li><code>tools/</code> — dataset preprocessing utilities</li>
+<li>RoboEnvision-specific additions (SPA module, diagonal block cross-attention, policy model) are not yet public; they would live alongside the DiT block definitions.</li>
+</ul>
+<p><strong>File / function to open first:</strong> <code>opensora/models/stdit/stdit3.py</code> → class <code>STDiT3Block</code> — this is where spatial attention, temporal attention, and cross-attention are stacked per block; the SPA module and masked keyframe cross-attention would slot in here.</p>
+<p><strong>Dependencies:</strong> <code>torch&gt;=2.0</code>, <code>torchvision</code>, <code>transformers</code> (text encoder, T5 or CLIP), <code>diffusers</code> (DDPM/DDIM scheduler), <code>imageio</code>/<code>decord</code> (video I/O), <code>einops</code>, <code>timm</code>, <code>MuJoCo</code> or <code>PyBullet</code> for the LHMM simulator data, <code>colossalai</code> or <code>accelerate</code> for distributed training.</p>
+<p><strong>Simulator / dataset / GPU:</strong> LHMM data requires MuJoCo (proprietary but free license). Training the ~800M DiT needs multiple A100/H100 GPUs; the filling model is a smaller separate network. No dataset download link is currently public.</p>
+<p><strong>To run (if code were released):</strong> Typical Open-Sora workflow: set a config YAML with dataset paths, run <code>torchrun --nproc<em>per</em>node=8 scripts/train.py --config configs/roboenvision_keyframe.yaml</code>; inference via <code>python scripts/inference.py --ckpt &lt;checkpoint&gt; --prompt &quot;pick cube then stack&quot;</code>.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Read the arXiv HTML paper (arxiv.org/html/2506.22007) in this order: (1) Figure 2 (pipeline overview), (2) Section 3.2 on the keyframe diffusion model and masked cross-attention, (3) Section 3.3 on the SPA module, (4) Section 3.4 on the filling model, (5) Section 3.5 on the policy model. Then open <code>opensora/models/stdit/stdit3.py</code> in the Open-Sora repo to see how DiT blocks are built, since RoboEnvision modifies those blocks.</p>
+<p><strong>Code difficulty:</strong> Medium-high. The Open-Sora codebase is well-structured but large (~10k LOC of model code). The paper-specific contributions (SPA, diagonal masking, filling model conditioning) are conceptually clean but non-trivial to re-implement: the VAE feature re-injection in SPA touches internal attention layer inputs, and the diagonal block mask requires reshaping across the keyframe and token dimensions simultaneously. The policy model (transformer + ResNet head) is the simplest piece. Without released code, a full reimplementation from the paper alone would take several days of careful engineering.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on CPU-only.</strong> The keyframe diffusion model is ~800M parameters (DiT-based); a single forward pass during inference requires ~20-40 GB GPU memory. Training from scratch requires multi-GPU (8x A100 class). Even inference at the smallest configuration would be too slow on CPU for any practical use (minutes per frame). Additionally, generating the LHMM training data requires MuJoCo and the specific episode collection scripts, which are not public. A researcher would need: at minimum 1x A100 (80 GB) for inference with quantization, or 8x A100 for training; the MuJoCo simulator; and the LHMM dataset once released.</p></article>
+<article class="page" id="gp7"><h1>Chain-of-Imagination for Reliable Instruction Following in Decision Making</h1>
+<p>IROS 2025 (Oral) · 0 citations · sub-approach: <strong>plan by imagining future images</strong> (video-plan)</p>
+<hr>
+<h2>What it does</h2>
+<p>Chain-of-Imagination (CoI) is a mechanism that lets an embodied agent break a long-horizon language instruction into a sequence of intermediate visual sub-goals by iteratively using a multimodal large language model (MLLM) paired with a diffusion image-editing model: at each step the system imagines what the world should look like one step from now, then drives a low-level controller toward that imagined frame. The concrete agent built on CoI is called <strong>DecisionDreamer</strong>; the official implementation and pre-trained weights live in the <strong>MineDreamer</strong> codebase (IROS &#x27;25 Oral, NeurIPS-workshop &#x27;24), which is the expanded version of the earlier arXiv release (arXiv:2403.12037) that adds CALVIN manipulation results alongside the original Minecraft evaluation. The sub-approach is &quot;plan by imagining future images&quot;: the world model is a learned image-prediction function that produces the next egocentric observation given the current one and a language goal, and the robot acts toward each predicted image in turn.</p>
+<hr>
+<h2>The method, in detail</h2>
+<p><strong>The core loop — Chain-of-Imagination (CoI)</strong></p>
+<p>At every decision cycle the system does four things in order:</p>
+<ul>
+<li><strong>Imagine the next visual sub-goal.</strong> The *Imaginator* takes the current egocentric observation O<em>t and the natural-language instruction y and produces a synthetic image I</em>{t+1} showing what the scene should look like one step closer to the goal. This is the world-model prediction: not a reward, not a latent vector, but a full pixel-space image of the next desired state.</li>
+</ul>
+<ul>
+<li><strong>Convert the imagined image into a latent visual prompt.</strong> A small *Prompt Generator* (a conditional variational autoencoder, CVAE) receives the MineCLIP embeddings of the current observation, the imagined image, and the instruction, and outputs a compact latent vector p_t in the same embedding space that the low-level controller expects.</li>
+</ul>
+<ul>
+<li><strong>Act.</strong> The *PolicyNet* (Video PreTraining, VPT, pre-trained on 70 k hours of Minecraft gameplay) receives the current visual features f<em>t concatenated with p</em>t and predicts keyboard-and-mouse actions a_t.</li>
+</ul>
+<ul>
+<li><strong>Observe and loop.</strong> The environment transitions to O_{t+1}, and the cycle restarts from step 1 with the new observation.</li>
+</ul>
+<p><strong>The Imaginator in detail</strong></p>
+<p>The Imaginator is the world-model component. It is built by connecting LLaVA (a visual-instruction-tuned LLM) to an InstructPix2Pix diffusion U-Net via a *Goal Q-Former*:</p>
+<ul>
+<li>LLaVA processes the current observation image and the instruction, producing hidden states for a set of learnable <code>[GOAL]</code> tokens.</li>
+<li>The Goal Q-Former (a cross-attention module with learnable dream-query vectors) compresses those hidden states into a compact feature vector f* that lies in the diffusion model&#x27;s conditioning space.</li>
+<li>The diffusion U-Net (InstructPix2Pix backbone, fine-tuned on Minecraft) takes the current observation as the source image and f* as the conditioning signal, then denoises a target image that depicts the desired next state — for example, showing the agent&#x27;s hand reaching toward a tree when the instruction is &quot;collect wood&quot;.</li>
+</ul>
+<p>Training is done in three stages:</p>
+<ul>
+<li><strong>Stage 1 (cross-modal alignment):</strong> The Goal Q-Former is trained to align LLaVA&#x27;s hidden states with CLIP visual features using the CC12M image-caption corpus. LLaVA weights are frozen; only the Q-Former is updated.</li>
+<li><strong>Stage 2 (diffusion warm-up):</strong> InstructPix2Pix is fine-tuned on the *Goal Drift Dataset* — a collection of Minecraft quadruplets (current observation, instruction, next observation, goal description) — while the Q-Former is also frozen. The standard denoising loss is used.</li>
+<li><strong>Stage 3 (end-to-end fine-tuning):</strong> LLaVA is frozen; the Q-Former is updated via LoRA; the diffusion U-Net is updated end-to-end. The joint loss is L = L<em>LLM (cross-entropy on goal-token prediction) + L</em>dream (noise-prediction MSE from the DDPM objective).</li>
+</ul>
+<p><strong>Prompt Generator training</strong></p>
+<p>The CVAE Prompt Generator is trained separately on ~10 k Goal Drift quadruplets. Its encoder and decoder are each three-layer MLPs with 512 hidden units. It learns to map (observation embedding, imagined-image embedding, instruction embedding) — all from MineCLIP — to the visual-prompt latent space that VPT&#x27;s conditioning head expects.</p>
+<p><strong>PolicyNet (VPT)</strong></p>
+<p>VPT is used as-is (pre-trained weights, no fine-tuning). The visual prompt p_t plugs directly into VPT&#x27;s existing conditioning interface, so the controller requires no additional gradient updates.</p>
+<p><strong>How the robot uses the world model to choose actions</strong></p>
+<p>The agent does not do explicit search or rollout-based planning (no model-predictive control, no CEM, no MCTS). Instead CoI is a *reactive imagination loop*: at each timestep the imagined sub-goal is regenerated from the new observation, so the sequence of imagined images adapts online as the environment evolves. This is closest in spirit to goal-conditioned imitation with an iteratively updated goal image.</p>
+<p><strong>CALVIN extension (IROS version)</strong></p>
+<p>The IROS&#x27;25 paper generalises the same CoI mechanism to the CALVIN robot-arm manipulation benchmark. The Imaginator is re-trained on CALVIN trajectories; VPT is replaced with a manipulation-specific low-level policy; the Prompt Generator is adapted to CALVIN&#x27;s observation space. This lets DecisionDreamer outperform prior generalist agents on CALVIN&#x27;s chained multi-task evaluation.</p>
+<hr>
+<h2>The code</h2>
+<p><strong>Repository:</strong> <a href="https://github.com/Zhoues/MineDreamer" target="_blank" rel="noopener">https://github.com/Zhoues/MineDreamer</a></p>
+<p>(Official implementation; tagged IROS &#x27;25 Oral and NeurIPS-workshop &#x27;24)</p>
+<p><strong>Language / framework:</strong> Python 3.9; PyTorch 2.2.0 dev (nightly, CUDA 11.8); DeepSpeed (for distributed Imaginator training); LLaVA (MLLM backbone); InstructPix2Pix (Hugging Face Diffusers-based diffusion U-Net); STEVE-1 / MineRL (Minecraft simulator and baseline controller).</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+MineDreamer/
+├── imaginator/          # Imaginator: Q-Former + diffusion U-Net training &amp; inference
+├── minedreamer/         # Agent glue: CoI loop, Prompt Generator, PolicyNet wrappers,
+│                        #   baseline (STEVE-1) and MineDreamer implementations
+├── play/                # Evaluation scripts
+│   ├── programmatic/    # Scripted task launchers (XVFB headless Minecraft)
+│   └── command_switching/ # Multi-step instruction-switching evaluation
+├── scripts/             # Shell scripts: train, inference, backend service
+├── requirements.txt
+├── setup.py
+├── download_baseline_weights.sh
+├── download_minedreamer_weights.sh
+└── minerl_env_valid.py  # MineRL environment smoke-test
+</code></pre>
+<p><strong>File to open first:</strong> <code>imaginator/</code> — start with the model definition inside this folder to understand the Q-Former → diffusion pipeline, then read <code>minedreamer/</code> for the CoI loop that calls the Imaginator at every step.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>PyTorch 2.2.0+cu118 (nightly build required; standard stable builds will not work)</li>
+<li>DeepSpeed with <code>DS<em>BUILD</em>AIO=1 DS<em>BUILD</em>FUSED_LAMB=1</code></li>
+<li>MineRL (Minecraft Java Edition must be installed; a Docker container with VGL GPU rendering is the recommended path)</li>
+<li>LLaVA (fetched via <code>scripts/pre_llava.sh</code>)</li>
+<li>Hugging Face hub for pre-trained weights (Q-Former 261 MB, diffusion U-Net 3.44 GB, MineDreamer-7B Imaginator 17.7 GB)</li>
+<li>GCC 7.5.0 exactly (DeepSpeed&#x27;s fused kernels require a specific ABI)</li>
+</ul>
+<p><strong>Simulator / dataset / GPU:</strong></p>
+<ul>
+<li>Simulator: MineRL (Minecraft) is mandatory for evaluation; the CALVIN extension needs the CALVIN simulation environment.</li>
+<li>Dataset: Goal Drift Dataset (available on Hugging Face) for Imaginator training.</li>
+<li>GPU: An NVIDIA GPU with at least ~20 GB VRAM is needed to run the 7B Imaginator in fp16; training requires multi-GPU with DeepSpeed. The repo includes SLURM submission scripts for cluster use.</li>
+</ul>
+<p><strong>How to run (abridged):</strong></p>
+<pre><code>
+# 1. Set up MineRL environment (Docker or native) and validate
+python minerl_env_valid.py
+
+# 2. Download weights
+sh download_baseline_weights.sh
+sh download_minedreamer_weights.sh
+
+# 3. Set up Imaginator conda environment
+conda create -n imaginator python=3.9
+pip install torch==2.2.0.dev20231121+cu118 torchvision==0.17.0.dev20231121+cu118
+pip install -r requirements.txt
+DS_BUILD_AIO=1 DS_BUILD_FUSED_LAMB=1 pip install deepspeed
+bash scripts/pre_llava.sh  # fetches LLaVA
+
+# 4. Launch Imaginator backend (keeps diffusion model in GPU memory as a service)
+bash scripts/minedreamer_backend_MLLMSD.sh
+
+# 5. Run agent evaluation (headless Minecraft via XVFB)
+sh play/programmatic/XVFB_dreamer_play_w_text_prompt.sh mine_block_wood
+</code></pre>
+<hr>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li><code>imaginator/</code> — the Q-Former class and the diffusion conditioning code show exactly how LLaVA hidden states are projected into the diffusion U-Net. This is the most novel part of the architecture.</li>
+<li>The CoI loop in <code>minedreamer/</code> — a few dozen lines showing how the Imaginator is called at each timestep and how the output is fed to the Prompt Generator and then VPT.</li>
+<li><code>play/programmatic/</code> — the evaluation harness shows how tasks are defined and episodes are scored, which clarifies what &quot;success&quot; means.</li>
+</ul>
+<p><strong>How hard is the code to follow?</strong></p>
+<p>Moderate-to-hard. The system has three independently trained components (Imaginator, Prompt Generator, PolicyNet) each with its own conda environment, weight files, and launch scripts. The Imaginator is particularly complex because it combines LLaVA internals (not always well-documented) with a custom Q-Former and a fine-tuned InstructPix2Pix. Anyone unfamiliar with Hugging Face Diffusers internals and LLaVA&#x27;s feature extraction will spend time tracing cross-library calls. The Minecraft simulator dependency adds another layer of setup friction. The CALVIN extension (IROS version) does not appear to have its own dedicated sub-directory in the current public repo; that portion may be released separately or require adaptation.</p>
+<hr>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on CPU only.</strong> The system has hard GPU requirements at every stage:</p>
+<ul>
+<li>The MineDreamer-7B Imaginator is a 7-billion-parameter model; running it on CPU would take minutes per inference step and exceed typical RAM.</li>
+<li>The InstructPix2Pix diffusion U-Net (3.44 GB) requires CUDA for reasonable denoising speed (each imagination step runs ~50 diffusion steps).</li>
+<li>MineRL renders Minecraft via GPU (VGL/virtualGL in the Docker container); headless CPU-only rendering is not supported in the recommended setup.</li>
+<li>DeepSpeed&#x27;s fused-Adam kernels require CUDA.</li>
+</ul>
+<p>Even with a GPU, setup is non-trivial: nightly PyTorch builds, a specific GCC version, MineRL&#x27;s Java dependency, and ~22 GB of downloaded weights must all align before the first agent step runs. A researcher with a 24 GB GPU (e.g., RTX 3090/4090 or A100) and familiarity with MineRL can realistically run inference; training the Imaginator from scratch needs multi-GPU.</p></article>
+<article class="page" id="gp8"><h1>SR-AIF: Solving Sparse-Reward Robotic Tasks From Pixels with Active Inference and World Models</h1>
+<p><em>ICRA 2025 · 2 citations · sub-approach: plan by imagining future latent states via active inference (expected free energy minimization)</em></p>
+<h2>What it does</h2>
+<p>SR-AIF (Self-Revising Active Inference) trains a robot to solve continuous-action, goal-directed tasks directly from raw pixel images when reward signals are extremely sparse — typically just a single +1 at task completion and 0 everywhere else. The agent builds a learned world model that predicts how the world evolves in a compact latent space, then uses that model to plan actions by minimizing a quantity called expected free energy, which simultaneously drives the robot toward goals and drives it to explore states it does not yet understand. Two novel contributions make this work under sparse reward: a contrastive prior preference learning mechanism that teaches the agent what &quot;success&quot; looks like by learning from a handful of expert demonstrations, and a self-revision schedule that periodically reassigns credit across an episode so the agent can link distant actions to a delayed goal signal.</p>
+<p>Sub-approach: <strong>plan by imagining futures</strong> — the agent runs imagination rollouts inside its learned world model, evaluates those imagined futures under a goal-preference signal, and uses the result to train both a policy (actor) and a value function (critic).</p>
+<h2>The method, in detail</h2>
+<p><strong>World model — the RSSM.</strong> The core of SR-AIF is a Recurrent State Space Model (RSSM). An RSSM couples a Gated Recurrent Unit (GRU) for temporal memory with a set of stochastic latent variables:</p>
+<ul>
+<li>*Encoder (approximate posterior):* takes the current pixel observation and the GRU hidden state; outputs a distribution over the current latent state <code>s<em>t</code>. Written <code>q</em>θ(s<em>t | o</em>t, h_t)</code>.</li>
+<li>*Transition prior:* predicts the next latent state from the current latent and the GRU hidden state alone (no observation), i.e. <code>p<em>θ(s</em>t | z_t)</code>. This is the &quot;imagination&quot; branch — it lets the agent simulate futures without needing real images.</li>
+<li>*Decoder (observation likelihood):* reconstructs the pixel image from <code>(s<em>t, h</em>t)</code> to keep the latent space grounded in real observations.</li>
+<li>*Reward predictor:* predicts the reward signal from <code>(s<em>t, h</em>t)</code>.</li>
+<li>Latent states use discretized (categorical) distributions rather than continuous Gaussians, following the DreamerV3 recipe. A symlog transform and KL balancing are applied for numerical stability.</li>
+</ul>
+<p>The RSSM is trained end-to-end by minimizing the variational free energy (the ELBO): the sum of a reconstruction accuracy term (negative log-likelihood of observations and rewards under the posterior) and a complexity term (KL divergence between the encoder posterior and the transition prior).</p>
+<p><strong>Prior preference learning — CRSPP.</strong> In standard active inference, the agent needs a &quot;prior preference&quot; distribution — a model of what states it wants to occupy. In sparse-reward tasks this is hard to specify by hand. SR-AIF learns it with a separate, action-free RSSM called the Contrastive Recurrent State Prior Preference (CRSPP) model. This second network watches expert demonstration trajectories (collected by a separately trained PPO agent operating in the fully observable MDP) and learns to produce a preferred-state trajectory <code>ŝ_t</code>.</p>
+<p>A self-revision mechanism assigns a credit value <code>ρ_t</code> to each time step: positive (decayed backward from the goal) for successful episodes, negative for failures. The CRSPP is trained with a contrastive objective that pushes the preferred-state distribution to match states from successful episodes and away from failure states. Only positive-credit steps affect the KL term. The similarity between preferred states and world-model states is measured by cosine distance (with stop-gradient on the world model side).</p>
+<p><strong>Expected free energy and action selection.</strong> The policy (actor) is trained in imagination: the agent unrolls the transition prior for H steps without observations, producing a sequence of imagined latent states. At each imagined step, the expected free energy (EFE) combines four signals:</p>
+<ul>
+<li>*Epistemic signal A* — policy entropy: encourages diverse action choices.</li>
+<li>*Epistemic signal B* — information gain about model parameters estimated with a small ensemble, discouraging actions that the model is uncertain about.</li>
+<li>*Epistemic signal C* — entropy of the generative model&#x27;s state distribution, pushing the agent toward novel states.</li>
+<li>*Instrumental signal* — predicted reward plus cosine similarity between the imagined state and the preferred state from CRSPP, pulling the agent toward the goal.</li>
+</ul>
+<p>A value function (critic) is trained with a lambda-return target that mixes multi-step returns with bootstrapped value estimates. The actor maximizes the critic&#x27;s value plus entropy bonuses. Continuous actions are sampled from a Gaussian with tanh normalization; discrete actions use straight-through gradient estimators.</p>
+<p><strong>Self-revision schedule.</strong> The credit <code>ρ_t</code> is recomputed each episode based on whether the agent succeeded. This backward-decayed credit acts as a curriculum: early in training, failure episodes produce a negative signal that pushes the CRSPP away from those states, while success episodes reinforce good trajectories. The schedule gradually shifts the balance as the agent improves.</p>
+<p><strong>Expert data and training flow.</strong></p>
+<ul>
+<li>Collect 1,000–20,000 steps of expert demonstration data (environment-dependent) from a pre-trained PPO agent that has full state access (MDP setting).</li>
+<li>Train the CRSPP on the demonstrations to learn preferred state distributions.</li>
+<li>Train the RSSM world model and actor-critic jointly on environment interaction, using CRSPP-generated preferred states as the instrumental goal signal.</li>
+<li>Run entirely from pixels (image observations), no privileged state information at deployment.</li>
+</ul>
+<p>Environments: Gymnasium Mountain Car (1M steps), Meta-World manipulation suite (13 tasks, 3M steps), and RoboSuite manipulation tasks (5M steps), all with sparse {0,1} rewards.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/NACLab/self-revising-active-inference" target="_blank" rel="noopener">https://github.com/NACLab/self-revising-active-inference</a></p>
+<p><strong>Language / framework:</strong> Python 3.10, JAX (not PyTorch). JAX is used for its JIT compilation and automatic differentiation; the codebase follows a functional-style training loop typical of JAX projects.</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+self-revising-active-inference/
+├── raif/                    # Core SR-AIF implementation
+│                            #   world model (RSSM), CRSPP, actor, critic,
+│                            #   EFE computation, training step
+├── scripts/
+│   ├── train_aif.py         # Main training entry point
+│   ├── collect_prior.py     # Collect expert demonstration data (Step 1)
+│   └── collect_prior_all.py # Evaluate expert agent performance
+├── experimental/
+│   └── robosuite_keyboard.py # Manual keyboard-based data collection for RoboSuite
+├── expert_models/           # Pre-trained PPO checkpoints used to generate priors
+├── docs/
+│   └── ImplementationDetailsDocumentation.pdf  # Full math derivations
+├── install.sh               # Conda environment setup script
+└── README.md
+</code></pre>
+<p><strong>File to open first:</strong> <code>raif/</code> — specifically whatever module defines the RSSM and CRSPP classes. Start there to see how the latent state is structured and how <code>train<em>aif.py</code> calls into it. The top of <code>scripts/train</em>aif.py</code> shows the config flags and the high-level training loop.</p>
+<p><strong>Dependencies:</strong> JAX, Gymnasium (for Mountain Car), RoboSuite (for manipulation tasks), Conda, gcc. The <code>install.sh</code> script handles JAX and environment installation. RoboSuite requires a gcc compiler available on the system.</p>
+<p><strong>How to run (Mountain Car example):</strong></p>
+<pre><code>
+conda create -n jax pip python=3.10 -y
+conda activate jax
+bash install.sh
+
+# Step 1 — collect expert demonstrations
+python scripts/collect_prior.py --configs collect gym_mtc \
+  --run.steps 2000 --expname my_experiment
+
+# Step 2 — train SR-AIF
+python scripts/train_aif.py --configs gym_mtc tiny \
+  --run.steps 2000000 --run.script train --expname my_experiment
+
+# Monitor
+tensorboard --logdir logs
+</code></pre>
+<p><strong>GPU requirement:</strong> RTX 3060 or A100 tested. Training runs for 1–5M environment steps, which is infeasible on CPU within any reasonable time window. JAX defaults to GPU if one is available.</p>
+<p><strong>Simulator needed:</strong> Yes — Gymnasium (Mountain Car) and/or RoboSuite (manipulation). No pre-collected offline dataset is needed at training time beyond the expert-prior collection step, which itself runs the simulator.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with <code>docs/ImplementationDetailsDocumentation.pdf</code> alongside the arXiv paper (<a href="https://arxiv.org/abs/2409.14216" target="_blank" rel="noopener">https://arxiv.org/abs/2409.14216</a>). The PDF contains the full mathematical derivations for the free energy terms, the CRSPP objective, and the self-revision credit formulas — reading these before touching the code will make the JAX implementation far less opaque. Then open <code>raif/</code> and trace the RSSM forward pass and the EFE computation step by step.</p>
+<p><strong>How hard is the code to follow:</strong> Moderately hard. JAX code using <code>jit</code>, <code>vmap</code>, and functional-style state management (no object mutation) is less intuitive than PyTorch if you are unfamiliar with JAX&#x27;s programming model. The active inference objective is also less standard than an RL loss, so the math PDF is essential. The repo structure is relatively small and focused, which helps — there is no sprawling framework to navigate. Someone comfortable with JAX and DreamerV3-style world models can read the full training loop in a few hours.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on a CPU-only box.</strong> Training SR-AIF for 2M steps on Mountain Car takes JAX/CUDA acceleration; the RSSM imagination rollouts and gradient updates across the actor/critic/world-model/CRSPP networks are far too slow without a GPU. Additionally, the code requires RoboSuite (for most interesting tasks), which itself requires a Linux system with gcc. On a CPU-only machine you could install the dependencies and step through the code, but actual training would not complete in any practical time. A minimum of one NVIDIA GPU (RTX 3060 class or better) is required.</p></article>
+<article class="page" id="gp9"><h1>Curiosity-Driven Imagination: Discovering Plan Operators and Learning Associated Policies for Open-World Adaptation</h1>
+<p>line: ICRA 2025 · 0 citations · curiosity-driven exploration + symbolic operator discovery via imagination rollouts</p>
+<h2>What it does</h2>
+<p>A robot is placed in a manipulation environment and at some point the environment changes in an unforeseen way (a new object appears, a constraint is added). Instead of failing, the system detects the change through curiosity — its neural forward model starts making large prediction errors — and uses that signal to explore, discover what new transitions are now possible, lift those transitions into abstract symbolic planning operators, and then plan in an &quot;imaginary&quot; domain to generate a reward signal that teaches a new low-level policy.</p>
+<p>Sub-approach: <strong>curiosity-driven exploration</strong> — the Intrinsic Curiosity Module (ICM) prediction error is the primary driver; the system also builds and uses an internal world model (the neural transition model) to plan symbolically in imagined space, making it also a build-and-use planner under novelty/uncertainty.</p>
+<p>The core claim: you can discover new PDDL-style operators online by observing the robot&#x27;s own curious exploration, then immediately plan with those operators before a working policy exists.</p>
+<h2>The method, in detail</h2>
+<p><strong>1. Low-level neural world model (stochastic transition model)</strong></p>
+<p>The agent maintains a neural network τ(s̃<em>{t+1} | s̃</em>t, a_t) that predicts the next continuous state given the current state and a continuous action. State here is *not* pixels — it is joint positions plus object positions and orientations extracted directly from the MuJoCo simulator. The model is trained online via supervised regression on experienced transitions.</p>
+<p><strong>2. Intrinsic Curiosity Module (ICM)</strong></p>
+<p>The ICM contains two sub-networks trained jointly with the transition model: a forward model (predicts next encoded state from current encoded state + action) and an inverse model (predicts the action that caused a transition, used to learn an action-relevant state encoding). The intrinsic reward is the L2 prediction error of the forward model:</p>
+<p>    R<em>intrinsic = || ŝ</em>{t+1} − s̃_{t+1} ||²</p>
+<p>Large errors signal novelty — the forward model is surprised because it has not seen this type of transition before. This is the standard Pathak et al. 2017 ICM formulation applied here to robot state space rather than pixels.</p>
+<p><strong>3. Symbolic predicate layer (detector)</strong></p>
+<p>A hand-designed detector maps continuous states to a set of binary predicates (e.g., &quot;object-held&quot;, &quot;object-at-target&quot;, &quot;gripper-open&quot;). This is the interface between the continuous neural world and the discrete symbolic planner. Predicate changes between consecutive states define the *effects* of a transition; predicate conditions that held across many transitions leading to the same effect define the *preconditions*.</p>
+<p><strong>4. Operator discovery</strong></p>
+<p>A lifted operator O = ⟨ψ, ω⟩ has preconditions ψ ⊆ F and effects ω ⊆ F (where F is the predicate set). After curiosity-driven exploration produces a batch of novel transitions, the system mines them for consistent predicate patterns and proposes a new operator. This is essentially rule induction over observed (pre-state, post-state) predicate pairs.</p>
+<p><strong>5. Imaginary domain planning</strong></p>
+<p>The system maintains an imaginary PDDL domain σ<em>im = ⟨E, F, S</em>im, O_im⟩ that includes operators the agent has *not yet learned a policy for*. A classical planner (Metric-FF or a hierarchical HDDL planner, lilotane) runs over this imaginary domain to produce a symbolic plan. The plan is converted into a <strong>reward machine</strong>: a finite automaton whose states correspond to plan steps and whose transitions emit dense reward signals based on whether the relevant predicate just became true. This is the key trick: planning in imagination produces a dense reward shaping signal before the robot has actually mastered the task.</p>
+<p><strong>6. Reward machine execution</strong></p>
+<p>The reward at each step is:</p>
+<p>    r(s<em>t, s</em>{t+1}) = R_m   if the reward machine&#x27;s current LTL subgoal is satisfied</p>
+<p>                     R_intrinsic   otherwise</p>
+<p>So the robot pursues symbolic subgoals (reward machine) while falling back to curiosity when it is lost. Each sub-operator (pick, reach, drop) is treated as a separate policy trained with Hindsight Experience Replay (HER) over a goal-conditioned reward.</p>
+<p><strong>7. Novelty injection evaluation</strong></p>
+<p>The benchmark is RoboSuite Pick-and-Place-Can (a MuJoCo continuous control task) with *sequential novelty injections* — after the agent has learned a base task, the environment is modified (e.g., adding a new object that must be moved first). The agent must detect the novelty via rising ICM error, explore, discover new operators, replan, and learn new sub-policies — all without a reset or human labels.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/lorangpi/PRM" target="_blank" rel="noopener">https://github.com/lorangpi/PRM</a></p>
+<p><strong>License:</strong> MIT</p>
+<p><strong>Language/framework:</strong> Python 3.8.10, PyTorch (via requirements.txt), custom fork of Robosuite (MuJoCo-backed), classical planners Metric-FF v2.1 (C binary) and lilotane (HDDL planner, C++ binary via git submodule)</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+PRM/
+├── brain.py                   # top-level agent loop (perception → planning → learning)
+├── executor.py                # sends actions to the simulator
+├── planner.py                 # interface to Metric-FF / lilotane
+├── learner.py                 # trains policies using HER
+├── experiment.py              # entry point for full experiments
+├── rl_model.py                # neural network definitions (ICM, transition model, policies)
+├── operator_learners/
+│   ├── operator_wrapper.py    # Gym wrappers decomposing pick-and-place into sub-operators
+│   ├── detector.py            # maps continuous Robosuite obs → binary predicates
+│   └── train_base_operator.py / test_base_operator.py
+├── PDDL/ PDDL_files/          # domain description files for the classical planner
+├── HDDL/                      # hierarchical task network domain files
+├── Metric-FF-v2.1/            # C source of the classical planner (compiled locally)
+├── lilotane/                  # git submodule: HDDL/HTN planner
+├── domain_specific/           # per-experiment environment configs
+└── tests/
+</code></pre>
+<p><strong>File to open first:</strong> <code>operator_learners/detector.py</code> — this is where the predicate abstraction lives, which is the conceptual bridge between the neural world and the symbolic planner. Understanding what predicates are defined here explains what the planner can &quot;see&quot;.</p>
+<p>Then read <code>experiment.py</code> to understand the outer loop, and <code>brain.py</code> for how curiosity, planning, and learning are orchestrated.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>MuJoCo (via Robosuite; the repo installs a custom Robosuite fork as a git submodule)</li>
+<li>PyTorch (for ICM, transition model, and HER policies)</li>
+<li>Metric-FF (C binary; must be compiled from included source)</li>
+<li>lilotane (C++ HDDL planner; git submodule, must be compiled)</li>
+<li>Python packages in requirements.txt (stable-baselines3 or similar for HER is likely present)</li>
+<li>Python 3.8.10 specifically (Robosuite version pinning)</li>
+</ul>
+<p><strong>Setup:</strong></p>
+<pre><code>
+conda create -n prm python=3.8.10 &amp;&amp; conda activate prm
+pip install -r requirements.txt
+git submodule update --init --recursive
+cd robosuite &amp;&amp; pip install -e .
+# Compile Metric-FF:
+cd Metric-FF-v2.1 &amp;&amp; make
+# Compile lilotane (see its own README)
+</code></pre>
+<p><strong>Run a single sub-operator test:</strong></p>
+<pre><code>
+cd operator_learners &amp;&amp; python test_base_operator.py
+</code></pre>
+<p><strong>Run a full novelty-injection experiment:</strong></p>
+<pre><code>
+python experiment.py --experiment hygoal -V -F -R
+</code></pre>
+<p><strong>Simulator:</strong> MuJoCo via Robosuite (required — no sim, no experiment). No real robot needed for reproduction.</p>
+<p><strong>GPU:</strong> Useful for policy training but the networks are small enough that CPU is technically feasible for short runs (see verdict below).</p>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>operator_learners/detector.py</code> to understand the predicate vocabulary — you must know what the symbolic layer can observe before the planning loop makes sense. Then read <code>brain.py</code> top-to-bottom: it is the master loop and names every component explicitly. The <code>planner.py</code> file shows exactly what PDDL strings are assembled and sent to Metric-FF; reading it alongside the PDDL/ folder makes the imaginary domain construction concrete.</p>
+<p>The code has the structure of research code: components are present but documentation is sparse. There are no unit tests for the learning components. The hardest part to follow is the reward machine construction in <code>experiment.py</code> — the LTL formula assembly and the handoff to the policy trainer are condensed. Budget 2-3 hours to fully understand the curiosity → operator → reward-machine pipeline.</p>
+<p>Difficulty: <strong>medium-high</strong>. The individual components (ICM, HER, PDDL planning) are well-known, but their integration is custom and the classical planner subprocess calls add system-level complexity (paths to binaries, compiled planners).</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run training on CPU-only box in practice.</strong> MuJoCo itself runs fine on CPU, and the neural networks here are modest (ICM + small policy net). However:</p>
+<ul>
+<li>MuJoCo rendering / physics simulation is CPU-based and feasible.</li>
+<li>Policy training with HER over thousands of episodes is slow but not impossible on CPU.</li>
+<li>The hard blockers are environmental: Robosuite requires a working MuJoCo installation with a valid license (older Robosuite) or the free version (newer). The custom Robosuite fork may have specific version requirements.</li>
+<li>Metric-FF and lilotane must be compiled from source (C/C++), which requires build tools (gcc, cmake) and can fail on non-Linux systems.</li>
+</ul>
+<p>Realistic verdict: <strong>GPU is not the bottleneck; the simulator + planner compilation chain is</strong>. On a Linux CPU-only box with MuJoCo installed and build tools available, short test runs (<code>test<em>base</em>operator.py</code>) are plausible. Full novelty-injection experiments with convergence would take many hours. GPU would speed policy training ~5-10x.</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div><article class="page walk"><h1>LUMOS — code walkthrough</h1>
+<p>Paper: &quot;LUMOS: Language-Conditioned Imitation Learning with World Models&quot; (ICRA 2025)</p>
+<p>Authors: Nematollahi, DeMoss, Chandra, Hawes, Burgard, Posner</p>
+<p>arXiv: <a href="https://arxiv.org/pdf/2503.10370v1" target="_blank" rel="noopener">https://arxiv.org/pdf/2503.10370v1</a></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it</h2>
+<p>LUMOS is a two-stage offline-to-on-policy imitation learning pipeline for long-horizon robot manipulation. Stage 1 trains a DreamerV2-style world model on play data (no language needed). Stage 2 freezes the world model and trains an actor-critic policy that never touches real observations during the policy update — it rolls out imagined trajectories inside the world model&#x27;s latent space and computes rewards there.</p>
+<p>The benchmark dataset is <strong>CALVIN</strong> (task<em>D</em>D split, 64×64 RGB images). The dataset directory ships a download script.</p>
+<p><strong>Sequence of commands to run the full pipeline:</strong></p>
+<pre><code>
+# 0. Install (conda env, Python 3.8)
+conda create -n lumos_venv python=3.8 &amp;&amp; conda activate lumos_venv
+sh install.sh
+
+# 1. Download CALVIN
+cd dataset &amp;&amp; sh download_data.sh calvin
+
+# 2. Preprocess raw frames to .npz/.pkl
+python scripts/preprocess_calvin_dataset.py
+
+# 3. Train the world model (DreamerV2)
+python scripts/train_wm.py          # config: config/train_wm.yaml
+
+# 4. Cache per-frame WM latents on disk (featurizer)
+python scripts/featurizer.py exp_dir=&lt;wm_checkpoint.ckpt&gt;
+
+# 5. Train the behavior model (LUMOS actor-critic)
+python scripts/train_ag.py wm_chk_dir=&lt;wm_checkpoint.ckpt&gt;
+
+# 6. Evaluate
+python scripts/evaluate_policy.py
+</code></pre>
+<p>Hydra merges the config tree; the root train config for each stage is <code>config/train<em>wm.yaml</code> and <code>config/train</em>ag.yaml</code>. Both delegate to <code>config/world<em>model/dreamer</em>v2.yaml</code> and <code>config/behavior_model/lumos.yaml</code>.</p>
+<hr>
+<h2>Architecture — module map</h2>
+<h3>World model (<code>lumos/world_models/</code>)</h3>
+<p>| Component | Class | File |</p>
+<p>|---|---|---|</p>
+<p>| Abstract base | <code>WorldModel</code> | <code>world_model.py</code> |</p>
+<p>| Concrete WM | <code>DreamerV2(WorldModel)</code> | <code>dreamer_v2.py</code> |</p>
+<p>| Vision encoder | <code>CnnEncoder</code> | <code>encoders/cnn_encoder.py</code> |</p>
+<p>| Vision decoder | <code>CnnDecoder</code> | <code>decoders/cnn_decoder.py</code> |</p>
+<p>| Recurrent latent dynamics | <code>RSSMCore</code> → <code>RSSMCell</code> → <code>GRUCellStack</code> | <code>rssm/core.py</code>, <code>rssm/cell.py</code>, <code>rssm/gru.py</code> |</p>
+<p>The RSSM (Recurrent State Space Model) is the core of the world model. Its state at every timestep has two parts:</p>
+<ul>
+<li><code>h</code> — deterministic hidden state, size <code>deter_dim=1024</code>, evolved by a stacked GRU.</li>
+<li><code>z</code> — stochastic latent, shaped <code>(stoch<em>dim=32, stoch</em>rank=32)</code> = 1024 dims, sampled from a categorical distribution (straight-through estimator). The feature vector fed to the decoder and policy is the concatenation <code>[h, z]</code>, total 2048 dims.</li>
+</ul>
+<h3>Behavior / policy model (<code>lumos/behavior_models/</code>)</h3>
+<p>| Component | Class | File |</p>
+<p>|---|---|---|</p>
+<p>| Top-level agent | <code>LUMOS(pl.LightningModule)</code> | <code>lumos.py</code> |</p>
+<p>| Perceptual adapter | <code>CodeNetwork</code> | <code>perceptual<em>encoders/code</em>encoder.py</code> |</p>
+<p>| Language goal | <code>LanguageGoalEncoder</code> | <code>encoders/goal_encoders.py</code> |</p>
+<p>| Visual goal | <code>VisualGoalEncoder</code> | <code>encoders/goal_encoders.py</code> |</p>
+<p>| Plan prior (proposal) | <code>PlanProposalNetwork</code> | <code>plan<em>encoders/plan</em>proposal_net.py</code> |</p>
+<p>| Plan posterior (recognition) | <code>PlanRecognitionBiRNNNetwork</code> or <code>PlanRecognitionTransformersNetwork</code> | <code>plan<em>encoders/plan</em>recognition_net.py</code> |</p>
+<p>| Action decoder | <code>GaussianDecoder(ActionDecoder)</code> | <code>decoders/gaussian_decoder.py</code> |</p>
+<p>| Critic (value fn) | <code>Critic</code> | <code>actor_critic/critic.py</code> |</p>
+<p>| Aux loss network | <code>proj<em>vis</em>lang</code> | <code>auxiliary<em>loss</em>networks/proj<em>vis</em>lang.py</code> |</p>
+<p>The <strong>plan</strong> is a learned latent variable (<code>plan_features</code> dims, discrete categorical in the default config) that summarises the intention for a sequence. A plan proposal net produces a prior (at inference, conditioned only on the first observation + language goal); a plan recognition net produces a posterior (conditioned on the full sequence). Their KL divergence is a training loss term.</p>
+<h3>Dataset / data flow (<code>lumos/datasets/</code>)</h3>
+<ul>
+<li><code>CalvinDataModule</code> — Lightning <code>DataModule</code>, manages train/val splits, shared-memory options, and two collate functions (<code>transpose<em>collate</em>wm</code> for WM training, <code>transpose<em>collate</em>ag</code> for behavior model training with pre-cached latents).</li>
+<li><code>ag<em>disk</em>dataset.py</code> — loads pre-cached latent features (<code>cached_feats.pkl</code>) produced by <code>featurizer.py</code> for fast actor-critic training without re-running the WM forward pass on every batch.</li>
+</ul>
+<hr>
+<h2>The training loop — traced through the actual code</h2>
+<h3>Stage 1: World model training (<code>DreamerV2.training_step</code>)</h3>
+<p>Entry: <code>scripts/train_wm.py</code> → <code>Trainer.fit(DreamerV2, datamodule)</code>.</p>
+<ul>
+<li><strong>Encode observations.</strong></li>
+</ul>
+<p>   <code>DreamerV2.forward()</code> (<code>dreamer_v2.py</code>, line 82) calls:</p>
+<pre><code>
+   embed = self.encoder(rgb_s, rgb_g)          # CnnEncoder: static + gripper → fused embed
+   if self.with_proprio:
+       embed = torch.cat((embed, proprio), -1)  # optionally append robot proprioception
+</code></pre>
+<p>   <code>CnnEncoder.forward()</code> runs two parallel 4-layer CNN stacks (one for the static camera, one for the gripper camera), concatenates their outputs, and fuses with a linear+LayerNorm+ELU layer to produce a single embedding vector per frame.</p>
+<ul>
+<li><strong>Learn latent dynamics (RSSM).</strong></li>
+<pre><code>
+   prior, post, features, out_states = self.rssm_core.forward(embed, act, reset, in_state)
+</code></pre>
+</ul>
+<p>   <code>RSSMCore.forward()</code> (<code>rssm/core.py</code>, line 15) iterates over the time dimension <code>T</code>. At each step it calls <code>RSSMCell.forward()</code> (<code>rssm/cell.py</code>, line 54):</p>
+<p>   - Combine previous stochastic state <code>z</code> and current action <code>a</code>:</p>
+<p>     <code>x = self.z<em>mlp(in</em>z) + self.a_mlp(action)</code> → ELU → GRU → new deterministic <code>h</code>.</p>
+<p>   - <strong>Prior</strong>: computed from <code>h</code> alone (no observation). Used at dream/inference time.</p>
+<p>     <code>x = self.prior<em>mlp</em>h(h)</code> → norm → ELU → <code>prior_mlp(x)</code> → categorical logits <code>pp</code>.</p>
+<p>   - <strong>Posterior</strong>: computed from <code>h</code> + current image embedding. Used only at training time.</p>
+<p>     <code>x = self.post<em>mlp</em>h(h) + self.post<em>mlp</em>e(embed)</code> → norm → ELU → <code>post_mlp(x)</code> → <code>pp</code>.</p>
+<p>   - Sample <code>z</code> from the posterior: <code>distr.rsample()</code> (straight-through categorical).</p>
+<p>   After the loop, <code>RSSMCore</code> calls <code>self.cell.batch<em>prior(states</em>h)</code> to get all priors in one pass, then returns <code>features = torch.cat((h, z), -1)</code> for every step.</p>
+<ul>
+<li><strong>Decode and compute loss.</strong></li>
+</ul>
+<p>   <code>CnnDecoder.forward(features)</code> reconstructs both camera views.</p>
+<p>   <code>DreamerV2.loss()</code> (<code>dreamer_v2.py</code>, line 253):</p>
+<pre><code>
+   loss_kl = (1 - kl_balance) * KL(post || prior.detach())
+           + kl_balance       * KL(post.detach() || prior)   # KL balancing
+   loss_reconstr = 0.5 * (dcd_img - obs).square().sum(dims)  # MSE over pixels
+   loss = kl_weight * loss_kl + image_weight * loss_reconstr
+</code></pre>
+<p>   AMP (mixed precision) + <code>GradScaler</code> wraps the backward pass (<code>dreamer_v2.py</code>, line 195-198).</p>
+<ul>
+<li><strong>Featurization step</strong> (between stage 1 and stage 2).</li>
+</ul>
+<p>   <code>scripts/featurizer.py</code> runs <code>world<em>model.infer</em>features()</code> for every frame in the dataset and saves the resulting <code>[h, z]</code> vectors to <code>cached_feats.pkl</code>. This avoids re-encoding images during actor-critic training.</p>
+<h3>Stage 2: Behavior model training (<code>LUMOS.training_step</code>)</h3>
+<p>Entry: <code>scripts/train<em>ag.py</code> → <code>Trainer.fit(LUMOS, datamodule)</code>. The world model is loaded, frozen (<code>wm.requires</em>grad<em>(False)</code>), and passed into <code>LUMOS.</em><em>init</em>_</code> as <code>self.wm</code>.</p>
+<p>The batch from <code>CalvinDataModule</code> contains <strong>pre-cached WM latents</strong> (field <code>&quot;feature&quot;</code>), not raw images.</p>
+<p><code>LUMOS.training_step()</code> (<code>lumos.py</code>, line 256) loops over modalities (<code>&quot;lang&quot;</code>, <code>&quot;vis&quot;</code>) and for each:</p>
+<ul>
+<li><strong>Data augmentation in latent space.</strong></li>
+<pre><code>
+   if torch.rand(1) &gt; 0.5:
+       latents = dataset_batch[&quot;feature&quot;]
+   else:
+       latents = torch.cat([dataset_batch[&quot;zero_feature&quot;][0:1],
+                            dataset_batch[&quot;feature&quot;][1:]], dim=0)
+</code></pre>
+</ul>
+<p>   <code>zero_feature</code> is the WM latent for the same observation with a zero action and forced reset — a kind of action-conditioned dropout that regularises the plan.</p>
+<ul>
+<li><strong>Compress latents with the perceptual encoder.</strong></li>
+<pre><code>
+   codes = self.perceptual_encoder(latents)   # CodeNetwork: 2048 → 128 dims per step
+</code></pre>
+</ul>
+<p>   <code>CodeNetwork</code> is a two-layer MLP (2048→1024→<code>visual_features</code>) with LayerNorm, applied over the time dimension. It reduces the raw 2048-dim WM feature to 128 dims for the plan networks.</p>
+<ul>
+<li><strong>Encode the goal.</strong></li>
+<pre><code>
+   # language branch:
+   latent_goal = self.language_goal(dataset_batch[&quot;lang&quot;])
+   # vision branch:
+   latent_goal = self.visual_goal(codes[-1])
+</code></pre>
+</ul>
+<p>   Both are small 3-layer MLPs with optional L2 normalisation and LayerNorm.</p>
+<ul>
+<li><strong>Plan proposal and recognition (KL loss).</strong></li>
+</ul>
+<p>   Inside <code>LUMOS.forward_train()</code> (<code>lumos.py</code>, line 205):</p>
+<pre><code>
+   pp_state = self.plan_proposal(codes[0], latent_goal)      # prior: first frame + goal
+   pr_state, seq_feat = self.plan_recognition(codes)         # posterior: full sequence
+   sampled_plan = self.dist.get_dist(pr_state).rsample()     # sample from posterior
+</code></pre>
+<ul>
+<li><strong>Imagine rollouts inside the world model</strong> — this is the core idea.</li>
+</ul>
+<p>   <code>get<em>action</em>trajectory()</code> (<code>lumos.py</code>, line 181) steps through <code>seq_len</code> timesteps:</p>
+<pre><code>
+   for k in range(self.seq_len):
+       a_hat, ent = self.action_decoder.get_action(c_state, latent_goal, sampled_plan)
+       v_hat, v_t  = self.get_value(c_state, latent_goal, sampled_plan)
+       c_state      = self.wm_step(c_state, a_hat)          # ← imagination step
+       reward       = max_cos(c_state[..., :half], latents[k+1][..., :half])
+</code></pre>
+<p>   <code>wm_step()</code> (<code>lumos.py</code>, line 605):</p>
+<pre><code>
+   def wm_step(self, latent, action):
+       h, z = latent.split([self.latent_half, self.latent_half], -1)
+       pp, (h, z) = self.wm.dream(action, (h, z), temperature=self.temperature)
+       next_latent = torch.cat((h, z), dim=-1)
+       return next_latent
+</code></pre>
+<p>   <code>DreamerV2.dream()</code> (<code>dreamer_v2.py</code>, line 145):</p>
+<pre><code>
+   def dream(self, act, in_state, temperature=1.0):
+       pp, (h, z) = self.rssm_core.cell.forward(act, in_state, temperature=temperature)
+       return pp, (h, z)
+</code></pre>
+<p>   This calls <code>RSSMCell.forward()</code> <strong>without</strong> an <code>embed</code> argument, so the cell falls back to the prior branch: the next latent state is predicted entirely from <code>(h, z, action)</code> — no real image is consulted. This is the imagination.</p>
+<ul>
+<li><strong>Intrinsic reward in latent space.</strong></li>
+</ul>
+<p>   The reward at step <code>k</code> is the cosine similarity (normalised by max-norm) between the imagined next <code>h</code> component and the cached ground-truth <code>h</code> for that timestep:</p>
+<pre><code>
+   reward = max_cos(c_state[..., :self.latent_half], latents[k+1][..., :self.latent_half])
+</code></pre>
+<p>   (<code>max<em>cos</code> in <code>utils/rl</em>utils.py</code>, line 52). The policy is rewarded for steering imagined trajectories toward latents that match real data.</p>
+<ul>
+<li><strong>Lambda-return and actor-critic update.</strong></li>
+</ul>
+<p>   <code>lambda<em>return()</code> (<code>utils/rl</em>utils.py</code>, line 4) computes generalised advantage estimates. <code>LUMOS.loss()</code> assembles five terms:</p>
+<p>   - <code>loss_critic = 0.5 * MSE(values, returns.detach())</code></p>
+<p>   - <code>loss<em>actor = actor</em>alpha * (-returns[:-1]).mean()</code> (dynamics backprop through the WM)</p>
+<p>   - <code>loss_entropy = -eta * entropy.mean()</code> (disabled in default config, <code>eta=0</code>)</p>
+<p>   - <code>loss<em>kl = kl</em>beta * (alpha * KL(pr||pp.detach()) + (1-alpha) * KL(pr.detach()||pp))</code> (KL balancing)</p>
+<p>   - <code>loss<em>bc = bc</em>alpha * MSE(imagined<em>actions, gt</em>actions)</code> (off by default)</p>
+<p>   Additionally, a CLIP-style contrastive auxiliary loss (<code>clip<em>auxiliary</em>loss()</code>, line 554) aligns the sequence visual embedding with the language embedding using an InfoNCE objective.</p>
+<p>   Two separate optimisers are stepped manually (<code>automatic<em>optimization = False</code>): <code>actor</em>optimizer</code> over the decoder + perceptual + goal + plan networks; <code>critic_optimizer</code> over the critic alone.</p>
+<hr>
+<h2>Where the core idea lives — latent world model and &quot;imagination&quot;</h2>
+<p>The imagination rollout is the contract between the world model and the policy. It lives in two tightly coupled functions:</p>
+<p><strong><code>LUMOS.wm<em>step()</code> — <code>lumos/behavior</em>models/lumos.py</code>, line 605:</strong></p>
+<pre><code>
+def wm_step(self, latent, action):
+    h, z = latent.split([self.latent_half, self.latent_half], -1)
+    pp, (h, z) = self.wm.dream(action, (h, z), temperature=self.temperature)
+    next_latent = torch.cat((h, z), dim=-1)
+    return next_latent
+</code></pre>
+<p><strong><code>DreamerV2.dream()</code> — <code>lumos/world<em>models/dreamer</em>v2.py</code>, line 145:</strong></p>
+<pre><code>
+def dream(self, act: Tensor, in_state: Tensor, temperature: float = 1.0):
+    with self.autocast:
+        pp, (h, z) = self.rssm_core.cell.forward(act, in_state, temperature=temperature)
+    return pp, (h, z)
+</code></pre>
+<p><strong><code>RSSMCell.forward()</code> (prior branch) — <code>lumos/world_models/rssm/cell.py</code>, line 54–89:</strong></p>
+<pre><code>
+x = self.z_mlp(in_z) + self.a_mlp(action)
+x = self.in_norm(x)
+za = F.elu(x)
+h = self.gru(za, in_h)           # update deterministic state
+# embed is None → use prior, not posterior
+x = self.prior_mlp_h(h)
+x = self.prior_norm(x)
+x = F.elu(x)
+pp = self.prior_mlp(x)            # predict stochastic state
+distr = self.zdistr(pp, temperature)
+sample = distr.rsample().reshape(B, -1)
+return pp, (h, sample)
+</code></pre>
+<p>Called without <code>embed</code>, the cell is operating in &quot;dream&quot; mode: it predicts the next <code>(h, z)</code> from the previous <code>(h, z)</code> and the policy&#x27;s action without looking at any real image. The full trajectory loop (<code>get<em>action</em>trajectory</code>) runs this for <code>seq_len</code> steps (default 32), letting the policy experience the consequences of its own actions inside the model.</p>
+<p>The reward function <code>max<em>cos()</code> (<code>lumos/utils/rl</em>utils.py</code>, line 52) gives the policy a dense signal at every imagined step by measuring how close the imagined <code>h</code> is to the real cached <code>h</code>, in a scale-invariant cosine metric:</p>
+<pre><code>
+dot_prod = (input * target).sum(dim=-1)
+max_cos  = dot_prod / torch.square(max_norm)
+</code></pre>
+<hr>
+<h2>What you&#x27;d need to run it</h2>
+<p><strong>Dataset:</strong> CALVIN task<em>D</em>D — ~3 GB of preprocessed NPZ files (static + gripper RGB at 64×64, robot proprioception, actions). The download script in <code>dataset/download_data.sh</code> fetches it from the CALVIN project page.</p>
+<p><strong>GPU:</strong> Required in practice. The world model uses AMP (<code>torch.cuda.amp.autocast</code> + <code>GradScaler</code>). Training the WM on CALVIN to convergence requires one or more A100/V100-class GPUs and several days. The actor-critic stage is lighter (no image passes) but still expects CUDA for the world model&#x27;s <code>dream()</code> calls during rollout.</p>
+<p><strong>CPU-only verdict:</strong> Not viable for training. The WM explicitly uses <code>GradScaler</code> (CUDA-only AMP) and the code passes tensors to <code>self.device</code> (GPU). A local smoke-test might run but will be extremely slow and will crash on AMP operations without a GPU.</p>
+<p><strong>Key dependencies</strong> (<code>requirements.txt</code>): <code>torch==1.13.1</code>, <code>pytorch-lightning==1.8.6</code>, <code>transformers</code> (for CLIP language embeddings at inference), <code>wandb</code> (logging), <code>hydra-core</code>.</p>
+<hr>
+<h2>Read-it-in-this-order</h2>
+<p>Start with the configs to understand the wiring, then follow the data and computation forward:</p>
+<ul>
+<li><code>config/train<em>wm.yaml</code> and <code>config/train</em>ag.yaml</code> — entry-point configs; shows the two-stage structure and which sub-configs compose the full system.</li>
+<li><code>config/world<em>model/dreamer</em>v2.yaml</code> + <code>config/world<em>model/rssm/cell/default.yaml</code> — key hyperparameters: <code>deter</em>dim=1024</code>, <code>stoch<em>dim=32</code>, <code>stoch</em>rank=32</code>, AMP, KL weights.</li>
+<li><code>lumos/world_models/rssm/cell.py</code> — <code>RSSMCell</code>: the fundamental prior/posterior switch; the <code>embed is None</code> branch is exactly how dreaming works.</li>
+<li><code>lumos/world_models/rssm/core.py</code> — <code>RSSMCore.forward()</code>: the temporal loop that unrolls the cell over a real sequence and assembles <code>features = [h, z]</code>.</li>
+<li><code>lumos/world<em>models/dreamer</em>v2.py</code> — <code>DreamerV2</code>: wires encoder → RSSM → decoder; implements <code>dream()</code>, <code>infer_features()</code>, and the KL+reconstruction loss.</li>
+<li><code>lumos/world<em>models/encoders/cnn</em>encoder.py</code> — <code>CnnEncoder</code>: dual-camera 4-layer CNN that produces the image embedding.</li>
+<li><code>scripts/featurizer.py</code> — the bridge between stage 1 and 2: calls <code>infer<em>features()</code> over the full dataset and saves <code>cached</em>feats.pkl</code>.</li>
+<li><code>lumos/behavior<em>models/lumos.py</code> — <code>LUMOS</code>: the full actor-critic; <code>wm</em>step()</code> and <code>get<em>action</em>trajectory()</code> are the imagination engine; <code>training_step()</code> is the outer training loop.</li>
+<li><code>lumos/behavior<em>models/plan</em>encoders/plan<em>proposal</em>net.py</code> and <code>plan<em>recognition</em>net.py</code> — the VAE-style plan prior/posterior pair; KL between them regularises the latent plan space.</li>
+<li><code>lumos/behavior<em>models/decoders/gaussian</em>decoder.py</code> — <code>GaussianDecoder</code>: the stochastic action head (Gaussian with tanh squashing).</li>
+<li><code>lumos/behavior<em>models/actor</em>critic/critic.py</code> — <code>Critic</code> with a target network updated every 100 steps.</li>
+<li><code>lumos/utils/rl<em>utils.py</code> — <code>lambda</em>return()</code> and <code>max_cos()</code>: lambda-GAE and the latent cosine reward.</li>
+<li><code>lumos/datasets/calvin<em>data</em>module.py</code> — <code>CalvinDataModule</code>: how raw CALVIN frames or cached latents are loaded and batched.</li>
+</ul></article>
+<article class="page walk"><h1>X-MOBILITY — code walkthrough</h1>
+<h2>What the repo is / how you&#x27;d run it</h2>
+<p>X-MOBILITY is NVIDIA&#x27;s end-to-end navigation system for wheeled robots. It trains a <strong>generative world model</strong> on robot trajectories recorded in Isaac Sim, then deploys the resulting policy over ROS 2 on real hardware (a Carter robot). The world model learns to predict future camera observations and semantic segmentation given actions, and the policy head reads out of that learned latent space.</p>
+<p><strong>Training entry point</strong> — <code>train.py::main()</code>:</p>
+<ul>
+<li><code>arg<em>parser.py::parse</em>arguments(TaskMode.TRAIN)</code> collects <code>--config-files</code>, <code>--dataset-path</code>, <code>--output-dir</code>, and an optional <code>--checkpoint-path</code>.</li>
+<li>One or more <code>.gin</code> files are parsed (<code>gin.parse<em>config</em>file</code>). All hyperparameters — RSSM dimensions, loss weights, encoder choice, sequence length — live in the gin files; the Python code has no hard-coded numbers.</li>
+<li><code>train()</code> (gin-configurable) creates a <code>XMobilityIsaacSimDataModule</code> (or <code>XMobilityLeRobotDataModule</code>), wraps it with a <code>pytorch-lightning</code> <code>Trainer</code> using DDP, and calls <code>trainer.fit</code>.</li>
+<li>Checkpoints go to <code>output_dir/checkpoints/</code>; Weights &amp; Biases is used for logging.</li>
+</ul>
+<p><strong>Evaluation entry point</strong> — <code>evaluate.py::main()</code>:</p>
+<ul>
+<li><code>--eval<em>target observation</code> runs <code>evaluate</em>observation()</code>: standard Lightning <code>.test()</code> on the held-out split, computing IOU and action metrics.</li>
+<li><code>--eval<em>target imagination</code> runs <code>evaluate</em>prediction()</code> via <code>PredictionEvaulator</code> in <code>model/eval/prediction<em>evaluator.py</code>. Given <code>max</em>history<em>length</code> real frames, it rolls the world model forward for up to <code>max</em>future_length</code> steps using only predicted actions (no real observations), then compares predicted semantics/RGB against ground truth.</li>
+</ul>
+<p><strong>Simulation</strong> — data must come from NVIDIA Isaac Sim. The dataset loader (<code>model/dataset/isaac<em>sim</em>dataset.py</code>) reads Parquet-based trajectory files that include <code>camera<em>image</code>, <code>ego</em>speed</code>, <code>driving<em>command</code>, <code>path</code>, and <code>route</em>poses</code> columns. Isaac Sim provides photorealistic renders, semantic labels, and the vehicle&#x27;s odometry. A LeRobot adapter (<code>lerobot_dataset.py</code>) can load community robot datasets in a compatible format.</p>
+<p><strong>Deployment</strong> — after ONNX or TensorRT conversion (<code>onnx<em>conversion.py</code>, <code>trt</em>conversion.py</code>), the model runs as a ROS 2 node in <code>ros2<em>deployment/x</em>mobility_navigator/</code>.</p>
+<hr>
+<h2>Architecture — module map</h2>
+<p>The full forward pass can be read in about 50 lines from <code>model/x<em>mobility/x</em>mobility.py::XMobility.forward()</code>. Every module is gin-configurable and wired together there.</p>
+<pre><code>
+ObservationEncoder          model/x_mobility/encoders.py
+  ImageDINOEncoder            DINOv2-small (frozen by default): image → 768-d cls + 768-d mean-patch = 1536-d
+  ImageDepthAnythingEncoder   DepthAnything-small (alt encoder): also produces a depth map
+  SpeedEncoder                scalar speed → 32-d MLP features
+  → concatenation → embedding_dim (e.g. 1568-d for DINO + speed)
+
+RSSM                        model/x_mobility/rssm.py
+  DistributionModel           shared MLP that outputs (mu, sigma) for a Gaussian
+  pre_gru_net                 Linear + LeakyReLU mapping stochastic sample → GRU input
+  recurrent_model             nn.GRU(hidden=1024)   [deterministic part]
+  posterior                   DistributionModel(h_t + embedding + action → state_dim=512)
+  prior                       DistributionModel(h_t + action → state_dim=512)
+
+Decoder heads               model/x_mobility/decoders.py
+  StyleGanDecoder             StyleGAN-style constant-tensor + AdaIN upsampler
+    SegmentationHead          1×1 conv → 7-class semantic map (x3 scale levels)
+    RgbHead                   1×1 conv → 3-channel RGB
+  RGBDiffuser                 model/x_mobility/diffusion_rgb.py  (conditional DDPM)
+
+ActionPolicy                model/x_mobility/action_policy.py
+  VectorNetSubGraph           model/x_mobility/vector_net.py  (route waypoint encoder)
+  PolicyStateSelfAttentionFusion  fuses latent state + route features via MHA
+  DiffusionPolicy             model/x_mobility/diffusion_policy.py  (DDPM over actions)
+  MLPPolicy                   fallback: MLP → (command, path) with Tanh output
+</code></pre>
+<p><strong>Key files at a glance:</strong></p>
+<p>| File | Role |</p>
+<p>|---|---|</p>
+<p>| <code>model/x_mobility/rssm.py</code> | Core world model: RSSM class + DistributionModel |</p>
+<p>| <code>model/x<em>mobility/x</em>mobility.py</code> | Top-level XMobility module, wires all parts |</p>
+<p>| <code>model/x_mobility/encoders.py</code> | ObservationEncoder, ImageDINOEncoder, SpeedEncoder |</p>
+<p>| <code>model/x_mobility/decoders.py</code> | StyleGanDecoder, SegmentationHead, RgbHead |</p>
+<p>| <code>model/x<em>mobility/action</em>policy.py</code> | ActionPolicy, MLPPolicy, DiffusionPolicy fusion |</p>
+<p>| <code>model/loss/losses.py</code> | XMobilityLoss (KL + reconstruction + action + diffusion) |</p>
+<p>| <code>model/trainer.py</code> | XMobilityTrainer (Lightning module, optimizer, logging) |</p>
+<p>| <code>configs/base<em>train</em>config.gin</code> | All hyperparameters |</p>
+<p>| <code>train.py</code> / <code>evaluate.py</code> | CLI entry points |</p>
+<hr>
+<h2>The RSSM, step by step</h2>
+<p>The RSSM is the heart of the system. Every timestep it maintains two tensors:</p>
+<ul>
+<li><code>h_t</code> — a 1024-d <strong>deterministic hidden state</strong> (the GRU&#x27;s hidden vector). This is the &quot;memory&quot; that persists across time.</li>
+<li><code>sample_t</code> — a 512-d <strong>stochastic latent sample</strong> drawn from either the posterior (training) or prior (imagination). This is the &quot;uncertainty&quot; representation.</li>
+</ul>
+<p>The policy and decoders read <code>cat([h<em>t, sample</em>t])</code>, a 1536-d vector.</p>
+<h3>Outer loop — <code>RSSM.forward()</code> (rssm.py lines 138–174)</h3>
+<pre><code>
+for t in range(sequence_length):
+    action_t = zeros if t == 0 else action[:, t-1]
+    output_t = self.observe_step(h_t.detach(), sample_t.detach(),
+                                 action_t, input_embedding[:, t], ...)
+    use_prior = self.training and self.use_dropout and rand &lt; dropout_probability and t &gt; 0
+    sample_t = output_t[&#x27;prior&#x27;][&#x27;sample&#x27;] if use_prior else output_t[&#x27;posterior&#x27;][&#x27;sample&#x27;]
+    h_t = output_t[&#x27;posterior&#x27;][&#x27;hidden_state&#x27;]
+</code></pre>
+<p>The loop iterates over sequence positions (default length 4). At each step it calls <code>observe<em>step</code>, which runs both the prior and posterior branches. The <code>use</em>dropout</code> flag (off by default) is a &quot;dreaming&quot; regulariser: it occasionally feeds the prior sample back instead of the posterior, forcing the prior to stay close to the posterior without direct observation.</p>
+<h3><code>observe_step()</code> — the combined prior + posterior step (lines 176–202)</h3>
+<pre><code>
+def observe_step(self, h_t, sample_t, action_t, embedding_t, use_sample=True):
+    prior_output = self.imagine_step(h_t, sample_t, action_t, use_sample)
+
+    latent_action_t = self.posterior_action_module(action_t)
+    posterior_mu_t, posterior_sigma_t = self.posterior(
+        torch.cat([prior_output[&#x27;hidden_state&#x27;], embedding_t, latent_action_t], dim=-1))
+
+    sample_t = self.sample_from_distribution(posterior_mu_t, posterior_sigma_t, use_sample)
+    posterior_output = {
+        &#x27;hidden_state&#x27;: prior_output[&#x27;hidden_state&#x27;],
+        &#x27;sample&#x27;: sample_t,
+        &#x27;mu&#x27;: posterior_mu_t, &#x27;sigma&#x27;: posterior_sigma_t,
+    }
+    return {&#x27;prior&#x27;: prior_output, &#x27;posterior&#x27;: posterior_output}
+</code></pre>
+<p>The posterior sees all three signals — the recurrent hidden state (past dynamics), the current observation embedding (present sensory data), and the action. This is the inference network: it &quot;corrects&quot; the prior by conditioning on what was actually observed.</p>
+<h3><code>imagine_step()</code> — pure prior / rollout step (lines 204–226)</h3>
+<pre><code>
+def imagine_step(self, h_t, sample_t, action_t, use_sample=True):
+    # Deterministic recurrent update
+    input_t = self.pre_gru_net(sample_t)              # 512 → 1024
+    _, h_t = self.recurrent_model(input_t.unsqueeze(1), h_t.unsqueeze(0))
+    h_t = h_t.squeeze(0)                              # h_t is now t+1
+
+    # Prior stochastic prediction (no observation)
+    latent_action_t = self.prior_action_module(action_t)
+    prior_mu_t, prior_sigma_t = self.prior(
+        torch.cat([h_t, latent_action_t], dim=-1))    # 1024 + 64 → 512*2
+    sample_t = self.sample_from_distribution(prior_mu_t, prior_sigma_t, use_sample)
+    ...
+</code></pre>
+<p>This is what the model uses at inference time (no camera). The GRU advances <code>h<em>t</code> using only the previous stochastic sample and the commanded action. The prior <code>DistributionModel</code> then predicts a new <code>(mu, sigma)</code> from which <code>sample</em>t</code> is drawn. Used in <code>XMobility.inference_prediction()</code> to roll the world model forward without observations.</p>
+<h3><code>DistributionModel</code> — the shared distribution parameteriser (lines 25–57)</h3>
+<pre><code>
+self.module = nn.Sequential(
+    nn.Linear(in_channels, in_channels),
+    nn.LeakyReLU(inplace=True),
+    nn.Linear(in_channels, 2 * self.latent_dim),
+)
+...
+mu, log_sigma = torch.split(mu_log_sigma, self.latent_dim, dim=-1)
+sigma = 2 * torch.sigmoid(log_sigma / 2) + self.min_std   # bounded in (0.1, 2.1)
+</code></pre>
+<p>A two-layer MLP that outputs <code>2 * state_dim</code> values, split into a mean and a log-sigma. The sigmoid squashing keeps sigma in a numerically stable range.</p>
+<h3><code>sample<em>from</em>distribution()</code> — reparameterisation (lines 228–234)</h3>
+<pre><code>
+@staticmethod
+def sample_from_distribution(mu, sigma, use_sample):
+    sample = mu
+    if use_sample:
+        noise = torch.randn_like(sample)
+        sample = sample + sigma * noise
+    return sample
+</code></pre>
+<p>Standard reparameterisation trick: gradients flow through <code>mu</code> and <code>sigma</code>; the stochastic node <code>noise</code> is treated as a constant. At inference (<code>use_sample=False</code>), returns the mean only, giving deterministic predictions.</p>
+<hr>
+<h2>Where the core idea lives — the recurrent latent dynamics (prior vs posterior)</h2>
+<p>The RSSM&#x27;s conceptual split between prior and posterior is the central mechanism of the paper. Both live in <code>model/x_mobility/rssm.py</code>.</p>
+<p><strong>Prior</strong> (<code>imagine_step</code>, lines 204–226): the model&#x27;s prediction of what the world will look like given only past state and the commanded action. At deployment there is no real observation to condition on, so the model &quot;imagines&quot; forward using only the prior. This is how it generalises — it has an internal model of navigation dynamics that it can unroll without sensor input.</p>
+<p><strong>Posterior</strong> (<code>observe_step</code>, lines 176–202): trained by conditioning on the actual observation embedding. During training, the posterior has access to the ground-truth frame and must squeeze all useful signal about the current state into the 512-d stochastic latent. The KL loss then pushes the prior to be as close as possible to that posterior without seeing the observation.</p>
+<p>The defining lines are the two <code>DistributionModel</code> calls in <code>observe_step</code>:</p>
+<pre><code>
+# Prior branch (no observation)
+prior_output = self.imagine_step(h_t, sample_t, action_t, use_sample)
+
+# Posterior branch (conditions on embedding_t from the real camera frame)
+posterior_mu_t, posterior_sigma_t = self.posterior(
+    torch.cat([prior_output[&#x27;hidden_state&#x27;], embedding_t, latent_action_t], dim=-1))
+</code></pre>
+<p>The posterior shares <code>prior<em>output[&#x27;hidden</em>state&#x27;]</code> — so both branches read the same GRU state, but only the posterior also reads <code>embedding<em>t</code>. At deployment you simply never call the posterior branch; you call <code>imagine</em>step</code> directly in a chain.</p>
+<p>The KL loss is in <code>model/loss/losses.py::KLLoss.forward()</code> (lines 263–271):</p>
+<pre><code>
+prior_loss = self.loss(prior_mu, prior_sigma, posterior_mu.detach(), posterior_sigma.detach())
+posterior_loss = self.loss(prior_mu.detach(), prior_sigma.detach(), posterior_mu, posterior_sigma)
+return self.alpha * prior_loss + (1 - self.alpha) * posterior_loss
+</code></pre>
+<p><code>alpha=0.75</code> means the prior is pushed harder toward the posterior than the posterior is toward the prior. Both gradients are gated by <code>.detach()</code> so each branch only receives the gradient from its own direction of the KL. The KL weight in training is <code>0.001</code> — deliberately tiny relative to action loss (<code>10.0</code>) and semantic loss (<code>2.0</code>), so reconstruction quality dominates.</p>
+<hr>
+<h2>What you&#x27;d need to run it</h2>
+<p><strong>Minimum requirements:</strong></p>
+<ul>
+<li>Python 3.10+, PyTorch 2.x with CUDA. The model uses 16-mixed precision (<code>bf16</code> or <code>fp16</code>). A single A100 or comparable data-centre GPU is realistic for training; a T4 could work for single-GPU fine-tuning with <code>batch_size=1</code>.</li>
+<li><code>transformers==4.48.1</code> for DINOv2 and DepthAnything; <code>diffusers==0.29.2</code> for the RGB and policy diffusion models. <code>pytorch-lightning==2.5</code>, <code>gin-config</code>, <code>wandb</code>.</li>
+<li><strong>Training data requires Isaac Sim.</strong> The dataset loader (<code>isaac<em>sim</em>dataset.py</code>) expects Parquet trajectory files produced by a specific Isaac Sim collection pipeline. There is no bundled dataset and no public download link in the repo. Without Isaac Sim you cannot create new training data; you can only load an existing checkpoint and run inference.</li>
+<li>The alternative <code>lerobot_dataset.py</code> loader can ingest LeRobot-format community datasets (e.g. collected on real hardware), though the semantic label mapping differs.</li>
+</ul>
+<p><strong>CPU-only verdict:</strong> not viable for training. The DINOv2 and DepthAnything backbones are large vision transformers, and the diffusion decoders require many forward passes per sample. <code>requirements.txt</code> lists <code>tensorrt==8.6.1</code>, which is GPU-only and not optional for production inference. For offline analysis or debugging individual modules (e.g. stepping through <code>rssm.py</code> logic with random tensors) a CPU will work, but expect 100x+ slowdown.</p>
+<p><strong>ROS 2 deployment:</strong> requires ROS 2 Humble or later plus the Nav2 stack. The <code>ros2<em>deployment/</code> directory contains a ready-made package. After TensorRT conversion (<code>trt</em>conversion.py</code>), the model runs on Jetson or a workstation with an NVIDIA GPU.</p>
+<hr>
+<h2>Read-it-in-this-order</h2>
+<p>Start here if you are new to the codebase:</p>
+<ul>
+<li><code>configs/base<em>train</em>config.gin</code> — read this first. Every dimension, weight, and flag is here. You will understand the shape of the model before reading a single line of Python.</li>
+<li><code>model/x<em>mobility/rssm.py</code> — the world model. Read <code>imagine</em>step</code> before <code>observe_step</code>. Understand the GRU update, then the two <code>DistributionModel</code> branches.</li>
+<li><code>model/x<em>mobility/encoders.py</code> — <code>ObservationEncoder</code>, <code>ImageDINOEncoder</code>, <code>SpeedEncoder</code>. Understand what goes into the RSSM&#x27;s <code>embedding</em>t</code>.</li>
+<li><code>model/x<em>mobility/x</em>mobility.py</code> — <code>XMobility.forward()</code> stitches everything together in ~45 lines. Read <code>inference()</code> and <code>inference_prediction()</code> to see how prior-only rollout differs from training-time observe.</li>
+<li><code>model/loss/losses.py</code> — <code>KLLoss</code>, <code>XMobilityLoss</code>. The KL loss is the key training signal for the world model; the rest are reconstruction and action losses.</li>
+<li><code>model/x<em>mobility/action</em>policy.py</code> — <code>ActionPolicy</code>, <code>MLPPolicy</code>, <code>DiffusionPolicy</code>. The policy simply reads the RSSM&#x27;s <code>cat([h<em>t, sample</em>t])</code> state and produces a 6-DoF driving command plus a future path.</li>
+<li><code>model/x_mobility/decoders.py</code> — <code>StyleGanDecoder</code>. The StyleGAN-style AdaIN decoder turns the same latent state into semantic segmentation or RGB images at three resolutions.</li>
+<li><code>train.py</code> — the training loop. Short (110 lines) and mostly plumbing; confirms Lightning + wandb setup.</li>
+<li><code>evaluate.py</code> — especially <code>evaluate_prediction()</code>, which shows how the model is tested in imagination mode (prior-only rollout for 1–10 future steps).</li>
+<li><code>model/dataset/isaac<em>sim</em>dataset.py</code> — <code>XMobilityIsaacSimDataModule</code>. Shows the data format, what columns exist, how sequences are assembled, and how semantic labels are remapped.</li>
+</ul></article></div>
+  <footer>Repos cloned under analysis/detail/worldmodel/code/ (gitignored — GPU/CUDA needed to run) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

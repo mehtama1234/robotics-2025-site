@@ -1,0 +1,1163 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaussian Splatting for Robots — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Safety · attacks Topic deep dive · with codeamp; guarantees · with code</div>
+  <h1>Teaching legs and humanoids to move</h1>
+  <p>Getting legged robots and humanoids to walk, balance, and do whole-body tasks — mostly by training in a physics simulator and transferring to real hardware. This page: the idea, the key 2025 papers with their real code, and hands-on walkthroughs of two cloned codebases.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Teaching legs and humanoids to move</h1>
+<p><em>271 papers · move — how the robot uses its body to travel through the physical world</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">Legged robots are always a fraction of a second away from falling. Unlike wheeled machines or arms, they have to push exactly the right amount of force at exactly the right time to stay upright, and adjust on the fly when the ground shifts. That is hard enough. But the real problem runs deeper: a controller trained to walk in a perfect physics simulator — where friction is predictable, motors obey commands instantly, and the floor never surprises — will fail the moment it meets real hardware, where everything is slightly wrong. The simulator-to-reality gap is the central puzzle. Add that every robot now needs to do multiple tasks — a humanoid must walk and use its arms, a quadruped must climb ladders and cross rough terrain — and a single hand-coded controller per task becomes impossible. The convergence of papers here reflects the field attacking three interconnected fronts: close the sim-to-real gap by building simulators that actually match hardware, train single controllers that can handle many behaviors by finding a unified representation (motion imitation, CPG modulation, command masking), and exploit the physics of the body itself — the natural pendulum swing of the legs — to move efficiently instead of fighting it.</p>
+<p style="margin:0 0 8px"><strong>The main angles the 2025 papers are taking:</strong></p>
+<ul style="margin:0 0 12px">
+<li><strong>① Train in simulation with domain randomization, then transfer directly.</strong> <em>Berkeley Humanoid: A Research Platform for Learning-Based Control</em> shows that when the robot is designed to be easy to simulate (simple actuators, well-understood dynamics), only mild randomization is needed. <em>Robust Ladder Climbing with a Quadrupedal Robot</em> adds hardware morphology co-design — custom hooked feet and teacher-student distillation make the policy transferable to real climbers.</li>
+<li><strong>② Build one controller that accepts many modes of input.</strong> <em>HOVER: Versatile Neural Whole-Body Controller for Humanoid Robots</em> unifies walking, reaching, and carrying through motion-imitation teacher policy and DAgger distillation. <em>AllGaits: Learning All Quadruped Gaits and Transitions</em> uses a central pattern generator (CPG) that one network modulates to select among nine gaits. <em>MOVE: Multi-Skill Omnidirectional Legged Locomotion With Limited Observations</em> combines vision and proprioception with contrastive learning so one policy handles climbing, jumping, crawling, and stairs.</li>
+<li><strong>③ Close the sim-to-real gap by modeling real hardware inside the simulator.</strong> <em>Cycloidal Quasi-Direct Drive Actuator Designs with Learning-Based Backstepping Control</em> learns the nonlinear input-output behavior of cycloidal-gear motors and embeds that learned model in the simulator. <em>Legged Robot State Estimation with Invariant Extended Kalman Filter Using Neural Measurement Network</em> combines a neural network with Kalman filtering to estimate speed and foot contact on slippery ground. <em>Physically-Consistent Parameter Identification of Robots in Contact</em> solves for the true mass and inertia values of a robot using only motor data, no force sensors needed.</li>
+<li><strong>④ Use the robot's body shape to move efficiently.</strong> <em>The Duke Humanoid</em> is designed so its legs' natural pendulum swing matches a useful walking speed, then trained to ride that swing. <em>Adaptive Energy Regularization for Autonomous Gait Transition</em> lets the robot discover on its own when to switch between walking and trotting by penalizing energy per meter. <em>Zippy</em> takes it to the extreme — one motor, rounded feet, no sensors, pure passive dynamics.</li>
+<li><strong>⑤ Combine leg motion with arm control in real time.</strong> <em>Mobile-TeleVision</em> trains legs and arms separately using human teleoperation data, then combines them at run time. <em>Real-Time Whole-Body Control of Legged Robots with Model-Predictive Path Integral Control</em> runs thousands of action sequences in parallel on multiple cores, scores them by the goal, and picks the best — all at 50 Hz on real hardware.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> the field is converging on bridging simulation and reality not through brute-force randomization alone, but through (a) hardware design that makes simulation accurate, (b) unified representations like motion imitation or CPG modulation that let one policy span many behaviors, and (c) explicit modeling of the physics that matters — friction, motor delays, body inertia — so simulators match hardware. The 2025 work is productionizing those insights: the controllers now work on real humanoids and quadrupeds for hours, in complex terrain, switching tasks without retraining. <strong>Still open:</strong> matching human walking smoothness and arm precision at the same time on humanoids, sustaining useful work in truly unpredictable outdoor environments for days at a time, and rapidly teaching a deployed robot a new movement skill without any retraining.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>Walking looks easy. Humans do it without thinking. But when you try to build a machine that walks, you run into a set of hard problems fast.</p>
+<p>A walking robot is always about to fall. At any moment, one or more feet are off the ground. The robot has to push against the floor with just the right amount of force, at just the right time, to keep its body from tipping. That force changes every fraction of a second. Miss the timing and the robot goes down.</p>
+<p>Terrain makes this worse. Real ground is not flat. There are steps, gravel, wet surfaces, slopes, and random objects. The robot cannot see the whole path ahead. It has to feel what the ground is doing under each foot and adjust on the fly. A small surprise — a patch of ice, a loose stone — can end a walk that was going fine.</p>
+<p>Energy is a second hard problem. Moving a heavy body on legs burns a lot of power. The legs on a well-built robot have a natural swing to them, a pendulum-like motion that carries energy from one step into the next for free. Getting a computer-trained controller to find and use that natural swing, rather than fighting it, is not automatic. Most controllers trained by trial and error in a computer spend energy in ways that would exhaust a real machine quickly.</p>
+<p>The third problem is the gap between the computer world and the real world. The standard method for teaching a robot to walk is to practice inside a physics simulator — a computer program that pretends to be the physical world. Simulation is fast, cheap, and safe. You can run millions of training steps in hours with no risk of damage. But the simulator is never quite right. It gets joint friction slightly wrong, motor delays slightly wrong, the give of the floor slightly wrong. A walking controller trained entirely in a fake world often fails the moment it meets the real one. This gap is called the sim-to-real gap, and closing it is one of the central puzzles in the field.</p>
+<p>On top of all that, legged robots are now being asked to do more than walk. Humanoid robots need to carry things, open doors, and operate in spaces built for people. Four-legged robots need to climb ladders, push heavy boxes, and navigate rough outdoor ground. A separate hand-crafted controller for each task is too slow and too expensive to build. The field wants one controller that can handle many tasks.</p>
+<p>All of this connects to the one big problem every robot has: take in an unclear, changing world, decide what to do, move a real body, and do it fast, cheap, safe, and general. Legged locomotion sits squarely at the &quot;move&quot; part of that loop, but it reaches back into sensing (the robot must read its own body and the terrain) and forward into decisions (which skill to use, when to switch, how to combine walking with arm work). A robot that cannot walk reliably cannot do anything else reliably either.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Training in simulation, then moving to the real robot</h3>
+<p>The most common approach is to teach the robot inside a computer and then transfer the skill to real hardware. The key trick is to vary the conditions during simulator training — changing floor friction, motor strength, body weight, and other settings randomly — so the learned controller is wide enough to still work when the real world turns out to be slightly different from what the simulator assumed. This is called domain randomization.</p>
+<p>&quot;Berkeley Humanoid&quot; is a clean example. The team built a mid-size humanoid with simple joints that a simulator could model accurately, trained a walking controller in Isaac Gym (a physics simulator), applied only mild condition randomization, and transferred directly to the real robot with no extra tuning. &quot;Robust Ladder Climbing with a Quadrupedal Robot&quot; used the same philosophy: train on a wide range of ladder angles and rung sizes in simulation, add hooks on the feet for grip, and move to real hardware without retraining. These papers show that when the robot hardware is designed to be easy to simulate, the transfer becomes much cleaner.</p>
+<h3>Building one controller for many tasks</h3>
+<p>A dedicated controller for each skill is not scalable. The field is pushing toward single networks that handle a wide range of commands and movements.</p>
+<p>&quot;HOVER&quot; does this for humanoids by first training a teacher policy on a large library of full-body movements, then training a single student policy to match the teacher while accepting different command types — velocity, position, or individual joint angles — through one shared process. The result is a single controller that can switch between walking, carrying, and reaching.</p>
+<p>&quot;AllGaits&quot; solves the same problem for four-legged robots. Instead of one controller per gait style, a single network controls a rhythm generator (a system that produces repeating beat patterns for the legs, called a Central Pattern Generator) whose settings select among nine different leg-beat patterns. One network, all known walking styles.</p>
+<p>&quot;MOVE&quot; trains a single network to handle climbing, jumping, crawling, and stair-climbing for a cheap four-legged robot with only a small forward camera. It uses both camera images and body-sensor data together, and a technique called contrastive learning to let the robot infer what it cannot directly see from how its body is moving.</p>
+<h3>Closing the sim-to-real gap by modeling real hardware</h3>
+<p>Some papers attack the gap directly by making the simulator more accurate, rather than papering over inaccuracy with randomization.</p>
+<p>&quot;Cycloidal Quasi-Direct Drive Actuator Designs&quot; is a good example. Cycloidal gears — a type of compact, high-force gear — behave in messy, hard-to-predict ways. The team trained a small neural network called an Actuator Network to learn the actual input-output behavior of their motor from real data, then used that learned model inside the simulator. This made the simulator match the real hardware much more closely.</p>
+<p>&quot;Legged Robot State Estimation with Invariant Extended Kalman Filter Using Neural Measurement Network&quot; addresses a related gap: knowing where the robot is and how fast it is moving when the ground is slippery or soft. A small neural network watches sensor readings and estimates the robot&#x27;s speed and foot contact, and feeds those estimates into a mathematical tracking filter (invariant extended Kalman filter). The math handles the overall tracking; the neural network handles the parts the math cannot model cleanly.</p>
+<p>&quot;Physically-Consistent Parameter Identification of Robots in Contact&quot; fills another gap. Real robots have slightly wrong mass and inertia values in their simulators. This method figures out the true values using only motor data, without needing force sensors at the feet, by mathematically canceling out the effects of floor contact.</p>
+<h3>Using natural motion and passive physics to save energy</h3>
+<p>One of the cleanest insights in legged locomotion is that legs, when built right, want to swing at a certain rhythm for free. Fighting that rhythm costs energy. Using it saves energy.</p>
+<p>&quot;The Duke Humanoid&quot; is built around this idea. The team designed the leg proportions so the natural pendulum swing matches a useful walking speed, then trained the controller to walk in a way that rides that swing rather than overriding it.</p>
+<p>&quot;Adaptive Energy Regularization for Autonomous Gait Transition&quot; takes a simpler approach: add a single reward term during training that penalizes energy used per meter traveled, and let the robot figure out by trial and error how to move at any speed. The robot discovers on its own that switching between slow walking and fast trotting saves energy, without anyone writing rules about when to switch.</p>
+<p>&quot;Zippy,&quot; the smallest known power-autonomous two-legged robot, takes this to an extreme. It uses rounded feet and one motor, relying entirely on physical shape to stay balanced, with no sensors and no feedback. The passive structure of the body does the work.</p>
+<h3>Combining walking with arm work</h3>
+<p>Humanoid robots need to walk and use their arms at the same time. This is harder than it sounds because the legs and arms share the body&#x27;s balance, and training one policy to handle both tends to hurt the precision of the arms.</p>
+<p>&quot;Mobile-TeleVision&quot; solves this by training the legs and arms separately. A model trained on human teleoperation data learns typical arm motion patterns, and a separate walking policy learns to stay balanced while those patterns play out. The two are combined at run time.</p>
+<p>&quot;Real-Time Whole-Body Control of Legged Robots with Model-Predictive Path Integral Control&quot; (MPPI) takes a different route. It runs thousands of random action sequences in a simulator on multiple processor cores in parallel, scores them by how well they achieve the goal, and picks the best — all fast enough to run on the real robot in real time. No separate training for walking versus reaching; the planner handles both at once.</p>
+<h2>Where it stands</h2>
+<p>Legged robots can now walk over rough ground, climb ladders, switch between gaits, and do basic arm tasks — all using controllers trained mostly in simulation and moved to real hardware. The sim-to-real gap is narrowing, and single controllers are getting broader. What is still open: robots that can sustain useful work for hours in unpredictable outdoor settings, humanoids that can match a person&#x27;s arm speed and walking smoothness at the same time, and methods for quickly teaching a robot a new movement skill without retraining from scratch.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">Berkeley Humanoid: A Research Platform for Learning-Based Co</td><td>ICRA</td><td><a href="https://github.com/HybridRobotics/isaac_berkeley_humanoid" target="_blank" rel="noopener">HybridRobotics/isaac_berkeley_humanoid</a></td><td class="mono">exts/berkeley_humanoid/berkeley_humanoid/actuators/actuator_pd.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Robust Ladder Climbing with a Quadrupedal Robot</td><td>IROS</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">HOVER: Versatile Neural Whole-Body Controller for Humanoid R</td><td>ICRA</td><td><a href="https://github.com/NVlabs/HOVER" target="_blank" rel="noopener">NVlabs/HOVER</a></td><td class="mono">scripts/rsl_rl/teacher_policy_cfg.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">AllGaits: Learning All Quadruped Gaits and Transitions</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">MOVE: Multi-Skill Omnidirectional Legged Locomotion With Lim</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Cycloidal Quasi-Direct Drive Actuator Designs with Learning-</td><td>ICRA</td><td><a href="https://github.com/alvister88/Actuator-Neural-Net" target="_blank" rel="noopener">alvister88/Actuator-Neural-Net</a></td><td class="mono">actuator_nn/src/scripts/ActuatorNet.py</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">Legged Robot State Estimation with Invariant Extended Kalman</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">Physically-Consistent Parameter Identification of Robots in </td><td>ICRA</td><td><a href="https://github.com/ShahramKhorshidi/system_identification" target="_blank" rel="noopener">ShahramKhorshidi/system_identification</a></td><td class="mono">demo/run_identification.py</td><td><span class="run">cpu</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>Berkeley Humanoid: A Research Platform for Learning-Based Control</h1>
+<p>ICRA 2025 · 14 citations · sub-approach: train in sim then transfer (domain randomization)</p>
+<h2>What it does</h2>
+<p>Berkeley Humanoid is a mid-scale (~51 cm standing height, ~0.515 m CoM), in-house-built humanoid with 12 degrees of freedom (6 per leg) whose entire locomotion controller is a single neural network trained in simulation and deployed to hardware without any fine-tuning. The core claim is that careful hardware design — anthropomorphic kinematics, lightweight structure, high-torque quasi-direct-drive actuators with gear ratio 81:1 — produces a robot whose simulation model is accurate enough that only light domain randomization is needed to close the sim-to-real gap. The result is omnidirectional walking, single- and double-leg hopping, and outdoor trail traversal over hundreds of meters, all from one policy.</p>
+<p>Sub-approach: <strong>train in sim then transfer (domain randomization)</strong>. No teacher–student distillation, no actuator neural network, no vision — pure proprioceptive RL with physics-parameter randomization.</p>
+<h2>The method, in detail</h2>
+<p><strong>Robot hardware.</strong></p>
+<p>The robot has 12 actuated joints: per leg — hip rotation (HR), hip abduction/adduction (HAA), hip flexion/extension (HFE), knee flexion/extension (KFE), foot flexion/extension (FFE), foot abduction/adduction (FAA). All joints use brushless DC motors through an 81:1 gear reduction, modeled in simulation as DC motors. Effort limits by joint group: HR/HAA 20 Nm, HFE 30 Nm, KFE 30 Nm, FFE 20 Nm, FAA 5 Nm. Initial standing height is 0.515 m.</p>
+<p><strong>Inputs (observation vector).</strong></p>
+<p>The policy receives only proprioceptive signals, concatenated into a single flat vector:</p>
+<ul>
+<li>base linear velocity (3D, estimated on-board; noise ±0.1 m/s)</li>
+<li>base angular velocity (3D; noise ±0.2 rad/s)</li>
+<li>projected gravity vector (3D; noise ±0.05)</li>
+<li>velocity commands (linear x, linear y, angular z, heading — 4 scalars)</li>
+<li>joint positions by group: HR/HAA/HFE joints (±0.03–0.08 rad noise), KFE (±0.05), FFE (±0.08), FAA (±0.03)</li>
+<li>joint velocities for all 12 joints (noise ±1.5 rad/s)</li>
+<li>last action (12 scalars)</li>
+</ul>
+<p>No height scan is used for the rough-terrain policy (the <code>height<em>scan</code> term is explicitly set to <code>None</code> in <code>rough</em>env_cfg.py</code>), so the policy is blind to terrain shape — it infers terrain from contact and proprioception alone.</p>
+<p><strong>Actuator model (the key sim-to-real trick).</strong></p>
+<p>Rather than a simple PD controller, each joint uses a custom <code>IdentifiedActuator</code> class (subclasses IsaacLab&#x27;s <code>DCMotor</code>) that applies a physics-identified friction model on top of the DC motor torque:</p>
+<pre><code>
+applied_torque = PD_output - (friction_static * tanh(vel / activation_vel) + friction_dynamic * vel)
+</code></pre>
+<p>Static and dynamic friction coefficients per joint group are identified from real hardware data (e.g., KFE has friction_static=0.8 vs. HR/HAA at 0.3). Joint armature (reflected motor inertia) is set from CAD: e.g., KFE armature = 1.5e-4 × 81. This <code>IdentifiedActuator</code> is the primary mechanism for closing the sim-to-real gap — the motor&#x27;s nonlinear friction and reflected inertia are explicitly modeled rather than lumped into domain randomization.</p>
+<p><strong>Policy and training.</strong></p>
+<p>Algorithm: PPO (proximal policy optimization) via RSL-RL, run inside IsaacLab (built on Isaac Sim 4.0.0).</p>
+<ul>
+<li>Actor and critic: identical MLP structure, [512, 256, 128] hidden units, ELU activations.</li>
+<li>Training: 30,000 iterations, 24 steps per env per iteration, PPO clip 0.2, learning rate 1e-3 (adaptive KL schedule targeting 0.01), 5 epochs per update, 4 mini-batches, GAE lambda 0.95, discount gamma 0.99.</li>
+<li>Flat-terrain variant uses smaller networks [128, 128, 128] and 15,000 iterations.</li>
+</ul>
+<p><strong>Reward function.</strong></p>
+<p>The reward is a sum of task rewards and penalties computed per environment step:</p>
+<p>| Term | Weight | Description |</p>
+<p>|---|---|---|</p>
+<p>| track<em>lin</em>vel<em>xy</em>exp | +1.0 | Exponential kernel on lateral velocity tracking error (std=0.5) |</p>
+<p>| track<em>ang</em>vel<em>z</em>exp | +0.5 | Exponential kernel on yaw rate tracking (std=0.5) |</p>
+<p>| feet<em>air</em>time | +2.0 | Rewards steps with air-time in [0.2, 0.5] s when moving |</p>
+<p>| lin<em>vel</em>z_l2 | -2.0 | Penalizes vertical base velocity |</p>
+<p>| ang<em>vel</em>xy_l2 | -0.05 | Penalizes pitch/roll angular rates |</p>
+<p>| joint<em>torques</em>l2 | -1e-5 | Penalizes torque use (energy penalty) |</p>
+<p>| action<em>rate</em>l2 | -0.01 | Penalizes rapid action changes |</p>
+<p>| feet_slide | -0.25 | Penalizes foot velocity while in contact |</p>
+<p>| undesired_contacts | -1.0 | Penalizes knee/thigh contacts with ground |</p>
+<p>| flat<em>orientation</em>l2 | -0.5 | Penalizes torso tilt |</p>
+<p>| dof<em>pos</em>limits | -1.0 | Penalizes joints near their limits |</p>
+<p>| joint<em>deviation</em>hip | -0.1 | L1 penalty on HR/HAA deviation from default |</p>
+<p><strong>Domain randomization.</strong></p>
+<p>Applied at episode startup (not re-sampled each step):</p>
+<ul>
+<li>Friction of every body: static and dynamic in [0.2, 1.25]</li>
+<li>Link masses: scaled ±10% (factor [0.9, 1.1]) for all bodies; base torso mass offset ±1 kg</li>
+<li>Joint armature: scaled [1.0, 1.05]</li>
+<li>Joint default positions: offset ±0.05 rad</li>
+<li>Joint friction model: scaled ±10%</li>
+<li>During episodes: random velocity pushes every 10–15 s (±0.5 m/s linear)</li>
+</ul>
+<p><strong>Commands and curriculum.</strong></p>
+<p>Velocity commands are sampled uniformly: vx ∈ [-1, 1] m/s, vy ∈ [-1, 1] m/s, yaw ∈ [-1, 1] rad/s. Heading command with stiffness 0.5 is used instead of raw yaw rate. Terrain curriculum starts at level 0 and advances as the robot succeeds.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/HybridRobotics/isaac" target="_blank" rel="noopener">https://github.com/HybridRobotics/isaac</a><em>berkeley</em>humanoid</p>
+<p><strong>Language/framework:</strong> Python 3.10, Isaac Lab v1.0.0 (built on Isaac Sim 4.0.0, Omniverse), RSL-RL for PPO. No PyTorch Lightning or HuggingFace — RSL-RL is a lean RL loop.</p>
+<p><strong>Full repo structure:</strong></p>
+<pre><code>
+isaac_berkeley_humanoid/
+├── README.md
+├── pyproject.toml
+├── scripts/rsl_rl/
+│   ├── train.py                  ← entry point: training
+│   ├── play.py                   ← entry point: inference/visualization
+│   └── cli_args.py
+└── exts/berkeley_humanoid/
+    └── berkeley_humanoid/
+        ├── actuators/
+        │   ├── actuator_cfg.py   ← IdentifiedActuatorCfg dataclass
+        │   └── actuator_pd.py    ← IdentifiedActuator: the friction model
+        ├── assets/
+        │   ├── berkeley_humanoid.py  ← robot ArticulationCfg + per-joint actuator params
+        │   └── Robots/
+        │       └── berkeley_humanoid.usd  ← robot mesh + URDF-equivalent
+        ├── tasks/locomotion/velocity/
+        │   ├── velocity_env_cfg.py   ← base env: observations, rewards, randomization, commands
+        │   ├── mdp/
+        │   │   ├── rewards.py        ← feet_air_time, feet_slide implementations
+        │   │   ├── events.py         ← randomization event functions
+        │   │   └── curriculums.py
+        │   └── config/berkeley_humanoid/
+        │       ├── rough_env_cfg.py  ← rough-terrain env override (no height scan)
+        │       ├── flat_env_cfg.py   ← flat-terrain variant
+        │       └── agents/
+        │           └── rsl_rl_cfg.py ← PPO hyperparams + MLP architecture
+        └── terrains/
+            └── terrain_generator_cfg.py ← procedural rough terrain definition
+</code></pre>
+<p><strong>File to open first:</strong> <code>exts/berkeley<em>humanoid/berkeley</em>humanoid/actuators/actuator<em>pd.py</code> — it is the single most important file for understanding what makes this paper distinct. It shows the <code>IdentifiedActuator.compute()</code> method, the tanh-friction model applied on top of the DC motor output. Once you understand that, read <code>berkeley</em>humanoid.py</code> for the per-joint parameter values, then <code>velocity<em>env</em>cfg.py</code> for the full MDP.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>Isaac Sim 4.0.0 (NVIDIA Omniverse, proprietary, requires NVIDIA GPU and an Omniverse license/account)</li>
+<li>Isaac Lab v1.0.0 (open source wrapper, installs via the Isaac Sim Python interpreter)</li>
+<li>RSL-RL (installs as a Python package under the Isaac Lab environment)</li>
+<li>Python 3.10, Linux 64-bit only</li>
+</ul>
+<p><strong>No separate dataset is needed.</strong> All data is generated by the simulator during training. No pretrained checkpoints are included in the repository — you must train from scratch.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+# 1. Install Isaac Lab v1.0.0 following NVIDIA&#x27;s guide
+# 2. Install the extension:
+cd exts/berkeley_humanoid
+${ISAACLAB_PATH}/python.sh -m pip install -e .
+
+# 3. Train:
+${ISAAC_LAB_PATH}/isaaclab.sh -p scripts/rsl_rl/train.py \
+    --task Velocity-Rough-Berkeley-Humanoid-v0
+
+# 4. Visualize a trained policy:
+${ISAAC_LAB_PATH}/isaaclab.sh -p scripts/rsl_rl/play.py \
+    --task Velocity-Rough-Berkeley-Humanoid-Play-v0
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start at <code>actuator<em>pd.py</code> (30 lines) to see the <code>IdentifiedActuator.compute()</code> method — it is compact and the conceptual core. Then read <code>berkeley</em>humanoid.py</code> to see the per-joint parameter values (effort limits, armature, friction coefficients) that were identified from hardware. Then read <code>velocity<em>env</em>cfg.py</code> top-to-bottom: it defines the complete MDP in one file — observation space, action space, reward weights, randomization ranges, command distributions, terrain. Finally read <code>rsl<em>rl</em>cfg.py</code> for network size and PPO settings.</p>
+<p><strong>How hard is it to follow:</strong> Moderate. The code is clean and well-structured. The main barrier is Isaac Lab&#x27;s config-class system (<code>@configclass</code> decorators, manager-based MDP), which has significant boilerplate and requires familiarity with the IsaacLab API. Anyone already familiar with IsaacLab or the legged-gym codebase will read it in under an hour. For a newcomer, understanding the manager hierarchy (ObservationManager, RewardManager, EventManager) adds 2–3 hours of ramp-up. The actual RL logic (PPO, network training) is entirely inside RSL-RL and not in this repo.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on CPU only.</strong> Isaac Sim 4.0.0 requires an NVIDIA GPU (RTX class recommended; minimum RTX 2070 per NVIDIA&#x27;s docs) and a Linux system with the Omniverse runtime. The physics simulation (PhysX) runs on GPU. Training 30,000 iterations with hundreds of parallel environments requires a GPU with at least 8–12 GB VRAM.</p>
+<p>A trained policy checkpoint (a small MLP: 3 hidden layers, 512/256/128 units) could in principle run inference on CPU — the forward pass is trivial. However, the repo provides no pretrained checkpoint and no standalone deployment script; running inference requires the full Isaac Lab/Isaac Sim stack, which mandates a GPU. In practice: GPU + NVIDIA-capable Linux machine required for any use of this codebase.</p></article>
+<article class="page" id="gp1"><h1>Robust Ladder Climbing with a Quadrupedal Robot</h1>
+<p>IROS 2025 · 4 citations · sim-to-real transfer (domain randomization + teacher-student distillation) with hardware morphology co-design</p>
+<h2>What it does</h2>
+<p>A reinforcement learning controller is trained entirely in simulation to make an ANYmal D quadruped climb industrial ladders at angles from 70° to 90°, then deployed zero-shot on real hardware with a 90% success rate. The robot is given custom hooked aluminum end-effectors that let it grip ladder rungs under both compression and tension, a morphology change that makes the policy tractable. This is a sim-to-real transfer paper: the key engineering is a teacher policy with privileged simulation state, distilled into a student that runs on noisy real-sensor input alone, combined with aggressive domain randomization over ladder geometry and perturbations.</p>
+<h2>The method, in detail</h2>
+<h3>Hardware platform and end-effector</h3>
+<p>The base robot is the ANYmal D (ANYbotics AG), a 12-DOF torque-controlled quadruped. A custom hooked end-effector replaces the standard foot: an aluminum core with a 3D-printed shell, a concave contoured hook opening of radius 2.75 cm, and a passive geometry that keeps the foot stable on a rung across a wide angle range without active control. This design lets the robot exert both compressive (pushing into the rung) and tensile (pulling against the rung) forces, which is what makes a ladder-gripping gait physically achievable.</p>
+<h3>Policy inputs</h3>
+<p>The student policy (what runs on hardware) receives:</p>
+<ul>
+<li><strong>Proprioception</strong>: gravity vector, current joint positions and velocities, joint position-tracking error history at t=0, t=-20 ms, t=-40 ms, last 8 IMU readings (linear acceleration + angular velocity at 400 Hz), a standing-mode flag that activates within 15 cm of goal.</li>
+<li><strong>Ladder state</strong> (measured directly on hardware, provided as scalars): ladder presence flag, inclination angle, width, rung radius, inter-rung spacing, rung count.</li>
+<li><strong>Ladder pose</strong>: position and yaw of the bottom rung expressed in the robot&#x27;s base frame (provided by a motion-capture system during hardware experiments).</li>
+<li><strong>Recurrent belief encoder</strong>: the student uses a recurrent (GRU) belief encoder trained to reconstruct privileged information from its observation history.</li>
+</ul>
+<p>The teacher policy additionally receives: privileged foot contact forces, friction coefficients, external forces/torques, base mass variation, foot airtime, full 2 x 1 m height scan at 10 cm resolution, and noiseless versions of all ladder parameters.</p>
+<h3>Policy architecture</h3>
+<ul>
+<li><strong>Teacher</strong>: a multi-layer perceptron (MLP) that encodes the 8-step IMU history, concatenates with all proprioceptive + privileged observations, and outputs 12 joint position targets at 50 Hz.</li>
+<li><strong>Student</strong>: a recurrent belief encoder (GRU) maps the sequence of noisy observations to a latent belief state; this is concatenated with current observations and passed through an MLP to produce joint position targets at 50 Hz.</li>
+<li>A proportional-derivative (PD) controller on the joints runs at 400 Hz and converts position targets to torques.</li>
+</ul>
+<h3>Training setup — teacher first, then distillation</h3>
+<p>Training uses the LeggedGym framework (Isaac Gym physics simulator) with 4,096 parallel environments on a single NVIDIA RTX 3090.</p>
+<p><strong>Teacher training (15,000 epochs, ~3 days)</strong>:</p>
+<ul>
+<li>Two terrain types generated randomly in each environment: rough ground (boxes, slopes) and ladders with variable geometry.</li>
+<li>Curriculum: agents start on easier ladders (broader, flatter rungs, lower angles) and the curriculum adapts automatically — as success rate rises, ladder steepness and rung difficulty increase.</li>
+<li>Batch: 48 rollout steps per update.</li>
+<li>Key reward terms:</li>
+</ul>
+<p>  - Position tracking to waypoint goal: weight 3.0 (dominant term)</p>
+<p>  - Heading alignment: weight 0.5</p>
+<p>  - Base motion smoothness: weight 0.2</p>
+<p>  - Joint regularization: -0.001 per joint per step</p>
+<p>  - Foot slip penalty: -0.25</p>
+<p>  - Limb collision: -0.1; base collision: -1.0</p>
+<p>  - Action rate smoothing: -0.01</p>
+<p>  - Orientation penalty (terrain-dependent)</p>
+<ul>
+<li>A dense position-tracking reward (with a goal generated continuously along the ladder) replaces the sparse terminal reward, which the authors found critical for improving success rates.</li>
+</ul>
+<p><strong>Student distillation (5,000 epochs, ~1.5 days)</strong>:</p>
+<ul>
+<li>Student observes the same environments but only has access to noisy, hardware-available observations.</li>
+<li>Supervised loss: student actions match teacher actions (behavior cloning objective).</li>
+<li>Recurrent belief encoder is trained simultaneously to reconstruct privileged state from observation history.</li>
+</ul>
+<h3>Domain randomization</h3>
+<ul>
+<li>Ladder dimensions: length 1-3 m, width 1.0-1.25 m, inter-rung spacing 27.5-32.5 cm, rung radius varied down to 2.5 cm (elliptic cylinders).</li>
+<li>Inclination: progressed via curriculum from flat to near-vertical (90°).</li>
+<li>Physics: base mass variation, foot friction coefficients, external random forces and torques applied to the base and feet, random velocity offsets.</li>
+<li>Initial state: 50% of environments initialized from the final state of the previous episode (with randomized velocities), providing diversity.</li>
+</ul>
+<h3>The trick that makes it transfer</h3>
+<p>Three things working together: (1) the hooked foot hardware removes the physical impossibility of rung grip on a smooth paw; (2) the actuator model used in simulation is the ANYmal D&#x27;s learned actuator network (a small neural net that maps desired torques to realized torques, capturing real joint dynamics including friction and delays), reducing the sim-to-real gap in low-level torque response; (3) teacher-student distillation means the deployed policy was never exposed to privileged state — it learned from the start to operate under the same observation noise as real hardware.</p>
+<h2>The code</h2>
+<p><strong>Repository</strong>: No public code repository has been released by the authors. The project website is <a href="https://sites.google.com/leggedrobotics.com/climbingladders" target="_blank" rel="noopener">https://sites.google.com/leggedrobotics.com/climbingladders</a> (video demos, supplementary material, no code).</p>
+<p><strong>Framework</strong>: The paper uses LeggedGym (<a href="https://github.com/leggedrobotics/legged_gym" target="_blank" rel="noopener">https://github.com/leggedrobotics/legged_gym</a>) as the Isaac Gym training harness — this is the public RSL framework on which the ladder environments would have been built. LeggedGym is Python + PyTorch; it runs inside NVIDIA Isaac Gym (now superseded by Isaac Lab).</p>
+<p><strong>What you&#x27;d need to reproduce</strong>:</p>
+<ul>
+<li>NVIDIA GPU with CUDA (the paper used RTX 3090; Isaac Gym requires a CUDA-capable GPU).</li>
+<li>NVIDIA Isaac Gym (now: Isaac Lab / Isaac Sim); proprietary NVIDIA installer, runs only on Linux with a GPU.</li>
+<li>PyTorch, rsl<em>rl (<a href="https://github.com/leggedrobotics/rsl" target="_blank" rel="noopener">https://github.com/leggedrobotics/rsl</a></em>rl) — the PPO implementation used by LeggedGym.</li>
+<li>The custom ladder terrain generator, custom hooked-foot URDF, and reward configuration — these are not public.</li>
+</ul>
+<p><strong>LeggedGym repo structure</strong> (for context on what the training code would look like):</p>
+<pre><code>
+legged_gym/
+  envs/
+    base/              # LeggedRobot env base class
+      legged_robot.py  # terrain, observations, rewards, reset logic
+    anymal_c/
+      anymal_c_config.py  # robot-specific config (would be anymal_d for this paper)
+  utils/
+    task_registry.py   # env registration
+    terrain/           # terrain generators (flat, rough, stairs — ladder would be added here)
+  scripts/
+    train.py           # entry point: python train.py --task=anymal_c
+    play.py            # visualization / policy rollout
+rsl_rl/                # separate repo: PPO + recurrent policy
+</code></pre>
+<p><strong>File to open first</strong> (in LeggedGym): <code>legged<em>gym/envs/base/legged</em>robot.py</code> — it defines the base observation vector, reward computation, domain randomization, and reset logic. Every customization the ladder paper makes would be a subclass of this.</p>
+<p><strong>To run LeggedGym training</strong> (once Isaac Gym is installed):</p>
+<pre><code>
+python legged_gym/scripts/train.py --task=anymal_c --headless
+</code></pre>
+<p><strong>Training time</strong>: 15,000 teacher epochs + 5,000 student epochs on RTX 3090 = approximately 4.5 days total. Not reducible to CPU.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first</strong>: The arXiv HTML version (<a href="https://arxiv.org/html/2409.17731v2" target="_blank" rel="noopener">https://arxiv.org/html/2409.17731v2</a>) is well-structured — read Section III (System Design, for the end-effector) and Section IV (Method, for the policy pipeline) before looking at any code. The observation table and reward table in the appendix (or supplement) give exact numbers. The project website has a clear video that shows the hardware behavior and the curriculum progression.</p>
+<p><strong>How hard is the code to follow</strong>: The training harness (LeggedGym + rsl<em>rl) is well-documented and community-used. The ladder-specific additions (terrain generator, custom URDF, reward terms) are not public, but the base framework is clean Python with readable configs. If you understand one LeggedGym task, you can read what the paper describes and re-implement the ladder environment in a few days of work. The teacher-student distillation is standard behavior cloning on top of the recurrent policy already supported in rsl</em>rl. Difficulty: moderate — the framework is accessible; the missing pieces are the terrain geometry code and URDF.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box: no, not for training.</strong> Isaac Gym requires an NVIDIA GPU and CUDA; the training took 4.5 days on an RTX 3090 with 4,096 parallel environments. There is no CPU fallback.</p>
+<p><strong>For inference only</strong>: a trained policy is a small MLP + GRU that runs trivially on CPU at 50 Hz. If someone released model weights (they have not), you could run the student policy forward pass on any machine in milliseconds. The PD controller is also CPU-trivial. The bottleneck is entirely the simulator for training.</p>
+<p><strong>Summary</strong>: GPU + NVIDIA Isaac Gym required for training. Inference weights would run on CPU, but no weights are public. For reproduction you need: Linux, CUDA GPU (≥RTX 3090 recommended), Isaac Gym installer, and the private ladder environment code.</p></article>
+<article class="page" id="gp2"><h1>HOVER: Versatile Neural Whole-Body Controller for Humanoid Robots</h1>
+<p>ICRA 2025 · 12 citations · sub-approach: one controller for many tasks or gaits (multi-mode whole-body control via teacher-student policy distillation)</p>
+<h2>What it does</h2>
+<p>HOVER solves a specific problem: humanoid robots need different control &quot;languages&quot; depending on the task — navigation wants a velocity command, tabletop manipulation wants joint-angle commands, loco-manipulation wants hand/foot position commands — and prior work trained a separate policy for each. HOVER instead uses full-body kinematic motion imitation as a single shared abstraction layer: a motion-tracking teacher policy, trained on retargeted human motion-capture data, is then distilled into one student policy that accepts all three command modes simultaneously, with missing modes masked out at random during training. The result is a single neural network that can switch command modes mid-episode and runs on a real Unitree H1 humanoid.</p>
+<p>Sub-approach: <strong>multi-task / multi-mode</strong> — one controller for many tasks and gaits, unified through motion imitation as a common backbone rather than domain randomization as the primary bridge.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs</strong></p>
+<p>The *teacher (oracle) policy* receives privileged simulator state: per-body rigid-body positions, orientations, linear and angular velocities, plus the reference motion frame (next pose from the AMASS retargeted clip). The *student policy* receives only quantities available on real hardware: joint positions, joint velocities, base angular velocity from an IMU, a gravity vector (also IMU-derived), and 25 timesteps of action history (rolling window). Both policies output 19 target joint positions, which are converted to torques on the robot by PD controllers.</p>
+<p><strong>Command space and mode masking</strong></p>
+<p>Three command modes are defined:</p>
+<ul>
+<li>Root tracking: desired base linear velocity, height, roll/pitch/yaw (navigation-style joystick commands)</li>
+<li>Kinematic position tracking: 3D world-space coordinates of body keypoints (head, hands, feet)</li>
+<li>Local joint-angle tracking: 19 target motor angles (used for upper-body manipulation)</li>
+</ul>
+<p>At the start of each simulated episode, a binary &quot;mode mask&quot; (drawn from Bernoulli(0.5)) selects which command dimensions are active. Within the active dimensions a second &quot;sparsity mask&quot; further randomly zeroes out individual keypoints. This forces the policy to handle any subset of commands, not just pre-defined combinations.</p>
+<p><strong>Teacher policy (oracle)</strong></p>
+<p>Trained with PPO (Proximal Policy Optimization) inside Isaac Gym. The network is a three-layer MLP with hidden sizes [512, 256, 128]. The goal state fed to the teacher is the difference between the reference motion pose and the current robot pose: reference orientation minus current orientation (using geodesic subtraction on SO(3)), reference position minus current position, plus reference velocity and angular-velocity differences, and the absolute reference pose. The teacher has full access to the simulated state and motion-reference.</p>
+<p>Motion data comes from AMASS (a large human motion-capture database). AMASS clips are retargeted to the 19-DOF Unitree H1 via SMPL body-model fitting and gradient-descent keypoint matching. Retargeting the full dataset on a 32-core CPU takes approximately 4 days.</p>
+<p><strong>Reward function</strong></p>
+<p>Weighted sum of task and regularization terms. Key positive rewards:</p>
+<ul>
+<li>DoF position tracking: weight 32.0</li>
+<li>Body keypoint position: weight 80.0</li>
+<li>Root velocity: weight 100.0</li>
+<li>Root rotation: weight 20.0</li>
+</ul>
+<p>Negative (penalty) terms: joint velocity (−4e-3), joint acceleration (−1.1e-5), action rate (−3 lower / −0.625 upper body), torque limit violations (−2), joint position limit violations (−125), episode termination (−250), foot stumble and bad contact orientation.</p>
+<p><strong>Student distillation (DAgger)</strong></p>
+<p>The student is trained with DAgger (Dataset Aggregation), a behavioral-cloning variant that avoids compounding errors. During student rollouts in simulation, the corresponding oracle state is computed from the same trajectory, and the teacher policy is queried to produce reference actions. The student minimizes the L2 loss between its own output and the teacher&#x27;s reference actions. The student never sees privileged state; it infers what it needs from its 25-step proprioception history and the (masked) command vector.</p>
+<p><strong>Sim-to-real transfer</strong></p>
+<p>Domain randomization is applied to physical simulation parameters (friction, mass, center-of-mass position, motor strength) following the OmniH2O methodology. Actions are 19 PD-controller setpoints; the PD gains are tuned on the real H1. No explicit actuator network is used — the gap is closed via randomization and the DAgger distillation step, which exposes the student to its own error distribution rather than the teacher&#x27;s.</p>
+<p><strong>Hardware</strong></p>
+<p>Unitree H1 humanoid, 19 DOF, approximately 51.5 kg, 1.8 m. Experiments include 20 retargeted AMASS standing/locomotion sequences, mode-switch transitions mid-walk, and Apple Vision Pro teleoperation (upper-body joint commands) with occlusion-robust masking active.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/NVlabs/HOVER" target="_blank" rel="noopener">https://github.com/NVlabs/HOVER</a></p>
+<p><strong>Language / framework:</strong> Python 3.10; Isaac Lab 2.0.0 (NVIDIA&#x27;s Isaac Sim wrapper, itself wrapping PhysX 5); RSL-RL for PPO; MuJoCo for sim-to-sim validation.</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+HOVER/
+├── neural_wbc/
+│   ├── core/              # policy definitions, observation builders, reward logic
+│   ├── data/              # motion data loading and AMASS retargeting utilities
+│   ├── hw_wrappers/       # Unitree H1 hardware interface (ROS2 or SDK)
+│   ├── inference_env/     # lightweight env for running a trained policy at inference time
+│   ├── isaac_lab_wrapper/ # Isaac Lab task environment (gym spaces, resets, domain rand)
+│   ├── mujoco_wrapper/    # sim-to-sim validation environment in MuJoCo
+│   └── student_policy/    # student network definition and DAgger trainer
+├── scripts/
+│   └── rsl_rl/
+│       ├── train_teacher_policy.py   # main teacher training entry point
+│       ├── train_student_policy.py   # DAgger student distillation entry point
+│       ├── play.py                   # visualize/run a checkpoint
+│       ├── eval.py                   # batch evaluation metrics
+│       ├── players.py                # teacher vs. student player classes
+│       ├── teacher_policy_cfg.py     # reward weights, network sizes, PPO hyperparams
+│       └── config_overwrites/        # YAML overrides for different robots/modes
+├── third_party/                      # human2humanoid retargeting code
+├── docs/
+├── requirements.txt
+└── Dockerfile
+</code></pre>
+<p><strong>File to open first:</strong> <code>scripts/rsl<em>rl/teacher</em>policy_cfg.py</code> — it contains every hyperparameter (reward weights, network sizes, PPO settings, command mode definitions) in one place, giving a complete map of the design choices before reading any training logic.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>NVIDIA Isaac Lab 2.0.0 (requires Isaac Sim, which requires an NVIDIA GPU; tested on RTX 4090, RTX A6000, L40)</li>
+<li>Python 3.10, PyTorch</li>
+<li>RSL-RL (NVIDIA&#x27;s PPO library for robot learning)</li>
+<li>MuJoCo (for sim-to-sim validation only)</li>
+<li>AMASS dataset (requires free account registration at amass.is.tue.mpg.de)</li>
+</ul>
+<p><strong>Installation sketch:</strong></p>
+<pre><code>
+git clone --recurse-submodules https://github.com/NVlabs/HOVER
+export ISAACLAB_PATH=&lt;path_to_isaac_lab&gt;
+./install_deps.sh
+# Download and retarget AMASS (takes ~4 days on 32-core CPU)
+bash third_party/human2humanoid/retarget_h1.sh
+# Train teacher
+${ISAACLAB_PATH}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
+    --num_envs 1024 --reference_motion_path &lt;motion.pkl&gt;
+# Then distill student
+${ISAACLAB_PATH}/isaaclab.sh -p scripts/rsl_rl/train_student_policy.py \
+    --teacher_ckpt &lt;checkpoint.pt&gt;
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>scripts/rsl<em>rl/teacher</em>policy<em>cfg.py</code> to understand every reward weight, command-mode definition, and network size. Then read <code>neural</em>wbc/core/</code> for how observations are assembled from simulation state and how the reward terms are computed. The DAgger distillation logic lives in <code>neural<em>wbc/student</em>policy/</code>. The Isaac Lab task environment (reset logic, domain randomization parameters, action/observation spaces) is in <code>neural<em>wbc/isaac</em>lab_wrapper/</code>.</p>
+<p>Difficulty: moderate-to-hard. The code is well-structured into separate modules, but it sits on top of Isaac Lab which itself has a steep setup curve (requires Omniverse/Isaac Sim installation, a specific GPU, and NVIDIA licensing). Once Isaac Lab is running, the training scripts follow standard PyTorch/RSL-RL patterns and are readable. The motion retargeting pipeline is a separate beast — it requires SMPL model files and runs for days. A reader already familiar with Isaac Gym / Isaac Lab will navigate this in a few hours; a newcomer will spend most time on environment setup.</p>
+<h2>Run verdict</h2>
+<p><strong>GPU required; CPU-only box cannot run this.</strong></p>
+<ul>
+<li>Teacher training: absolutely requires an NVIDIA GPU. Teacher training runs 1024 parallel environments in Isaac Gym / Isaac Lab (PhysX GPU physics). On an RTX 4090 it takes ~23 hours; on an A6000 ~53 hours. A CPU-only machine cannot even launch Isaac Lab meaningfully.</li>
+<li>Student distillation (DAgger): also runs inside the simulator, so same GPU requirement.</li>
+<li>Inference only (running a trained checkpoint on a real H1 or in MuJoCo sim-to-sim): the MuJoCo wrapper could in principle run on CPU for the simulation part, and the policy network itself (three-layer MLP, ~200 k parameters) is trivially CPU-runnable. But no standalone &quot;inference-only&quot; CPU runner is provided out of the box.</li>
+<li>AMASS retargeting: CPU-bound, but takes ~4 days on 32 cores.</li>
+</ul>
+<p>Summary: training is GPU + Isaac Lab only. A trained checkpoint could theoretically run on CPU in MuJoCo or on hardware, but you would need to write the inference wrapper yourself using the <code>neural<em>wbc/inference</em>env/</code> module.</p></article>
+<article class="page" id="gp3"><h1>AllGaits: Learning All Quadruped Gaits and Transitions</h1>
+<p>ICRA 2025 · 4 citations · sub-approach: one controller for many tasks or gaits (single policy over all 9 canonical quadruped gaits via CPG modulation)</p>
+<h2>What it does</h2>
+<p>AllGaits trains a single deep RL policy that can produce all nine standard quadruped animal gaits — lateral sequence walk, amble, trot, pace, bound, pronk, canter, transverse gallop, and rotary gallop — and transition between any pair of them instantaneously, at any running speed, on command. The key architectural choice is placing a biologically-inspired Central Pattern Generator (a CPG: a system of coupled Hopf-style oscillators that produces rhythmic output without external rhythm input) between the neural network and the joints; the policy does not output joint positions or torques directly but instead modulates the CPG&#x27;s per-leg amplitude and frequency, while the gait identity (which of the nine gaits is active) is set by swapping a pre-defined phase-offset coupling matrix. Using this decomposition, the authors show that the trot — the near-universal choice in prior RL locomotion work — is not actually the most energy-efficient gait across the full speed range, and that the framework lets them measure Cost of Transport (COT, energy per unit distance) for each gait empirically on a real robot.</p>
+<p>Sub-approach: <strong>multi-task / multi-gait</strong> — one controller that generates all gaits, with gait identity as a runtime-switchable discrete input rather than a reward-shaped emergent behavior.</p>
+<h2>The method, in detail</h2>
+<p><strong>Observation inputs</strong></p>
+<p>At each 10 ms timestep the policy receives:</p>
+<ul>
+<li>Velocity command: desired forward base-frame speed v*_x (scalar, resampled from [0.2, 3] m/s every 5 s during training)</li>
+<li>Body state from onboard IMU and joint encoders: orientation (roll/pitch/yaw), base linear velocity, base angular velocity</li>
+<li>Joint state: 12 joint positions and 12 joint velocities (3 joints × 4 legs)</li>
+<li>Foot contact booleans: 4 binary signals from foot contact sensors</li>
+<li>Previous action: the last RL action issued (efference copy)</li>
+<li>CPG state (efference copy of oscillator state): {r<em>i, r</em>dot<em>i, theta</em>i, theta<em>dot</em>i} for each of the 4 oscillators — amplitude, amplitude rate, phase, phase rate</li>
+</ul>
+<p>Notably, the gait coupling matrix, the gait type label, and the pattern formation parameters (body height h, foot offset x<em>off, ground clearance g</em>c, ground penetration g_p) are NOT part of the observation. The policy never sees which gait is requested; the gait identity enters only through the coupling matrix applied to the CPG, so the same policy weights handle all nine gaits.</p>
+<p><strong>Architecture</strong></p>
+<p>An MLP with the same hyperparameters as CPG-RL (Bellegarda &amp; Ijspeert, RA-L 2022): a three-layer network with hidden sizes [256, 160, 128] and ELU activations (from the CPG-RL paper; AllGaits inherits this without modification). Output is 8 real-valued numbers, clipped to action ranges.</p>
+<p><strong>Action space</strong></p>
+<p>Action vector a = [mu, omega] in R^8:</p>
+<ul>
+<li>mu_i (intrinsic amplitude) in [1, 2] for each of 4 legs</li>
+<li>omega_i (intrinsic frequency) in [0, 8] Hz for each of 4 legs</li>
+</ul>
+<p>These 8 outputs are the only interface between the neural policy and the locomotion mechanism.</p>
+<p><strong>CPG: Rhythm Generation Layer</strong></p>
+<p>The CPG consists of four coupled oscillators (one per leg), integrated at 1 kHz. Each oscillator i has:</p>
+<p>Amplitude dynamics:</p>
+<p>  r<em>double</em>dot<em>i = a * (a/4 * (mu</em>i - r<em>i) - r</em>dot_i)</p>
+<p>Phase dynamics:</p>
+<p>  theta<em>dot</em>i = omega<em>i + sum</em>j [ r<em>j * w</em>ij * sin(theta<em>j - theta</em>i - phi_ij) ]</p>
+<p>where:</p>
+<ul>
+<li>r<em>i, theta</em>i: oscillator amplitude and phase (state)</li>
+<li>mu<em>i, omega</em>i: intrinsic amplitude and frequency (policy outputs)</li>
+<li>w_ij = 10 (fixed strong coupling weight for all i,j pairs)</li>
+<li>phi_ij: phase bias between oscillators i and j — this encodes the gait identity</li>
+<li>a: positive constant controlling convergence speed</li>
+</ul>
+<p>The nine gaits are defined by nine distinct 4x4 phase-offset matrices Phi, where each entry phi_ij specifies the desired phase lead/lag between legs i and j. For example, trot has front-right and hind-left in phase, front-left and hind-right in phase, and the two pairs 180 degrees apart. Gait identity is switched by swapping Phi, which can be done mid-episode without resetting the oscillator states; the oscillators smoothly converge to the new gait&#x27;s phase relationship due to the coupling terms.</p>
+<p><strong>Pattern Formation Layer</strong></p>
+<p>The CPG oscillator output (r<em>i, theta</em>i) is mapped to a desired foot position in the body frame:</p>
+<p>x-position:  x<em>i</em>foot = x<em>off - d</em>step * (r<em>i - 1) * cos(theta</em>i)</p>
+<p>z-position:  z<em>i</em>foot = -h + g<em>c * sin(theta</em>i)       if sin(theta_i) &gt; 0  (swing phase)</p>
+<p>             z<em>i</em>foot = -h + g<em>p * sin(theta</em>i)       otherwise             (stance phase)</p>
+<p>where:</p>
+<ul>
+<li>h in [0.18, 0.35] m: body height (re-sampled at each env reset)</li>
+<li>x_off in [-0.08, 0.03] m: foot offset along body x-axis relative to hip</li>
+<li>g_c in [0.02, 0.12] m: maximum swing ground clearance</li>
+<li>g_p in [0, 0.015] m: maximum stance ground penetration (allows compliance)</li>
+<li>d_step: maximum step length (fixed by user at deployment)</li>
+</ul>
+<p>These (x, z) desired foot positions are then converted to joint angles via inverse kinematics of the Go1&#x27;s 3-DOF leg, and the resulting target joint angles are tracked by a PD controller running at 1 kHz.</p>
+<p><strong>Reward function</strong></p>
+<p>Four reward terms only; no gait-style rewards:</p>
+<p>| Term | Formula | Weight |</p>
+<p>|---|---|---|</p>
+<p>| Velocity tracking | exp(-||v*<em>x - v</em>x||^2 / 0.25) | 3 * dt |</p>
+<p>| Lateral/vertical velocity penalty | -||v_yz||^2 | 2 * dt |</p>
+<p>| Angular velocity penalty | -||omega_xyz||^2 | 0.1 * dt |</p>
+<p>| Power consumption | -|tau . q_dot| | 0.001 * dt |</p>
+<p>where dt = 0.01 s (policy runs at 100 Hz). The key claim: no reward terms beyond these four are needed. No foot-contact symmetry reward, no gait-cycle reward, no joint-torque smoothness term — the CPG structure itself enforces rhythmic, gait-appropriate motion.</p>
+<p><strong>Training setup</strong></p>
+<ul>
+<li>Simulator: Isaac Gym (NVIDIA) with PhysX physics engine</li>
+<li>Robot: Unitree Go1 quadruped (12 DOF, ~12 kg)</li>
+<li>4,096 environments in parallel on a single NVIDIA RTX 3090 (24 GB VRAM)</li>
+<li>Algorithm: PPO (Proximal Policy Optimization), inherited from legged<em>gym / rsl</em>rl framework</li>
+<li>Terrain: flat terrain only during training</li>
+<li>Episode length: 20 s</li>
+<li>Gait coupling matrix: resampled from the 9-gait set every 3 s (uniform random)</li>
+<li>Velocity command: resampled every 5 s from [0.2, 3] m/s</li>
+<li>External push perturbation: 0.5 m/s magnitude, random direction, every 15 s per episode</li>
+<li>Episode reset: triggered if base or thigh contacts ground</li>
+</ul>
+<p><strong>Domain randomization</strong></p>
+<p>| Parameter | Low | High | Unit |</p>
+<p>|---|---|---|---|</p>
+<p>| Per-link mass | 70% | 130% of nominal | |</p>
+<p>| Added base mass | 0 | 5 | kg |</p>
+<p>| Coefficient of friction | 0.3 | 1.0 | |</p>
+<p>| PD gain Kp | 30 | 100 | |</p>
+<p>| PD gain Kd | 0.5 | 2.0 | |</p>
+<p>Gains are re-sampled at every environment reset. No actuator net, no system identification, and no adaptive domain randomization (curriculum); these five scalar ranges plus the flat-terrain training are the full sim-to-real gap-closing strategy.</p>
+<p><strong>Sim-to-real transfer and hardware deployment</strong></p>
+<p>The trained policy runs zero-shot on the real Unitree Go1 at 100 Hz. The oscillator integration runs at 1 kHz onboard. The paper does not describe the onboard compute or communication stack (no mention of whether it runs on the Go1&#x27;s internal Raspberry Pi/Jetson or an external laptop), which is typical for Go1 locomotion papers — the Go1 runs its PD controller onboard at 1 kHz and accepts high-level joint-position commands over Ethernet. Hardware experiments demonstrate all nine gaits and leg-failure robustness (one or two legs disabled mid-run). Cost of Transport is measured on hardware by integrating motor current × voltage.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> No public repository has been released for AllGaits specifically. The paper contains no code link. Exhaustive search of GitHub and GitLab (including Bellegarda&#x27;s EPFL GitLab at gitlab.epfl.ch/bellegar/lr-quadruped-sim and Shafiee&#x27;s GitHub at github.com/MiladShafiee) found no AllGaits repository as of 2026-07.</p>
+<p>The closest released predecessor is <strong>DeepTransition</strong> by Milad Shafiee, which implements the CPG-RL framework (the direct ancestor of AllGaits, same oscillator equations, same legged<em>gym/rsl</em>rl stack):</p>
+<p><a href="https://github.com/MiladShafiee/DeepTransition" target="_blank" rel="noopener">https://github.com/MiladShafiee/DeepTransition</a></p>
+<p><strong>Language and framework:</strong> Python 3.8, PyTorch, NVIDIA Isaac Gym Preview 3, rsl_rl (PPO implementation from RSL ETH Zurich).</p>
+<p><strong>DeepTransition repo structure (the closest available code):</strong></p>
+<pre><code>
+DeepTransition/
+├── legged_gym/
+│   ├── envs/
+│   │   └── quadruped/          # environment config, observation/reward definitions
+│   ├── scripts/
+│   │   ├── train.py            # launch PPO training
+│   │   └── play.py             # run a trained checkpoint
+│   └── utils/
+│       └── task_registry.py    # environment registration
+├── rsl_rl/
+│   ├── algorithms/
+│   │   └── ppo.py              # PPO implementation
+│   └── modules/
+│       └── actor_critic.py     # MLP policy network
+├── requirements.txt
+└── README.md
+</code></pre>
+<p>For AllGaits specifically, the CPG oscillator logic (Hopf equations, coupling matrix swap) would live in the environment class under <code>legged_gym/envs/</code> — likely in the <code>step()</code> method that integrates the oscillators and calls the pattern formation layer before computing joint targets.</p>
+<p><strong>File to open first:</strong> <code>legged<em>gym/envs/quadruped/quadruped</em>config.py</code> (or equivalent) for the observation/reward definitions, then <code>legged_gym/envs/quadruped/quadruped.py</code> for the CPG integration loop. In DeepTransition the CPG class is a separate module; in an AllGaits implementation it would contain the 9 coupling matrices as constants and a method to swap them.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>NVIDIA GPU with CUDA 11.3+ and minimum 8 GB VRAM (RTX 3070 or better)</li>
+<li>Isaac Gym Preview 3 (free download from NVIDIA, not on PyPI)</li>
+<li>PyTorch 1.10+ with CUDA</li>
+<li>rsl_rl (included in repo)</li>
+<li>Python 3.8 (Isaac Gym is incompatible with Python 3.9+)</li>
+</ul>
+<p><strong>Running it:</strong></p>
+<pre><code>
+# Training (requires GPU + Isaac Gym):
+python legged_gym/scripts/train.py --task=quadruped --max_iterations=3000 --num_envs=4096
+
+# Evaluating a checkpoint:
+python legged_gym/scripts/play.py --task=quadruped --load_run=&lt;run_name&gt;
+</code></pre>
+<p>Expected training time: under 2 hours on an RTX 3090 with 4096 envs. AllGaits would require modifying the environment to cycle through the 9 coupling matrices during training.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with the arXiv paper (2411.04787) HTML version, which is the most complete source of equations and tables. Read Section III (System Design) for the CPG equations and the coupling matrix table, Section IV (Training) for the reward table and domain randomization, and Section V (Results) for the COT curves. Then read the DeepTransition README to understand the Isaac Gym / legged<em>gym / rsl</em>rl stack.</p>
+<p><strong>Code difficulty:</strong> The DeepTransition codebase inherits from leggedrobotics/legged<em>gym (ETH Zurich), which is a well-structured and widely-used framework in the legged-locomotion RL community. Anyone familiar with legged</em>gym can read it within a day. The CPG oscillator integration is the novel piece; the equations are compact (two ODEs per oscillator, one matrix per gait) and implementing them from the paper&#x27;s math is straightforward once you understand Euler integration vs. RK4. The hardest part is correctly setting up Isaac Gym&#x27;s headless installation, which has strict CUDA and Python version constraints and requires a manual NVIDIA download.</p>
+<p><strong>Code clarity:</strong> Moderate. The legged_gym pattern uses heavily parameterized config classes, so understanding which config dict key controls which training behavior takes some orientation. The actual locomotion logic is clear once located.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot train on CPU-only.</strong> Isaac Gym is GPU-only; it uses CUDA for the parallel physics simulation. Training 4,096 environments in parallel requires a GPU with at minimum 8 GB VRAM. The paper uses an RTX 3090. There is no CPU fallback.</p>
+<p><strong>A trained checkpoint could in principle run on CPU</strong> at 100 Hz (the policy is an 8-output MLP; inference is trivial), but the CPG integration and pattern formation layer would also need to be re-implemented outside of Isaac Gym. No such standalone deployment code has been released.</p>
+<p><strong>Bottom line:</strong> GPU required for any meaningful use. If you only want to study the CPG math and verify the oscillator equations, you can implement and integrate them on a CPU in NumPy in under 100 lines; the policy inference itself is also CPU-runnable. But reproducing the training from scratch requires an NVIDIA GPU, a CUDA environment, and Isaac Gym Preview 3.</p></article>
+<article class="page" id="gp4"><h1>MOVE: Multi-Skill Omnidirectional Legged Locomotion With Limited View in 3D Environments</h1>
+<p>*ICRA 2025 · 3 citations · sub-approach: sim-to-real transfer, multi-task/multi-skill, perception-proprioception fusion*</p>
+<h2>What it does</h2>
+<p>MOVE solves a specific, practical problem: low-cost quadrupeds carry only a single narrow front-facing depth camera, so when the robot needs to move sideways or backward, it is visually blind in the direction of travel. Rather than building an expensive voxel map to patch this coverage gap, MOVE trains a single end-to-end neural policy that fuses depth images with proprioceptive history via a learned fusion called a pseudo-siamese network (two asymmetric encoder branches that share no weights), and switches its internal reliance between vision and proprioception depending on whether the movement direction falls inside the camera&#x27;s field of view. The result is one policy that handles extreme climbing (0.7 m height), long jumps (0.9 m), stair traversal, and crawling through confined spaces (0.2 m gap) — with zero-shot transfer to a real DEEP Robotics Lite3 quadruped.</p>
+<p>Sub-approach: <strong>train in sim then transfer (domain randomization + teacher-student privileged training)</strong>, combined with <strong>one controller for many tasks/gaits</strong>.</p>
+<h2>The method, in detail</h2>
+<p><strong>Robot and sensors.</strong> The hardware is a DEEP Robotics Lite3 quadruped (small, 610 × 370 × 445 mm), with a single Intel RealSense D435i depth camera mounted front-facing. Onboard compute is a RK3588 ARM processor (no GPU at inference).</p>
+<p><strong>Policy inputs.</strong> Proprioception is a 10-step history of: body angular velocity (ω), gravity direction in body frame (g), xy velocity command and yaw-rate command, 12 joint angles (θ), 12 joint angular velocities (θ̇), and previous action (a<em>{t-1}). Exteroception at inference is one front-facing depth image (d</em>t) from the D435i.</p>
+<p><strong>Privileged training observations.</strong> In simulation only, the policy also receives a cube map — five egocentric depth images facing front, upward, downward, left, and right — plus sparse depth samples around the four foot positions (l_t^foot). These give the training-time &quot;teacher&quot; information that is not available on real hardware.</p>
+<p><strong>Pseudo-Siamese Network (PS-Net) architecture.</strong></p>
+<p>The two branches process different observation sets but do not share weights (this is what makes it pseudo-siamese rather than true siamese):</p>
+<ul>
+<li>*Standard encoder* (used at both train and inference time): an MLP processes the proprioceptive history stack; a CNN extracts visual features from the single front-facing depth image; a Transformer encoder with self-attention fuses those two modalities; a GRU preserves memory across timesteps. Outputs a latent vector for policy and value heads.</li>
+</ul>
+<ul>
+<li>*Surroundings encoder* (training time only): a separate MLP projects privileged proprioception; a separate CNN processes the privileged cube-map depth images; a cross-attention block (queries from proprioception, keys/values from the cube-map CNN) fuses them. An asymmetric skip connection passes visual embedding only through a skip path, which prevents representation collapse when proprioceptive inputs are nearly identical between branches.</li>
+</ul>
+<p><strong>Learning objective.</strong> Training jointly minimizes two losses on top of RL:</p>
+<ul>
+<li>*Reconstruction loss*: a VAE KL divergence term on the latent code, plus MSE predicting the next proprioceptive observation, MSE predicting body linear velocity, and MSE reconstructing the front-facing depth image.</li>
+</ul>
+<ul>
+<li>*Contrastive loss*: negative cosine similarity between normalized feature predictions from the standard encoder and the surroundings encoder, with a stop-gradient on the surroundings-encoder side to prevent collapse (similar in spirit to BYOL/SimSiam).</li>
+</ul>
+<p>Combined: L = L<em>reconstruction + L</em>contrast.</p>
+<p>The point of this combination: the standard encoder (which sees only the front camera) is trained to predict representations consistent with the surroundings encoder (which sees the full cube map). At inference, the standard encoder has learned to mentally fill in what the unseen directions probably look like.</p>
+<p><strong>RL algorithm and training setup.</strong> PPO (Proximal Policy Optimization) with an asymmetric actor-critic — the critic receives privileged observations during training; the actor (policy) does not (this is sometimes called &quot;student-teacher&quot; or &quot;privileged critic&quot; training). Training runs 1,000 parallel robots in Isaac Gym with a terrain curriculum that progressively increases obstacle height, jump distance, stair riser height, and crawl-space clearance. Reward function is described as adapted from prior quadruped locomotion work (not detailed with explicit weights in the paper); it includes tracking of velocity commands, a smoothness penalty on joint torques and actions, and terrain-appropriate task bonuses.</p>
+<p><strong>Skill representation.</strong> No discrete skill switch is exposed to the user. Skills emerge from the curriculum: the same policy is rewarded for completing progressively harder terrain types simultaneously. The exteroception vs. proprioception weighting is implicit — when the movement command direction matches the camera&#x27;s field of view, the visual branch provides strong features; when moving laterally or backward, visual features degrade and the contrastive training ensures the proprioceptive branch takes over smoothly. No gating network, no mode flag.</p>
+<p><strong>Sim-to-real gap closure.</strong> Domain randomization on depth images injects patterned noise matching the D435i&#x27;s sensor artifacts. Camera z-axis offset is randomized up to 0.2 m. The terrain curriculum is the main adaptation mechanism. No actuator network or separate system identification is used — the Lite3 is a relatively backdrivable platform where this gap is manageable. Transfer is zero-shot.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> No public code repository was released with this paper. The arXiv page (<a href="https://arxiv.org/abs/2412.03353" target="_blank" rel="noopener">https://arxiv.org/abs/2412.03353</a>) and the ICRA proceedings do not link to any GitHub repo. A supplementary video was shared but no code.</p>
+<p><strong>Language / framework (inferred from paper):</strong> Python, PyTorch, Isaac Gym (NVIDIA&#x27;s GPU-accelerated RL physics simulator). The architecture components (CNN, Transformer encoder, GRU, cross-attention) are standard PyTorch modules. PPO is likely implemented with legged\_gym or a similar Isaac Gym wrapper widely used in this research group.</p>
+<p><strong>Repo structure:</strong> Not available; no code released.</p>
+<p><strong>Key file to open first:</strong> N/A — no code.</p>
+<p><strong>Dependencies (inferred):</strong> Isaac Gym (requires NVIDIA GPU + CUDA), PyTorch, legged\<em>gym or rsl\</em>rl (common RL training frameworks used with Isaac Gym), Intel RealSense SDK for hardware deployment.</p>
+<p><strong>Simulator required:</strong> Yes — Isaac Gym for training. Isaac Gym requires Linux + an NVIDIA GPU with CUDA. The trained policy at inference runs a small MLP+CNN+GRU forward pass and could in principle execute on CPU, but the paper&#x27;s onboard compute (RK3588, no GPU) already demonstrates this is feasible.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with the arXiv paper (<a href="https://arxiv.org/abs/2412.03353" target="_blank" rel="noopener">https://arxiv.org/abs/2412.03353</a>), specifically Section III (Problem Formulation and Observations) and Section IV (PS-Net Architecture and Loss Functions). The figures of the cube-map construction and the two-branch architecture are the most technically load-bearing parts. The supplementary video is worth watching before reading — it shows the actual skill transitions in both sim and hardware.</p>
+<p><strong>How hard is the code to follow:</strong> Moot — no code is released. If the authors do release code, expect the standard legged<em>gym / rsl</em>rl codebase pattern: a <code>train.py</code> entry point, <code>envs/</code> for Isaac Gym terrain and reward definitions, <code>models/</code> for the PS-Net encoder, and <code>cfg/</code> for YAML hyperparameters. The main intellectual challenge would be understanding the cross-attention surroundings encoder and the combined reconstruction + contrastive loss, which are non-standard additions on top of boilerplate PPO.</p>
+<h2>Run verdict</h2>
+<p><strong>Training: GPU + Isaac Gym required.</strong> Isaac Gym is GPU-only (NVIDIA CUDA). Training at the paper&#x27;s scale (1,000 parallel robots) needs a mid-to-high-end GPU (RTX 3090 / A100 class). You cannot train this on CPU only.</p>
+<p><strong>Inference only: CPU-feasible.</strong> The deployed policy is a forward pass through a CNN + MLP + Transformer + GRU — roughly 1–10 M parameters. The paper&#x27;s hardware uses an RK3588 ARM chip with no GPU, confirming CPU inference is viable for the controller alone. On a standard x86 laptop CPU this would run well under 10 ms per step.</p>
+<p><strong>No code is released</strong>, so neither training nor inference can be reproduced from this paper as-is.</p></article>
+<article class="page" id="gp5"><h1>Cycloidal Quasi-Direct Drive Actuator Designs with Learning-Based Torque Estimation for Legged Robotics</h1>
+<p>ICRA 2025 · 4 citations · hardware-model: closing the sim-to-real gap by modeling real actuator dynamics (actuator network)</p>
+<h2>What it does</h2>
+<p>Legged robot reinforcement learning controllers trained in simulation fail to transfer cleanly to real hardware in part because the simulator cannot faithfully reproduce the nonlinear torque behavior of physical actuators — specifically cycloidal gear drives, which produce torque ripple, friction-dependent losses, and high-frequency oscillations that no simple spring-damper model captures. This paper addresses that problem from two sides: it designs a new custom actuator (the C-QDD, Cycloidal Quasi-Direct Drive) that packs high torque density into a lightweight form, and trains a small neural network — called an Actuator Network — to model the actuator&#x27;s complex dynamics from real measurement data. The learned model can substitute for the idealized physics in simulation, shrinking the gap between what the RL controller experiences in training and what it encounters on the physical robot.</p>
+<p>The sub-approach is <strong>hardware-model</strong>: closing the sim-to-real gap by building a learned model of the real actuator&#x27;s dynamics, rather than domain randomization or policy distillation. The underlying idea traces to the actuator-net concept from MIT Cheetah / ETH Zurich legged robotics work; this paper extends it to cycloidal drives, which are more complex than the conventional planetary or direct-drive transmissions for which actuator nets were originally developed.</p>
+<h2>The method, in detail</h2>
+<p><strong>Hardware design.</strong> The C-QDD uses a 10:1 cycloidal reduction stage — a type of epicyclic gear where a lobe-shaped disk (the cycloidal disk) rolls against pins, producing very high contact ratio and therefore high torque density with low backlash (7.03 ± 1.3 arcminutes measured). The drive is precision-machined from 4140 alloy steel. Peak torque on the bench is 89.9 Nm at the output shaft; torque density reaches 64.21 Nm/kg. Efficiency is 82.3% and torque control bandwidth is 34.3 Hz at a 5 Nm setpoint. Cycloidal drives are mechanically robust but introduce torque ripple — a periodic variation in output torque at the frequency of gear tooth engagement — and manufacturing-tolerance-sensitive friction that is hard to model analytically.</p>
+<p><strong>Data collection.</strong> An inverted pendulum test rig drives the actuator through a range of sinusoidal trajectories: frequencies 0.3–1.5 Hz, amplitudes 0.5–1.5 rad, with two pendulum masses (1.14 and 2.28 kg) at arm positions 0.25–0.6 m. Wall-contact sequences are added to capture hybrid dynamics (the joint hitting a hard stop). Ground-truth torque is recorded alongside joint position, velocity (numerically differentiated), and acceleration (second derivative). The raw data is pre-processed into CSV files with columns Error (position error from setpoint), Velocity, Acceleration, and Torque.</p>
+<p><strong>Actuator Network architecture.</strong> The model is a stacked GRU (Gated Recurrent Unit — a recurrent neural network variant that maintains a hidden state summarizing recent history without the vanishing-gradient problem of vanilla RNNs). Specifically:</p>
+<ul>
+<li>Input: a window of the last 30 timesteps, each timestep providing three features — position error, velocity, and acceleration (the PVA-GRU variant; the simpler PV-GRU drops acceleration). Inputs are normalized to [-1, 1] using fixed physical bounds: ±6.28 rad error, ±250 rad/s velocity, ±2500 rad/s² acceleration.</li>
+<li>Architecture: 4-layer stacked GRU, hidden size 30, with 0.03 dropout between layers.</li>
+<li>Output: a single scalar, the predicted output torque (normalized to ±150 Nm range, then denormalized).</li>
+<li>The last-timestep GRU hidden state is passed through a linear layer to produce the scalar output.</li>
+<li>Total parameters: small (hidden_size=30, 4 layers, 3 inputs → roughly 15k–20k parameters).</li>
+</ul>
+<p><strong>Training setup.</strong> Supervised regression on real hardware data. Loss is mean squared error (MSE) between predicted and measured torque. Optimizer is AdamW, initial learning rate 1e-4, with a One Cycle LR scheduler (cosine annealing, warmup over first 12% of steps, final LR 5e-6), batch size 64, up to 3500 epochs with early stopping (patience 400). Logging via Weights &amp; Biases. Training data is split from the inverted pendulum recordings; a separate held-out evaluation set is used for reporting RMSE.</p>
+<p><strong>The key performance numbers.</strong> PVA-GRU achieves RMSE 0.97 Nm and variance 0.92 Nm on the test set, versus 1.71 Nm RMSE for a tuned MLP baseline — a 43.5% improvement in RMSE and 68.2% in variance. Critically, the GRU correctly tracks the 17.6 Hz torque ripple frequency (ground truth 17.2 Hz), which the MLP misses entirely. CPU inference time for the GRU is 1.49 microseconds per step — fast enough to run inside any real-time control loop.</p>
+<p><strong>Sim-to-real integration.</strong> The trained actuator network is dropped into the physics simulator in place of the default idealized actuator model. When the RL controller issues a torque command, the network predicts what the real drive would actually output given the recent joint-state history. This means the RL policy trains against the true nonlinear characteristics of the cycloidal drive — torque ripple, friction, bandwidth limits — rather than against a perfect model. The paper demonstrates this reduces the sim-to-real gap and enables better RL controller performance on physical hardware.</p>
+<p><strong>What is not in the paper.</strong> The paper focuses on the actuator and estimation framework. The RL controller itself (Isaac Gym, reward functions, domain randomization schedule) is referenced as the downstream consumer but not detailed in this work.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/alvister88/Actuator-Neural-Net" target="_blank" rel="noopener">https://github.com/alvister88/Actuator-Neural-Net</a></p>
+<p><strong>License:</strong> MIT</p>
+<p><strong>Language / framework:</strong> Python + PyTorch. Training uses Weights &amp; Biases (wandb) for logging. No physics simulator is required — the actuator network trains entirely on real hardware CSV data. No GPU is strictly required for training (the trainer falls back to CPU automatically), though the config defaults to <code>device: &#x27;cuda&#x27;</code>.</p>
+<p><strong>Real repo structure (confirmed by cloning):</strong></p>
+<pre><code>
+Actuator-Neural-Net/
+  README.md
+  requirements.txt           # numpy, torch, matplotlib, scipy, pandas, scikit-learn, wandb, plotly, kaleido
+  setup.py                   # pip-installable as &#x27;actuator-nn&#x27;
+  MANIFEST.in
+  actuator_nn/
+    __init__.py
+    src/
+      configs/
+        train_config.yaml    # all hyperparameters + paths + wandb config
+      data/
+        gains3/
+          raw_data/          # raw .txt recordings (sinusoidal + contact + torque ripple runs)
+          train_LP*.txt      # split training sets (LP = low-pass filtered pendulum)
+          train_TR*.txt      # split training sets (TR = torque ripple focus)
+          valid_*.txt        # validation splits
+          test*.txt          # held-out evaluation files
+      scripts/
+        ActuatorNet.py           # &lt;-- OPEN FIRST: GRU model definition
+        ActuatorNetTrainer.py    # training loop, data loading, normalization, wandb logging
+        ActuatorNetEvaluator.py  # load model, run inference, compute RMSE/variance
+        ActuatorNetPredictor.py  # real-time prediction wrapper (for deployment)
+        train.py                 # entry point: reads train_config.yaml, trains + evaluates
+        evaluate.py              # standalone evaluation script
+        plot.py                  # loss/metric plots
+        plot_predictions.py      # overlay predicted vs real torque traces
+        predictions/             # saved .txt prediction outputs from past runs
+        output/                  # saved PDF plots from past runs
+      utils/
+        BLDCMotorPlant.py        # BLDC motor simulation plant (for synthetic data generation)
+        DCMotorPlant.py          # DC motor simulation plant
+        PIDController.py         # PID control loop utility
+        data_splitter.py         # train/val/test split utility
+        low_pass_filter.py       # signal filtering
+        median_filter.py         # signal filtering
+        pid_controlled_motor_plant.py  # PID-driven motor plant
+        test_cuda.py             # CUDA availability check
+      weights/
+        actuator_gruv3_model13.pt   # best trained model checkpoint (PyTorch .pt)
+        actuator_gruv3_model*.pt    # numbered checkpoints from training runs
+        notes.txt                   # model notes
+</code></pre>
+<p><strong>First file to open:</strong> <code>actuator_nn/src/scripts/ActuatorNet.py</code> — 50 lines, defines the GRU model with exact input/output dimensions and normalization bounds. Reading this one file tells you the entire architecture.</p>
+<p><strong>Dependencies:</strong> <code>pip install -r requirements.txt</code> — standard scientific Python stack plus torch and wandb. No ROS, no Isaac Gym, no simulator.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+# Train from scratch (needs wandb login):
+cd actuator_nn/src/scripts
+python train.py   # reads ../configs/train_config.yaml
+
+# Evaluate a saved model:
+python evaluate.py
+
+# Run inference on new data:
+# Use ActuatorNetPredictor or ActuatorNetEvaluator directly
+</code></pre>
+<p>A pre-trained checkpoint (<code>actuator<em>gruv3</em>model13.pt</code>) is included in the repo, so you can run evaluation without training.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> <code>ActuatorNet.py</code> (50 lines) — the entire model is there. Then <code>ActuatorNetTrainer.py</code> for the training loop and data pipeline — it is clearly structured with separate methods for loading, normalizing, preparing sequences, training one epoch, and validating. <code>train_config.yaml</code> lays out all hyperparameters in one readable place.</p>
+<p><strong>How hard the code is to follow:</strong> Straightforward. The code is clean, well-documented with docstrings, and uses standard PyTorch idioms. Anyone comfortable with PyTorch&#x27;s <code>nn.GRU</code> and a training loop can read the entire codebase in under an hour. The data format is plain CSV; the normalization is explicit and auditable. The only non-obvious part is the input reshaping in <code>ActuatorNet.forward()</code>: the flat input of <code>INPUT<em>SIZE * HISTORY</em>SIZE = 90</code> values is reshaped to <code>(batch, 30, 3)</code> for the GRU — the comment in the code explains this.</p>
+<p>One subtlety worth checking: <code>hidden<em>size</code> in the GRU is set to <code>HISTORY</em>SIZE = 30</code>, which means the GRU hidden dimension equals the sequence length — this is a coincidence of naming and is not a deliberate constraint. The architecture is small and makes sense as-is.</p>
+<p><strong>Potential questions a reviewer would raise:</strong></p>
+<ul>
+<li>The training data comes from a single actuator on a single test rig. Generalization across units with different manufacturing tolerances is untested.</li>
+<li>Torque ripple at 17.6 Hz is modeled well, but the 34.3 Hz control bandwidth means the network sees data at its own sampling limit. No analysis of higher-frequency dynamics is provided.</li>
+<li>The connection to the RL controller is described conceptually but no end-to-end RL training results (learning curves, policy performance with vs. without the actuator net) are shown in the paper.</li>
+<li>The MLP baseline uses a &quot;tuned MLP&quot; — tuning details are not fully specified.</li>
+</ul>
+<h2>Run verdict</h2>
+<p><strong>Inference / evaluation on CPU: yes, fully runnable.</strong> The pre-trained <code>.pt</code> checkpoint is included. Loading it and running <code>ActuatorNetEvaluator</code> on the included test data requires only PyTorch and standard Python libraries. The model is tiny (4-layer GRU, hidden size 30) and runs in 1.49 microseconds per inference step on CPU.</p>
+<p><strong>Training on CPU: yes, but slow.</strong> The config defaults to <code>cuda</code>, but the trainer auto-detects and falls back to CPU. Training runs 3,500 epochs with a patience of 400 on a small tabular dataset (a few thousand timestep sequences). On CPU this is probably 10–30 minutes rather than seconds, but it is not blocked. No physics simulator (Isaac Gym, MuJoCo, etc.) is needed at any point — all data is pre-recorded real hardware CSV files included in the repo.</p>
+<p><strong>Verdict:</strong> This is one of the most CPU-friendly papers in the locomotion track. The full pipeline — data already in repo, model already trained, evaluation script ready — runs on a laptop with <code>pip install torch numpy pandas scipy matplotlib wandb scikit-learn plotly kaleido</code>.</p></article>
+<article class="page" id="gp6"><h1>Legged Robot State Estimation with Invariant Extended Kalman Filter Using Neural Measurement Network</h1>
+<p><strong>ICRA 2025 · 4 citations · Sub-approach: state estimation (neural-augmented proprioceptive filter)</strong></p>
+<hr>
+<h2>What it does</h2>
+<p>The paper addresses a core infrastructure problem for legged robots: knowing where you are and whether each foot is on the ground, using only on-board sensors (no camera, no GPS). Traditional model-based filters assume clean contact kinematics — they break badly on debris, slippery ice, or soft mats. This work trains a neural network (the Neural Measurement Network, NMN) in simulation to estimate the robot&#x27;s base linear velocity and per-foot contact probability; those two outputs are then injected as probabilistic measurements into an invariant extended Kalman filter (InEKF), which handles the geometry of 3D rotation correctly by operating on a matrix Lie group. The result is a proprioceptive state estimator that never touches real-world data during training, closes the sim-to-real gap through targeted regularization, and cuts position drift by 61.8% over a model-only baseline across four challenging outdoor terrain types.</p>
+<p><strong>Sub-approach: state estimation</strong> — specifically a hybrid neural/model-based filter trained in sim and deployed zero-shot on hardware. It is not a locomotion policy; it feeds pose estimates to whatever downstream controller is already running.</p>
+<hr>
+<h2>The method, in detail</h2>
+<h3>Inputs to the NMN</h3>
+<p>The NMN receives only proprioceptive signals — nothing external:</p>
+<ul>
+<li><strong>IMU</strong> (Inertial Measurement Unit): roll-pitch gravity vector, angular velocity ω, linear acceleration a, at 166 Hz.</li>
+<li><strong>Joint encoders</strong>: 12 joint positions and 12 joint velocities at 500 Hz.</li>
+<li><strong>Previous joint targets</strong> (the commands sent one step earlier).</li>
+<li><strong>Velocity command</strong> from the high-level user input.</li>
+</ul>
+<p>No contact force/torque sensors are used. Everything comes from encoders and the IMU.</p>
+<h3>NMN architecture</h3>
+<p>The NMN is a <strong>GRU-MLP</strong> — a gated recurrent unit (GRU, which is a recurrent cell that maintains hidden state across time) with hidden dimension 128, followed by a two-layer MLP with dimensions [256, 128]. The architecture mirrors the locomotion policy that was already trained to walk the robot: in fact, the NMN reuses the frozen hidden state of that policy&#x27;s GRU as a shared temporal feature, so it has access to the same compressed locomotion context without extra compute. The NMN then predicts two things per timestep:</p>
+<ul>
+<li><strong>Base linear velocity</strong> v_t^b (3-vector in body frame).</li>
+<li><strong>Foot contact probability</strong> c_t per leg (scalar in [0,1]).</li>
+</ul>
+<h3>Invariant Extended Kalman Filter (InEKF)</h3>
+<p>A standard EKF (extended Kalman filter) represents uncertainty as a Gaussian and linearizes nonlinear dynamics. An <strong>invariant</strong> EKF additionally respects the Lie group structure of 3D rotation — the state lives in SE_{N+2}(3), a product of rotation matrices and vectors, and the filter&#x27;s error is defined in a coordinate-free way that gives better convergence guarantees on curved spaces than naively applying a Cartesian EKF to rotation matrices.</p>
+<p><strong>State vector</strong>: rotation matrix R<em>t, linear velocity v</em>t, body position p<em>t, contact foot positions d</em>t (one per leg in contact), IMU bias terms — all encoded together as a block matrix in SE_{N+2}(3).</p>
+<p><strong>Propagation step</strong> (prediction): IMU gyroscope and accelerometer drive the state forward between timesteps using standard inertial navigation equations.</p>
+<p><strong>Correction steps</strong> (measurement update): two sources of measurement:</p>
+<ul>
+<li><strong>Leg kinematics</strong>: forward kinematics (using joint encoder positions) gives predicted foot positions in world frame. These are right-invariant observations, meaning the update respects the Lie group structure.</li>
+<li><strong>NMN velocity</strong>: the estimated body velocity v<em>t^b from the NMN is formulated as a right-invariant observation Y</em>t = X<em>t^{-1} b + V</em>t, where X<em>t is the current state, b is a target, and V</em>t is Gaussian noise. This is injected only when the robot speed exceeds 0.1 m/s (to avoid stationary drift) and after a 10 Hz low-pass filter.</li>
+</ul>
+<p><strong>Contact gating</strong>: the NMN&#x27;s contact probability c_t is thresholded at 0.5 to gate whether the leg kinematics measurement for each leg is included in the correction step. Leg measurements are only used when the foot is confidently in contact — this prevents foot-slip from corrupting the filter on slippery or soft terrain. Contact outputs are also low-pass filtered at 40 Hz.</p>
+<h3>Training setup</h3>
+<p>The NMN is trained entirely in <strong>RaiSim</strong> (a rigid-body physics simulator developed at ETH/KAIST), running 400 parallel environments at 4 kHz with the locomotion policy already deployed (policy parameters are frozen throughout NMN training).</p>
+<p><strong>Terrain randomization for data collection</strong>: hills with amplitude U(0.2, 1.4 m), steps/stairs U(0.02, 0.18 m), friction coefficient U(0.4, 1.2), occasional slip patches (1% probability, friction U(0.3, 0.4)). The robot is commanded random velocity targets, generating diverse walking data.</p>
+<p><strong>Loss</strong>: binary cross-entropy for contact probability; MSE for velocity against the simulated ground-truth. Optimizer: Adam, learning rate 5e-4, 32 epochs per batch of 400-step trajectories.</p>
+<h3>The specific tricks that make it transfer to real hardware</h3>
+<p>Three regularization choices matter; the paper tests them ablatively:</p>
+<ul>
+<li><strong>Smoothness loss</strong>: an auxiliary term penalizing first- and second-order changes in the predicted velocity over consecutive timesteps. This discourages the network from predicting jerky, high-frequency velocity estimates that the real hardware cannot track. Applied to velocity only (contact is inherently discontinuous).</li>
+</ul>
+<ul>
+<li><strong>Early stopping at 200 iterations</strong>: the NMN is deliberately undertrained. Longer training overfits to the simulated contact model and degrades real-world accuracy. This is the dominant regularizer for velocity estimation.</li>
+</ul>
+<ul>
+<li><strong>Counterintuitive finding on domain randomization</strong>: applying standard domain randomization (randomizing robot parameters, sensor noise) *hurts* velocity prediction once the simulator already has an accurate robot model (Raibo&#x27;s dynamics are tightly characterized). The paper explicitly recommends against domain randomization when the simulator is high-fidelity — a meaningful result for practitioners.</li>
+</ul>
+<hr>
+<h2>The code</h2>
+<p><strong>Repository</strong>: No public code repository has been released. The paper (arXiv:2402.00366) contains no GitHub link, and no repository has been found at KAIST&#x27;s RaiLab GitHub presence or elsewhere as of the paper&#x27;s publication.</p>
+<p><strong>Simulator</strong>: RaiSim (C++, with Python bindings via raisimpy). Not open-source freely — requires a license from RSL/KAIST for commercial use; free for academic use with registration.</p>
+<p><strong>What you would need to reproduce it</strong>:</p>
+<ul>
+<li>RaiSim license + installation.</li>
+<li>A pre-trained locomotion policy for the Raibo quadruped (not published).</li>
+<li>The Raibo robot URDF/model (KAIST proprietary hardware, not commercially available).</li>
+<li>Python/PyTorch for the NMN training loop.</li>
+<li>The InEKF integration: likely C++ (InEKF libraries for legged robots exist, e.g., <code>UMich-CURLY/drift</code> or <code>mayataka/legged<em>state</em>estimator</code>, but neither is this paper&#x27;s implementation).</li>
+</ul>
+<p><strong>Language/framework</strong>: NMN training is most likely PyTorch (consistent with all other RaiLab papers); InEKF backend is typically C++.</p>
+<p><strong>GPU/sim requirements</strong>: Training in RaiSim across 400 parallel environments is CPU-parallel (RaiSim is a CPU simulator). The NMN is small (GRU-128 + MLP [256,128]) — training would complete in hours on a workstation CPU or a single GPU. Inference on the robot runs in real-time on the onboard CPU.</p>
+<p><strong>Key file to open first</strong>: Not available. If code were released, the entry point would be the NMN training script (likely <code>train_nmn.py</code> or similar), with the InEKF integration in a separate C++ node.</p>
+<hr>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first</strong>: Start with Section III of the paper (arXiv:2402.00366) — the InEKF formulation is compact and the NMN architecture is described in about two pages with a clear figure. Section IV (ablation study) is the most practically useful part: it tells you exactly which regularization choices matter and which hurt.</p>
+<p><strong>How hard is the code to follow</strong>: Moot — no code is released. Conceptually, the method is not complex: the NMN is a small recurrent net, and InEKF is a well-documented filter with open reference implementations (Ross Hartley&#x27;s <code>invariant-ekf</code> C++ library is the canonical one). The hard part is integration — wiring the NMN&#x27;s output into the filter&#x27;s measurement update at the right frequency (10 Hz for velocity, 40 Hz for contact) while the IMU propagates at 500 Hz. That plumbing is not published.</p>
+<p><strong>Related open code worth reading</strong>: <code>UMich-CURLY/drift</code> (GitHub) implements a contact-aided InEKF in C++ with ROS integration and is the closest published analogue to this paper&#x27;s filter backend.</p>
+<hr>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box</strong>: Inference only — yes, feasible. The NMN is a GRU-128 + small MLP, roughly 200K parameters. At 100 Hz inference it runs comfortably on any modern CPU. The InEKF correction is matrix algebra on a 15-20 dimensional state; real-time on CPU is standard for Kalman filter work.</p>
+<p><strong>Training</strong>: Also CPU-feasible because RaiSim is a CPU physics simulator. 400 parallel environments at 4 kHz is multi-threaded CPU work. A workstation with 16+ cores would reproduce training in a few hours. No GPU is strictly required (though PyTorch training of the small NMN is faster on GPU).</p>
+<p><strong>The actual blocker is not hardware, it is access</strong>: RaiSim requires academic registration, the Raibo quadruped URDF is not published, and the locomotion policy (whose frozen hidden state the NMN depends on) is not released. You cannot reproduce the paper from scratch without obtaining these assets from KAIST RaiLab directly.</p>
+<p><strong>Summary</strong>: CPU-runnable in principle; blocked in practice by proprietary simulator models and undisclosed locomotion policy weights.</p></article>
+<article class="page" id="gp7"><h1>Physically-Consistent Parameter Identification of Robots in Contact</h1>
+<p>ICRA 2025 · 3 citations · sub-approach: hardware model (inertial parameter identification, sim-to-real gap via physics-based parameter ID)</p>
+<h2>What it does</h2>
+<p>Modern quadruped and humanoid robots lack force/torque sensors at the feet, yet knowing a robot&#x27;s exact inertial parameters (link masses, centers of mass, moments of inertia) is essential for accurate simulation and model-based control. This paper sidesteps the missing contact-force measurements by projecting the whole-body dynamics equations into the mathematical subspace (null space) where contact forces have no effect, then recovering the inertial parameters by solving a convex optimization problem (a semidefinite program expressed as linear matrix inequalities, or LMIs) that enforces physical realizability — parameters must correspond to a real mass distribution with positive mass, a center of mass inside the link, and a positive-definite inertia tensor satisfying the triangle inequality. The result is validated on a Boston Dynamics Spot quadruped; identified parameters outperform both CAD values and a deep-MLP black-box baseline in torque prediction accuracy, with far fewer samples needed to generalize.</p>
+<p>Sub-approach: <strong>hardware model</strong> — closing the sim-to-real gap by identifying real hardware inertial parameters from joint torque/current measurements alone, without any external force sensing.</p>
+<h2>The method, in detail</h2>
+<p><strong>Problem setup.</strong> A floating-base robot (6 unactuated base degrees of freedom + n joints) obeys the rigid-body dynamics equation M(q)v̇ + C(q,v)v + g(q) = Sᵀτ + Jcᵀλ, where q are generalized positions, v velocities, τ joint torques, λ contact forces, Jc the contact Jacobian, and S selects actuated joints. All terms left of the contact wrench are linear in the stacked inertial parameters φ (a 10-vector per link: mass, mass×CoM offset, and six independent inertia-tensor entries).</p>
+<p><strong>Null-space projection.</strong> Define the orthogonal projection P = I − Jc† Jc (where Jc† is the Moore-Penrose pseudoinverse of the contact Jacobian). Premultiplying the dynamics equation by P annihilates the contact-force term Jcᵀλ entirely, because P·Jcᵀ = 0. The projected equation Y(q,v,v̇)φ = Pτ_meas is now a linear system in φ alone, solvable without any contact-force measurement. The regressor matrix Y is assembled using Pinocchio (a fast C++/Python rigid-body dynamics library).</p>
+<p><strong>LMI formulation.</strong> Rather than solving the linear least squares unconstrained (which can yield physically impossible parameters, e.g. negative mass), the problem is cast as a semidefinite program (SDP):</p>
+<p>  minimize ‖Yφ − Pτ‖² + γ‖φ − φ₀‖²</p>
+<p>  subject to three LMI constraints:</p>
+<p>    (1) The pseudo-inertia matrix Σ (a 4×4 symmetric positive-semidefinite matrix encoding mass, first moment, and second moment) is PSD: Σ ≽ 0.</p>
+<p>    (2) The center of mass lies within a bounding ellipsoid for the link (first-moment constraint).</p>
+<p>    (3) The triangle inequality on principal moments of inertia holds (second-moment constraint).</p>
+<p>This is solved via CVXPY with the MOSEK interior-point SDP backend. The regularization term pulls parameters toward nominal values φ₀ (e.g. from CAD or manufacturer specs), weighted by γ = 10⁻².</p>
+<p><strong>Neural-network baseline.</strong> For comparison the authors train a 5-hidden-layer MLP (2048 units each, LeakyReLU + Tanh) end-to-end on the same dataset to predict joint torques directly from (q, v, v̇). This is a black-box actuator/dynamics model — it captures the same dynamics but without physical constraints.</p>
+<p><strong>Inputs.</strong> At each time step: joint angles q ∈ ℝⁿ, joint velocities v ∈ ℝⁿ (from encoder differencing), joint accelerations v̇ ∈ ℝⁿ (finite-difference + low-pass filter), joint torques τ ∈ ℝⁿ (from motor current). All signals filtered with a 5th-order zero-phase Butterworth low-pass filter at 10 Hz cutoff. The contact Jacobian Jc is computed from forward kinematics given the known contact schedule.</p>
+<p><strong>Data collection on Spot.</strong> 10,000 samples at 100 Hz. Motions used: base wobbling (all feet planted), squatting, forward-backward walking, side-to-side walking. The method is purely offline; no online adaptation occurs.</p>
+<p><strong>Sim-to-real transfer mechanism.</strong> There is no RL policy here. The contribution is upstream of control: once the identified φ parameters are loaded into a simulator (e.g., PyBullet, which was used for validation experiments), the sim dynamics match the real robot more closely, shrinking the sim-to-real gap for any downstream learning-based controller. The paper also tests the method in simulation (PyBullet) first, where ground-truth parameters are known, then on real Spot hardware.</p>
+<p><strong>Results.</strong> On hardware, the LMI method achieves 61.8% average reduction in Absolute Trajectory Error in position versus the model-based baseline. On sample efficiency, the LMI method generalizes well with as few as 100 samples; the MLP needs ~10,000.</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> <a href="https://github.com/ShahramKhorshidi/system_identification" target="_blank" rel="noopener">https://github.com/ShahramKhorshidi/system_identification</a></p>
+<p><strong>Language / framework:</strong> Python; CVXPY for convex optimization, MOSEK as the SDP solver backend, Pinocchio for kinematics/dynamics computation, PyBullet for simulation experiments.</p>
+<p><strong>Repository structure (confirmed):</strong></p>
+<pre><code>
+system_identification/
+├── src/              # core dynamics regressor + LMI/NLS solver implementations
+├── demo/
+│   └── run_identification.py   # main entry point
+├── utils/            # plotting and data-loading helpers
+├── data/             # included Spot trajectory datasets (torques, joint states)
+├── files/
+│   └── spot_description/       # Spot URDF + meshes
+├── environment.yml   # conda environment spec
+└── README.md
+</code></pre>
+<p><strong>File to open first:</strong> <code>demo/run_identification.py</code> — it shows how to load data, build the regressor Y from Pinocchio, apply the null-space projection, then call either the LMI solver or the NLS solver. Follow that into <code>src/</code> for the LMI constraint construction.</p>
+<p><strong>Key dependencies:</strong> Python ≥ 3.8, Pinocchio (robot kinematics), CVXPY (optimization modeling), MOSEK (SDP solver — requires a free academic license from mosek.com), NumPy, SciPy, Matplotlib, PyYAML.</p>
+<p><strong>Simulator needed:</strong> PyBullet is used for simulation-side validation experiments in the paper, but the core identification pipeline runs entirely offline on recorded data — no real-time simulation required to run identification.</p>
+<p><strong>GPU needed:</strong> No. This is a convex optimization problem (SDP) solved on CPU via MOSEK. The MLP baseline training would benefit from a GPU, but is not part of the main identification pipeline.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+git clone https://github.com/ShahramKhorshidi/system_identification.git
+cd system_identification
+conda env create -f environment.yml
+conda activate sys_idn
+conda install -c mosek mosek          # then activate MOSEK license
+python demo/run_identification.py --robot spot --solver lmi
+python demo/run_identification.py --robot spot --solver nls
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p>Start with the README, then open <code>demo/run_identification.py</code> to trace the full pipeline in one file: data loading → regressor construction → null-space projection → SDP solve → result logging. Then read <code>src/</code> to understand how Y (the inertial regressor matrix) is built using Pinocchio&#x27;s <code>computeJointTorqueRegressor</code> or equivalent, and how the LMI constraints are assembled as CVXPY expressions.</p>
+<p>The math (null-space projection, pseudo-inertia matrices, SDP) is standard in robot dynamics literature (Wensing et al. 2017 is the canonical LMI paper for inertial identification) but may require background reading if you have not encountered semidefinite programming before. The code itself is organized cleanly around the two solver paths (LMI vs NLS) and should be readable in a few hours if you are familiar with Pinocchio and CVXPY. The hardest conceptual part is understanding *why* the pseudo-inertia matrix Σ encodes all three physical constraints simultaneously — the paper&#x27;s Section IV explains this clearly.</p>
+<p>Difficulty: moderate. The math is non-trivial but the code is linear (no RL training loop, no environment, no simulator at runtime).</p>
+<h2>Run verdict</h2>
+<p><strong>Yes, it can run on a CPU-only box — this is one of the few papers in legged robotics where that is straightforwardly true.</strong> The core identification is a convex SDP solved by MOSEK on CPU; the included Spot dataset means you do not need a real robot or a running simulator to reproduce the main results. The only non-trivial setup step is obtaining a MOSEK license (free for academic use, immediate online registration). The NLS solver (<code>--solver nls</code>) avoids MOSEK entirely and uses SciPy&#x27;s nonlinear optimizer, so it runs with zero proprietary dependencies. Training the MLP baseline would need a GPU for speed but is not required to run the main LMI method. Estimated runtime for identification on the included dataset: a few seconds to a few minutes on a modern CPU.</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div><article class="page walk"><h1>HOVER — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;HOVER: Versatile Neural Whole-Body Controller for Humanoid Robots&quot; (ICRA 2025, NVIDIA)</p>
+<p><strong>Repo root:</strong> <code>HOVER/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p>HOVER is a two-stage recipe wrapped around NVIDIA Isaac Lab: (1) train a motion-imitation <strong>teacher</strong> with PPO from privileged simulator state, then (2) <strong>distill</strong> a single <strong>student</strong> — via DAgger — that reads only hardware-available proprioception plus a *masked* command vector, so one network can be driven by keypoint positions, joint angles, root velocity, or any mixture. The <code>neural<em>wbc/*</code> packages hold the reusable logic (they are pip-installed as separate namespace packages under <code>neural</em>wbc.*</code>); the <code>scripts/rsl_rl/*</code> files are the thin entry points.</p>
+<p>| Entry script (<code>scripts/rsl_rl/</code>) | What it does |</p>
+<p>|---|---|</p>
+<p>| <code>train<em>teacher</em>policy.py</code> | PPO teacher training. Builds <code>NeuralWBCEnvCfgH1()</code> (default <code>mode=TRAIN</code>), wraps it with <code>RslRlNeuralWBCVecEnvWrapper</code>, and hands it to RSL-RL&#x27;s <code>OnPolicyRunner</code>. |</p>
+<p>| <code>train<em>student</em>policy.py</code> | DAgger distillation. Builds the env with <code>mode=NeuralWBCModes.DISTILL</code>, wraps the loaded teacher in a <code>NeuralWBCTeacherPolicy</code>, and runs <code>StudentPolicyTrainer</code>. |</p>
+<p>| <code>play.py</code> | Visualizes a checkpoint in Isaac Lab via <code>players.DemoPlayer</code>. |</p>
+<p>| <code>eval.py</code> | Batch metrics collection via <code>players.EvaluationPlayer</code>; supports <code>--env<em>config</em>overwrite &lt;yaml&gt;</code>. |</p>
+<p>| <code>players.py</code> | <code>DemoPlayer</code> / <code>EvaluationPlayer</code> player classes shared by <code>play.py</code> and <code>eval.py</code>. |</p>
+<p>| <code>teacher<em>policy</em>cfg.py</code> | Dataclasses <code>PolicyCfg</code> / <code>AlgorithmCfg</code> / <code>RunnerCfg</code> / <code>TeacherPolicyCfg</code> — the RSL-RL/PPO hyperparameters. |</p>
+<p>| <code>utils.py</code>, <code>vecenv<em>wrapper.py</code> | RSL-RL glue: <code>get</em>ppo<em>runner</em>and<em>checkpoint</em>path</code>, the vec-env wrapper. |</p>
+<p><strong>Config system.</strong> The teacher&#x27;s *training* hyperparameters live in <code>teacher<em>policy</em>cfg.py</code> as dataclasses that auto-generate argparse flags (<code>--teacher<em>policy.&lt;field&gt;</code>); e.g. <code>actor</em>hidden<em>dims = [512, 256, 128]</code>, <code>clip</em>param = 0.2</code>, <code>entropy<em>coef = 0.005</code>, <code>gamma = 0.99</code>. The *environment* (robot, reward weights, command modes, domain randomization) is a separate <code>@configclass</code> hierarchy in <code>neural</em>wbc/isaac<em>lab</em>wrapper/neural<em>wbc</em>env<em>cfg.py</code> → <code>neural</em>wbc<em>env</em>cfg<em>h1.py</code>. Student-distillation knobs are in <code>neural</em>wbc/student<em>policy/student</em>policy<em>trainer</em>cfg.py</code>.</p>
+<p><strong>Sim / hardware environments.</strong> Three parallel env implementations share the same <code>neural_wbc.core</code> logic:</p>
+<ul>
+<li><code>neural<em>wbc/isaac</em>lab_wrapper/</code> — the GPU training env (PhysX, 1024+ parallel envs, resets, domain randomization).</li>
+<li><code>neural<em>wbc/mujoco</em>wrapper/</code> — MuJoCo sim-to-sim validation.</li>
+<li><code>neural<em>wbc/inference</em>env/</code> — a lighter env for running a trained checkpoint (incl. <code>neural<em>wbc</em>env<em>cfg</em>real<em>h1.py</code> for the physical Unitree H1); <code>neural</em>wbc/hw_wrappers/</code> is the actual robot interface.</li>
+</ul>
+<p><strong>Runnability.</strong> Training needs an NVIDIA GPU + Isaac Lab 2.0.0 (Isaac Sim / PhysX GPU physics) — the entry scripts literally <code>AppLauncher(args_cli)</code> an Omniverse app before importing anything else. A trained MLP is tiny (<code>[512,256,128]</code>) and CPU-runnable in principle, but no packaged CPU-only runner ships. Teacher training is ~23 h on a 4090.</p>
+<h2>Architecture — module map</h2>
+<pre><code>
+HOVER/
+├── scripts/rsl_rl/
+│   ├── train_teacher_policy.py       # PPO teacher entry (mode=TRAIN)
+│   ├── train_student_policy.py       # DAgger student entry (mode=DISTILL); defines NeuralWBCTeacherPolicy
+│   ├── teacher_policy_cfg.py         # PolicyCfg/AlgorithmCfg/RunnerCfg → argparse; PPO hyperparams
+│   ├── players.py                    # DemoPlayer / EvaluationPlayer
+│   ├── play.py, eval.py              # visualize / evaluate a checkpoint
+│   └── vecenv_wrapper.py, utils.py   # RSL-RL glue
+├── neural_wbc/
+│   ├── core/neural_wbc/core/
+│   │   ├── mask.py                   # ★ create_mask(): mode masking + sparsity masking
+│   │   ├── modes.py                  # NeuralWBCModes enum (TRAIN/TEST/DISTILL/DISTILL_TEST)
+│   │   ├── observations/
+│   │   │   ├── student_observations.py   # ★ builds &amp; MASKS the command vector for the student
+│   │   │   ├── teacher_observations.py   # privileged goal-state for the teacher
+│   │   │   └── student_history.py        # 25-step proprioception history
+│   │   ├── reference_motion.py       # ReferenceMotionState (retargeted AMASS frame)
+│   │   ├── body_state.py             # BodyState (per-rigid-body pos/rot/vel)
+│   │   ├── reward.py-equivalents, termination.py, evaluator.py, math_utils.py
+│   ├── student_policy/neural_wbc/student_policy/
+│   │   ├── policy.py                 # StudentPolicy (plain MLP, no critic)
+│   │   ├── teacher_policy.py         # abstract TeacherPolicy (load/act/act_rollout)
+│   │   ├── student_policy_trainer.py # ★ the DAgger loop + L2 distillation loss
+│   │   ├── student_policy_trainer_cfg.py  # dagger_coefficient, student_rollout_iteration, ...
+│   │   └── storage.py                # rollout buffer (Slice / Storage)
+│   ├── isaac_lab_wrapper/.../
+│   │   ├── neural_wbc_env.py         # ★ _reset_mask() calls mask.create_mask(); observation assembly
+│   │   ├── neural_wbc_env_cfg_h1.py  # ★ DISTILL_MASK_MODES_ALL command-mode dictionary; H1 config
+│   │   ├── observations.py, rewards/, events/ (domain rand), terrain.py
+│   ├── mujoco_wrapper/               # sim-to-sim MuJoCo env
+│   ├── inference_env/                # checkpoint runner (+ real-H1 cfg), deployment_player.py
+│   └── hw_wrappers/                  # Unitree H1 hardware interface
+└── third_party/
+    ├── rsl_rl/rsl_rl/                # PPO, ActorCritic, OnPolicyRunner (teacher side)
+    ├── human2humanoid/              # AMASS → H1 retargeting
+    └── mujoco_viewer/
+</code></pre>
+<h2>The core idea in code — the mode masking / whole-body controller</h2>
+<p>The single mechanism that lets <strong>one</strong> student accept many command types is a per-environment binary <strong>mask</strong> that is (a) sampled at episode reset and (b) multiplied element-wise into the command vector *and* appended to the observation. It lives in two files.</p>
+<p><strong>1. The command-mode dictionary</strong> — <code>neural<em>wbc/isaac</em>lab<em>wrapper/.../neural</em>wbc<em>env</em>cfg_h1.py</code>. Each &quot;mode&quot; names which mask elements are *enabled*, using regex over element names. This is where &quot;walking vs. carrying vs. reaching&quot; is actually defined:</p>
+<pre><code>
+DISTILL_MASK_MODES_ALL = {
+    &quot;exbody&quot;:   {&quot;upper_body&quot;: [&quot;.*torso_joint.*&quot;, &quot;.*shoulder.*joint.*&quot;, &quot;.*elbow.*joint.*&quot;],
+                 &quot;lower_body&quot;: [&quot;root.*&quot;]},
+    &quot;humanplus&quot;:{&quot;upper_body&quot;: [...joints...],
+                 &quot;lower_body&quot;: [&quot;.*hip.*joint.*&quot;, &quot;.*knee.*joint.*&quot;, &quot;.*ankle.*joint.*&quot;, &quot;root.*&quot;]},
+    &quot;h2o&quot;:      {&quot;upper_body&quot;: [&quot;.*shoulder.*link.*&quot;, &quot;.*elbow.*link.*&quot;, &quot;.*hand.*link.*&quot;],
+                 &quot;lower_body&quot;: [&quot;.*ankle.*link.*&quot;]},
+    &quot;omnih2o&quot;:  {&quot;upper_body&quot;: [&quot;.*hand.*link.*&quot;, &quot;.*head.*link.*&quot;]},
+}
+</code></pre>
+<p>Note the two *kinds* of tracked element the regexes hit: <code>*<em>link*</code> names select <strong>kinematic keypoint</strong> commands (world-space body positions), while <code>*</em>joint*</code> and <code>root*</code> select <strong>joint-angle</strong> and <strong>root-velocity/height</strong> commands. The default config trains an OmniH2O specialist (<code>distill<em>mask</em>modes = {&quot;omnih2o&quot;: DISTILL<em>MASK</em>MODES_ALL[&quot;omnih2o&quot;]}</code>); passing the full dict trains the generalist HOVER controller.</p>
+<p><strong>2. The mask sampler</strong> — <code>neural<em>wbc/core/neural</em>wbc/core/mask.py::create<em>mask()</code>. Element ordering is fixed by <code>create</em>mask<em>element</em>names()</code> as <code>[per-body<em>local</em>pos] + [per-joint<em>joint</em>pos] + [7 root refs]</code>. Each env randomly draws one mode, then optionally a Bernoulli(0.5) *sparsity* dropout on top:</p>
+<pre><code>
+selected_mode_indices = torch.randint(0, len(modes), (num_envs,), device=device)
+for mode_idx, mode in enumerate(modes):
+    mode_env_indices = (selected_mode_indices == mode_idx).nonzero(as_tuple=True)[0]
+    if mode_env_indices.numel() &gt; 0:
+        mask[mode_env_indices.unsqueeze(1), mode_to_indices[mode]] = True
+# Last we do the sparsity masking.
+if enable_sparsity_randomization:
+    mask = torch.bernoulli(mask * 0.5).bool()   # each enabled bit survives w.p. 0.5
+</code></pre>
+<p>This is invoked once per reset in <code>neural<em>wbc/isaac</em>lab<em>wrapper/.../neural</em>wbc<em>env.py::</em>reset_mask()</code>, gated on distillation mode (the teacher trains without masking):</p>
+<pre><code>
+if self.cfg.mode.is_distill_mode() or self.cfg.mode.is_distill_test_mode():
+    self._mask[env_ids] = mask.create_mask(
+        mask_element_names=self.mask_element_names,
+        mask_modes=self.cfg.distill_mask_modes,
+        enable_sparsity_randomization=self.cfg.distill_mask_sparsity_randomization_enabled,
+        device=self.device, num_envs=len(env_ids))
+</code></pre>
+<p><strong>3. Applying the mask to the command</strong> — <code>neural<em>wbc/core/neural</em>wbc/core/observations/student<em>observations.py::compute</em>distilled<em>imitation</em>observations()</code>. The three command sub-vectors are built independently, then each is zeroed by its slice of the mask. Because each body has 3 (x/y/z) command values but only 1 mask bit, the kinematic slice is <code>repeat_interleave</code>-d:</p>
+<pre><code>
+kinematic_command = compute_kinematic_command(...)   # (N, num_bodies*3) local link deltas
+joint_command     = compute_joint_command(...)       # (N, num_joints)   ref - current joint pos
+root_command      = compute_root_command(...)         # (N, 7) lin-vel(3) + roll/pitch/Δyaw(3) + height(1)
+
+num_bodies = kinematic_command.shape[1] // 3
+kinematic_mask = mask[:, :num_bodies].repeat_interleave(3, dim=-1)
+kinematic_command *= kinematic_mask
+joint_mask = mask[:, num_bodies : num_bodies + num_joints]; joint_command *= joint_mask
+root_mask  = mask[:, num_bodies + num_joints :];            root_command  *= root_mask
+
+observations = torch.cat([kinematic_command, joint_command, root_command, mask], dim=1)
+</code></pre>
+<p>The crucial detail is the last term: <strong>the mask itself is concatenated into the observation.</strong> The in-code comment states why — otherwise &quot;the network has no way to determine the difference between a target state that is enabled but set to 0, or a target state that is 0 because it is disabled.&quot; So the student learns &quot;which channels are live&quot; as an explicit input, which is exactly what lets it switch command modes mid-episode. The rest of the student observation (<code>compute<em>distilled</em>robot<em>state</em>observation</code>) is only hardware-available quantities: <code>joint<em>pos, joint</em>vel, local<em>base</em>ang<em>vel, projected</em>gravity</code>, plus <code>last_actions</code> and a 25-step <code>history</code>.</p>
+<h2>Teacher → student distillation</h2>
+<p>Distillation is DAgger, implemented in <code>neural<em>wbc/student</em>policy/neural<em>wbc/student</em>policy/student<em>policy</em>trainer.py</code>. The teacher is the frozen PPO <code>ActorCritic</code> wrapped as <code>NeuralWBCTeacherPolicy</code> (defined in <code>train<em>student</em>policy.py</code>), exposing <code>act()</code> (deterministic label) and <code>act_rollout()</code> (sampled, for data collection).</p>
+<p><strong>Who drives the rollout (the DAgger schedule).</strong> <code><em>produce</em>actions</code> switches from teacher-driven to student-driven rollouts after <code>student<em>rollout</em>iteration</code> iterations (default <code>0</code>, i.e. student drives immediately) — this is what exposes the student to *its own* error distribution rather than the teacher&#x27;s:</p>
+<pre><code>
+def _produce_actions(self, obs):
+    if self._iterations + self.start_iteration &gt;= self._cfg.student_rollout_iteration:
+        action = self._student.act(obs[&quot;student_policy&quot;])   # student on-policy rollout
+    else:
+        action = self._teacher.act_rollout(obs[&quot;teacher_policy&quot;])
+    return action
+</code></pre>
+<p><strong>Labeling.</strong> At every collected step, the teacher is queried on the *privileged* observation to produce the supervision target, and the full <code>Slice</code> (student obs, teacher obs, ground-truth action, applied action) is pushed to <code>Storage</code>:</p>
+<pre><code>
+gt_actions = self._get_ground_truth_actions(obs_dict[&quot;teacher_policy&quot;])   # = self._teacher.act(...)
+slice = Slice(policy_observations=obs_dict[&quot;teacher_policy&quot;],
+              student_observations=obs_dict[&quot;student_policy&quot;],
+              ground_truth_actions=gt_actions, applied_actions=actions)
+self._storage.add(slice=slice)
+</code></pre>
+<p><strong>The loss</strong> — <code><em>update</em>student<em>network()</code>. It is a plain per-sample L2 (Euclidean) norm between the student&#x27;s deterministic output and the teacher&#x27;s labeled action, averaged over the batch, scaled by <code>dagger</em>coefficient</code> (default <code>1.0</code>). There is no value/critic loss and no RL reward in the student stage — pure supervised imitation:</p>
+<pre><code>
+pred_action = self._student.act_inference(student_observations_batch)   # MLP mean, no sampling
+kin_loss = torch.norm(pred_action - ground_truth_actions_batch, dim=-1).mean()  # RMSE
+kin_loss = kin_loss * self._cfg.dagger_coefficient
+self._optimizer.zero_grad(); kin_loss.backward()
+nn.utils.clip_grad_norm_(self._student.parameters(), self._cfg.max_grad_norm)
+self._optimizer.step()
+</code></pre>
+<p>The student network (<code>policy.py::StudentPolicy</code>) is a bare MLP (<code>[512,256,128]</code>, ELU) with a *non-trainable* action-noise std (<code>self.std.requires<em>grad = False</code>) — the noise only matters for the on-policy <code>act()</code> sampling during rollout; <code>act</em>inference()</code> returns the mean and is what the loss is computed against. Optimizer is Adam at <code>learning<em>rate = 5e-4</code>. Contrast with the teacher, whose training is standard PPO from <code>third</em>party/rsl<em>rl</code> (<code>OnPolicyRunner</code> + <code>ActorCritic</code>) driven by the reward config in <code>isaac</em>lab_wrapper/rewards/</code>.</p>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><code>scripts/rsl<em>rl/teacher</em>policy_cfg.py</code> — the PPO hyperparameters and network sizes in one place.</li>
+<li><code>neural<em>wbc/isaac</em>lab<em>wrapper/neural</em>wbc/isaac<em>lab</em>wrapper/neural<em>wbc</em>env<em>cfg</em>h1.py</code> — the <code>DISTILL<em>MASK</em>MODES_ALL</code> dictionary; this *is* the command-mode taxonomy.</li>
+<li><code>neural<em>wbc/core/neural</em>wbc/core/mask.py</code> — <code>create_mask()</code>: mode selection + Bernoulli sparsity.</li>
+<li><code>neural<em>wbc/core/neural</em>wbc/core/observations/student_observations.py</code> — how the mask is applied and why the mask is concatenated into the observation.</li>
+<li><code>neural<em>wbc/isaac</em>lab<em>wrapper/.../neural</em>wbc<em>env.py</code> (<code></em>reset_mask</code>) — where masking is wired into episode resets.</li>
+<li><code>neural<em>wbc/student</em>policy/.../student<em>policy</em>trainer.py</code> — the DAgger loop and the L2 distillation loss.</li>
+<li><code>scripts/rsl<em>rl/train</em>student_policy.py</code> — how the frozen teacher (<code>NeuralWBCTeacherPolicy</code>) is loaded and handed to the trainer.</li>
+</ul></article>
+<article class="page walk"><h1>Berkeley Humanoid — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;Berkeley Humanoid: A Research Platform for Learning-Based Control&quot; (2025)</p>
+<p><strong>Repo root:</strong> <code>isaac<em>berkeley</em>humanoid/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p>This is an <strong>Isaac Lab extension project</strong> — not a standalone RL library. It ships one thing: the robot definition, MDP config, and PPO hyperparameters needed to train Berkeley Humanoid&#x27;s walking controller inside NVIDIA&#x27;s Isaac Sim. All the actual RL machinery (the PPO loop, the network) lives in the external <code>rsl_rl</code> package; this repo only *configures* it. The README&#x27;s own header calls it &quot;the training code for Berkeley Humanoid with IsaacLab.&quot;</p>
+<p>There are exactly two entry scripts, both under <code>scripts/rsl_rl/</code>:</p>
+<p>| Script | What it does | Example command |</p>
+<p>|---|---|---|</p>
+<p>| <code>train.py</code> | Launches Isaac Sim, builds the gym env from a registered task id, runs the RSL-RL PPO <code>OnPolicyRunner</code> | <code>${ISAAC<em>LAB</em>PATH}/isaaclab.sh -p scripts/rsl_rl/train.py --task Velocity-Rough-Berkeley-Humanoid-v0</code> |</p>
+<p>| <code>play.py</code> | Loads a trained checkpoint and rolls out the policy for visualization | <code>${ISAAC<em>LAB</em>PATH}/isaaclab.sh -p scripts/rsl_rl/play.py --task Velocity-Rough-Berkeley-Humanoid-Play-v0</code> |</p>
+<p>| <code>cli_args.py</code> | Helper that appends RSL-RL CLI args to the argparse parser (not an entry point) | — |</p>
+<p><code>train.py</code> does the Isaac Lab dance: it builds the argparse parser, calls <code>cli<em>args.add</em>rsl<em>rl</em>args(parser)</code> and <code>AppLauncher.add<em>app</em>launcher<em>args(parser)</code>, then <strong>launches the Omniverse app before importing anything else</strong> (<code>app</em>launcher = AppLauncher(args<em>cli); simulation</em>app = app_launcher.app</code>). Nothing simulation-related can be imported until that app object exists — a hard Isaac Sim constraint.</p>
+<p><strong>Config system.</strong> Everything is Isaac Lab&#x27;s manager-based <code>@configclass</code> dataclasses. Tasks are registered as Gym ids in <code>.../config/berkeley<em>humanoid/</em><em>init</em>_.py</code>:</p>
+<pre><code>
+gym.register(
+    id=&quot;Velocity-Rough-Berkeley-Humanoid-v0&quot;,
+    entry_point=&quot;omni.isaac.lab.envs:ManagerBasedRLEnv&quot;,
+    kwargs={
+        &quot;env_cfg_entry_point&quot;: rough_env_cfg.BerkeleyHumanoidRoughEnvCfg,
+        &quot;rsl_rl_cfg_entry_point&quot;: f&quot;{agents.__name__}.rsl_rl_cfg:BerkeleyHumanoidRoughPPORunnerCfg&quot;,
+    },
+)
+</code></pre>
+<p>Four ids are registered: <code>Velocity-Rough-...-v0</code> / <code>-Play-v0</code> and <code>Velocity-Flat-...-v0</code> / <code>-Play-v0</code>. The <code>-Play-</code> variants shrink the scene to 50 envs and switch off randomization (see below).</p>
+<p><strong>Sim / hardware environments.</strong> There is no separate &quot;hardware&quot; env in this repo — deployment to the real robot lives elsewhere. What&#x27;s here is the two sim variants: <strong>rough</strong> terrain (the headline result) and <strong>flat</strong> terrain (a smaller/simpler warm-up). Both inherit the same base MDP.</p>
+<p><strong>Runnability.</strong> Requires Isaac Sim 4.0.0 + Isaac Lab 1.0.0 on Linux-64 with Python 3.10 and an NVIDIA GPU (PhysX runs on GPU; the rough task defaults to <code>num<em>envs=4096</code>). Install is <code>cd exts/berkeley</em>humanoid &amp;&amp; python -m pip install -e .</code> *using the Isaac-Lab python interpreter*. No pretrained checkpoint ships in the repo — you train from scratch (30,000 iterations for rough).</p>
+<h2>Architecture — module map</h2>
+<pre><code>
+isaac_berkeley_humanoid/
+├── README.md                       # install + run commands + a revealing FAQ (see below)
+├── pyproject.toml
+├── scripts/rsl_rl/
+│   ├── train.py                    # entry: launch Isaac Sim, run RSL-RL PPO
+│   ├── play.py                     # entry: load checkpoint, roll out policy
+│   └── cli_args.py                 # appends RSL-RL argparse args
+└── exts/berkeley_humanoid/
+    ├── setup.py
+    └── berkeley_humanoid/
+        ├── actuators/
+        │   ├── actuator_pd.py      # ★ IdentifiedActuator: DCMotor + tanh friction (43 lines)
+        │   └── actuator_cfg.py     # IdentifiedActuatorCfg dataclass (extends DCMotorCfg)
+        ├── assets/
+        │   ├── berkeley_humanoid.py# ★ BERKELEY_HUMANOID_CFG ArticulationCfg + 5 per-group actuator cfgs
+        │   └── Robots/
+        │       └── berkeley_humanoid.usd   # robot mesh/collision + joint tree
+        ├── terrains/
+        │   └── terrain_generator_cfg.py    # ROUGH_TERRAINS_CFG procedural terrain
+        └── tasks/locomotion/velocity/
+            ├── velocity_env_cfg.py # ★ the whole MDP: scene, obs, actions, rewards, randomization, curriculum
+            ├── mdp/
+            │   ├── rewards.py      # feet_air_time, feet_slide implementations
+            │   ├── events.py       # randomize_joint_default_pos / _friction_model (custom event fns)
+            │   └── curriculums.py  # terrain / push-force / command-vel curricula
+            └── config/berkeley_humanoid/
+                ├── rough_env_cfg.py# BerkeleyHumanoidRoughEnvCfg: binds robot, drops height scan
+                ├── flat_env_cfg.py # BerkeleyHumanoidFlatEnvCfg: plane terrain, retuned rewards
+                └── agents/
+                    └── rsl_rl_cfg.py   # PPO hyperparams + MLP [512,256,128] ELU
+</code></pre>
+<p>The three ★ files are the whole story: <code>actuator<em>pd.py</code> (why sim matches reality), <code>berkeley</em>humanoid.py</code> (the identified per-joint numbers), <code>velocity<em>env</em>cfg.py</code> (the MDP and — crucially — the randomization ranges).</p>
+<h2>The core idea in code — a robot built to be simulated accurately</h2>
+<p>The paper&#x27;s claim is that the *hardware* was designed so its *simulation model* is faithful enough that light randomization suffices. In code that faithfulness lives in one small class: a DC-motor model with an explicit, hardware-identified friction term bolted on. That is <code>IdentifiedActuator</code> in <code>actuators/actuator_pd.py</code> — the entire class is 43 lines:</p>
+<pre><code>
+class IdentifiedActuator(DCMotor):
+    cfg: IdentifiedActuatorCfg
+
+    def __init__(self, cfg: IdentifiedActuatorCfg, *args, **kwargs):
+        super().__init__(cfg, *args, **kwargs)
+        self.friction_static = self._parse_joint_parameter(self.cfg.friction_static, 0.)
+        self.activation_vel = self._parse_joint_parameter(self.cfg.activation_vel, torch.inf)
+        self.friction_dynamic = self._parse_joint_parameter(self.cfg.friction_dynamic, 0.)
+
+    def compute(self, control_action, joint_pos, joint_vel):
+        # call the base method
+        control_action = super().compute(control_action, joint_pos, joint_vel)
+        # apply friction model on the torque
+        control_action.joint_efforts = control_action.joint_efforts - (self.friction_static * torch.tanh(
+            joint_vel / self.activation_vel) + self.friction_dynamic * joint_vel)
+        self.applied_effort = control_action.joint_efforts
+        control_action.joint_positions = None
+        control_action.joint_velocities = None
+        return control_action
+</code></pre>
+<p>The base <code>DCMotor.compute()</code> produces a PD torque and clips it to the motor&#x27;s speed-dependent torque envelope. This subclass then <strong>subtracts a friction torque</strong>:</p>
+<pre><code>
+τ_applied = τ_DCMotor − ( friction_static · tanh(vel / activation_vel) + friction_dynamic · vel )
+</code></pre>
+<p><code>friction<em>static · tanh(vel/activation</em>vel)</code> is a smoothed Coulomb (stiction) term — near zero velocity it ramps smoothly through zero instead of a discontinuous sign flip; <code>friction<em>dynamic · vel</code> is ordinary viscous friction. The config that carries these three numbers is <code>IdentifiedActuatorCfg</code> in <code>actuator</em>cfg.py</code>, which just extends Isaac Lab&#x27;s <code>DCMotorCfg</code> with three fields (<code>friction<em>static</code> [N·m], <code>activation</em>vel</code> [rad/s], <code>friction_dynamic</code> [N·m·s/rad]), all <code>MISSING</code> until set per joint group.</p>
+<p>Where do the numbers come from? Two of the repo&#x27;s three README FAQ entries are about exactly this:</p>
+<p>&gt; <strong>Q: Where is the joint armature from?</strong> A: From CAD system.</p>
+<p>&gt; <strong>Q: Why does the friction of each joint so large?</strong> A: The motor we used has large cogging torque, we include it in the friction of the actuator model.</p>
+<p>So the model deliberately folds motor <strong>cogging torque</strong> into the friction term rather than hoping domain randomization papers over it — this is the mechanism, not randomization.</p>
+<p>The per-joint values are set in <code>assets/berkeley_humanoid.py</code>, one <code>IdentifiedActuatorCfg</code> per joint group, matched to joints by regex. Knee (KFE) example:</p>
+<pre><code>
+BERKELEY_HUMANOID_KFE_ACTUATOR_CFG = IdentifiedActuatorCfg(
+    joint_names_expr=[&quot;.*KFE&quot;],
+    effort_limit=30.0,
+    velocity_limit=14,
+    saturation_effort=560,
+    stiffness={&quot;.*&quot;: 15.0},
+    damping={&quot;.*&quot;: 1.5},
+    armature={&quot;.*&quot;: 1.5e-4 * 81},   # reflected inertia = rotor inertia × gear ratio²... here × 81 (the gear ratio)
+    friction_static=0.8,            # knee: highest stiction of any joint
+    activation_vel=0.1,
+    friction_dynamic=0.02,
+)
+</code></pre>
+<p>Five configs cover the 12 joints: <code>HXX</code> (hip rotation + abduction, <code>.*HR</code>/<code>.*HAA</code>, effort 20 N·m, friction_static 0.3), <code>HFE</code> (hip flex, effort 30, static 0.3), <code>KFE</code> (knee, effort 30, static 0.8), <code>FFE</code> (foot flex, effort 20, static 1.0), <code>FAA</code> (foot abduction, effort 5, static 0.1). Note the friction is <strong>not</strong> uniform — it was identified per group (KFE 0.8, FFE 1.0 vs HR/HAA 0.3), and every armature is written literally as <code>&lt;CAD rotor inertia&gt; * 81</code> to make the 81:1 gear reduction explicit in the source.</p>
+<p>These are wired into the robot in <code>BERKELEY<em>HUMANOID</em>CFG</code> (an <code>ArticulationCfg</code>) at the bottom of the same file: it spawns <code>Robots/berkeley<em>humanoid.usd</code>, sets the initial standing pose (<code>pos=(0.0, 0.0, 0.515)</code> and a full 12-joint <code>joint</em>pos</code> default), enables self-collisions, uses 4 position / 0 velocity solver iterations, and maps <code>actuators={&quot;hxx&quot;:..., &quot;hfe&quot;:..., &quot;kfe&quot;:..., &quot;ffe&quot;:..., &quot;faa&quot;:...}</code>. <code>soft<em>joint</em>pos<em>limit</em>factor=0.95</code> keeps the policy off the hard joint stops.</p>
+<h2>Domain randomization — how mild it really is</h2>
+<p>All randomization is the <code>RandomizationCfg</code> class in <code>velocity<em>env</em>cfg.py</code>. The striking thing when you read it against a typical legged-gym config is how <strong>narrow the ranges are and how much is startup-only</strong> (sampled once when the env spawns, never re-rolled during an episode). Verbatim:</p>
+<pre><code>
+@configclass
+class RandomizationCfg:
+    # startup
+    physics_material = EventTerm(func=mdp.randomize_rigid_body_material, mode=&quot;startup&quot;,
+        params={&quot;asset_cfg&quot;: SceneEntityCfg(&quot;robot&quot;, body_names=&quot;.*&quot;),
+                &quot;static_friction_range&quot;: (0.2, 1.25),
+                &quot;dynamic_friction_range&quot;: (0.2, 1.25),
+                &quot;restitution_range&quot;: (0.0, 0.1), &quot;num_buckets&quot;: 64})
+
+    scale_all_link_masses = EventTerm(func=mdp.randomize_rigid_body_mass, mode=&quot;startup&quot;,
+        params={&quot;asset_cfg&quot;: SceneEntityCfg(&quot;robot&quot;, body_names=&quot;.*&quot;),
+                &quot;mass_distribution_params&quot;: (0.9, 1.1), &quot;operation&quot;: &quot;scale&quot;})   # ±10%
+
+    add_base_mass = EventTerm(func=mdp.randomize_rigid_body_mass, mode=&quot;startup&quot;,
+        params={&quot;asset_cfg&quot;: SceneEntityCfg(&quot;robot&quot;, body_names=&quot;torso&quot;),
+                &quot;mass_distribution_params&quot;: (-1.0, 1.0), &quot;operation&quot;: &quot;add&quot;})    # ±1 kg torso
+
+    scale_all_joint_armature = EventTerm(func=mdp.randomize_joint_parameters, mode=&quot;startup&quot;,
+        params={&quot;asset_cfg&quot;: SceneEntityCfg(&quot;robot&quot;, joint_names=[&quot;.*&quot;]),
+                &quot;armature_distribution_params&quot;: (1.0, 1.05), &quot;operation&quot;: &quot;scale&quot;})  # +0–5% only
+
+    add_all_joint_default_pos = EventTerm(func=mdp.randomize_joint_default_pos, mode=&quot;startup&quot;,
+        params={&quot;asset_cfg&quot;: SceneEntityCfg(&quot;robot&quot;, joint_names=[&quot;.*&quot;]),
+                &quot;pos_distribution_params&quot;: (-0.05, 0.05), &quot;operation&quot;: &quot;add&quot;})    # ±0.05 rad calibration error
+
+    scale_all_joint_friction_model = EventTerm(func=mdp.randomize_joint_friction_model, mode=&quot;startup&quot;,
+        params={&quot;asset_cfg&quot;: SceneEntityCfg(&quot;robot&quot;, joint_names=[&quot;.*&quot;]),
+                &quot;friction_distribution_params&quot;: (0.9, 1.1), &quot;operation&quot;: &quot;scale&quot;})  # ±10% on the friction model
+</code></pre>
+<p>How mild it is, term by term:</p>
+<p>| What&#x27;s randomized | Range | Mode | Note |</p>
+<p>|---|---|---|---|</p>
+<p>| Body friction (static &amp; dynamic) | <code>0.2 – 1.25</code> | startup | 64 buckets |</p>
+<p>| All link masses | <code>×0.9 – 1.1</code> (±10%) | startup | |</p>
+<p>| Torso mass offset | <code>−1 – +1 kg</code> | startup | |</p>
+<p>| Joint armature | <code>×1.0 – 1.05</code> (0 to +5%) | startup | one-sided, tiny |</p>
+<p>| Joint default position | <code>±0.05 rad</code> | startup | models calibration error |</p>
+<p>| Friction-model coeffs | <code>×0.9 – 1.1</code> (±10%) | startup | scales the identified <code>friction<em>static</code>/<code>friction</em>dynamic</code> |</p>
+<p>| Base push (velocity) | <code>±0.5 m/s</code> in x,y | interval, every 10–15 s | see below |</p>
+<p>What is <strong>not</strong> here is as telling as what is: no per-step observation-parameter noise beyond the fixed <code>Unoise</code> on observations, no PD-gain randomization, no latency/action-delay randomization, no big ±30% mass swings, no random restitution beyond <code>[0.0, 0.1]</code>. Armature is nudged by at most <strong>5% in one direction</strong>. The friction *model* is only scaled ±10% — because the model itself is the identified quantity, the randomization is just acknowledging measurement uncertainty, not compensating for a missing model.</p>
+<p>The one dynamic disturbance is <code>push<em>robot</code> (mode <code>&quot;interval&quot;</code>, <code>interval</em>range<em>s=(10.0, 15.0)</code>, <code>velocity</em>range</code> <code>±0.5 m/s</code>). But even that is ramped in gently by a curriculum in <code>CurriculumCfg</code>, which only *starts* pushing hard at step 1500 and ramps the ceiling to 3.0 m/s:</p>
+<pre><code>
+push_force_levels = CurrTerm(func=mdp.modify_push_force,
+    params={&quot;term_name&quot;: &quot;push_robot&quot;, &quot;max_velocity&quot;: [3.0, 3.0],
+            &quot;interval&quot;: 200 * 24, &quot;starting_step&quot;: 1500 * 24})
+command_vel = CurrTerm(func=mdp.modify_command_velocity,
+    params={&quot;term_name&quot;: &quot;track_lin_vel_xy_exp&quot;, &quot;max_velocity&quot;: [-1.5, 3.0],
+            &quot;interval&quot;: 200 * 24, &quot;starting_step&quot;: 5000 * 24})
+</code></pre>
+<p>The custom event functions <code>randomize<em>joint</em>default<em>pos</code> and <code>randomize</em>joint<em>friction</em>model</code> (in <code>mdp/events.py</code>) exist precisely because Isaac Lab has no built-in event for &quot;the identified friction model&quot; — the latter loops over <code>asset.actuators.values()</code> and scales each actuator&#x27;s <code>friction<em>static</code> / <code>friction</em>dynamic</code> tensors in place. So the friction model isn&#x27;t just added to the physics; it&#x27;s a first-class thing the randomization system knows how to perturb.</p>
+<p>For the observation side, corruption noise (<code>ObservationsCfg.PolicyCfg</code>) is likewise modest: base lin-vel <code>±0.1</code>, ang-vel <code>±0.2</code>, gravity <code>±0.05</code>, hip pos <code>±0.03</code>, knee pos <code>±0.05</code>, foot-flex pos <code>±0.08</code>, joint vel <code>±1.5</code>. And in the <code>-Play-</code> configs, <code>enable<em>corruption=False</code> and <code>push</em>robot=None</code> — i.e. deployment/eval runs with randomization turned off entirely.</p>
+<p>(One code-vs-paper note: <code>rough<em>env</em>cfg.py</code> sets <code>self.observations.policy.height<em>scan = None</code> and <code>self.scene.height</em>scanner = None</code>, confirming the rough policy is blind to terrain — the height scan is defined in the base scene but explicitly removed for Berkeley Humanoid. The rough config also enables the two &quot;optional&quot; penalties: <code>flat<em>orientation</em>l2.weight = -0.5</code> and <code>dof<em>pos</em>limits.weight = -1.0</code>. The reward set additionally includes a <code>joint<em>deviation</em>knee</code> L1 term at <code>-0.01</code> and a <code>feet<em>air</em>time</code> window of <code>[0.2, 0.5]</code> s keyed to the <code>.*faa</code> foot bodies.)</p>
+<h2>What to read first (if you clone this)</h2>
+<ul>
+<li><code>README.md</code> — the FAQ (armature &quot;from CAD&quot;, friction &quot;includes cogging torque&quot;) frames the whole design philosophy in three sentences.</li>
+<li><code>exts/berkeley<em>humanoid/berkeley</em>humanoid/actuators/actuator_pd.py</code> — 43 lines; the <code>IdentifiedActuator.compute()</code> tanh-friction model is the conceptual core.</li>
+<li><code>.../actuators/actuator_cfg.py</code> — the three extra fields that turn a <code>DCMotorCfg</code> into an identified actuator.</li>
+<li><code>.../assets/berkeley<em>humanoid.py</code> — the five per-group actuator cfgs (the real identified numbers) and the <code>BERKELEY</em>HUMANOID_CFG</code> articulation.</li>
+<li><code>.../tasks/locomotion/velocity/velocity<em>env</em>cfg.py</code> — read top to bottom for the full MDP; linger on <code>RandomizationCfg</code> and <code>RewardsCfg</code>.</li>
+<li><code>.../config/berkeley<em>humanoid/rough</em>env_cfg.py</code> — the deltas that make the headline rough-terrain task (drops height scan, turns on orientation/limit penalties).</li>
+<li><code>.../config/berkeley<em>humanoid/agents/rsl</em>rl_cfg.py</code> — PPO settings and the <code>[512,256,128]</code> ELU actor/critic.</li>
+</ul></article></div>
+  <footer>Repos cloned under analysis/detail/locomotion/code/ (gitignored — GPU/CUDA needed to run) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

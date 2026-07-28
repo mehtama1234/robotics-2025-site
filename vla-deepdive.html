@@ -1,0 +1,1352 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaussian Splatting for Robots — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Safety · attacks Topic deep dive · with codeamp; guarantees · with code</div>
+  <h1>Vision-Language-Action models (see, talk, act)</h1>
+  <p>A vision-language-action model (VLA) turns a camera image plus a plain-language instruction directly into robot actions; VLMs are also used as high-level planners and for navigation. This page: the idea, the key 2025 papers with their real code, and hands-on walkthroughs of two cloned codebases.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Turning seeing-and-talking AI into doing AI</h1>
+<p><em>85 papers · decide — how the robot chooses what to do next</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">For years, AI learned to describe images in words — to look at a photograph and say "there is a red cup on the left." But a robot arm does not need words; it needs numbers: the exact 3D distance to the cup, the angle to approach from, how wide to open its fingers, how much force to apply. <strong>These two gaps are real</strong>: one between describing a scene and commanding movements, another between flat 2D images and the 3D world a robot moves through. A model trained only on "predict the next word" has no signal for "predict the next motor command." And a model trained on internet photos cannot distinguish whether objects are five centimeters or five meters apart — the depth information is not there. Yet almost every robot control task starts with: take in an image, read a natural-language instruction, and output movements in real numbers. <strong>The core problem is that the same model must cross two chasms at once — from perception to action, and from 2D to 3D.</strong></p>
+<p style="margin:0 0 8px"><strong>Five ways papers attack this:</strong></p>
+<ul style="margin:0 0 12px">
+<li><strong>① Wire the model to output actions, not words.</strong> Take a vision-language model and replace or augment its text output with robot motor commands. <em>Improving Vision-Language-Action Model with Online Reinforcement Learning</em> adds a learning loop so the robot improves by trying; <em>PD-VLA</em> speeds up action-sequence generation by treating it as a parallel computation rather than sequential prediction.</li>
+<li><strong>② Teach 3D space as a first-class skill.</strong> Add depth images or 3D coordinates to the model's training data so it learns spatial reasoning explicitly, not as an afterthought. <em>SpatialBot</em> fine-tunes on RGB-D images and depth-grounded questions; <em>Towards Generalizable Vision-Language Robotic Manipulation</em> builds policies on 3D object positions rather than flat images.</li>
+<li><strong>③ Split the big job into two smaller ones.</strong> A single model doing both "what to do" and "how to move" is asked to do two different jobs. Many papers split them: a language model plans sub-steps, a motion planner or policy executes each step. <em>Guiding Long-Horizon Task and Motion Planning with Vision Language Models</em> is the clean example — when a motion planner finds a sub-step infeasible, it tells the language model why, and the model replans.</li>
+<li><strong>④ Train the robot to recover when things go wrong.</strong> Most data shows tasks succeeding; real robots fail — an object is not where expected, a gripper slips. <em>Closed-Loop Open-Vocabulary Mobile Manipulation with GPT-4V</em> runs a check after each action and replans if it failed; <em>RACER</em> and <em>LERa</em> add failure recovery to the training data or replan from visual observation.</li>
+<li><strong>⑤ Learn from human video without collecting robot data.</strong> Robot demonstrations are expensive. Human video is free. <em>Motion Tracks</em> represents both human hand and robot end-effector motion in the same pixel-coordinate format so a policy trained on humans transfers to robots; <em>ICRT</em> uses in-context learning — drop a few task examples into a large transformer and it generalizes to new tasks with no retraining.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> every 2025 paper here is trying to make one or both crossings — teaching a model to output movements, teaching it to reason in 3D space, or splitting the job into pieces each manageable by one model. The papers that split planning from execution have the most robust real-world track records so far; single end-to-end models that perceive 3D accurately, reason about novel tasks, and output correct motor commands at arm speed while running on onboard hardware remain unsolved. <strong>Still open:</strong> a general policy that works at speed on real robots across diverse tasks without task-specific retraining; reliable 3D reasoning from RGB alone (depth sensors are bulky); and recovery strategies that do not rely on perfect real-time VLM access.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>In the last few years, AI models learned to look at a photo, read a caption, and answer questions about the scene in plain sentences. They can say &quot;there is a red cup on the table to the left of the laptop.&quot; That is genuinely impressive. But saying something and doing something are not the same thing.</p>
+<p>A robot arm that needs to pick up that red cup has to know, in real numbers, how far away the cup is, what angle to approach it from, how wide to open its fingers, and how much force to use. None of that comes out of a model that was trained to produce words. The model&#x27;s whole training reward was &quot;did the next word match the target?&quot; There was no signal for &quot;did the arm land in the right spot?&quot; So the words come out fine but the movements are absent.</p>
+<p>There is a second, related gap. These big models were trained on flat photos from the internet. A flat photo has no reliable depth information. The model cannot tell whether two objects are five centimeters apart or five meters apart, which means it cannot reason about whether the robot can reach something, or whether one object is in the way of another. Space, in the physical sense, is nearly invisible to these models.</p>
+<p>Together, these two gaps mean that even a very powerful AI that can describe a kitchen scene in perfect prose is still, in the practical sense, blind to three-dimensional space and mute when it comes to motor commands.</p>
+<p>This matters because every robot faces the same core challenge: take in an unclear, changing world; decide what to do; move a real body; and do it fast, cheap, safe, and in general situations no one wrote rules for. The deciding step is where these big models were supposed to help — they carry enormous common-sense knowledge about the world, knowledge that is very expensive to build from scratch. But that help only arrives if the model can cross the gap from words to actions and from flat images to real space.</p>
+<p>The 85 papers in this topic are all working on that crossing. They differ in which part of the gap they attack and how.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>1. Rewiring the model&#x27;s outputs to produce movements, not words</h3>
+<p>The most direct fix is to take a model that already understands scenes and words and add a new layer that produces robot movements instead of — or alongside — text. These are called vision-language-action models (VLAs). The model still reads the camera and the instruction, but instead of typing an answer, it outputs the joint angles or the end-effector position for the next fraction of a second.</p>
+<p>&quot;Improving Vision-Language-Action Model with Online Reinforcement Learning&quot; (iRe-VLA) tackles the problem that copying expert demonstrations only gets you so far. The robot needs to try things and learn from outcomes, the way a person does. But running trial-and-error training on a huge model is unstable. The paper&#x27;s answer is to alternate: one phase where the robot collects experience by trying, followed by a phase of supervised learning on that experience to keep the model stable — then repeat. This cycling makes self-improvement practical.</p>
+<p>&quot;PD-VLA: Accelerating Vision-Language-Action Model Integrated with Action Chunking via Parallel Decoding&quot; deals with a different problem: speed. These models predict a whole short block of future actions at once (called action chunking). Doing that one step at a time is too slow for real robot arms. By treating the block as a parallel math problem rather than a sequential one, the system speeds up without any retraining.</p>
+<h3>2. Teaching the model to understand 3D space</h3>
+<p>If the model only sees flat images, it guesses about depth and often guesses wrong. Several papers add depth information directly to the model&#x27;s training or its input, so spatial reasoning becomes a first-class skill rather than an afterthought.</p>
+<p>&quot;SpatialBot: Precise Spatial Understanding with Vision Language Models&quot; fine-tunes a vision-language model on depth camera images alongside normal color images. The team also built two new question-and-answer datasets — SpatialQA and SpatialQA-E — where every question is about depth or 3D layout. Training on this dataset forces the model to actually answer questions like &quot;how far is the chair from the wall?&quot; rather than treating depth as decoration.</p>
+<p>&quot;Towards Generalizable Vision-Language Robotic Manipulation: A Benchmark and LLM-Guided 3D Policy&quot; (3D-LOTUS++) builds a policy that reads the 3D positions of objects in the scene rather than working from a flat image. A language model then plans the multi-step task, and a vision-language model names objects it has never seen before. The paper also introduces a benchmark, GemBench, with four levels of novelty to check whether this actually generalizes.</p>
+<p>&quot;Language-Guided Object-Centric Diffusion Policy for Generalizable and Collision-Aware Manipulation&quot; pulls out the relevant object&#x27;s full 3D shape from a point cloud (a cloud of measured 3D points), trains a movement-generation model on that shape, and then adds collision-avoidance as a penalty during movement generation so the robot steers around obstacles without needing to be retrained on each new scene.</p>
+<h3>3. Splitting planning and acting into two separate jobs</h3>
+<p>A single model that must both figure out what to do and produce the exact movements is asked to do two very different jobs at once. Many papers split those jobs: a large language or vision-language model handles the &quot;what to do&quot; part, while a smaller, faster system handles the &quot;how to move&quot; part.</p>
+<p>&quot;Guiding Long-Horizon Task and Motion Planning with Vision Language Models&quot; is a clean example. The language model breaks a long task into sub-steps in plain words. A traditional motion planner then turns each sub-step into actual movements. When the motion planner finds a sub-step physically impossible, it sends that back to the language model, which tries a different way. Neither system has to do the other&#x27;s job.</p>
+<p>&quot;BUMBLE: Unifying Reasoning and Acting with Vision-Language Models for Building-wide Mobile Manipulation&quot; extends this to a very long task — finding and handling objects across an entire multi-floor building. The vision-language model reads the situation and picks from a library of ready-made skills. Two layers of memory let it recall what it saw earlier in a task that can last fifteen minutes.</p>
+<p>&quot;Local Policies Enable Zero-Shot Long-Horizon Manipulation&quot; makes each individual skill work in coordinates measured relative to the object being acted on, not the room. This means a skill trained in a test environment works in the real world even when the robot&#x27;s exact location is different. A large model then chains these local skills in sequence.</p>
+<h3>4. Letting the robot recover when things go wrong</h3>
+<p>Most training data shows tasks going right. Real robots encounter things going wrong: an object not where expected, a grip that slips, a door that doesn&#x27;t open. Several papers specifically train for recovery.</p>
+<p>&quot;Closed-Loop Open-Vocabulary Mobile Manipulation with GPT-4V&quot; (COME-robot) uses a large model that reads both images and text to check, after each action, whether the action actually worked. If not, it traces back through its own recent steps to find where things went wrong, then replans from that point. This makes failure a normal, handled event rather than a crash.</p>
+<p>&quot;RACER: Rich Language-Guided Failure Recovery Policies for Imitation Learning&quot; takes a different route: it adds recovery moves to the training data itself. An automated pipeline takes existing expert demonstrations, adds the kinds of mistakes a robot would make and the moves needed to fix them, then attaches plain-language descriptions of what went wrong and what to do. At run time a vision-language model watches the robot and gives it correction instructions in plain speech.</p>
+<p>&quot;LERa: Replanning with Visual Feedback in Instruction Following&quot; keeps it simple: if something goes wrong, the system looks at the camera feed, forms a plain-language explanation of what happened, and rebuilds the plan from there.</p>
+<h3>5. Learning from humans without requiring robot-specific data</h3>
+<p>Robot demonstrations are expensive to collect. Human video is abundant. Several papers bridge the gap.</p>
+<p>&quot;Motion Tracks: A Unified Representation for Human-Robot Transfer in Few-Shot Imitation Learning&quot; represents both human hand movements and robot end-effector movements as short sequences of 2D pixel positions over time. Because both are in the same format, a policy trained on human video and just a few robot demonstrations can then convert those pixel tracks to real 3D robot movements at run time.</p>
+<p>&quot;R+X: Retrieval and Execution from Everyday Human Videos&quot; goes further: given a plain-language instruction, a vision-language model searches a large collection of unlabeled first-person human videos and pulls out the most relevant short clips. A separate method makes the robot copy the key moves from those clips with no additional training on robot data.</p>
+<p>&quot;ICRT: In-Context Imitation Learning via Next-Token Prediction&quot; uses a large transformer that predicts the next sensor reading or action from a sequence of past ones. At test time, a few example demonstrations of a new task are dropped in as a prompt — the model then does the new task with no retraining at all, the same way a language model answers a new question when you give it a few examples.</p>
+<h2>Where it stands</h2>
+<p>Systems that split planning from acting are reliable enough to run on real robots in real rooms today, and the ability to describe a failure in plain words and replan around it is now routine in research demos. What remains hard is the full loop: a single model that perceives 3D space accurately, reasons about a novel task, produces correct movements at the speed the arm needs, and does all of this on the onboard computer a real product can afford. Each paper solves one piece; no single system yet closes all the gaps at once.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">Guiding Long-Horizon Task and Motion Planning with Vision La</td><td>ICRA</td><td><a href="https://github.com/zt-yang/pybullet_planning" target="_blank" rel="noopener">zt-yang/pybullet_planning</a></td><td class="mono">vlm_tools/tutorials/test_vlm_tamp.py</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">SpatialBot: Precise Spatial Understanding with Vision Langua</td><td>ICRA</td><td><a href="https://github.com/BAAI-DCAI/SpatialBot" target="_blank" rel="noopener">BAAI-DCAI/SpatialBot</a></td><td class="mono">bunny/serve/cli_depth.py</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">Closed-Loop Open-Vocabulary Mobile Manipulation with GPT-4V</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">api</span></td></tr>
+<tr><td class="tt">Improving Vision-Language-Action Model with Online Reinforce</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Open-Nav: Exploring Zero-Shot Vision-and-Language Navigation</td><td>ICRA</td><td><a href="https://github.com/YanyuanQiao/Open-Nav" target="_blank" rel="noopener">YanyuanQiao/Open-Nav</a></td><td class="mono">run.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Tem</td><td>ICRA</td><td><a href="https://github.com/NVIDIA-AI-IOT/remembr" target="_blank" rel="noopener">NVIDIA-AI-IOT/remembr</a></td><td class="mono">remembr/agents/remembr_agent.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Towards Generalizable Vision-Language Robotic Manipulation: </td><td>ICRA</td><td><a href="https://github.com/vlc-robot/robot-3dlotus" target="_blank" rel="noopener">vlc-robot/robot-3dlotus</a></td><td class="mono">genrobo3d/models/simple_policy_ptv3.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">OLiVia-Nav: An Online Lifelong Vision Language Approach for </td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">robot</span></td></tr>
+<tr><td class="tt">A Real-to-Sim-to-Real Approach to Robotic Manipulation with </td><td>ICRA</td><td><a href="https://github.com/shivanshpatel35/IKER" target="_blank" rel="noopener">shivanshpatel35/IKER</a></td><td class="mono">isaacgymenvs/tasks/</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">WMNav: Integrating Vision-Language Models into World Models </td><td>IROS</td><td><a href="https://github.com/B0B8K1ng/WMNavigation" target="_blank" rel="noopener">B0B8K1ng/WMNavigation</a></td><td class="mono">src/custom_agent.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Beyond Sight: Finetuning Generalist Robot Policies with Hete</td><td>ICRA</td><td><a href="https://github.com/fuse-model/FuSe" target="_blank" rel="noopener">fuse-model/FuSe</a></td><td class="mono">octo_digit/scripts/finetune_fuse.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">Motion Tracks: A Unified Representation for Human-Robot Tran</td><td>ICRA</td><td><a href="https://github.com/jren03/mt_pi_codebase" target="_blank" rel="noopener">jren03/mt_pi_codebase</a></td><td class="mono">models/diffusion_policy.py</td><td><span class="run">robot</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>Guiding Long-Horizon Task and Motion Planning with Vision Language Models</h1>
+<p>ICRA 2025 · 19 citations · VLM used as a high-level planner (VLM-guided TAMP)</p>
+<h2>What it does</h2>
+<p>VLM-TAMP is a hierarchical planning system in which a vision-language model (VLM — a large model that jointly understands images and text) acts as a high-level planner that generates symbolic subgoals, while a separate classical task-and-motion planner (TAMP — software that finds geometrically and kinematically feasible motion trajectories) converts those subgoals into executable robot actions. The VLM is never trained or fine-tuned; it is prompted at runtime with a scene image and a natural-language cooking goal. When a subgoal turns out to be infeasible for the robot (e.g., the drawer is closed and the VLM did not mention opening it), the TAMP system reports back and the VLM is re-queried for a revised subgoal. This makes it a VLM-as-planner approach, not an end-to-end VLA (vision-language-action) policy.</p>
+<p><strong>Sub-approach:</strong> VLM used as a high-level planner — the VLM produces symbolic intermediate goals; a classical motion planner handles geometry and kinematics.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> At each planning step the system receives: (a) an RGB image of the kitchen scene with objects labeled by bounding-box overlays; (b) a natural-language cooking goal (e.g., &quot;make chicken soup&quot;); (c) the current state of the PDDL (Planning Domain Definition Language — a formal notation listing which predicates, such as &quot;on(pot, stove)&quot; or &quot;open(drawer)&quot;, are currently true); and (d) any failure feedback from the previous TAMP attempt.</p>
+<p><strong>Backbone.</strong> GPT-4 / GPT-4V is used as the VLM backbone via the OpenAI API. No local GPU is needed for the VLM; it is called through HTTP. Anthropic Claude is also supported via an Anthropic API key (configurable). The model is used zero-shot — no fine-tuning.</p>
+<p><strong>Subgoal representation.</strong> The VLM is prompted to output a sequence of PDDL-format goal predicates (symbolic logical conditions), not raw text actions. For example, it might output <code>(on cooked-chicken pot)</code> as one subgoal. This symbolic grounding is the key design choice: it gives the downstream planner a well-typed, checkable target.</p>
+<p><strong>TAMP planner.</strong> PDDLStream is the TAMP algorithm used. PDDLStream extends classical PDDL planning by handling continuous-valued parameters (robot joint angles, grasp poses, placement positions) through certified streams — samplers that propose geometric values satisfying declared constraints. FastDownward is the discrete task-planner component inside PDDLStream. IKFast and TracIK handle inverse kinematics (computing joint angles to place the end-effector at a target pose). The TAMP planner takes a VLM-generated subgoal and tries to find a feasible motion plan that achieves it given the current physical state.</p>
+<p><strong>Replanning loop.</strong> If PDDLStream fails to refine a subgoal into a feasible trajectory within a time budget (N retries), it signals failure back to the VLM with a description of which action failed and why (e.g., &quot;cannot reach object X — a drawer is blocking it&quot;). The VLM is then re-prompted and generates a corrected subgoal sequence. The paper tests several planning modes: <code>sequence</code> (generate all subgoals upfront), <code>actions</code> (generate one action at a time), and <code>-reprompt</code> variants that allow replanning. The reprompt modes improve success on hard tasks by 47–55 percentage points.</p>
+<p><strong>No training.</strong> The system performs no gradient updates. The TAMP planner is a classical solver; the VLM is frozen. The only &quot;learning&quot; is prompt engineering and the structured output format.</p>
+<p><strong>Evaluation.</strong> Tested in a simulated kitchen (PyBullet physics engine with the kitchen-worlds environment). Tasks require 30–50 sequential actions and up to 21 interacting objects (pots, ingredients, drawers, stoves, etc.). Robot embodiments: PR2 dual-arm and single-arm. Success rate: 50–100% for VLM-TAMP versus 0% for baselines that execute VLM plans directly without feasibility checking.</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> <a href="https://github.com/zt-yang/pybullet" target="_blank" rel="noopener">https://github.com/zt-yang/pybullet</a><em>planning (VLM tools in the <code>vlm</em>tools/</code> subfolder); the kitchen simulation dependency is at <a href="https://github.com/Learning-and-Intelligent-Systems/kitchen-worlds." target="_blank" rel="noopener">https://github.com/Learning-and-Intelligent-Systems/kitchen-worlds.</a></p>
+<p><strong>Language / framework:</strong> Python 3.8+, PyBullet (physics simulator), PDDLStream (task-and-motion planner), FastDownward (discrete planner compiled from C++), IKFast / TracIK (IK solvers, require compilation), Conda environment. VLM calls go to the OpenAI or Anthropic API over HTTP.</p>
+<p><strong>Repo structure (top-level of <code>pybullet_planning</code>):</strong></p>
+<pre><code>
+pybullet_tools/       core motion-planning utilities (sampling, collision, grasp)
+vlm_tools/            VLM-TAMP integration — START HERE
+  README.md           setup and run instructions
+  problems_vlm_tamp.py  scene-initialization classes (kitchen task definitions)
+  tutorials/
+    test_vlm_tamp.py  main entry point to run a VLM-TAMP experiment
+  keys/               API key storage (git-ignored)
+pddl_domains/         PDDL domain files (action schemas)
+models/               robot URDFs and object meshes
+cogarch_tools/        cognitive architecture extras
+world_builder/        scene-graph and world-state utilities
+robot_builder/        robot configuration helpers
+examples/             standalone planning demos
+tutorials/            other planning demos
+requirements.txt
+setup_ikfast.sh
+</code></pre>
+<p><strong>File to open first:</strong> <code>vlm<em>tools/tutorials/test</em>vlm<em>tamp.py</code> — it is the experiment driver. It instantiates a kitchen scene from <code>problems</em>vlm<em>tamp.py</code>, calls the VLM to generate subgoals, feeds them to PDDLStream, and handles the replanning loop. After that, read <code>vlm</em>tools/problems<em>vlm</em>tamp.py</code> to understand how tasks and PDDL domains are defined.</p>
+<p><strong>Key dependencies (install order):</strong></p>
+<ul>
+<li>Clone <code>kitchen-worlds</code> (with submodules — it pulls in <code>pybullet_planning</code> and <code>pddlstream</code>).</li>
+<li><code>conda activate kitchen</code> (environment from <code>environment.yml</code>).</li>
+<li><code>pip install pddlgym anytree</code>.</li>
+<li>Compile FastDownward and IKFast (shell scripts provided; requires a C++ compiler).</li>
+<li>Set <code>OPENAI<em>API</em>KEY</code> or <code>ANTHROPIC<em>API</em>KEY</code>.</li>
+</ul>
+<p><strong>Run command:</strong></p>
+<pre><code>
+cd pybullet_planning
+python vlm_tools/tutorials/test_vlm_tamp.py \
+  --open_goal &quot;make chicken soup&quot; \
+  --exp_subdir my_test \
+  --planning_mode sequence-reprompt
+</code></pre>
+<p>Results land in <code>experiments/my<em>test/&lt;timestamp&gt;</em>vlm-tamp/</code>; serve with <code>python -m http.server 9000</code> to view logs.</p>
+<p><strong>Needs:</strong> A working PyBullet install, compiled C++ solvers, a PyBullet-compatible GPU or CPU (simulation is CPU-based), and an internet connection for VLM API calls. No robotics hardware required.</p>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>vlm<em>tools/README.md</code> (explains the setup) then <code>vlm</em>tools/tutorials/test<em>vlm</em>tamp.py</code> (the experiment loop — roughly 200–400 lines). The code is moderately complex: the VLM prompting logic is self-contained and readable in isolation, but the PDDLStream planner and kitchen-worlds scene graph are large external dependencies with their own learning curves. The PDDL domain files in <code>pddl_domains/</code> are the clearest way to understand what actions and predicates are available. Difficulty rating: moderate-to-hard for someone unfamiliar with TAMP or PDDL; the VLM integration layer itself is approachable.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot meaningfully run on a CPU-only box without setup work, but VLM calls are CPU-friendly.</strong> Specifically:</p>
+<ul>
+<li>The PyBullet physics simulation is CPU-based and runs fine without a GPU.</li>
+<li>FastDownward and IKFast must be compiled (C++ build tools needed).</li>
+<li>The kitchen-worlds environment has complex dependencies; setup on a fresh machine takes 30–60 minutes if everything compiles cleanly.</li>
+<li>The VLM component (GPT-4V or Claude) runs remotely via API — no local GPU needed for it.</li>
+<li>Training is not involved — this is purely inference + classical planning at runtime.</li>
+</ul>
+<p><strong>Verdict:</strong> Runnable on a CPU-only Linux box in principle, but setup is non-trivial (C++ compilation of solvers, Conda environment, API keys). Once installed, a single planning episode uses CPU for simulation and makes API calls for VLM inference. No large local model weights to download. If you only want to inspect the VLM prompting logic, you can read and understand it without running anything.</p></article>
+<article class="page" id="gp1"><h1>SpatialBot: Precise Spatial Understanding with Vision Language Models</h1>
+<p>ICRA 2025 · 18 citations · Sub-approach: VLM finetuned for spatial perception / benchmark</p>
+<h2>What it does</h2>
+<p>Standard vision-language models (VLMs) are trained on 2D images and fail at spatial reasoning tasks — estimating depth, inferring which object is closer, or understanding 3D relationships — all of which are essential for embodied AI applications like manipulation and navigation. SpatialBot extends a VLM to accept both an RGB image and a depth image as input, then finetunes it on a purpose-built dataset of depth-grounded questions (SpatialQA) so the model can answer questions about distances, object positions, and robot action targets. Alongside the model, the authors release SpatialBench, a manually annotated benchmark to evaluate spatial reasoning across six categories. This work sits between a VLM-planner and a benchmark paper: it is primarily a VLM finetuning method that augments a generalist model with spatial perception, validated on both standard VLM benchmarks and real robot pick-and-place tasks.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> Each forward pass takes two images: an RGB frame (the normal colour photo) and a depth map of the same scene. The depth map is encoded either as a single-channel uint24 image (one millimetre per count, range 1 mm to 131 m) or as a three-channel uint8 image distributing the millimetre value across the three channels using bit-shifted units (2^0, 2^5, 2^10 mm per channel). This lets the existing image encoder — which expects standard 3-channel 8-bit images — ingest depth without architectural surgery.</p>
+<p><strong>Backbone.</strong> SpatialBot is a multi-image variant of Bunny, a lightweight open-source VLM family. The vision encoder is SigLIP (384x384 input) or CLIP (336x336 for robot tasks), followed by a small multi-modal projector (MLP) that maps image tokens into the LLM&#x27;s embedding space. Several LLM backbones are supported: Phi-2 (2.7 B parameters, the primary &quot;3B&quot; variant), Phi-3 (4 B), QWen-1.5 (0.5 B or 4 B), and Llama-3 (8 B). Both images are independently encoded by the same vision encoder and projected, then their token sequences are concatenated before the text tokens and fed into the LLM as a single context.</p>
+<p><strong>Action representation (for robot tasks).</strong> For embodied experiments, SpatialBot is trained to output 7-DoF delta end-effector actions (ΔX, ΔY, ΔZ, ΔRoll, ΔPitch, ΔYaw, gripper open/close) discretised into 101 bins each (values 0, 0.01, 0.02, …, 1.0). Actions are produced as a special token sequence in the format <code>&lt;&lt;&lt;a1, a2, a3, a4, a5, a6, a7&gt;&gt;&gt;</code>. All other outputs are natural language text.</p>
+<p><strong>Training.</strong> Two stages:</p>
+<ul>
+<li>*Pretraining* of the projector only on 2 M LAION-2B image-text pairs, keeping the vision encoder and LLM frozen.</li>
+<li>*Finetuning* of the full model (projector + LLM, with LoRA for larger variants) on the SpatialQA dataset. SpatialQA contains roughly 745 k samples drawn from: Bunny_695k (general VLM instruction data to preserve 2D capability), 20 k depth-understanding QA pairs generated from VG and COCO scenes using GPT-4o, 1.75 k KITTI outdoor samples, 1.5 k NYU Depth v2 indoor samples, 7.5 k RT-X robot scene samples, 15 k SA-1B samples, and 2.9 k 2D-3D-S indoor scenes. Questions are organised into three levels: low-level (read a pixel or region depth value), mid-level (proximity relationships, describe object depth using min/max/mean), and high-level (spatial reasoning, counting, relationship understanding). For robot finetuning, a separate SpatialQA-E subset of 2000 pick-and-place episodes is used, covering basic grasps, spatial instruction following (left/right/up/down, tall/short), obstacle avoidance, and real-vs-printed-object discrimination where depth cues distinguish physical from flat printed objects. Training the Phi-2 variant runs on 8 x A100 GPUs and takes roughly 15 hours. Learning rate is 2e-4 for LoRA weights and 2e-5 for the projector.</li>
+</ul>
+<p><strong>SpatialBench.</strong> A small but carefully constructed benchmark: 120 scenes, 160 manually annotated question-answer pairs across six categories — depth/proximity estimation, positional relationships, object existence (positive-negative question pairs), counting, reach/touch relationships, and size comparison. Scoring gives bonus points for correctly answering both the positive and negative forms of an existence question.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/BAAI-DCAI/SpatialBot" target="_blank" rel="noopener">https://github.com/BAAI-DCAI/SpatialBot</a></p>
+<p><strong>Language / framework:</strong> Python, PyTorch, Hugging Face Transformers, PEFT (LoRA), Accelerate.</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+SpatialBot/
+  bunny/               # model definition, data loading, serving
+    serve/
+      cli.py           # RGB-only interactive inference
+      cli_depth.py     # RGB-D interactive inference (key entry point)
+  SpatialQA_depthmap_instruction/   # dataset preprocessing helpers
+  eval/                # SpatialBench evaluation scripts
+  script/
+    train/
+      pretrain.sh      # stage-1 projector pretraining
+      finetune_lora.sh # LoRA finetuning (most common path)
+      finetune_full.sh # full-parameter finetuning
+    eval/
+      lora/            # evaluation scripts for LoRA checkpoints
+        evaluation_lora.md
+        evaluation_embodiment.md
+      full/
+    merge_instruction.md  # how to merge LoRA weights into base model
+  pyproject.toml
+  README.md
+</code></pre>
+<p><strong>File to open first:</strong> <code>bunny/serve/cli_depth.py</code> — this is the end-to-end inference path for the core RGB-D contribution. It shows exactly how the depth image is loaded, encoded, and passed alongside the RGB image to the model. The model forward pass and tokenisation are visible here without needing to follow training code.</p>
+<p><strong>Key dependencies:</strong> <code>torch</code>, <code>transformers</code>, <code>peft</code>, <code>accelerate</code>, <code>pillow</code>, <code>numpy</code>. Depth images are standard 16-bit grayscale PNG files (converted internally to 3-channel).</p>
+<p><strong>No simulator required</strong> for inference. The robot experiments use a Franka Research 3 arm but evaluation scripts run offline against recorded episodes. SpatialBench evaluation is pure offline QA.</p>
+<p><strong>Pretrained checkpoints</strong> for all variants (Phi-2 3B, Phi-3 4B, QWen 4B, Llama-3 8B) are on Hugging Face at <code>RussRobin/SpatialBot-3B</code> and related handles. SpatialQA and SpatialQA-E are also on Hugging Face.</p>
+<p><strong>Quickest run:</strong></p>
+<pre><code>
+python -m bunny.serve.cli_depth \
+  --model-path &lt;lora_checkpoint&gt; \
+  --model-base RussRobin/SpatialBot-3B \
+  --image-file rgb.jpg \
+  --depth-file depth.png
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p>Start by reading <code>README.md</code> for dataset download links and checkpoint names, then open <code>bunny/serve/cli<em>depth.py</code> to see the full inference loop — it is short and readable. The architecture logic (encoder, projector, concatenation) is inherited from Bunny; look in <code>bunny/model/</code> for the projector and multi-image handling. The training scripts in <code>script/train/</code> are shell wrappers calling Hugging Face Trainer, so they are easy to parse. Dataset preprocessing is the most opaque part — the <code>SpatialQA</em>depthmap_instruction/</code> helpers show how depth maps are converted to the three-channel format.</p>
+<p><strong>Code difficulty:</strong> moderate. The Bunny codebase follows the LLaVA code style, which is familiar if you have read any LLaVA-family code. The main novelty (dual-image input, depth encoding) is localised to a few files. A researcher comfortable with Hugging Face Transformers and LoRA workflows can follow the full stack in a few hours.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only machine:</strong> Inference with the 3B (Phi-2) checkpoint is feasible at low speed — the model fits in CPU RAM (roughly 6 GB in float16, more in float32) and Transformers will fall back to CPU if no GPU is found. A forward pass on a CPU will take tens of seconds per query rather than under a second. Training is not realistic on CPU: even LoRA finetuning on 745 k samples requires a GPU with at least 24 GB VRAM for the 3B variant, and the paper used 8 x A100s. SpatialBench evaluation (just running the model on 160 QA pairs) would run on CPU in a few minutes but would be slow. No simulator is needed for any of this — the depth images are plain PNG files you can supply yourself (from an RGB-D camera like a RealSense, or from any depth estimation model).</p></article>
+<article class="page" id="gp2"><h1>Closed-Loop Open-Vocabulary Mobile Manipulation with GPT-4V</h1>
+<p>ICRA 2025 · 12 citations · VLM-as-high-level-planner (code-generating, closed-loop)</p>
+<h2>What it does</h2>
+<p>COME-robot is a real-world mobile manipulation system in which GPT-4V acts as the brain: it reads camera images and a natural-language task instruction, generates Python code that calls a robot&#x27;s primitive skill API, and uses a closed-loop feedback mechanism to detect failures and replan. It does not train a neural policy at all — the robot&#x27;s low-level motion (navigation, grasping, placing) is handled by hand-engineered primitives; GPT-4V supplies the high-level task logic. Sub-approach: <strong>VLM used as a high-level planner</strong> that generates executable code and drives closed-loop replanning.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> The system receives (a) a free-form natural-language instruction (e.g. &quot;bring me the red cup from the desk&quot;), (b) RGB-D images from a base-mounted wide-angle camera for scene-level navigation and furniture mapping, and (c) RGB-D images from a wrist-mounted end-effector camera for close-range object-level perception and grasp verification.</p>
+<p><strong>Backbone.</strong> GPT-4V (OpenAI&#x27;s multimodal GPT-4 model with vision) is called via API. There is no fine-tuning or additional training of any model.</p>
+<p><strong>Perception stack.</strong> A multi-level open-vocabulary perception module builds two map layers:</p>
+<ul>
+<li>*Global object map*: furniture locations (tables, sofas, shelves) detected and localized with the base RGB-D camera plus LiDAR-assisted navigation.</li>
+<li>*Local object map*: per-receptacle point clouds of small objects (cups, bowls, etc.) built by the wrist camera when the arm is positioned above a surface. Objects are identified open-vocabulary by querying GPT-4V with a wrist-camera snapshot.</li>
+<li>SAM-2 (Segment Anything Model 2) tracks object state across steps to detect whether an object has been moved or displaced.</li>
+</ul>
+<p><strong>Action representation and production.</strong> GPT-4V is prompted with a system prompt that includes: the task description, a description of all available primitive APIs, current perception state (furniture map, objects found), and guidelines for structured output. The model outputs a JSON object with two fields: <code>&quot;reason&quot;</code> (chain-of-thought explanation) and <code>&quot;code&quot;</code> (a Python snippet). That Python snippet is executed directly on the robot by calling primitives such as <code>explore<em>global()</code>, <code>explore</em>local()</code>, <code>navigate(target)</code>, <code>grasp(object<em>id)</code>, <code>place(location)</code>, and <code>report</em>observation()</code>. This is code-as-action: the language model is a code generator, not an end-to-end policy.</p>
+<p><strong>Closed-loop feedback mechanism.</strong> After each primitive executes, a two-part verifier checks:</p>
+<ul>
+<li>*Feasibility verification*: did the action make sense given the current state (e.g. can the target object be reached)?</li>
+<li>*Success verification*: did the action succeed? Evidence comes from wrist-camera images, gripper force/position feedback, and object-map consistency.</li>
+</ul>
+<p>If verification fails, a hierarchical Plan Restorer attempts recovery at three levels:</p>
+<ul>
+<li>*Object-level*: retry grasp with a re-estimated pose.</li>
+<li>*Local-level*: rebuild the local object map (the object may have moved on the surface).</li>
+<li>*Global-level*: navigate to an alternative furniture location (the object may not be where expected).</li>
+</ul>
+<p>GPT-4V is re-queried after a failure description is injected into the prompt, so it can revise its plan with knowledge of what went wrong.</p>
+<p><strong>Training / fine-tuning.</strong> None. The entire system is prompt-engineered. GPT-4V is used frozen via API. The primitive skills (navigation, grasping, placing) are pre-existing modules implemented with classical robotics (point-cloud-based grasp planning, differential-drive navigation stack). The paper does not specify exact grasp planner, but point clouds from RGB-D are used to estimate 6-DoF grasp poses.</p>
+<p><strong>Hardware.</strong> A four-wheeled differential-drive mobile base carrying a 7-DoF Kinova Gen3 arm with a parallel-jaw gripper. The base has a wide-angle RGB-D camera (for global mapping), LiDAR, and IMU. The end-effector has a wrist RGB-D camera. The paper also mentions experiments with a Unitree B2 quadruped + Z1 arm.</p>
+<p><strong>Evaluation.</strong> Eight real-world tasks: four mobile manipulation tasks (object across rooms; 5 trials each) and four tabletop manipulation tasks (10 trials each). Compared to a non-closed-loop GPT-4V baseline and an open-loop LLM baseline. COME-robot achieves ~65% success on mobile tasks vs. ~30% baseline and ~75% on tabletop tasks vs. ~47.5% baseline.</p>
+<h2>The code</h2>
+<p><strong>Repo URL.</strong> No public GitHub repository has been released. The paper&#x27;s arXiv page (arxiv.org/abs/2404.10220) and the project website (come-robot.github.io) both exist but link to no code. The project page has a &quot;Code&quot; button that does not resolve to a GitHub repository as of the review date.</p>
+<p><strong>Language / framework.</strong> From the paper&#x27;s description: Python. The robot skills API is written in Python and called directly from GPT-4V-generated code snippets. Navigation likely uses ROS (Robot Operating System) under the hood given the Kinova Gen3 and LiDAR integration.</p>
+<p><strong>Repo structure.</strong> Not publicly available; cannot be verified.</p>
+<p><strong>Key file to open first.</strong> Not applicable — no repo.</p>
+<p><strong>Dependencies (inferred).</strong> OpenAI Python SDK (for GPT-4V API calls), a Kinova Gen3 driver (likely <code>kortex<em>api</code> or ROS <code>ros</em>kortex</code>), SAM-2 (Meta&#x27;s Segment Anything 2), an RGB-D point cloud library (Open3D or PCL), and a navigation stack (likely ROS Navigation or Nav2).</p>
+<p><strong>Simulator.</strong> No simulator is used or needed; all experiments are in the real world.</p>
+<p><strong>Dataset.</strong> No dataset; the system is zero-shot at runtime.</p>
+<p><strong>GPU.</strong> The robot&#x27;s onboard compute runs the perception stack (SAM-2 tracking requires a GPU for real-time inference). GPT-4V is accessed by API, so no local GPU for the language model itself.</p>
+<p><strong>How you would run it.</strong> You cannot run the official implementation — it is not released. A faithful re-implementation would require: an OpenAI GPT-4V API key, a Kinova arm or a simulated equivalent (e.g., in PyBullet or Isaac Sim), a SAM-2 checkpoint, and a ROS navigation stack. The system loop is: (1) call <code>explore_global()</code> to build the furniture map; (2) call GPT-4V with the instruction + map state to get Python code; (3) <code>exec()</code> the code against the skill API; (4) call the verifier; (5) if failure, inject failure summary into context and re-query GPT-4V.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Read the arXiv paper sections in this order: Figure 2 (system pipeline overview), Section III-A (Perception and Reasoning Module), Section III-B (Closed-Loop Feedback and Restoration), then the prompt design details in the appendix (if published). The paper is clearly written and the architecture diagram makes the data flow easy to follow.</p>
+<p><strong>How hard is the code to follow.</strong> Since there is no public code, you would be reconstructing from the paper. The paper is well-specified enough that the high-level loop is clear, but the exact prompt templates, the grasp planning implementation, and the SAM-2 integration details are not fully described. If a repo were released, the most complex piece would be the Plan Restorer&#x27;s hierarchical failure recovery logic — the three-level fallback (object → local → global) involves non-trivial state bookkeeping. The GPT-4V prompt engineering (system prompt + structured JSON output parsing) would be the first thing to study.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: no.</strong> Three blockers:</p>
+<ul>
+<li>GPT-4V requires an OpenAI API key and sends images to an external API — network and cost, not compute, but you cannot use it offline.</li>
+<li>SAM-2 (object tracking) requires a GPU for real-time inference; it will technically run on CPU but at roughly 0.1 fps, making it impractical.</li>
+<li>The system requires a real robot (Kinova Gen3 or equivalent) or a full physics simulator with arm support — there is no lightweight demo or pre-recorded rollout mode described.</li>
+</ul>
+<p>For pure exploration: you could call GPT-4V with a static image and hand-written perception state to see its code-generation output, but you cannot run the full closed-loop system on CPU alone. Training is not applicable — the system is fully prompt-driven with no gradient updates.</p></article>
+<article class="page" id="gp3"><h1>Improving Vision-Language-Action Model with Online Reinforcement Learning</h1>
+<p>ICRA 2025 · 10 citations · VLA end-to-end policy finetuning via RL</p>
+<h2>What it does</h2>
+<p>iRe-VLA addresses a specific gap: VLA models trained by supervised imitation on expert demonstrations cannot learn from environment interaction because directly applying online RL to a large vision-language backbone causes training instability and is too computationally expensive on most hardware. The paper&#x27;s answer is to split the model into parts: freeze the heavy VLM backbone during RL (so only the lightweight action head trains online), then periodically unfreeze the full model via LoRA (low-rank adaptation) for a supervised stabilization pass on the expanded dataset. This alternation — RL for exploration, supervised learning (SL) for consolidation — is the iRe-VLA loop. It is a <strong>VLA policy that outputs actions end-to-end</strong>, trained and continuously improved through environment interaction rather than only offline imitation.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> At each timestep the model receives a single RGB image from the wrist or overhead camera and a natural-language task instruction. There is no depth, no proprioception in the visual branch (proprioceptive state is handled separately in the real-robot SERL setup).</p>
+<p><strong>Backbone.</strong> BLIP-2 (3 billion parameters) is used as the frozen visual-language backbone. BLIP-2 takes the image and instruction and produces a sequence of hidden-state vectors h of shape (m × d), where m is the number of output tokens and d is the embedding dimension.</p>
+<p><strong>Action head.</strong> Two lightweight modules are added on top of BLIP-2:</p>
+<ul>
+<li>A *token learner* — a small attention-style module that compresses the m token vectors down to a single d-dimensional vector h&#x27;.</li>
+<li>An *MLP action head* — maps h&#x27; to the action vector a in R^d<em>a. For the real robot, d</em>a covers end-effector pose deltas (x, y, z, roll, pitch, yaw) plus a binary gripper open/close signal. For simulation, the action space matches MetaWorld&#x27;s or Franka Kitchen&#x27;s joint/end-effector convention.</li>
+</ul>
+<p>A *critic head* mirrors the action head structure but outputs a scalar value estimate (used during PPO).</p>
+<p><strong>Training — three-stage loop.</strong></p>
+<ul>
+<li><strong>Stage 0 (once).</strong> Standard supervised fine-tuning on the expert demonstration dataset (50 trajectories per task for MetaWorld, ~5 tasks for Franka Kitchen, ~2,000 teleoperation trajectories for the real Panda). Loss is mean-squared error between predicted and demonstrated actions. The full model (VLM + action head) is updated here.</li>
+</ul>
+<ul>
+<li><strong>Stage 1 (per new task).</strong> Online RL with the VLM parameters frozen. Only the action head and critic head are updated. The RL algorithm is PPO (proximal policy optimization) for simulation; for the real robot, it switches to SACfD (soft actor-critic from demonstrations), which interleaves rollouts from a 20-trajectory demonstration buffer (50% sampling) with live environment data. Reward is binary sparse: R=1 on task success, R=0 otherwise. Because the VLM is frozen, inference can cache the VLM&#x27;s latent output, drastically cutting per-step compute (the image+instruction encoding runs once; only the action head runs at control frequency).</li>
+</ul>
+<ul>
+<li><strong>Stage 2 (per new task, after Stage 1).</strong> Supervised learning on the union of the original expert dataset and the successful trajectories collected in Stage 1. Here, LoRA (low-rank adaptation) is applied to the VLM so the full model can adapt without catastrophic forgetting. Both the VLM (via LoRA) and the action head are updated. This stage stabilizes the policy, prevents the instability that pure RL on a large model causes, and propagates successful behaviors learned for new tasks back into the shared representation.</li>
+</ul>
+<p>Stages 1 and 2 repeat for each new task in sequence, so the model grows richer across a task curriculum without retraining from scratch.</p>
+<p><strong>Benchmarks.</strong> MetaWorld (25 expert tasks + 5 RL new tasks + 10 held-out unseen tasks with object shape/color/position variations); Franka Kitchen (5 expert tasks + 5 RL new tasks + 2 unseen color-variant tasks); real Franka Panda (pick, place, button-press, cable-route, drawer, evaluated for new-task learning speed vs. SERL baseline).</p>
+<p><strong>Compute.</strong> Stage 1 (online RL) runs on a single NVIDIA RTX 4090. Stage 2 (supervised update) runs on 4 NVIDIA A100 GPUs. Real-robot training takes roughly one hour per new task.</p>
+<h2>The code</h2>
+<p><strong>Repo URL.</strong> No public code repository has been released by the authors. The paper does not reference a project page or GitHub link, and a search of the first author&#x27;s GitHub profile (github.com/Robert-gyj, which hosts their later Ctrl-World work) finds no iRe-VLA repository. No repo URL is included here because none was found.</p>
+<p><strong>Dependent external frameworks.</strong></p>
+<ul>
+<li>SERL (github.com/rail-berkeley/serl) — the software suite the real-robot experiments are built on top of. SERL provides the SACfD implementation, the actor/learner distributed training architecture, and interfaces to the Franka robot via <code>serl<em>franka</em>controllers</code>. SERL is written in JAX/Flax.</li>
+<li>MetaWorld and Franka Kitchen — standard MuJoCo-based simulation benchmarks (Python, mujoco-py or dm_control).</li>
+<li>BLIP-2 — available via Hugging Face <code>transformers</code> (PyTorch).</li>
+</ul>
+<p><strong>Framework.</strong> The paper is PyTorch-based (BLIP-2 and LoRA are both PyTorch); the real-robot RL layer inherits SERL&#x27;s JAX stack for the SAC update, meaning the full real-robot pipeline spans both frameworks.</p>
+<p><strong>What to look for first.</strong> Because there is no released repo, the closest entry point is:</p>
+<ul>
+<li>SERL&#x27;s <code>examples/</code> directory for the real-robot SACfD loop.</li>
+<li>Hugging Face BLIP-2 (<code>Salesforce/blip2-opt-2.7b</code>) for the backbone loading pattern.</li>
+<li>The iRe-VLA paper&#x27;s Appendix (arXiv:2501.16664) for PPO hyperparameters and LoRA configuration details.</li>
+</ul>
+<p><strong>Simulator / dataset / GPU needed.</strong></p>
+<ul>
+<li>Simulation: MuJoCo (MetaWorld or Franka Kitchen), free to install.</li>
+<li>Dataset: MetaWorld and Franka Kitchen expert demos can be self-collected via scripted policies bundled with each benchmark.</li>
+<li>GPU: Stage 2 (SL update) requires multiple A100s as described. Stage 1 (online RL, frozen VLM) fits on a single 24 GB GPU (4090-class).</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p>Since there is no code release, &quot;reviewing&quot; means reading the paper and cross-referencing SERL&#x27;s codebase. Start with Section 3 of the paper (the iRe-VLA algorithm box and Figure 2 diagram) to understand the Stage 0/1/2 loop, then read Section 4&#x27;s ablations, which isolate the contribution of each stage. The method is not conceptually complex — it is essentially curriculum RL with frozen-backbone stabilization — but the engineering details (caching VLM latents, SACfD demonstration buffer ratios, LoRA integration) require reading carefully.</p>
+<p>Difficulty: moderate. The ideas are clear; the code complexity is in integrating BLIP-2 (PyTorch) with SERL (JAX) across actor and learner nodes. Anyone comfortable with both Hugging Face and SERL can reconstruct it; anyone who only knows one of those frameworks will need to learn the other.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: no.</strong> Even inference from the BLIP-2 3B backbone is slow enough on CPU to be impractical for control loops (multi-second per frame). RL training requires at minimum one 24 GB GPU for the frozen-VLM online stage, and the supervised update stage requires 4 A100s (or equivalent). There is no small checkpoint released, no API-based option, and no quantized CPU-friendly variant described. If you wanted to run just the BLIP-2 forward pass on CPU as a test, that is technically possible with Hugging Face <code>transformers</code>, but it is not running iRe-VLA — the action head and training loop are not released.</p>
+<p>arXiv: <a href="https://arxiv.org/abs/2501.16664" target="_blank" rel="noopener">https://arxiv.org/abs/2501.16664</a></p></article>
+<article class="page" id="gp4"><h1>Open-Nav: Exploring Zero-Shot Vision-and-Language Navigation in Continuous Environment with Open-Source LLMs</h1>
+<p><em>ICRA 2025 · 9 citations · VLM used as a high-level planner / vision-language navigation</em></p>
+<h2>What it does</h2>
+<p>Open-Nav is a zero-shot vision-and-language navigation (VLN) system that replaces proprietary closed-source LLMs (such as GPT-4) with locally hosted open-source LLMs for navigating photorealistic 3D environments described by natural-language instructions. The agent follows step-by-step language instructions through continuous 3D spaces without any fine-tuning on navigation datasets — it is zero-shot at inference time. The sub-approach is a <strong>VLM used as a high-level planner</strong>: the LLM reasons over panoramic perceptual summaries and selects among candidate waypoints, while separate lightweight models handle low-level perception and waypoint generation.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> At each navigation step the agent collects a full panoramic sweep: 12 RGB snapshots and 12 aligned depth frames taken every 30 degrees around the agent (244×244 pixels RGB, 256×256 depth). These are not fed raw to the LLM; instead two specialist modules first convert them to language-friendly summaries.</p>
+<p><strong>Scene perception modules.</strong></p>
+<ul>
+<li>RAM (Recognize Anything Model): detects every visible object in the scene, classifies each one, and estimates its 3D spatial coordinates relative to the agent.</li>
+<li>SpatialBot (a fine-tuned 3B-parameter vision-language model trained on RGB-D pairs): produces natural-language descriptions that emphasize spatial relationships and object distances, consuming both the RGB and depth images.</li>
+</ul>
+<p>The outputs of RAM and SpatialBot are concatenated into a single text passage describing &quot;what is around me and how far.&quot;</p>
+<p><strong>Waypoint prediction.</strong> A pretrained transformer-based waypoint predictor takes the 12 RGB + 12 depth pairs, extracts features with two ResNet-50 encoders (one per modality), fuses them, and passes the result through a two-layer transformer. The head outputs a heatmap over the panorama; non-maximum suppression identifies K navigable candidate locations. Each candidate is represented as an (angle, distance) pair — a discrete action space of short-horizon waypoints, not raw joint commands.</p>
+<p><strong>Spatial-temporal chain-of-thought (CoT) reasoning.</strong> The LLM navigator receives a structured prompt containing the language instruction, the scene description from RAM+SpatialBot, the K candidate waypoints, and a maintained history of prior steps. It reasons in three explicit stages:</p>
+<ul>
+<li><strong>Instruction comprehension</strong>: decomposes the full route instruction into sub-actions (&quot;turn left at the door&quot;, &quot;go up the stairs&quot;) and identifies landmarks.</li>
+<li><strong>Progress estimation</strong>: reviews the navigation history — checks which landmarks have been verified, tracks directional and sequential progress, estimates where in the instruction sequence the agent currently is.</li>
+<li><strong>Decision making</strong>: integrates the candidate waypoints, scene observations, and progress estimate to select the single best next waypoint.</li>
+</ul>
+<p>No gradient computation occurs at inference; the LLM is prompted entirely in text with the structured multi-stage prompt.</p>
+<p><strong>LLMs evaluated.</strong> Four open-source models are tested via the Ollama serving framework (which handles quantization and local inference): Llama3.1-70B-instruct (4-bit quantized), Qwen2-72B-instruct (4-bit quantized), Gemma2-27B-instruct (FP16), and Phi3-14B-instruct (8-bit quantized). Llama3.1-70B achieves the best navigation results at 16% success rate on R2R-CE Val Unseen, compared to 19% for the GPT-4 variant.</p>
+<p><strong>Evaluation benchmarks.</strong> The paper evaluates on R2R-CE (Room-to-Room in Continuous Environments), a standard VLN benchmark running inside the Habitat simulator on Matterport3D reconstructed scenes. A 100-episode subset (OpenNav<em>R2R-CE</em>100) is used for the zero-shot evaluation to keep LLM API cost manageable. Real-world tests are conducted in an office, lab, and game room.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/YanyuanQiao/Open-Nav" target="_blank" rel="noopener">https://github.com/YanyuanQiao/Open-Nav</a></p>
+<p><strong>Language/Framework:</strong> Python 3.8. Depends on Habitat-Lab v0.1.7 and Habitat-Sim for 3D environment simulation. PyTorch for the waypoint predictor and ResNet encoders. Ollama for serving open-source LLMs locally.</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+Open-Nav/
+├── README.md
+├── requirements.txt
+├── environment.yml
+├── run_OpenNav.bash          # main launch script
+├── run.py                    # Python entry point called by the bash script
+├── data/
+│   ├── datasets/
+│   │   └── R2R_VLNCE_v1-2_preprocessed/val_unseen/   # navigation episodes
+│   ├── scene_datasets/mp3d/  # Matterport3D .glb scene files
+│   └── pretrained_models/ddppo-models/
+│       └── gibson-2plus-resnet50.pth   # depth encoder weights
+├── waypoint_prediction/
+│   └── checkpoints/check_val_best_avg_wayscore/  # waypoint predictor weights
+├── recognize_anything/       # RAM model code + weights
+├── SpatialBot3B/             # SpatialBot VLM code + weights
+├── habitat_extensions/
+│   └── config/vlnce_task.yaml  # episode count + task config
+└── vlnce_baselines/          # VLN-CE baseline environment wrappers
+</code></pre>
+<p><strong>First file to open:</strong> <code>run.py</code> — it orchestrates the full loop: load the Habitat environment, initialize the waypoint predictor, run RAM and SpatialBot on each observation, build the CoT prompt, call the LLM (via Ollama), parse the waypoint selection, and step the simulator.</p>
+<p><strong>Dependencies:</strong> Habitat-Lab 0.1.7, Habitat-Sim (must be installed from source following Habitat&#x27;s own setup guide), PyTorch, RAM, SpatialBot-3B, Ollama (for LLM serving). All must be assembled manually; no single-command install exists.</p>
+<p><strong>Simulator:</strong> Habitat-Sim is mandatory. Matterport3D scene files (.glb meshes) must be downloaded separately under a license agreement from the Matterport3D dataset.</p>
+<p><strong>Dataset:</strong> The R2R-CE dataset and the 100-episode Open-Nav subset must be downloaded (Google Drive link in README) and placed in <code>data/datasets/R2R<em>VLNCE</em>v1-2<em>preprocessed/val</em>unseen/</code>.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+conda create -n opennav python=3.8
+# install Habitat-Lab 0.1.7 and Habitat-Sim per official docs
+pip install -r requirements.txt
+# download all data, scenes, and model weights per README
+ollama serve  # in a separate terminal, pull the LLM (e.g., ollama pull llama3.1:70b)
+bash run_OpenNav.bash --llm Llama3.1
+</code></pre>
+<p><strong>GPU requirements:</strong> Not stated explicitly, but 4-bit quantized Llama3.1-70B needs roughly 40–48 GB VRAM or can be offloaded across CPUs via Ollama with significant slowdown. The waypoint predictor and SpatialBot-3B each require a GPU for reasonable speed. A consumer GPU (24 GB) is tight even for quantized inference; 2×24 GB or A100-class is more realistic.</p>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>run.py</code>. The CoT prompt construction is the conceptual core — look for where RAM output and SpatialBot descriptions are assembled into the instruction<em>comprehension / progress</em>estimation / decision<em>making prompt template. Then read <code>waypoint</em>prediction/</code> to understand the transformer heatmap architecture. The Habitat environment wrappers in <code>vlnce_baselines/</code> are largely borrowed from the VLN-CE codebase and are less novel; skim those last.</p>
+<p>The code is moderately easy to follow. The navigation loop is linear and well-structured. The main complexity is the multi-model pipeline — you need to understand four separate systems (Habitat, RAM, SpatialBot, the LLM) before the full picture clicks. No custom training loop exists; everything is zero-shot inference, which makes the code shorter and easier to audit than a training codebase.</p>
+<h2>Run verdict</h2>
+<p>A CPU-only box cannot practically run this system. There are three blockers: (1) Habitat-Sim renders Matterport3D meshes in real time and requires a GPU (or at minimum a powerful CPU with significant rendering overhead); (2) SpatialBot-3B and the waypoint predictor need GPU for reasonable inference speed; (3) Llama3.1-70B at 4-bit quantization needs ~40 GB of VRAM or very large RAM with CPU offload — on CPU it would take minutes per navigation step, making any evaluation across 100 episodes infeasible. With Ollama&#x27;s CPU offload mode, LLM inference alone would run but at ~0.5–2 tokens/second, which combined with Habitat rendering makes the full pipeline impractical. A machine with a single 80 GB GPU (A100) or two 40 GB GPUs is the realistic minimum.</p></article>
+<article class="page" id="gp5"><h1>ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for Robot Navigation</h1>
+<p>ICRA 2025 · 8 citations · VLM used as a high-level planner (retrieval-augmented navigation QA)</p>
+<h2>What it does</h2>
+<p>ReMEmbR is a zero-shot navigation system that lets a robot answer natural-language questions about its entire deployment history — where an object was seen, when an event occurred, how long ago something happened. It belongs to the sub-approach of a <strong>VLM used as a high-level planner</strong>: no end-to-end action policy is learned; instead a VLM (VILA) captions the video stream offline into a searchable memory, and an LLM agent queries that memory at runtime to produce position or time answers that feed a classical navigation stack (ROS2 Nav2). The paper also introduces NaVQA, a long-horizon navigation video question-answering dataset annotated with spatial, temporal, and descriptive questions.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> A single front-facing camera (plus odometry/pose from the robot&#x27;s localization stack) and a natural-language question posed at query time. No depth or multi-camera rig is required for the core system; the Nova Carter deployment also uses 3D LiDAR for AMCL localization, but that feeds Nav2, not the memory model.</p>
+<p><strong>Memory building phase (offline, runs during or after deployment).</strong></p>
+<ul>
+<li>The video stream is segmented into 3-second windows; 6 frames per window are sampled, giving an effective rate of 2 FPS.</li>
+<li><strong>VILA1.5</strong> (a video-language model; primary experiments use the 13B variant, with 8B and 3B also tested) processes each 6-frame clip and produces a natural-language caption describing what the robot saw.</li>
+<li>The caption is embedded with <strong>mxbai-embed-large-v1</strong> (a text embedding model) into a dense vector.</li>
+<li>Each entry stored in the vector database is a triplet: <code>(caption<em>embedding, robot</em>position [x,y,z,theta], timestamp)</code>. The vector database is <strong>Milvus</strong>, backed by quantized approximate nearest-neighbor (ANN) indexing, which keeps retrieval sub-second even over millions of entries.</li>
+</ul>
+<p><strong>Querying phase (online, at question time).</strong></p>
+<p>A LangGraph state machine drives an LLM agent (GPT-4o in the primary experiments; Codestral-22B, Command-R, and Llama-3.1-8B also tested). The agent has exactly three retrieval tools exposed as LangChain <code>StructuredTool</code> objects:</p>
+<ul>
+<li><code>fl(object: str)</code> — text search: embeds the query string and retrieves the *m* nearest caption entries by cosine similarity.</li>
+<li><code>fp((x,y,z))</code> — position search: retrieves the *m* entries whose stored coordinates are closest to a given point.</li>
+<li><code>ft(&quot;HH:MM:SS&quot;)</code> — time search: retrieves the *m* entries closest to a given timestamp.</li>
+</ul>
+<p>The agent calls up to three rounds of retrieval (configurable); each round accumulates retrieved <code>(caption, position, time)</code> tuples into its context. A <code>should_continue</code> conditional edge decides whether to call another retrieval round or move to the <code>generate</code> node, which formats the final answer as a JSON dict with keys for <code>text</code>, <code>position</code>, <code>time</code>, and <code>duration</code>. A spatial answer (an (x,y,z) coordinate) is handed directly to ROS2 Nav2 as a navigation goal.</p>
+<p><strong>Nothing is trained.</strong> All components — VILA, mxbai-embed-large-v1, and the LLM — are used as pretrained foundation models with prompting only. The system is entirely zero-shot.</p>
+<p><strong>Hallucination note.</strong> No explicit mitigation mechanism is described. Grounding to stored captions (rather than free generation) provides implicit containment, but the paper acknowledges cases where a quantized 3B captioning model confused visually similar objects (e.g., soda machine vs. water fountain).</p>
+<p><strong>Deployment hardware.</strong> For the real-robot demo (Clearpath Nova Carter): memory building runs on a Jetson Orin 32GB using quantized VILA-3B; the LLM query calls GPT-4o via the OpenAI API from the cloud; speech input is transcribed by WhisperTRT (optimized Whisper for Jetson).</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/NVIDIA-AI-IOT/remembr" target="_blank" rel="noopener">https://github.com/NVIDIA-AI-IOT/remembr</a></p>
+<p><strong>Language / framework:</strong> Python 3; PyTorch (via VILA); LangGraph + LangChain for the agent state machine; Milvus for the vector store; Gradio for the offline demo UI; ROS2 / rclpy for the robot demo.</p>
+<p><strong>Top-level structure:</strong></p>
+<pre><code>
+remembr/
+├── remembr/                   # core library
+│   ├── agents/
+│   │   └── remembr_agent.py   # ReMEmbRAgent — the LangGraph state machine
+│   ├── memory/
+│   │   ├── memory.py          # MemoryItem dataclass (caption, time, position, theta)
+│   │   └── milvus_memory.py   # MilvusMemory: insert / text / position / time retrieval
+├── examples/
+│   ├── chat_demo/
+│   │   └── demo.py            # offline Gradio demo; loads a ROS bag, builds memory, answers questions
+│   └── nova_carter_demo/      # live robot demo (ROS2 nodes, Jetson-specific)
+├── requirements.txt
+├── setup.py
+├── vila_setup.sh              # clones NVlabs/VILA and creates the conda env
+└── eval.md                    # NaVQA evaluation instructions (CODa dataset, ~335 GB)
+</code></pre>
+<p><strong>File to open first:</strong> <code>remembr/agents/remembr<em>agent.py</code>. It contains the full <code>ReMEmbRAgent</code> class: <code>llm</em>selector</code> routes between OpenAI, NVIDIA NIM, and Ollama; <code>set<em>memory</code> generates the three <code>StructuredTool</code> wrappers and compiles the LangGraph graph; the four graph nodes (<code>agent</code>, <code>action</code>, <code>generate</code>, and the <code>should</em>continue</code> conditional) are all defined here. Reading this file gives you the complete query-time logic.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>VILA (cloned separately from <code>https://github.com/NVlabs/VILA</code>; <code>vila_setup.sh</code> sets this up in a conda env called <code>remembr</code>)</li>
+<li>Milvus standalone (Docker; launched via <code>launch<em>milvus</em>container.sh</code>)</li>
+<li>Ollama (for local LLMs; installed via <code>curl | sh</code>)</li>
+<li>LangGraph, LangChain, Pydantic, HuggingFace Transformers (mxbai embedder), Gradio</li>
+<li>ROS2 rclpy (only for the robot demo; not needed for the offline chat demo)</li>
+</ul>
+<p><strong>How to run the offline demo:</strong></p>
+<pre><code>
+# 1. Clone VILA and set up conda env
+mkdir deps &amp;&amp; cd deps
+git clone https://github.com/NVlabs/VILA.git
+cd .. &amp;&amp; ./vila_setup.sh remembr
+conda activate remembr
+
+# 2. Install Python deps
+python -m pip install -r requirements.txt
+
+# 3. Start Milvus
+curl -sfL https://raw.githubusercontent.com/milvus-io/milvus/master/scripts/standalone_embed.sh \
+  -o launch_milvus_container.sh
+bash launch_milvus_container.sh start
+
+# 4. Install an LLM backend (e.g. Ollama with command-r)
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull command-r
+
+# 5. Run the Gradio demo
+cd examples/chat_demo
+python demo.py
+</code></pre>
+<p>You also need a ROS bag file of a robot deployment to feed the memory building phase; <code>eval.md</code> describes downloading 7 sequences (IDs 0, 3, 4, 6, 16, 21, 22) of the CODa dataset, totaling ~335 GB after processing.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with <code>remembr/memory/memory.py</code> (the <code>MemoryItem</code> struct — tiny, takes 1 minute) then <code>remembr/memory/milvus<em>memory.py</code> (the three retrieval methods — straightforward Milvus queries). Then read <code>remembr/agents/remembr</em>agent.py</code> top to bottom; the LangGraph plumbing is the most complex part but is well-compartmentalized. Finally, look at <code>examples/chat_demo/demo.py</code> to see how the pipeline is assembled end-to-end.</p>
+<p><strong>Difficulty.</strong> Moderate. The memory module is clean and easy. The agent file requires familiarity with LangChain&#x27;s <code>StructuredTool</code> pattern and LangGraph&#x27;s state machine API (nodes, edges, <code>TypedDict</code> state), which have their own abstraction overhead. The VILA integration (video captioning) is the least transparent part — it is invoked through VILA&#x27;s own API and is easiest to treat as a black box that takes a list of frames and returns a string caption. There is no custom training code to read. Someone comfortable with LangChain and basic vector search can follow everything in a few hours.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot train or evaluate on a CPU-only machine.</strong> VILA1.5 (even the 3B variant) requires a CUDA GPU for inference at any practical speed; running it on CPU is technically possible with HuggingFace but would be extremely slow (minutes per 3-second clip). The Milvus vector database and the LangGraph agent are CPU-friendly.</p>
+<p><strong>Partial CPU run is feasible</strong> if you skip VILA (use pre-built memory from someone else&#x27;s bag) and use the OpenAI API for the LLM: in that case <code>milvus<em>memory.py</code> and <code>remembr</em>agent.py</code> run fine on CPU, and the embedding model (<code>mxbai-embed-large-v1</code> via HuggingFace) is small enough to run on CPU with ~10-second latency per query. The offline Gradio demo would work in this mode if you have a pre-populated Milvus collection and an OpenAI API key.</p>
+<p><strong>Full pipeline (building memory from video) needs a GPU.</strong> NVIDIA recommends a Jetson Orin 32GB for the edge case or a workstation GPU for the 13B model. An A100 or similar is needed to run VILA1.5-13B at the paper&#x27;s 2 FPS rate. The NaVQA evaluation additionally requires ~500 GB of storage for the CODa dataset.</p></article>
+<article class="page" id="gp6"><h1>Towards Generalizable Vision-Language Robotic Manipulation: A Benchmark and LLM-Guided 3D Policy</h1>
+<p><em>ICRA 2025 · 8 citations · VLM-as-high-level-planner + generalist-policy benchmark</em></p>
+<h2>What it does</h2>
+<p>This paper introduces GemBench, a simulation benchmark for measuring how well language-conditioned robot manipulation policies generalize to novel placements, novel objects, and long-horizon multi-step tasks — four levels of increasing difficulty. Alongside the benchmark, the authors propose 3D-LOTUS, a policy that predicts robot end-effector waypoints directly from a 3D point cloud of the scene conditioned on a natural-language instruction, and 3D-LOTUS++, which wraps 3D-LOTUS inside a two-tier system: an LLM decomposes the instruction into primitive sub-goals, and an open-vocabulary VLM grounds the objects named in each sub-goal before 3D-LOTUS executes the motion.</p>
+<p>Sub-approach: <strong>generalist-policy benchmark + finetuning method</strong> (the benchmark is the primary contribution; 3D-LOTUS is a trained specialist policy; 3D-LOTUS++ uses a VLM as a high-level planner above it).</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> Four calibrated RGB-D cameras — front, left shoulder, right shoulder, and wrist — each at 256×256 pixels, plus a natural-language task instruction (e.g., &quot;pick up the red cup and place it in the drawer&quot;).</p>
+<p><strong>Scene representation.</strong> The four depth images are unprojected into 3D using known camera intrinsics and extrinsics, then merged into a single point cloud in world coordinates. The cloud is voxelized at 1 cm³ resolution (one point per voxel). Background, table surface, and robot-arm points are masked out using workspace bounds and CAD models of the robot. Each surviving point carries XYZ position, RGB color, and height above table as features.</p>
+<p><strong>Backbone.</strong> The point cloud backbone is Point Transformer v3 (PTV3), a hierarchical U-Net with downsampling and upsampling stages built from transformer layers. There is no pretrained VLM inside the core policy. Language is encoded separately with the CLIP text encoder; the resulting text vector is broadcast and concatenated into the point features before the PTV3 processes them.</p>
+<p><strong>Action representation and prediction.</strong> Actions are end-effector waypoints: 3D gripper position, 3D rotation (Euler angles), and a binary gripper open/close state. Position is discretized into 30 bins per axis; rotation into 72 bins per axis (5° each). The model ends in three classification heads — one per spatial dimension for position, one per axis for rotation, one for open/close — trained with cross-entropy loss. Inverse kinematics converts the predicted waypoint into joint commands. There is no diffusion head or flow matching.</p>
+<p><strong>Training.</strong> 100 expert demonstrations per task variation (3,100 total for the training split), batch size 8, Adam optimizer, initial learning rate 1×10⁻⁴ with linear decay, 150,000 iterations (~11–14 hours on one A100 80 GB). No pretraining on internet-scale data; training starts from random weights on the non-CLIP parts.</p>
+<p><strong>3D-LOTUS++ (the planning-augmented version).</strong> A frozen LLaMA-3-8B receives the full instruction and decomposes it into a sequence of six action primitives: <code>grasp</code>, <code>move<em>grasped</em>object</code>, <code>push<em>down</code>, <code>push</em>forward</code>, <code>release</code>, <code>rotate<em>grasped</em>object</code>, each with an object reference. OWLv2 (open-vocabulary detection) and SAM (Segment Anything Model) ground each object reference in the current camera frames, producing segmentation masks that are back-projected into the point cloud. Point features are replaced by semantic role labels (goal object, target location, obstacle, robot body). A learned stop-probability head tells the policy when to end the current primitive. This gives 3D-LOTUS++ a chance to generalize to objects and task structures it never saw during its own training.</p>
+<p><strong>GemBench generalization levels.</strong> Level 1 — 16 training tasks with novel object placements and distractors; Level 2 — 15 tasks introducing novel rigid objects (shapes and colors); Level 3 — 18 tasks with novel articulated objects (different drawer counts, grill vs. laptop lid); Level 4 — 6 complex long-horizon tasks (30–50 primitives, up to 21 objects).</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/vlc-robot/robot-3dlotus" target="_blank" rel="noopener">https://github.com/vlc-robot/robot-3dlotus</a></p>
+<p><strong>Language / framework:</strong> Python 3.10, PyTorch 2.3.0, CUDA 12.1. The project is a pip-installable package (<code>setup.py</code>). SLURM batch scripts are provided for training and evaluation on GPU clusters.</p>
+<p><strong>Repository structure:</strong></p>
+<pre><code>
+robot-3dlotus/
+  genrobo3d/              ← main source package
+    models/
+      PointTransformerV3/ ← PTV3 backbone implementation
+      base.py             ← base model class
+      simple_policy_ptv3.py   ← 3D-LOTUS policy definition (start here)
+      motion_planner_ptv3.py  ← 3D-LOTUS++ motion planner
+    configs/rlbench/      ← YAML configs (robot_pipeline.yaml etc.)
+    evaluation/           ← evaluation loop and metrics
+    rlbench/              ← RLBench environment wrappers
+    train/                ← training scripts
+    utils/                ← data loading, geometry helpers
+    vlm_models/           ← OWLv2 + SAM wrappers for object grounding
+  job_scripts/            ← SLURM .sh files for train/eval
+  notebooks/              ← Jupyter notebooks for interactive eval
+  preprocess/             ← data generation and preprocessing
+  prompts/rlbench/        ← LLaMA-3 prompt templates per task
+  scripts/                ← result summarization utilities
+  requirements.txt
+  setup.py
+  INSTALL.md
+  DATAGEN.md
+</code></pre>
+<p><strong>File to open first:</strong> <code>genrobo3d/models/simple<em>policy</em>ptv3.py</code> — this defines the full 3D-LOTUS forward pass from point cloud + language to waypoint classification logits. Read <code>motion<em>planner</em>ptv3.py</code> next to see how 3D-LOTUS++ extends it with semantic role features and the stop head.</p>
+<p><strong>Dependencies:</strong> PyTorch (GPU), torch-scatter (must be compiled against CUDA), RLBench (requires CoppeliaSim 4.1.0 + PyRep), Pointnet2_PyTorch, chamferdist, llama3 library (for 3D-LOTUS++ task planner), OWLv2 + SAM (for grounding). All are listed in <code>requirements.txt</code> and <code>INSTALL.md</code>.</p>
+<p><strong>Simulator and dataset:</strong> RLBench running inside CoppeliaSim is mandatory — the policy is evaluated by actually executing actions in simulation. The GemBench dataset (point clouds + CLIP embeddings, ~190 GB on Hugging Face at <code>rjgpinel/GEMBench</code>) must be downloaded and placed at <code>data/gembench/</code>. Alternatively the RLBench-18task (PerAct) dataset can be used for cross-validation.</p>
+<p><strong>Typical run:</strong></p>
+<pre><code>
+# train 3D-LOTUS
+sbatch job_scripts/train_3dlotus_policy.sh
+
+# evaluate
+sbatch job_scripts/eval_3dlotus_policy.sh
+python scripts/summarize_tst_results.py &lt;path&gt; 150000
+
+# 3D-LOTUS++ motion planner training
+sbatch job_scripts/train_3dlotusplus_motion_planner.sh
+
+# interactive notebook evaluation
+jupyter notebook notebooks/eval_3dlotus_policy.ipynb
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>genrobo3d/models/simple<em>policy</em>ptv3.py</code> to understand the full policy: read how the point cloud and CLIP text vector are fused, how PTV3 processes them, and how the three classification heads decode a waypoint. Then read <code>motion<em>planner</em>ptv3.py</code> to see the 3D-LOTUS++ extensions — semantic role feature injection, stop-probability head, and multi-step loop.</p>
+<p>After the models, look at <code>genrobo3d/vlm_models/</code> to understand the OWLv2 + SAM grounding pipeline, and <code>prompts/rlbench/</code> to see the LLaMA-3 prompt templates that decompose instructions into primitives.</p>
+<p><strong>Code difficulty:</strong> moderate-to-high. The point cloud voxelization and PTV3 backbone require familiarity with 3D deep learning (sparse tensors, scatter operations). The 3D-LOTUS++ multi-module pipeline (LLM → grounding → motion planner loop) spans several files and config YAMLs. The RLBench/CoppeliaSim setup is the hardest part: installation is multi-step, path-sensitive, and requires a specific CoppeliaSim version. The Jupyter notebooks ease entry for evaluation only.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on CPU-only.</strong> Three hard GPU requirements combine: (1) torch-scatter must be compiled with a CUDA-enabled compiler and will not operate correctly on CPU; (2) RLBench + CoppeliaSim rendering requires a physical or virtual display and in practice demands a GPU for acceptable simulation speed; (3) LLaMA-3-8B inference for 3D-LOTUS++ at minimum needs 16 GB GPU VRAM for float16, or aggressive 4-bit quantization plus specialized libraries. Training requires an A100 (80 GB) for ~14 hours. Even inference-only evaluation needs at least a mid-range GPU (16–24 GB VRAM) plus the full CoppeliaSim simulator stack. There is no lightweight checkpoint that bypasses these requirements, and no API-only fallback — the policy must query the simulator for observations at inference time.</p></article>
+<article class="page" id="gp7"><h1>OLiVia-Nav: An Online Lifelong Vision Language Approach for Mobile Robot Social Navigation</h1>
+<p>ICRA 2025 · 8 citations · VLM used as a high-level planner / social context encoder for navigation</p>
+<h2>What it does</h2>
+<p>OLiVia-Nav is a mobile robot navigation system that must respect social norms (keeping appropriate distance from people, not cutting through groups) in environments like hospitals and offices. It is not a VLA that directly outputs joint actions; instead it is a <strong>VLM-as-planner</strong> approach where a large VLM generates scene captions that are distilled into a lightweight encoder, and that encoder feeds a separate trajectory prediction network. The framework is &quot;online lifelong&quot; because it can absorb new social norms encountered during deployment without forgetting previously learned ones — a property called continual or lifelong learning.</p>
+<p>Sub-approach: <strong>VLM used as a high-level planner</strong> (specifically, a VLM-driven social-context encoder feeding a downstream trajectory selector).</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> At each timestep the robot receives:</p>
+<ul>
+<li>RGB image from an onboard camera (captures people and scene context)</li>
+<li>2D LiDAR scan (captures nearby obstacles and pedestrian positions as a spatial point cloud)</li>
+<li>A navigation goal position</li>
+</ul>
+<p><strong>Stage 1 — SC-CLIP (Social Context Contrastive Language Image Pre-training).</strong></p>
+<p>A large, frozen VLM (unspecified in the paper; likely CLIP-family or a captioning VLM such as BLIP-2 or LLaVA based on the distillation framing) reads the camera image and generates two text captions per scene: a long caption describing objects, people, spatial relationships, and recommended social behaviours, and a short summary caption. These captions are produced offline (or on a server) during a training/data-collection phase.</p>
+<p>Two lightweight student encoders are then trained by contrastive alignment:</p>
+<ul>
+<li><strong>SCIE (Social Context Image Encoder):</strong> a compact CNN or ViT that maps camera frames to an embedding.</li>
+<li><strong>SCTE (Social Context Text Encoder):</strong> a compact text encoder that maps captions to the same embedding space.</li>
+</ul>
+<p>Training uses a cosine-similarity loss between image and caption embeddings (the CLIP-style contrastive objective) plus cross-entropy classification losses. A principal-component extraction step further compresses embeddings to retain only the socially relevant axes of variation.</p>
+<p>At inference the SCTE is dropped; only the SCIE runs on-robot to produce a social-context embedding from the camera frame alone.</p>
+<p><strong>Stage 2 — Trajectory Prediction Network (TPN).</strong></p>
+<p>The TPN fuses three streams via multi-head self-attention arranged in sequential transformer layers:</p>
+<ul>
+<li>Social context embedding from SCIE</li>
+<li>LiDAR voxel features (a voxelization layer processes the 2D scan into a spatial feature map)</li>
+<li>Goal embedding (feedforward network on the goal position)</li>
+</ul>
+<p>The TPN outputs a distribution over candidate short-horizon trajectories. A winner-takes-all (WTA) loss trains multiple trajectory hypotheses in parallel; the hypothesis with lowest displacement from the ground-truth trajectory at training time is selected as the winner and back-propagated. At test time the trajectory with the highest predicted score is executed.</p>
+<p><strong>Stage 3 — Lifelong Learning Updater (LLU).</strong></p>
+<p>During deployment, when the robot encounters a novel social context (detected via embedding-space novelty), it:</p>
+<ul>
+<li>Captures the camera image and calls the large VLM again to generate new captions.</li>
+<li>Re-trains SCIE and SCTE on these new image-caption pairs with an additional regularisation loss that prevents overwriting old embeddings (an elastic-weight-consolidation or replay-buffer style mechanism — exact variant not specified in public materials).</li>
+</ul>
+<p>This allows the lightweight on-robot encoders to expand their social vocabulary without retraining from scratch.</p>
+<p><strong>Training data.</strong> Collected in real indoor environments (hospital corridors, office spaces) with a ground-truth trajectory planner providing expert paths. No public benchmark dataset is used; data is proprietary to the Autonomous Systems and Biomechatronics Lab (ASBLab) at the University of Toronto.</p>
+<p><strong>Evaluation.</strong> Real-world experiments on a mobile robot platform (exact robot model not publicly stated). Metrics: Mean Squared Error (MSE) of predicted trajectory vs. ground truth, Hausdorff loss (maximum endpoint deviation), and Personal Space Violation (PSV) duration — how long the robot spent inside a human&#x27;s personal zone.</p>
+<h2>The code</h2>
+<p><strong>Repository URL:</strong> None found. No public GitHub repository was released as of July 2026. The arXiv page (arxiv.org/abs/2409.13675) and the author&#x27;s personal page (quest2gm.github.io) link only to a YouTube demo video and the paper PDF; no code link is listed.</p>
+<p><strong>Language/Framework:</strong> Not publicly available. Based on the architecture (CLIP-style encoder, transformer-based TPN, ROS-compatible mobile robot) the likely stack is Python, PyTorch, and ROS/ROS2, but this is inferred, not confirmed from released code.</p>
+<p><strong>Repo structure:</strong> N/A — no repo.</p>
+<p><strong>File to open first:</strong> N/A.</p>
+<p><strong>Dependencies (inferred):</strong> PyTorch, a CLIP or BLIP-2 model (for caption generation), a LiDAR processing library (Open3D or similar), ROS or ROS2 for robot integration, and the physical robot hardware (or a ROS-compatible simulator such as Gazebo or Isaac Sim).</p>
+<p><strong>Simulator/dataset/GPU:</strong> The paper reports only real-world experiments; no simulator was used. The proprietary dataset requires the physical lab setup. Training the SC-CLIP encoders requires a GPU (a mid-range GPU like an RTX 3080 would likely suffice, as the student encoders are compact — the large VLM caption generation could be offloaded to a server).</p>
+<p><strong>How you&#x27;d run it:</strong> You cannot run it — the code is not public. If it were released, the entry point would be a ROS node that subscribes to <code>/camera/image</code> and <code>/scan</code>, runs the SCIE forward pass, feeds the TPN, and publishes velocity commands to <code>/cmd_vel</code>.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first.</strong> Start with the arXiv paper (arxiv.org/abs/2409.13675), particularly Section III (System Overview), which describes the three-stage pipeline (SC-CLIP, TPN, LLU), and Section IV (Experiments), which gives the clearest picture of evaluation setup and baselines. The Moonlight review (themoonlight.io) is a useful secondary digest if you want a guided walkthrough.</p>
+<p><strong>How hard is the code to follow:</strong> Without released code, you cannot follow it. The architecture itself is moderately complex — the SC-CLIP distillation is standard contrastive learning, the TPN is a multi-stream transformer (similar to Social Force or DESIRE-style trajectory predictors), and the LLU is the novel but under-specified piece. Anyone familiar with CLIP fine-tuning and pedestrian trajectory prediction (e.g., from the EWTA-Trajectron lineage) would find the concepts approachable; the lifelong learning piece is the most novel and the least detailed in the paper.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: No, cannot run.</strong> Even if code were released, the system requires:</p>
+<ul>
+<li>A large VLM for caption generation (GPU-heavy at inference, even if quantised).</li>
+<li>A robot with a camera and LiDAR, or a full ROS+Gazebo simulation.</li>
+<li>The proprietary training dataset (not public).</li>
+</ul>
+<p>Inference of just the lightweight SCIE + TPN would plausibly run on CPU (the student encoders are compact by design), but there is nothing to run — no code, no checkpoint, no dataset. This is a paper whose results exist only in the authors&#x27; lab.</p></article>
+<article class="page" id="gp8"><h1>A Real-to-Sim-to-Real Approach to Robotic Manipulation with VLM-Generated Iterative Keypoint Rewards</h1>
+<p>(ICRA 2025 · 8 citations · VLM-generated rewards + real2sim)</p>
+<h2>What it does</h2>
+<p>IKER lets a vision-language model write the reward function for a robot instead of a human engineer. Given an RGB-D scene and a plain-language task description, GPT-4o generates a Python reward function expressed over sampled 3D keypoints; a reinforcement learning (RL) policy is then trained in a reconstructed simulation of the real scene and deployed back onto the physical robot — a real-to-sim-to-real loop. The cycle can repeat: after deployment the robot&#x27;s outcomes feed back to the VLM, which revises the reward for the next substep, enabling multi-step manipulation with mid-execution error recovery.</p>
+<p>Sub-approach: <strong>VLM-generated rewards + real2sim</strong> (the VLM does not directly produce robot actions; it writes reward code that shapes an RL policy trained in IsaacGym).</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> Four stationary Intel RealSense cameras plus a wrist-mounted camera watch the scene. The stationary cameras feed point clouds used for 3D scene reconstruction and grasp prediction. The wrist camera provides the RGB image that is sent to GPT-4o. The instruction is a free-form natural-language string (e.g., &quot;place the shoe on the rack&quot;).</p>
+<p><strong>Keypoint sampling.</strong> Before querying the VLM, keypoints are projected onto the scene: for manipulable objects (shoes, books) they are placed at the object&#x27;s axis-aligned extremities relative to its centroid; for static fixtures (rack, shelf) they are distributed uniformly across surfaces. Keypoints that project too close together in the image are pruned (background keypoints removed first). The RGB image with overlaid keypoints, the task instruction, and the history of previously generated reward steps are all concatenated into a GPT-4o prompt.</p>
+<p><strong>VLM reward generation.</strong> GPT-4o receives the annotated image and is asked to break the task into executable steps, select which object to interact with, describe the intended motion, and produce a Python function that computes a scalar reward from the current and target keypoint 3D positions. The function encodes spatial relationships (distances, angles, ordering) and returns a shaped reward signal for each simulation step. If the current substep succeeds (policy crosses a threshold), the VLM is re-queried for the next substep reward, iterating until the full task is done.</p>
+<p><strong>Scene reconstruction (real-to-sim).</strong> Object meshes are built offline by moving each object in front of a camera and running BundleSDF (a neural implicit surface reconstructor) on the resulting video. FoundationPose (a pose estimator) then localizes each object in the live scene so their meshes can be dropped into IsaacGym at the correct pose. Static surfaces (tables, shelves) are captured as point clouds and converted to collision meshes.</p>
+<p><strong>RL training.</strong> Proximal Policy Optimization (PPO) trains the policy inside IsaacGym across 128 parallel randomized environment instances. The policy is an actor-critic MLP with hidden layers of 256, 128, and 64 units each followed by ELU (Exponential Linear Unit) activations. State inputs are: current gripper pose, estimated object pose, current keypoint positions, and VLM-specified target keypoint positions. Domain randomization varies object friction, mass, restitution, compliance, geometry, starting position, and gripper offset. Training converges in roughly 5 minutes per substep on a GPU cluster.</p>
+<p><strong>Sim-to-real transfer.</strong> The trained policy is deployed directly on the real robot (xArm7 arm). FoundationPose tracks objects in real time so the same keypoint representation used during training remains valid. A wrist-camera image is periodically sent back to GPT-4o for progress monitoring and strategy adjustment.</p>
+<p><strong>Evaluated tasks.</strong> Shoe Place (pick and place onto a rack), Shoe Push (laterally align a pair of shoes), Book Push (slide a book into position), Book Reorient (rotate a book on a shelf). Each task was tested over 10 configurations. Real-world success rates: Shoe Place 0.80, Shoe Push 0.70. Keypoint-based rewards outperformed pose-based VLM rewards 0.70 vs 0.30 for the same task.</p>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/shivanshpatel35/IKER" target="_blank" rel="noopener">https://github.com/shivanshpatel35/IKER</a></p>
+<p><strong>Language/framework:</strong> Python; IsaacGym Preview 4 (NVIDIA GPU-physics simulator, not publicly open-source — requires separate NVIDIA download); PPO via the isaacgymenvs training harness; conda for environment management.</p>
+<p><strong>Repo structure (top-level):</strong></p>
+<pre><code>
+IKER/
+  assets/urdf/xarm7/       # xArm7 robot URDF and mesh files
+  envs/shoe_place/         # Task-specific environment config (Shoe Place task)
+  isaacgymenvs/            # Core training package
+    cfg/                   # Hydra YAML configs (task, training, PPO hyperparams)
+    learning/              # PPO learner and actor-critic network definition
+    pbt/                   # Population-based training (unused by default)
+    tasks/                 # IsaacGym task classes (env step, reset, reward call)
+    utils/                 # Helper functions
+    __init__.py
+    train.py               # Main entry point
+  environment.yml          # Conda dependency spec
+  setup.py
+</code></pre>
+<p><strong>Note:</strong> The repo currently contains RL training code for the Shoe Place task only. The VLM reward-generation and scene-reconstruction components (GPT-4o prompting, BundleSDF, FoundationPose) are not yet released; additional code was promised for future release as of the paper date.</p>
+<p><strong>File to open first:</strong> <code>isaacgymenvs/tasks/</code> — this is where the IsaacGym environment class lives, including how keypoint observations are assembled and how the reward value is consumed. Then read <code>isaacgymenvs/train.py</code> to see how Hydra configs and the PPO learner are wired together.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>IsaacGym Preview 4 (free download from NVIDIA, Linux only, requires an NVIDIA GPU — no CPU fallback)</li>
+<li>conda environment from <code>environment.yml</code> (pytorch, isaacgym python bindings, hydra-core, numpy, etc.)</li>
+<li>At runtime: GPT-4o API key (OpenAI) for reward generation</li>
+<li>At runtime: BundleSDF and FoundationPose for scene reconstruction (separate installs, GPU required)</li>
+</ul>
+<p><strong>Run command:</strong></p>
+<pre><code>
+conda env create -f environment.yml
+conda activate iker
+# Install IsaacGym Preview 4 manually from NVIDIA, then:
+pip install -e .
+python isaacgymenvs/train.py task=ShoePlace
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start in <code>isaacgymenvs/tasks/</code> to see how the IsaacGym env is structured: what observations are returned, how the reward (produced externally by the VLM) is fed in, and how keypoints are tracked. Then read <code>isaacgymenvs/learning/</code> for the actor-critic MLP definition and the PPO update loop. The <code>cfg/</code> YAML files give hyperparameters without reading Python.</p>
+<p><strong>How hard is the code to follow:</strong> Moderate. The isaacgymenvs pattern is well-established (it inherits from NVIDIA&#x27;s standard IsaacGym template), so anyone familiar with that framework will orient quickly. The PPO learner is standard. The hard part is the missing pieces: the VLM prompt construction, BundleSDF integration, and FoundationPose pose-tracking pipeline are not in the repo, so you cannot run the full IKER loop from source alone — only the RL training step inside simulation is available.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run end-to-end on a CPU-only box.</strong> Three hard blockers:</p>
+<ul>
+<li><strong>IsaacGym requires an NVIDIA GPU.</strong> The simulator uses CUDA-based physics and does not support CPU execution. No GPU, no simulation, no training.</li>
+<li><strong>The VLM component calls the OpenAI API (GPT-4o)</strong>, which works from any machine with internet access and an API key, but it is only one piece.</li>
+<li><strong>BundleSDF and FoundationPose are GPU-intensive</strong> (neural implicit surface reconstruction and 6-DoF pose estimation both require CUDA).</li>
+</ul>
+<p>Even on a GPU machine, the full pipeline (scan objects, reconstruct meshes, generate rewards via GPT-4o, train in IsaacGym, deploy on xArm7) requires a physical robot arm and hardware cameras. The RL training step alone — the part actually in the repo — runs on GPU in about 5 minutes per substep once IsaacGym is installed. There is no lightweight inference checkpoint or pre-trained policy released for CPU testing.</p></article>
+<article class="page" id="gp9"><h1>WMNav: Integrating Vision-Language Models into World Models for Object Goal Navigation</h1>
+<p>IROS 2025 (Oral) · 8 citations · sub-approach: VLM used as high-level planner with world-model memory</p>
+<h2>What it does</h2>
+<p>WMNav is an object goal navigation system in which a Vision-Language Model (VLM) acts simultaneously as a predictive world model and a reasoning policy: given a target object category and panoramic RGB-D images, the agent predicts where the target is likely to be, maintains a spatial memory map of those predictions, and selects the next navigation action — all without any task-specific training. The key novelty is a Curiosity Value Map (CVM), a top-down 2D grid that accumulates per-direction target-presence scores across timesteps, giving the agent persistent spatial memory without a neural recurrent state. Hallucination errors (the VLM confidently predicting the target is somewhere it is not) are mitigated by comparing each step&#x27;s VLM prediction to the actual observation and flagging disagreements before acting.</p>
+<p>Sub-approach: <strong>VLM used as a high-level planner</strong> (the VLM does reasoning and world-model prediction; a classical frontier-sampling mechanism generates candidate waypoints; there is no learned action policy or diffusion head).</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> At each timestep the agent captures a panoramic RGB-D scan by rotating in place and collecting six views at 30°, 90°, 150°, 210°, 270°, and 330°. Each view is a standard RGB image plus a registered depth image from the Habitat simulator. The navigation instruction is simply the target object category label (e.g., &quot;chair&quot;, &quot;toilet&quot;) given as a text string.</p>
+<p><strong>Three VLM roles.</strong> The paper routes prompts to three logically distinct VLM invocations (all are Gemini 1.5 Pro in the primary experiments; Gemini 1.5 Flash and Gemini 2.0 Flash are tested as cheaper alternatives):</p>
+<ul>
+<li><strong>PredictVLM.</strong> Receives the panoramic images and the target label; returns a curiosity score 0–10 for each of the six directions, representing the VLM&#x27;s estimate of the probability that the target lies in that direction. These scores are the &quot;world model prediction.&quot;</li>
+</ul>
+<ul>
+<li><strong>PlanVLM.</strong> Receives the current CVM state, the target label, and recent navigation history; decomposes the task into a short sequence of subtasks (e.g., &quot;move to unexplored area → approach kitchen counter → look for mug&quot;). This is the high-level planner.</li>
+</ul>
+<ul>
+<li><strong>ReasonVLM.</strong> Receives the candidate waypoints generated by the two-stage action proposer and the current subtask from PlanVLM; selects which waypoint to execute. This is the low-level decision-maker.</li>
+</ul>
+<p><strong>Curiosity Value Map (CVM).</strong> The CVM is a 2D top-down occupancy-style grid initialized to 10 everywhere (fully unknown = maximally curious). At each step, PredictVLM&#x27;s per-direction scores are projected onto the grid using the depth image and the agent&#x27;s pose (rotation + translation from Habitat&#x27;s sensor stack), stamping each grid cell reachable in that direction with that score. The update rule is an element-wise minimum with the previous map: a cell&#x27;s value only decreases over time, encoding that once the VLM says the target is unlikely in a direction, that belief persists. Cells confirmed empty (the agent passed through and did not find the target) are set to 0; cells where the target became visible are set to 10.</p>
+<p><strong>Two-stage action proposer.</strong> Candidate waypoints are generated differently depending on navigation phase:</p>
+<ul>
+<li>Exploration stage: sample K candidate waypoints at regular angular intervals around the agent, filter out already-explored cells, and pass to ReasonVLM with the current subtask context.</li>
+<li>Goal-approaching stage: once the target is within detection range (close enough for the RGB detector to fire), switch to denser angular sampling and remove distance constraints, so the agent can precisely localize the target for the STOP action.</li>
+</ul>
+<p><strong>Hallucination mitigation.</strong> Before committing to the action chosen by ReasonVLM, the system checks whether the observation at the next step matches the world model&#x27;s prediction. If PredictVLM predicted high target presence in a direction but the agent arrives there and the detector does not fire, the CVM is updated accordingly and the subtask context is passed forward to the next PlanVLM call, allowing the planner to revise rather than repeat a hallucinated plan.</p>
+<p><strong>Training.</strong> None. WMNav is a fully zero-shot, training-free framework. No VLM weights are updated; all learning is classical prompt engineering. The only &quot;training&quot; artifact is the Habitat navigation stack (Habitat-Sim physics, the HM3D and MP3D scene meshes, and the episode dataset files).</p>
+<p><strong>Evaluation.</strong> Two benchmarks: HM3D (Habitat-Matterport 3D, 2000 episodes v0.1 split + 1000 episodes v0.2 split) and MP3D (Matterport3D, 2195 episodes). Metrics are Success Rate (SR) and Success weighted by Path Length (SPL). WMNav achieves +3.2% SR/+3.2% SPL on HM3D and +13.5% SR/+1.1% SPL on MP3D over prior zero-shot baselines.</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> <a href="https://github.com/B0B8K1ng/WMNavigation" target="_blank" rel="noopener">https://github.com/B0B8K1ng/WMNavigation</a></p>
+<p><strong>Language / framework:</strong> Python 3.9; Habitat-Sim 0.3.1 (the 3D physics simulator from Meta AI) for environment I/O; Google Gemini API (or vLLM + Qwen2.5-VL for a self-hosted alternative); no PyTorch training loop.</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+WMNavigation/
+├── config/           # YAML config files (VLM choice, episode paths, parallelism)
+├── imgs/             # Images used in the README/project page
+├── scripts/
+│   └── main.py       # Entry point: runs a single episode for demo
+├── src/
+│   ├── api.py        # VLM API wrappers (Gemini, vLLM/Qwen)
+│   ├── custom_agent.py  # WMNav agent: CVM, PredictVLM, PlanVLM, ReasonVLM, action proposer
+│   └── custom_env.py    # Habitat env wrapper: sensor stack, panoramic capture, pose extraction
+├── .env              # API keys (GOOGLE_API_KEY, etc.)
+├── parallel.sh       # Bash script that shards episodes across N GPUs for bulk evaluation
+├── requirements.txt  # pip dependencies
+└── setup.py
+</code></pre>
+<p><strong>File to open first:</strong> <code>src/custom_agent.py</code> — this is where all three VLM calls, the CVM update logic, the two-stage action proposer, and the hallucination feedback check are implemented. It is the entire algorithmic core.</p>
+<p><strong>Key dependencies:</strong></p>
+<ul>
+<li><code>conda install habitat-sim=0.3.1 withbullet headless -c conda-forge -c aihabitat</code> (the physics/rendering engine; Linux-only prebuilt binary)</li>
+<li><code>google-generativeai</code> (Gemini API client) — requires a Google Cloud API key with Gemini access</li>
+<li><code>vllm&gt;0.7.2</code> (optional, for running Qwen2.5-VL locally instead of Gemini)</li>
+<li>HM3D scene meshes (~85 GB) and MP3D scene meshes (~15 GB) downloaded separately via Habitat&#x27;s data pipeline</li>
+<li>Episode dataset files (separate download)</li>
+</ul>
+<p><strong>GPU requirement for evaluation:</strong> The VLM is called via the Gemini API (cloud), so no local GPU is needed for the model itself. However, Habitat-Sim rendering uses CUDA for headless GPU rendering (EGL) — the repo&#x27;s <code>parallel.sh</code> distributes episodes across multiple GPUs. The <code>~320MB per episode</code> GPU memory figure refers to the Habitat renderer, not a neural network. A single GPU (even a modest one with 4 GB VRAM) should be sufficient for single-episode runs.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+conda create -n wmnav python=3.9 cmake=3.14.0
+conda activate wmnav
+conda install habitat-sim=0.3.1 withbullet headless -c conda-forge -c aihabitat
+pip install -e . &amp;&amp; pip install -r requirements.txt
+# Set GOOGLE_API_KEY in .env
+python scripts/main.py          # single demo episode
+bash parallel.sh                # full evaluation across GPUs
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p>Start with <code>src/custom<em>agent.py</code>. The three VLM call sites are the critical sections: look for PredictVLM, PlanVLM, and ReasonVLM invocations and trace how the prompt is assembled and how the response is parsed back into scores or action indices. Then read <code>src/custom</em>env.py</code> to understand how the panoramic scan is assembled from Habitat sensors and how agent pose is extracted for CVM projection. The CVM update (element-wise minimum and the explored/target-found override logic) is the most novel data structure in the paper and should be a handful of NumPy or torch lines in <code>custom_agent.py</code>.</p>
+<p><strong>Code difficulty:</strong> Medium. There is no training loop, no custom loss function, and no complex tensor algebra — the hard parts are (1) the coordinate projection from ego-centric depth images to top-down map coordinates, and (2) the prompt engineering that makes the VLM return parseable numeric scores. Anyone comfortable with Habitat-Lab&#x27;s API and basic NumPy/PIL should be able to follow the logic within an hour.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: No — blocked by the Habitat-Sim renderer, not by the VLM.</strong></p>
+<p>Habitat-Sim 0.3.1 requires a GPU for headless EGL rendering; the conda prebuilt does not include a software (CPU-only) renderer. The VLM itself (Gemini) runs in the cloud and needs only an API key, so there is no GPU model inference to do locally. If you could somehow replace the Habitat sensor stack with pre-rendered episode data (panoramic images + pose files saved to disk), the rest of WMNav — the CVM updates, VLM API calls, action selection — would run fine on CPU. As-shipped, however, you need at least one CUDA-capable GPU for the Habitat renderer and Linux for the conda binary. On a CPU-only or macOS box the conda install of habitat-sim will either fail or produce a build that cannot render scenes.</p></article>
+<article class="page" id="gp10"><h1>Beyond Sight: Finetuning Generalist Robot Policies with Heterogeneous Sensors via Language Grounding</h1>
+<p><strong>ICRA 2025 · 7 citations · generalist-policy finetuning (diffusion + VLA)</strong></p>
+<hr>
+<h2>What it does</h2>
+<p>FuSe is a finetuning recipe that extends pre-trained visuomotor generalist policies — specifically Octo (diffusion-based transformer) and PaliVLA (PaliGemma 3B) — to consume non-visual sensors such as tactile touch and audio without requiring large new datasets for those modalities. It uses natural language as a cross-modal bridge: sensor readings are grounded by pairing them with the natural-language task descriptions already present in generalist pre-training. The result is a robot that can, in zero-shot, respond to multimodal prompts (&quot;pick up the rough object&quot;) and cross-modal compositional instructions that no prior system handled together.</p>
+<hr>
+<h2>The method, in detail</h2>
+<p><strong>Inputs and sensor encoders.</strong></p>
+<p>FuSe takes three modality streams simultaneously, each with its own encoder:</p>
+<ul>
+<li>*Vision*: third-person RGB (640×480) + wrist-mounted RGB (320×240). Handled by the backbone&#x27;s existing image tokenizers.</li>
+<li>*Touch (tactile)*: two DIGIT gel-based tactile sensors, one per fingertip. Each produces a 640×480 image of gel deformation. A static background frame is subtracted before encoding. The encoder is a pre-trained TVL (Touch-Vision-Language) encoder — a CLIP-style model trained across image/touch/language — which is then finetuned jointly with the backbone.</li>
+<li>*Audio*: one second of audio at 44,100 Hz, converted to a mel spectrogram. The spectrogram is treated as a 2D image and encoded by a ResNet-26; no pre-trained audio backbone, this encoder trains from scratch on the dataset.</li>
+<li>*Proprioception*: 9-DoF IMU, passed to the backbone as in standard Octo pre-training.</li>
+</ul>
+<p>All modality tokens flow through a shared multi-head attention layer before entering the transformer backbone, producing a unified observation embedding.</p>
+<p><strong>Backbone — Octo.</strong></p>
+<p>Octo is a diffusion-based transformer trained on the Open-X Embodiment (OXE) dataset (~800k real-robot trajectories). FuSe adds the TVL tactile encoder and the audio ResNet-26 as new input branches feeding into Octo&#x27;s observation encoder. An additional generative language head (a small single transformer) is appended on top of Octo and is used only during training for the language generation loss. The action prediction head (diffusion) remains unchanged.</p>
+<p><strong>Backbone — PaliVLA.</strong></p>
+<p>PaliVLA is a VLA built on PaliGemma 3B. The same modality encoders are attached. Because PaliGemma already has a language decoder, FuSe does not need a separate generative head — the language generation loss is computed directly through the model&#x27;s own text generation path, unifying action prediction and language-grounded feature learning.</p>
+<p><strong>Training objectives.</strong></p>
+<p>The total loss is: <strong>L = L<em>BC + β·L</em>gen + λ·L_contrast</strong> (β=λ=1 in practice).</p>
+<ul>
+<li>*L_BC*: standard behavior cloning loss on robot actions (diffusion loss for Octo, cross-entropy token prediction for PaliVLA).</li>
+<li>*L_contrast*: CLIP-style contrastive loss. For each step, an observation embedding is computed from all available modalities, then contrasted against text embeddings of the task language instruction. This is computed for each possible modality combination present in the batch and averaged, encouraging the model to align any subset of sensors with the language description of the scene.</li>
+<li>*L_gen*: language generation loss. The observation embedding (from the generative head for Octo, or native decoder for PaliVLA) is trained to autoregressively reproduce the natural-language task annotation from whatever sensor combination is available. This forces the latent representations of touch and audio to encode semantics that language can describe.</li>
+</ul>
+<p>FuSe finetunes on top of OXE-pretrained checkpoints. For PaliVLA, 50,000 additional OXE pretraining steps are run before multimodal finetuning.</p>
+<p><strong>Dataset.</strong></p>
+<p>26,866 WidowX 7-DoF arm trajectories collected via VR teleoperation at the RAIL Lab, UC Berkeley. Three task families:</p>
+<ul>
+<li>Tabletop grasping: vision + DIGIT tactile (many rigid objects, grasp the language-specified one).</li>
+<li>Shopping bag: vision + DIGIT tactile (objects inside opaque paper bags, vision occluded).</li>
+<li>Button pressing: vision + audio (six buttons each playing a distinct sound; press the sound-specified button).</li>
+</ul>
+<p>Language annotations pair each trajectory to the sensory description of the object being grasped or the sound being matched.</p>
+<hr>
+<h2>The code</h2>
+<p><strong>Repo:</strong> <a href="https://github.com/fuse-model/FuSe" target="_blank" rel="noopener">https://github.com/fuse-model/FuSe</a></p>
+<p><strong>License:</strong> MIT (core) / Apache 2.0 (PaliVLA component)</p>
+<p><strong>Language/framework:</strong> Python 3.10+, JAX/Flax (Octo and PaliVLA both run on JAX); the WidowX environment wrapper is a separate Python package (<code>widowx_envs</code>). Package management uses <code>uv</code>.</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+bridge_with_digit/      # WidowX robot environment + DIGIT sensor interface
+  widowx_envs/          # ROS-bridge Python package for robot deployment
+octo_digit/             # Octo backbone + FuSe modifications
+  scripts/
+    finetune_fuse.py    # TRAINING entry point for Octo
+    configs/
+      fuse_config.py    # Octo hyperparameters, modality flags
+  eval/
+    fuse_eval.py        # INFERENCE/eval entry point for Octo
+palivla_digit/          # PaliVLA (PaliGemma 3B) backbone + FuSe
+  palivla/
+    train_fuse.py       # TRAINING entry point for PaliVLA
+    configs/
+      fuse_config.py    # PaliVLA hyperparameters
+  eval_palivla.py       # INFERENCE entry point for PaliVLA
+media/                  # Images, videos for README
+README.md
+</code></pre>
+<p><strong>File to open first:</strong> <code>octo<em>digit/scripts/finetune</em>fuse.py</code> — it wires together the data pipeline, loss functions, and backbone. The contrastive and generation losses are the novel parts; trace from there to find <code>L<em>contrast</code> and <code>L</em>gen</code> implementations.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>JAX with GPU extras (via <code>uv sync --extra gpu</code>)</li>
+<li>Octo package (installed from <code>octo_digit/</code> in dev mode)</li>
+<li><code>widowx<em>envs</code> (from <code>bridge</em>with_digit/</code>)</li>
+<li><code>uv</code> package manager (replaces pip/conda for this repo)</li>
+<li>HuggingFace Hub (dataset and checkpoint download)</li>
+</ul>
+<p><strong>Dataset download:</strong> HuggingFace — <code>oier-mees/FuSe</code> (26,866 trajectories, ~tens of GB of raw sensor recordings).</p>
+<p><strong>Pretrained checkpoints:</strong> HuggingFace — <code>oier-mees/FuSe</code> (Octo-FuSe and PaliVLA-FuSe weights).</p>
+<p><strong>Training commands:</strong></p>
+<pre><code>
+# Octo
+cd octo_digit
+python scripts/finetune_fuse.py --config=scripts/configs/fuse_config.py
+
+# PaliVLA
+cd palivla_digit
+python palivla/train_fuse.py --config=palivla_digit/palivla/configs/fuse_config.py
+</code></pre>
+<p><strong>Inference/eval commands:</strong></p>
+<pre><code>
+# Octo
+python octo_digit/eval/fuse_eval.py --checkpoint_weights_path=ckpt.pth
+
+# PaliVLA
+python palivla_digit/eval_palivla.py --checkpoint_dir=ckpt.pth
+</code></pre>
+<p><strong>GPU/sim/hardware needs:</strong></p>
+<ul>
+<li>Training requires a GPU or TPU (JAX; the <code>uv sync --extra gpu</code> flag installs CUDA-enabled JAX). Octo finetuning at this scale typically needs at minimum 1× A100 (40GB); PaliGemma 3B-based PaliVLA will need comparable VRAM.</li>
+<li>No simulation environment — all evaluation is on a real WidowX robot with DIGIT tactile sensors and a USB microphone.</li>
+<li>No ROS required for training; <code>bridge<em>with</em>digit</code> / <code>widowx_envs</code> is needed only for real-robot deployment.</li>
+<li>No API keys required.</li>
+</ul>
+<hr>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with the paper&#x27;s Section 3 (Method), specifically the loss formulation (Eq. 1–3) and Figure 2 (architecture diagram showing how modality tokens feed into the shared transformer). Then open <code>octo<em>digit/scripts/finetune</em>fuse.py</code> and follow the loss computation. The TVL encoder choice is explained in Appendix A; understanding why TVL was chosen (cross-modal CLIP pre-training already aligns touch+language) is key to understanding why the contrastive loss converges quickly on a small dataset.</p>
+<p><strong>How hard to follow:</strong> Moderate. The core idea is simple (two auxiliary losses on top of BC). The difficulty is JAX fluency — Octo is a non-trivial codebase with custom training loops, and PaliVLA inherits PaliGemma&#x27;s Flax architecture. The config files are the fastest entry point if you want to change modality combinations or loss weights. Anyone comfortable with PyTorch imitation learning who hasn&#x27;t used JAX will need a day to orient before reading training code fluently.</p>
+<hr>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: not runnable for training or full inference.</strong></p>
+<p>Both Octo and PaliVLA are JAX models that require GPU (or TPU) for any practical computation. PaliGemma 3B forward passes alone are prohibitive on CPU. Furthermore, the real-world evaluation loop requires a physical WidowX robot arm with DIGIT tactile sensors and a microphone — no simulation environment is provided. A CPU box can load the dataset, inspect trajectory files, and read checkpoint metadata, but cannot run training, finetuning, or even inference in any reasonable time.</p></article>
+<article class="page" id="gp11"><h1>Motion Tracks: A Unified Representation for Human-Robot Transfer in Few-Shot Imitation Learning</h1>
+<p>ICRA 2025 · 7 citations · generalist-policy finetuning / cross-embodiment imitation learning</p>
+<h2>What it does</h2>
+<p>MT-pi (Motion Track Policy) is a VLA-adjacent imitation learning policy that reformulates robot actions as short 2D pixel trajectories — called motion tracks — drawn on camera images, creating an action space that is shared between human hands and robot end-effectors. Because human hands and robot grippers both move through 2D image space, the same policy can train jointly on raw human video and a small number of teleoperated robot demonstrations, with no need for explicit action labels on the human side. At inference, tracks from two calibrated camera views are triangulated back to full 6-DoF end-effector commands. This is a <strong>generalist-policy finetuning / cross-embodiment imitation learning</strong> method — not a VLA that produces actions from a frozen language model, but a diffusion-based policy that uses a unified visual action space to bridge human-to-robot transfer.</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs.</strong> Each timestep receives RGB images from two calibrated cameras (one wrist-level or third-person, one side view), plus the current 2D keypoint positions of the robot gripper projected onto those images. A natural-language task description is used informally in data collection but is not a conditioning input to the neural network at inference; the policy is implicitly task-specific per trained checkpoint.</p>
+<p><strong>Action representation.</strong> An action is a set of k=5 keypoints, each predicting a short-horizon (H steps) 2D offset trajectory in image space, plus one binary grasp state per step. The full action vector is R^((2k+1) x H). For the robot, the 5 keypoints are the gripper center and two finger-tip pairs, projected from joint angles using forward kinematics and known camera extrinsics. For human demonstrations, 21 hand keypoints are extracted by HaMeR (a hand mesh recovery model) and subsampled to the same 5-keypoint configuration (wrist, thumb, index) to match the robot gripper skeleton.</p>
+<p><strong>Keypoint retargeting.</strong> A small MLP called the Keypoint Retargeting Network is trained first, in isolation, to bridge the spacing difference between human hand keypoints and the robot gripper layout. It is trained by corrupting human keypoints with uniform noise (except one anchor point) and learning to reconstruct the originals — a denoising self-supervised task. The trained MLP is then frozen. At training time for the main policy, robot keypoints are passed through this MLP to warp them into a human-like layout before concatenation, so the image encoder sees a consistent keypoint structure regardless of embodiment.</p>
+<p><strong>Backbone.</strong> The image encoder is a ResNet with pretrained weights; no large language model or VLM is in the loop. The prediction head is a Diffusion Policy (DDPM-style denoising network) that takes the concatenated image embeddings and current keypoint positions and denoises a prediction of future keypoint offsets across the horizon H.</p>
+<p><strong>Training losses.</strong> Three terms are combined. (1) The standard Diffusion Policy reconstruction objective — predict the score function of the action distribution and minimize the denoising error. (2) A KL-divergence loss (lambda=1.0) between the image embedding distributions of human and robot frames, pulling the feature spaces together. (3) A domain adaptation adversarial loss with a gradient-reversal discriminator that tries to make human- and robot-sourced embeddings indistinguishable. The total auxiliary loss is lambda<em>KL * L</em>KL + lambda<em>DA * L</em>DA. The co-training dataset mixes approximately 10 minutes of human video with around 25 teleoperated robot trajectories per task.</p>
+<p><strong>Grasp label extraction from human video.</strong> Since human video has no gripper-open/close labels, a heuristic is used: GroundingDINO detects the target object and SAM-2 (Segment Anything v2) segments it; grasp contact is inferred when hand keypoints are spatially close to the object mask boundary.</p>
+<p><strong>6-DoF recovery at inference.</strong> The policy runs on both camera views independently, predicting a 2D motion track from each. Known camera extrinsics allow stereo triangulation of the 2D keypoint predictions to 3D positions at each timestep. A rigid transformation (R in SO(3), t in R^3) is then computed to align consecutive 3D keypoint sets, yielding delta end-effector commands in 6-DoF.</p>
+<p><strong>Evaluation.</strong> Four real-world tabletop tasks: Fork on Plate, Fold Cloth, Serve Egg, Put Away Socks. Compared against Diffusion Policy (DP) and Action Chunking with Transformers (ACT) trained on robot demonstrations only. MT-pi reaches 86.5% average success, outperforming baselines by ~40 percentage points.</p>
+<h2>The code</h2>
+<p><strong>Repo URL:</strong> <a href="https://github.com/jren03/mt" target="_blank" rel="noopener">https://github.com/jren03/mt</a><em>pi</em>codebase</p>
+<p><strong>Language / framework:</strong> Python 3.10+, PyTorch, built on top of the Diffusion Policy codebase. Auxiliary perception from HaMeR, SAM-2, GroundingDINO, and Depth-Anything-V2.</p>
+<p><strong>Repo structure:</strong></p>
+<pre><code>
+mt_pi/
+  dataset/
+    process_robot_dataset.py     # converts robot demos to keypoint tracks
+    process_human_datasets.py    # converts human video to keypoint tracks
+    extract_first_frames.py
+    select_points.py             # interactive keypoint selection UI
+    postprocess_with_sam.py      # SAM-2 object mask postprocessing
+    image_track_visualizer.py    # debug visualizer
+  envs/                          # Franka Panda environment interfaces
+  models/
+    diffusion_policy.py          # core DDPM policy (MT-pi head)
+    keypoint_map_predictor.py    # retargeting MLP
+  scripts/
+    train_mtpi.py                # full training loop
+    eval_mtpi.py                 # real-robot rollout evaluation
+    record_robot_demos.py        # teleoperation data collection
+    record_human_demos.py        # human video data collection
+    calibrate.py                 # camera calibration
+    visualize_online_rollouts.py
+  utils/
+  third_party/                   # vendored dependencies
+install_deps.sh                  # one-time setup script
+set_env.sh                       # per-session environment setup
+</code></pre>
+<p><strong>File to open first:</strong> <code>models/diffusion<em>policy.py</code> — this is the core prediction network. Then <code>scripts/train</em>mtpi.py</code> to see how human and robot datasets are co-trained and how all three loss terms are combined.</p>
+<p><strong>Dependencies:</strong> Diffusion Policy, HaMeR, SAM-2, Depth-Anything-V2, GroundingDINO. Install via <code>source install<em>deps.sh</code>, then <code>source set</em>env.sh</code> before each session.</p>
+<p><strong>Simulator:</strong> None — this is a real-robot-only codebase. The environment interfaces (<code>envs/</code>) target a physical Franka Panda arm with a dual-camera rig. There is no simulation wrapper.</p>
+<p><strong>Dataset:</strong> Custom human and robot demonstration data collected with the bundled scripts. No public dataset download. Human data comes from recording ~10 minutes of hand video; robot data is ~25 teleoperated trajectories per task using a SpaceMouse.</p>
+<p><strong>GPU:</strong> A GPU is required for training (diffusion model) and for inference due to HaMeR, SAM-2, and GroundingDINO in the preprocessing pipeline. The authors used a workstation with NUC-based real-time control.</p>
+<h2>Reviewing it yourself</h2>
+<p>Start at <code>models/diffusion<em>policy.py</code> to understand how the DDPM head is adapted to predict keypoint track offsets instead of raw joint actions. Then read <code>models/keypoint</em>map<em>predictor.py</code> to see the retargeting MLP — it is small and easy to follow. Move to <code>dataset/process</em>human<em>datasets.py</code> to see how HaMeR keypoints are extracted and resampled, and <code>dataset/process</em>robot<em>dataset.py</code> for the robot-side track generation. Finally, <code>scripts/train</em>mtpi.py</code> ties everything together with the three-loss training loop.</p>
+<p>The code is moderately hard to follow. The diffusion policy backbone is borrowed and reasonably standard, but the multi-step preprocessing pipeline (HaMeR → GroundingDINO → SAM-2 → stereo triangulation) requires all external tools to be correctly installed and calibrated. The stereo triangulation and 6-DoF delta computation are the most conceptually dense parts and are likely buried in <code>utils/</code>. Without access to a real Franka and calibrated cameras, you cannot run the full evaluation loop, but you could study the model files standalone.</p>
+<h2>Run verdict</h2>
+<p><strong>Cannot run on CPU only.</strong> The diffusion policy training requires a GPU. More critically, the preprocessing pipeline runs HaMeR (a 3D hand mesh estimator), SAM-2, and GroundingDINO — all GPU-intensive vision models. There is no inference-only checkpoint for a stripped-down demo, no simulation environment, and no offline dataset to load. Even if you wanted to test just the policy forward pass, the full pipeline assumes a live Franka Panda with dual calibrated cameras. A GPU workstation with the Franka real-robot stack installed is the minimum viable setup. The codebase is not runnable in any meaningful way on CPU alone.</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div><article class="page walk"><h1>ReMEmbR — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for Robot Navigation&quot;</p>
+<p><strong>Repo root:</strong> <code>remembr/</code> (Python package) + <code>examples/</code> (ROS2 demo) + <code>remembr/scripts/</code> (offline preprocessing + eval)</p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it</h2>
+<p>ReMEmbR lets a navigating robot answer spatial and temporal memory questions such as &quot;Where did you see a fire extinguisher?&quot; or &quot;How long were you in the hallway?&quot; It does this in two offline phases: (1) a VLM captions what the robot sees every few seconds and stores those captions alongside the robot&#x27;s pose and timestamp in a vector database; (2) later, an LLM agent answers questions by iteratively calling retrieval tools against that database until it has enough evidence, then formats a structured answer with a (x, y, z) pose, a time, a duration, or a yes/no.</p>
+<p><strong>Entry points</strong></p>
+<p>| Task | Command |</p>
+<p>|------|---------|</p>
+<p>| Offline caption extraction | <code>python remembr/scripts/preprocess<em>captions.py --model-path Efficient-Large-Model/Llama-3-VILA1.5-8B --data</em>path ./coda_data</code> |</p>
+<p>| Batch evaluation | <code>python remembr/scripts/eval.py --model remembr+command-r --sequence_id 0</code> |</p>
+<p>| Gradio chat demo (ROS bag) | <code>cd examples/chat_demo &amp;&amp; python demo.py</code> |</p>
+<p>| Live robot (Nova Carter) | ROS2 nodes in <code>examples/nova<em>carter</em>demo/python/</code> |</p>
+<p><strong>Models and infrastructure required</strong></p>
+<ul>
+<li><strong>VLM for captioning:</strong> VILA (NVlabs/VILA, cloned separately via <code>vila_setup.sh</code>). Used as <code>VILACaptioner</code> for offline preprocessing, or via <code>NanoLLM</code> on Jetson for the live demo. Requires a GPU for inference; it is a local model, not an API call.</li>
+<li><strong>LLM for reasoning:</strong> Configurable at construction time via <code>ReMEmbRAgent(llm_type=...)</code>. Supported backends: Ollama local models (e.g., <code>command-r</code>, <code>llama3</code>), NVIDIA NIM endpoints (<code>nim/meta/llama-3.1-405b-instruct</code>), and a stub for GPT-4o via OpenAI. The <code>command-r</code> Cohere model via Ollama is the primary tested path.</li>
+<li><strong>Embedding model:</strong> <code>mixedbread-ai/mxbai-embed-large-v1</code> via <code>langchain_huggingface.HuggingFaceEmbeddings</code>. Runs locally via sentence-transformers; no API key needed. Produces 1024-dimensional vectors.</li>
+<li><strong>Vector database:</strong> Milvus (standalone, Docker-based). Must be running on <code>127.0.0.1:19530</code> before any insert or query. The Milvus collection stores captions, 1024-d text embeddings, 3-d position vectors, and a 2-d time vector — all indexed with IVF_FLAT for ANN search.</li>
+</ul>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+remembr/
+  memory/
+    memory.py           — MemoryItem dataclass + Memory abstract interface
+    milvus_memory.py    — MilvusMemory (production store) + MilvusWrapper
+    text_memory.py      — TextMemory (flat list, used for baselines/eval)
+    video_memory.py     — VideoMemory (raw images, used for VLM non-agent baseline)
+
+  captioners/
+    captioner.py        — Captioner abstract base (one method: caption(images))
+    vila_captioner.py   — VILACaptioner: wraps NVlabs/VILA for local GPU inference
+
+  agents/
+    agent.py            — Agent base class + AgentOutput dataclass
+    remembr_agent.py    — ReMEmbRAgent: the full LangGraph agentic loop (CORE)
+    non_agent.py        — NonAgent: single-shot LLM baseline (no retrieval)
+    vlm_non_agent.py    — VLMNonAgent: GPT-4o-vision baseline (no retrieval)
+
+  tools/
+    tools.py            — Standalone search helpers (search_by_text/position/time)
+    functions_wrapper.py — FunctionsWrapper: makes Ollama behave like an OpenAI
+                           function-calling model (JSON schema -&gt; tool_calls)
+
+  prompts/
+    agent_system_prompt.txt     — system prompt for the retrieval/decide node
+    agent_gen_system_prompt.txt — system prompt after retrieval budget exhausted
+    generate_system_prompt.txt  — system prompt for the structured-output node
+
+  scripts/
+    preprocess_captions.py  — offline caption extraction loop (VILA + embedder)
+    eval.py                 — full evaluation harness over NaVQA dataset
+
+examples/
+  nova_carter_demo/python/
+    captioner_node.py       — ROS2 node: VLM captioning at 3-second intervals
+    memory_builder_node.py  — ROS2 node: joins captions + AMCL pose -&gt; MilvusMemory
+    agent_node.py           — ROS2 node: wraps ReMEmbRAgent for live queries
+</code></pre>
+<p><strong>Key dependency chain:</strong> <code>ReMEmbRAgent</code> depends on <code>FunctionsWrapper</code> (LLM adapter), <code>MilvusMemory</code> (retrieval backend), and three <code>StructuredTool</code> objects wired to memory search methods. The LangGraph <code>StateGraph</code> wires them into a cycle.</p>
+<hr>
+<h2>The two phases — traced in actual code</h2>
+<h3>Phase 1: Memory building (caption → embed → store)</h3>
+<p><strong>Offline path</strong> (<code>remembr/scripts/preprocess<em>captions.py</code>, function <code>run</em>video<em>in</em>segs</code>)</p>
+<p>The script loads a sequence of <code>.pkl</code> sensor frames. Frames are grouped into time windows of <code>--seconds<em>per</em>caption</code> seconds (default 3 s). For each window:</p>
+<pre><code>
+out_text = vila_model.caption(images)          # VILACaptioner.caption()
+text_embedding = embedder.embed_query(out_text) # HuggingFaceEmbeddings, 1024-d
+
+entity = {
+    &#x27;position&#x27;: position.mean(axis=0),         # mean XYZ over the window
+    &#x27;theta&#x27;: 3.14,                              # rotation placeholder
+    &#x27;time&#x27;: timestamp.mean(),                   # mean Unix timestamp
+    &#x27;caption&#x27;: out_text,
+    &#x27;text_embedding&#x27;: text_embedding
+}
+</code></pre>
+<p>The entities are serialised to a JSON file (<code>captions<em>&lt;model&gt;</em>&lt;N&gt;<em>secs.json</code>). At eval time, <code>eval.py:load</em>memory</code> reads this JSON and calls <code>memory.insert(entity, text<em>embedding=item[&#x27;text</em>embedding&#x27;])</code> for each window, bypassing the re-embedding step.</p>
+<p><strong><code>MilvusMemory.insert</code></strong> (<code>remembr/memory/milvus_memory.py</code>, line 122):</p>
+<pre><code>
+def insert(self, item: MemoryItem, text_embedding=None):
+    memory_dict = asdict(item)
+    memory_dict[&#x27;id&#x27;] = str(time.time())
+    if text_embedding is None:
+        text_embedding = self.embedder.embed_query(memory_dict[&#x27;caption&#x27;])
+    memory_dict[&#x27;time&#x27;] = [(memory_dict[&#x27;time&#x27;] - self.time_offset), 0.0]
+    memory_dict[&#x27;text_embedding&#x27;] = text_embedding
+    self.milv_wrapper.insert([memory_dict])
+</code></pre>
+<p>Time is stored as a 2-element float vector <code>[t - offset, 0.0]</code> so that Milvus can use its IVF_FLAT index for ANN proximity search on time. Position is stored as a 3-float vector with its own index. Text is stored as a 1024-float vector with a separate index. One Milvus collection therefore carries three independently-searchable embedding spaces for the same record.</p>
+<p><strong>Live ROS2 path</strong> (<code>examples/nova<em>carter</em>demo/python/</code>):</p>
+<ul>
+<li><code>CaptionerNode</code> subscribes to <code>/front<em>stereo</em>camera/left/image<em>raw</code>, buffers frames, and every <code>caption</em>interval</code> seconds calls <code>caption_images()</code> using NanoLLM (VILA on Jetson), publishing the result as a ROS2 <code>String</code> on <code>/caption</code>.</li>
+<li><code>MemoryBuilderNode</code> subscribes to <code>/caption</code> and <code>/amcl_pose</code>. On each caption message it fuses the most recent pose:</li>
+</ul>
+<pre><code>
+memory = MemoryItem(
+    caption=msg.data,
+    time=pose_time,
+    position=position,
+    theta=angle
+)
+self.memory.insert(memory)   # -&gt; MilvusMemory.insert()
+</code></pre>
+<h3>Phase 2: Querying — the agent&#x27;s retrieve-reason loop</h3>
+<p>All of this lives in <code>remembr/agents/remembr_agent.py</code>.</p>
+<p><strong>Setup: <code>ReMEmbRAgent.<em>_init</em>_</code></strong> (line 96)</p>
+<pre><code>
+self.embeddings = HuggingFaceEmbeddings(model_name=&#x27;mixedbread-ai/mxbai-embed-large-v1&#x27;)
+</code></pre>
+<p>The agent loads the same embedding model used at insert time so that similarity scores are comparable.</p>
+<p><strong><code>set_memory(memory)</code></strong> (line 146) is the activation step. It calls two methods:</p>
+<ul>
+<li><strong><code>create<em>tools(memory)</code></strong> (line 153) — wraps <code>memory.search</em>by<em>text</code>, <code>memory.search</em>by<em>position</code>, and <code>memory.search</em>by_time</code> as LangChain <code>StructuredTool</code> objects with typed Pydantic input schemas:</li>
+</ul>
+<p>   - <code>retrieve<em>from</em>text(x: str)</code> — semantic vector search over caption embeddings</p>
+<p>   - <code>retrieve<em>from</em>position(x: tuple)</code> — ANN search over the position index</p>
+<p>   - <code>retrieve<em>from</em>time(x: str)</code> — ANN search over the time index (H:M:S format)</p>
+<p>   The three tools are converted to OpenAI function-call JSON schemas via <code>convert<em>to</em>openai_function</code>.</p>
+<ul>
+<li><strong><code>build_graph()</code></strong> (line 343) — builds a LangGraph <code>StateGraph</code> with three nodes and one conditional edge:</li>
+</ul>
+<pre><code>
+entry -&gt; [agent] --has tool_calls--&gt; [action (ToolNode)] --&gt; [agent]
+                 --no tool_calls---&gt; [generate] --&gt; END
+</code></pre>
+<p><strong><code>query(question)</code></strong> (line 390) is the public entry point. It wraps the question in a <code>messages</code> list and calls <code>self.graph.invoke(inputs)</code>, then parses the final message into an <code>AgentOutput</code> dataclass.</p>
+<p><strong><code>agent(state)</code></strong> (line 210) — the decision node. Called on every graph cycle. It assembles a <code>ChatPromptTemplate</code> that includes: (a) the agent system prompt (<code>agent<em>system</em>prompt.txt</code>), (b) the message history with all prior tool results appended, and (c) the original question. It then invokes the LLM with <code>model.bind<em>tools(tools=self.tool</em>definitions)</code>. The LLM responds with a JSON block naming which tool to call and with what argument. A budget counter (<code>self.agent<em>call</em>count</code>) caps tool calls at 3; on the fourth call the system prompt switches to <code>agent<em>gen</em>system<em>prompt.txt</code> which forces a <code></em><em>conversational</em>response</code> instead of allowing further retrieval.</p>
+<pre><code>
+if self.agent_call_count &lt; 3:
+    model = model.bind_tools(tools=self.tool_definitions)
+    prompt = self.agent_prompt
+else:
+    prompt = self.agent_gen_only_prompt
+</code></pre>
+<p><strong><code>should_continue(state)</code></strong> (line 71) is the conditional edge router:</p>
+<pre><code>
+if not last_message.tool_calls:
+    return &quot;end&quot;   # -&gt; generate node
+else:
+    return &quot;continue&quot;  # -&gt; action node (execute the tool)
+</code></pre>
+<p><strong><code>generate(state)</code></strong> (line 271) — the structured-output node. It receives the full message history (which now contains tool result strings describing what the robot saw, when, and where). It invokes the LLM once more with <code>generate<em>system</em>prompt.txt</code>, which instructs it to produce a JSON dict with keys <code>type</code>, <code>text</code>, <code>binary</code>, <code>position</code>, <code>orientation</code>, <code>time</code>, and <code>duration</code>. The output is parsed and validated: position must be length-3, all required keys must be present. If parsing fails, an exception is raised and <code>try<em>except</em>continue</code> retries the node.</p>
+<hr>
+<h2>Where the core idea lives</h2>
+<p>The core insight of ReMEmbR is agentic retrieval over three independent index spaces (semantic text, spatial position, and time) in a single Milvus collection, driven by an LLM that decides which index to query and what to search for based on the question.</p>
+<p><strong>File:</strong> <code>remembr/agents/remembr_agent.py</code></p>
+<p><strong>Functions:</strong> <code>create_tools</code> (lines 153–206) and <code>agent</code> (lines 210–268)</p>
+<p>The key lines in <code>create_tools</code> that express the three-modality retrieval design:</p>
+<pre><code>
+self.retriever_tool = StructuredTool.from_function(
+    func=lambda x: memory.search_by_text(x),
+    name=&quot;retrieve_from_text&quot;,
+    description=&quot;Search and return information from your video memory in the form of captions&quot;,
+    ...
+)
+self.position_retriever_tool = StructuredTool.from_function(
+    func=lambda x: memory.search_by_position(x),
+    name=&quot;retrieve_from_position&quot;,
+    description=&quot;Search and return information from your video memory by using a position array such as (x,y,z)&quot;,
+    ...
+)
+self.time_retriever_tool = StructuredTool.from_function(
+    func=lambda x: memory.search_by_time(x),
+    name=&quot;retrieve_from_time&quot;,
+    description=&quot;Search and return information from your video memory by using an H:M:S time.&quot;,
+    ...
+)
+self.tool_list = [self.retriever_tool, self.position_retriever_tool, self.time_retriever_tool]
+self.tool_definitions = [convert_to_openai_function(t) for t in self.tool_list]
+</code></pre>
+<p>And in <code>MilvusMemory.reset</code> (line 139 of <code>milvus<em>memory.py</code>), each search modality gets its own Milvus <code>Langchain</code> vectorstore pointing to a different <code>vector</em>field</code> of the same collection:</p>
+<pre><code>
+text_vector_db = Milvus(..., vector_field=&#x27;text_embedding&#x27;, text_field=&#x27;caption&#x27;)
+self.text_retriever = text_vector_db.as_retriever(search_kwargs={&quot;k&quot;: 5})
+
+self.position_vector_db = Milvus(..., vector_field=&#x27;position&#x27;, ...)
+self.time_vector_db    = Milvus(..., vector_field=&#x27;time&#x27;,     ...)
+</code></pre>
+<p>The agent system prompt (<code>agent<em>system</em>prompt.txt</code>) instructs the LLM to first reason about context sufficiency, then choose the right retrieval modality. The prompt even shows multi-tool parallel examples (&quot;searching for stairs and elevator in the same call&quot;). The LLM&#x27;s response is a JSON array; <code>FunctionsWrapper._generate</code> parses it into LangChain <code>ToolCall</code> objects, which LangGraph&#x27;s <code>ToolNode</code> dispatches to the corresponding Python lambdas.</p>
+<hr>
+<h2>What you&#x27;d need to run it</h2>
+<p><strong>LLM:</strong></p>
+<ul>
+<li>Easiest: install Ollama and pull <code>command-r</code> (<code>ollama pull command-r</code>). No API key required. <code>command-r</code> (Cohere) was the primary tested model for tool-calling via Ollama.</li>
+<li>Alternatively: an NVIDIA NIM API key for models like <code>meta/llama-3.1-405b-instruct</code>, passed as <code>llm_type=&#x27;nim/meta/llama-3.1-405b-instruct&#x27;</code>.</li>
+<li>The GPT-4o path in <code>llm_selector</code> is a TODO stub and is not implemented.</li>
+</ul>
+<p><strong>VLM for captioning (memory building only):</strong></p>
+<ul>
+<li>Requires a local GPU. VILA1.5 (3B, 8B, 13B, 40B variants) is loaded via the cloned NVlabs/VILA repo. The 8B model (<code>Llama-3-VILA1.5-8B</code>) is the default in the scripts.</li>
+<li>On the Nova Carter robot: NanoLLM wraps VILA for Jetson (L4T Docker).</li>
+</ul>
+<p><strong>Embedding model:</strong></p>
+<ul>
+<li><code>mixedbread-ai/mxbai-embed-large-v1</code> via <code>sentence-transformers</code>. Downloads automatically on first run. Inference is CPU-compatible; the vectors are 1024-d floats.</li>
+</ul>
+<p><strong>Vector database:</strong></p>
+<ul>
+<li>Milvus standalone via Docker. One <code>docker run</code> command from the install script brings it up on port 19530. No external API, fully local.</li>
+</ul>
+<p><strong>CPU-only verdict:</strong> The reasoning agent (Phase 2) is entirely CPU-compatible — it is API calls to Ollama + TCP calls to Milvus. The embedding step (<code>embed<em>query</code>) runs on CPU via sentence-transformers without issues. Only Phase 1 caption extraction (VILA inference) requires a GPU. If you pre-generate captions once (or use the provided <code>captions</em>*.json</code> files), you can run the full query loop on a CPU-only machine.</p>
+<hr>
+<h2>Read-it-in-this-order</h2>
+<ul>
+<li><code>remembr/memory/memory.py</code> — Start here. Defines the <code>MemoryItem</code> dataclass (caption, time, position, theta) and the <code>Memory</code> abstract interface (insert / search<em>by</em>text / search<em>by</em>position / search<em>by</em>time). Everything else implements or calls this interface.</li>
+</ul>
+<ul>
+<li><code>remembr/memory/milvus<em>memory.py</code> — The production implementation. Read <code>MilvusWrapper.connect</em>to<em>milvus</em>collection</code> to see the schema (three indexed vector fields in one collection), then <code>MilvusMemory.insert</code>, then the three <code>search<em>by</em>*</code> methods and <code>memory<em>to</em>string</code>. The <code>similarity<em>search</em>with<em>score</em>by_vector</code> helper at the bottom shows exactly how position and time ANN queries work.</li>
+</ul>
+<ul>
+<li><code>remembr/captioners/vila<em>captioner.py</code> — How a batch of PIL images becomes a caption string. The VILA conversation template, multi-image token injection, and <code>model.generate</code> call are all here. Then read <code>remembr/scripts/preprocess</em>captions.py:run<em>video</em>in_segs</code> to see the full offline loop that goes from sensor frames to the JSON caption file.</li>
+</ul>
+<ul>
+<li><code>remembr/tools/functions<em>wrapper.py</code> — The <code>FunctionsWrapper</code> class that makes Ollama behave like an OpenAI function-calling model. Read <code></em>generate</code> to understand how the JSON <code>{tool, tool_input}</code> response from the LLM is parsed into LangChain <code>ToolCall</code> objects. This is the translation layer between the LLM&#x27;s text output and LangGraph&#x27;s tool dispatch.</li>
+</ul>
+<ul>
+<li><code>remembr/agents/remembr<em>agent.py</code> — The full agentic loop. Read in this order: <code></em><em>init</em><em></code> (model selection and embedding setup), <code>create</em>tools</code> (three StructuredTool definitions), <code>build<em>graph</code> (the LangGraph StateGraph topology), <code>agent</code> (the decision node), <code>should</em>continue</code> (the routing edge), <code>generate</code> (the structured-output node), <code>query</code> (public entrypoint).</li>
+</ul>
+<ul>
+<li><code>remembr/prompts/agent<em>system</em>prompt.txt</code> — The system prompt that drives retrieval decisions. Read to understand how the LLM is prompted to reason about which tool to call, how to avoid repeating queries, and how parallel tool calls work. The two-call &quot;upstairs / elevator + stairs&quot; example is the clearest illustration of the design.</li>
+</ul>
+<ul>
+<li><code>remembr/prompts/generate<em>system</em>prompt.txt</code> — The structured-output format. Shows exactly what the final answer dict must look like (text, position, binary, time, duration) and how the LLM is instructed to fill it.</li>
+</ul>
+<ul>
+<li><code>remembr/scripts/eval.py</code> — The evaluation harness. <code>load<em>memory</code> shows how caption JSONs are loaded into Milvus, and <code>answer</em>squad_question</code> shows how <code>agent.query</code> output is scored against the NaVQA ground truth for each question type.</li>
+</ul>
+<ul>
+<li><code>examples/nova<em>carter</em>demo/python/captioner<em>node.py</code> and <code>memory</em>builder_node.py</code> — The live robot integration. Shows how Phase 1 (captioning + inserting) runs continuously in real time over ROS2, with <code>CaptionerNode</code> publishing captions and <code>MemoryBuilderNode</code> fusing them with AMCL pose into <code>MilvusMemory</code>.</li>
+</ul></article>
+<article class="page walk"><h1>3D-LOTUS (robot-3dlotus) — code walkthrough</h1>
+<h2>What the repo is / how you&#x27;d run it</h2>
+<p><strong>Paper and benchmark.</strong> The repo implements GemBench (Garcia, Chen, Schmid, ICRA 2025). GemBench is an RLBench extension with seven general action primitives (push, grasp, move, rotate, release, …) and four generalization levels: novel placements, novel rigid objects, novel articulated objects, and long-horizon multi-step tasks. The simulator is CoppeliaSim 4.1 via PyRep; the Python interface is a forked version of RLBench that adds the GemBench tasks.</p>
+<p><strong>Two models shipped in the same repo:</strong></p>
+<ul>
+<li><strong>3D-LOTUS</strong> — a single end-to-end point-cloud manipulation policy trained with keystep supervision. This is the primary method.</li>
+<li><strong>3D-LOTUS++</strong> — the same motion-planning core wrapped in an LLM task planner (Llama 3 or Groq-hosted) and a VLM perception pipeline (OWLv2 detector + SAM segmentor) for object grounding.</li>
+</ul>
+<p><strong>Running.</strong> After installation (see <code>INSTALL.md</code>) the three main workflows are:</p>
+<ul>
+<li><strong>Data preprocessing.</strong> Raw RLBench demos are stored as LMDB files (keystep frames with RGB + pointcloud + actions). <code>preprocess/gen<em>simple</em>policy<em>data.py</code> voxelizes the multi-camera point clouds at 1 cm and writes a new LMDB. <code>preprocess/gen</em>instr<em>text</em>embeds.py</code> pre-computes CLIP text embeddings for all task instructions.</li>
+</ul>
+<ul>
+<li><strong>Training.</strong> <code>genrobo3d/train/train<em>simple</em>policy.py</code> is the entry point for 3D-LOTUS; <code>genrobo3d/train/train<em>motion</em>planner.py</code> is the entry point for the 3D-LOTUS++ motion planner variant. Both are submitted via SLURM scripts in <code>job_scripts/</code>. Canonical launch:</li>
+<pre><code>
+   sbatch job_scripts/train_3dlotus_policy.sh   # ~14h on 1×A100
+</code></pre>
+</ul>
+<ul>
+<li><strong>Evaluation.</strong> <code>genrobo3d/evaluation/eval<em>simple</em>policy.py</code> runs 3D-LOTUS inside RLBench and writes per-task JSON lines to <code>data/experiments/.../preds/</code>. <code>genrobo3d/evaluation/robot<em>pipeline.py</code> runs the full 3D-LOTUS++ pipeline. Results are summarized with <code>scripts/summarize</em>tst_results.py</code>.</li>
+</ul>
+<p>   For interactive exploration, <code>notebooks/eval<em>3dlotus</em>policy.ipynb</code> and <code>notebooks/eval<em>3dlotus++</em>policy.ipynb</code> wrap the same code in a Jupyter loop.</p>
+<p><strong>Dataset.</strong> Available on Hugging Face (<code>rjgpinel/GEMBench</code>). The relevant split for 3D-LOTUS is <code>train<em>dataset/keysteps</em>bbox_pcd/voxel1cm</code> (pre-voxelized, ~10 GB).</p>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+robot-3dlotus/
+├── genrobo3d/
+│   ├── models/
+│   │   ├── PointTransformerV3/
+│   │   │   ├── model.py          # canonical PTv3: Point, PointTransformerV3, serialization, attention
+│   │   │   └── model_ca.py       # PTv3 variant with cross-attention to text context
+│   │   ├── base.py               # BaseModel, RobotPoseEmbedding
+│   │   ├── simple_policy_ptv3.py # 3D-LOTUS: SimplePolicyPTV3AdaNorm / CA / Concat + ActionHead
+│   │   └── motion_planner_ptv3.py# 3D-LOTUS++ motion planner: MotionPlannerPTV3AdaNorm / CA
+│   ├── vlm_models/
+│   │   ├── llm_task_planner.py   # LlamaTaskPlanner (Llama3 local or Groq API)
+│   │   ├── vlm_pipeline.py       # VLMPipeline: OWLv2 detection + SAM segmentation + multi-view merge
+│   │   ├── clip_encoder.py       # ClipEncoder, OpenClipEncoder
+│   │   └── owlv2_detector.py / sam_segmentor.py
+│   ├── evaluation/
+│   │   ├── eval_simple_policy.py # Actioner class: loads model, drives RLBench loop
+│   │   ├── robot_pipeline.py     # RobotPipeline: full 3D-LOTUS++ predict() method
+│   │   └── common.py             # load_checkpoint, parse_code (regex for LLM output)
+│   ├── train/
+│   │   ├── train_simple_policy.py
+│   │   └── datasets/simple_policy_dataset.py
+│   ├── rlbench/
+│   │   └── environments.py       # RLBenchEnv wrapper
+│   └── utils/
+│       ├── point_cloud.py        # voxelize_pcd (Open3D voxel_down_sample_and_trace)
+│       └── action_position_utils.py
+├── preprocess/
+│   ├── gen_simple_policy_data.py # offline voxelization into LMDB
+│   └── gen_instr_text_embeds.py  # offline CLIP text embeddings
+├── prompts/rlbench/
+│   ├── system_prompt.txt         # LLM persona
+│   ├── planner_prompts.txt       # primitive action grammar
+│   └── in_context_examples.txt   # few-shot examples per taskvar
+└── assets/
+    ├── taskvars_train.json        # list of training task-variations
+    └── taskvars_instructions_new.json
+</code></pre>
+<p><strong>Key design choices visible in the code:</strong></p>
+<ul>
+<li>Point clouds are kept as raw sets of points (no voxel grid passed to the network; the grid is used only for serialization ordering inside PTv3).</li>
+<li>Language enters the model in three possible ways depending on the class: adaptive (gamma/beta) normalization on every PTv3 norm layer (<code>SimplePolicyPTV3AdaNorm</code>), cross-attention from points to text tokens at each decoder block (<code>SimplePolicyPTV3CA</code> — the default in the training script), or naive feature concatenation (<code>SimplePolicyPTV3Concat</code>).</li>
+<li>The motion planner variant (<code>MotionPlannerPTV3AdaNorm</code>) adds semantic labels (obstacle=0, robot=1, object=2, target=3) as learned embeddings concatenated to point features, and predicts a short trajectory (multiple waypoints) instead of a single keystep.</li>
+</ul>
+<hr>
+<h2>The policy, step by step</h2>
+<h3>Data preparation (<code>prepare<em>ptv3</em>batch</code>, <code>SimplePolicyPTV3AdaNorm</code> / <code>SimplePolicyPTV3CA</code>)</h3>
+<p>At inference time in <code>eval<em>simple</em>policy.py</code>, the <code>Actioner</code> class receives an observation from RLBench, extracts RGB images and point-cloud images from four cameras, clips the point cloud to the robot workspace bounding box, and runs <code>voxelize<em>pcd</code> (Open3D <code>voxel</em>down<em>sample</em>and<em>trace</code> at <code>voxel</em>size=0.01</code> m = 1 cm). The resulting array is a flat set of N points with <code>feat = [x, y, z, r, g, b, height]</code> (7-dim when <code>use_height=True</code>). Points are randomly subsampled to 4096.</p>
+<p>Text instructions are pre-encoded with CLIP (<code>ClipEncoder</code>, <code>openai/clip-vit-base-patch32</code>) and stored as numpy files. At training time they are loaded as token-level hidden states of shape <code>(num<em>tokens, 512)</code> (the last hidden layer, not the pooled embedding). At inference time the same <code>ClipEncoder.forward</em>text(..., output<em>hidden</em>states=True)</code> call is made.</p>
+<p><code>prepare<em>ptv3</em>batch</code> in <code>simple<em>policy</em>ptv3.py</code> assembles the dict the PTv3 backbone expects:</p>
+<pre><code>
+outs = {
+    &#x27;coord&#x27;: batch[&#x27;pc_fts&#x27;][:, :3],      # (N_total, 3) — absolute XYZ
+    &#x27;grid_size&#x27;: 0.01,                     # 1 cm voxel grid for serialization
+    &#x27;offset&#x27;: batch[&#x27;offset&#x27;],             # cumulative point counts per sample
+    &#x27;batch&#x27;: offset2batch(batch[&#x27;offset&#x27;]),
+    &#x27;feat&#x27;: batch[&#x27;pc_fts&#x27;],               # (N_total, 7)
+}
+</code></pre>
+<p>For the <code>SimplePolicyPTV3CA</code> variant (used in the published training script), text embeddings are projected from 512 → <code>context<em>channels</code> (256), optionally concatenated with end-effector pose embeddings and step-ID embeddings, and stored in <code>outs[&#x27;context&#x27;]</code> and <code>outs[&#x27;context</em>offset&#x27;]</code>. These become the key-value source for cross-attention inside the decoder.</p>
+<h3>Point Transformer V3 backbone (<code>genrobo3d/models/PointTransformerV3/model.py</code>)</h3>
+<p><code>PointTransformerV3.forward(data<em>dict, return</em>dec_layers=True)</code> is the backbone call.</p>
+<p>The backbone is a pure-point-set U-Net with:</p>
+<ul>
+<li><strong>5 encoder stages</strong> with depths <code>[1,1,1,1,1]</code> and channel widths <code>[64,128,256,512,768]</code>.</li>
+<li><strong>4 decoder stages</strong> with depths <code>[1,1,1,1]</code> and widths <code>[128,128,256,512]</code>.</li>
+</ul>
+<p><strong>Serialization.</strong> Before any attention, the point set is ordered. <code>point.serialization(order=self.order)</code> maps each point to a grid coordinate (integer division by <code>grid<em>size</code>), then computes a space-filling curve code (z-order or Hilbert) for each point. Multiple orderings are maintained simultaneously to reduce boundary artifacts. The result is a permutation index (<code>serialized</em>order</code>) stored on the <code>Point</code> dict.</p>
+<p><strong>Sparsification.</strong> <code>point.sparsify()</code> wraps the point features in an <code>spconv.SparseConvTensor</code> so that the initial linear embedding can use sparse 3D convolutions. This is the only place sparse conv is used; attention is serialized-patch attention, not sparse conv.</p>
+<p><strong>Encoder (<code>SerializedAttention</code>, <code>SerializedPooling</code>).</strong> Inside each encoder stage, points are reordered by the serialization code, then grouped into non-overlapping patches of size <code>patch_size</code> (default 1024). Standard multi-head self-attention runs within each patch. After attention, <code>SerializedPooling</code> downsamples the point set by stride 2 (taking every other point in the serialized order), halving the resolution at each stage.</p>
+<pre><code>
+# Inside SerializedAttention.forward:
+qkv = self.qkv(point.feat)[order]          # reorder by z-order / Hilbert
+# ... reshape into patches of size K, run flash attention ...
+point.feat[inverse] = feat                 # scatter back to original order
+</code></pre>
+<p><strong>Language conditioning in the <code>CA</code> variant (<code>model<em>ca.py</code>).</strong> <code>PointTransformerV3CA</code> replaces each decoder <code>Block</code> with a <code>Block</code> followed by a <code>CrossAttention</code> module. Each point attends to the text tokens using standard multi-head cross-attention (with Flash Attention support). The text context is per-sample (variable length); the cross-attention uses variable-length sequences via <code>flash</em>attn.flash<em>attn</em>varlen<em>kvpacked</em>func</code>.</p>
+<p><strong><code>AdaNorm</code> variant alternative.</strong> In <code>SimplePolicyPTV3AdaNorm</code>, language does not enter via cross-attention. Instead, PTv3&#x27;s <code>PDNorm</code> layers (which normally decouple normalization per dataset condition) are set to <code>adaptive=True</code>. The per-sample text embedding (pooled to a single vector by attention-weighted mean) produces a shift/scale modulation:</p>
+<pre><code>
+# PDNorm.forward (model.py, line ~297):
+shift_scale = self.modulation(point.context)  # Linear(256, 2*C)
+shift_scale = torch.repeat_interleave(shift_scale, offset2bincount(point.offset), dim=0)
+shift, scale = shift_scale.chunk(2, dim=1)
+point.feat = point.feat * (1.0 + scale) + shift
+</code></pre>
+<p>This is the FiLM / AdaLN pattern applied after every norm layer.</p>
+<p><strong>Return value.</strong> With <code>return<em>dec</em>layers=True</code>, <code>forward</code> returns a list of <code>Point</code> dicts, one per decoder transformer block. Each <code>Point</code> has <code>.feat</code> (point embeddings at the decoder resolution) and <code>.coord</code> (the xyz coordinates of those points). The final element <code>point_outs[-1]</code> is the finest resolution, corresponding to the full input point set.</p>
+<h3>Action head (<code>ActionHead</code>, <code>simple<em>policy</em>ptv3.py</code>)</h3>
+<p>After the backbone, <code>point<em>outs[-1].feat</code> has shape <code>(N</em>total, dec<em>channels[0])</code> = <code>(N</em>total, 128)</code>.</p>
+<p><strong>Position prediction (heatmap<em>disc mode — default in the training script).</strong> For each point, a two-layer MLP (<code>heatmap</em>mlp</code>) outputs <code>3 * pos<em>bins * 2</code> logits (default <code>pos</em>bins=15</code>, so <code>3*15*2=90</code> values). These are reshaped to <code>(3, N, 30)</code> — three independent discretized position distributions over the point cloud. At inference, <code>get<em>best</em>pos<em>from</em>disc_pos</code> converts these to a continuous XYZ by combining the per-point probability mass with the actual point coordinates.</p>
+<p>An alternative (used in ablations) is <code>heatmap_mlp</code> mode, which predicts a per-point scalar heatmap weight and a 3D offset, and computes a weighted sum of adjusted coordinates:</p>
+<pre><code>
+heatmaps = torch.softmax(heatmap_embeds[:, :1] / temp, dim=0)
+new_coords = coords + heatmap_embeds[:, 1:]
+xt = torch.einsum(&#x27;p,pc-&gt;c&#x27;, h.squeeze(1), p)  # soft-argmax
+</code></pre>
+<p><strong>Rotation and openness prediction.</strong> Global point embedding is obtained by max-pooling all <code>point<em>outs[-1].feat</code> vectors per sample. A second MLP (<code>action</em>mlp</code>) maps this pooled embedding to rotation and gripper-openness logits. The training script uses <code>euler<em>disc</code> rotation (three independent 72-class cross-entropy heads, one per Euler angle, 5° resolution). At inference, <code>discrete</em>euler<em>to</em>quaternion</code> converts the argmax bin to a quaternion.</p>
+<p><strong>Final assembly:</strong></p>
+<pre><code>
+final_pred_actions = torch.cat([pred_pos, pred_rot, pred_open.unsqueeze(-1)], dim=-1)
+# shape: (batch, 8) — [x, y, z, qx, qy, qz, qw, open]
+</code></pre>
+<p><strong>Loss.</strong> Three terms summed with configurable weights:</p>
+<ul>
+<li><code>pos_loss</code>: cross-entropy over the discretized position distribution (or MSE for continuous mode)</li>
+<li><code>rot_loss</code>: cross-entropy over 72 Euler bins per axis</li>
+<li><code>open_loss</code>: binary cross-entropy for gripper open/closed</li>
+</ul>
+<hr>
+<h2>Where the core idea lives</h2>
+<h3>3D-LOTUS: the point-cloud policy</h3>
+<p>The essential claim is that working directly in 3D (rather than projecting to multi-view 2D images) gives better spatial precision and sample efficiency. The policy receives a voxelized point cloud and a language instruction and predicts a single keystep pose.</p>
+<p><strong>Key file:</strong> <code>genrobo3d/models/simple<em>policy</em>ptv3.py</code>, class <code>SimplePolicyPTV3CA</code> (the published best variant).</p>
+<p><strong>Key lines — the full forward pass:</strong></p>
+<pre><code>
+# simple_policy_ptv3.py, SimplePolicyPTV3AdaNorm.forward (line 225)
+ptv3_batch = self.prepare_ptv3_batch(batch)          # attach text context
+point_outs = self.ptv3_model(ptv3_batch, return_dec_layers=True)  # U-Net
+pred_actions = self.act_proj_head(
+    point_outs[-1].feat, batch[&#x27;npoints_in_batch&#x27;],
+    coords=point_outs[-1].coord, ...
+)
+pred_pos, pred_rot, pred_open = pred_actions
+final_pred_actions = torch.cat([pred_pos, pred_rot, pred_open.unsqueeze(-1)], dim=-1)
+</code></pre>
+<p>The heatmap position head (lines 83–103) is the geometric heart: every point in the cloud votes for the action location, and the final position is a soft aggregation of those votes. This lets the network localize actions relative to specific scene geometry rather than regressing in absolute coordinates.</p>
+<h3>3D-LOTUS++: LLM task decomposition and object grounding</h3>
+<p><strong>Key file:</strong> <code>genrobo3d/evaluation/robot_pipeline.py</code>, class <code>RobotPipeline</code>, method <code>predict</code> (line 235).</p>
+<p>The <code>predict</code> method is called once per environment step. Its logic:</p>
+<ul>
+<li><strong>Task planning (step 0 only).</strong> Call <code>LlamaTaskPlanner.<em>_call</em><em>(instruction)</code>. The LLM is given a system prompt defining six action primitives (<code>grasp</code>, <code>move</em>grasped<em>object</code>, <code>rotate</em>grasped<em>object</code>, <code>push</em>down</code>, <code>push_forward</code>, <code>release</code>) and a few-shot demonstration of Python-like pseudo-code. It outputs a Python-like plan, e.g.:</li>
+<pre><code>
+   drawer_handle = grasp(object=&quot;bottom drawer handle&quot;)
+   drawer_handle = move_grasped_object(target=&quot;out&quot;)
+   release()
+</code></pre>
+</ul>
+<p>   <code>parse_code</code> in <code>evaluation/common.py</code> uses a regex to extract <code>action</code>, <code>object</code>, and <code>target</code> from each line into an <code>EasyDict</code>.</p>
+<ul>
+<li><strong>Object grounding.</strong> <code>VLMPipeline.run(rgb<em>images, pcd</em>images, arm<em>links</em>info)</code> runs OWLv2 over all four camera views (open-vocabulary detection without class names — pure objectness), then SAM to get masks, then lifts masks to 3D point clouds using the depth images, and merges multi-view detections using Chamfer distance. Each detected object has an <code>image<em>class</em>embeds</code> from OWLv2&#x27;s patch embeddings. <code>ground<em>object</em>with_query(text, objects)</code> encodes the query text with OWLv2&#x27;s text encoder and picks the object with the highest cosine similarity.</li>
+</ul>
+<ul>
+<li><strong>Semantic labels.</strong> The grounded objects are assigned labels (obstacle=0, robot=1, object-to-manipulate=2, placement-target=3). These become a 4-class embedding (<code>pc<em>label</em>embedding</code>) concatenated to the point features before entering the motion planner PTv3.</li>
+</ul>
+<ul>
+<li><strong>Motion planning.</strong> <code>self.motion<em>planner(batch)</code> returns a short action trajectory (default <code>max</em>traj_len</code> steps) plus a stop signal. The pipeline executes these micro-actions until the stop token fires, then advances to the next LLM plan step.</li>
+</ul>
+<p><strong>Key lines — LLM call:</strong></p>
+<pre><code>
+# robot_pipeline.py, line 286
+_, highlevel_plans = self.llm_planner(instruction, context=None, verbose=False)
+cache.highlevel_plans = [parse_code(x) for x in highlevel_plans]
+</code></pre>
+<p><strong>Key lines — grounding and label assignment:</strong></p>
+<pre><code>
+# robot_pipeline.py, line 101
+best_obj_id, _, pred_sim = self.vlm_pipeline.ground_object_with_query(query, ...)
+pcd_label[best_obj_id][:] = 2   # mark as object-to-manipulate
+</code></pre>
+<p><strong>In-context example retrieval in <code>LlamaTaskPlanner.<em>_call</em><em></code></strong> (llm</em>task_planner.py, line 146): the planner uses sentence-BERT to embed the query, retrieves the top-20 most similar training instructions by cosine similarity, picks one demonstration per task-variation, and injects them into the multi-turn dialog. This retrieval augmentation lets the LLM generalize to novel instructions without fine-tuning.</p>
+<hr>
+<h2>What you&#x27;d need to run it</h2>
+<p>| Component | Requirement |</p>
+<p>|---|---|</p>
+<p>| Simulator | CoppeliaSim 4.1 (binary download, ~2 GB) + PyRep (forked) + RLBench (forked) |</p>
+<p>| Python env | Python 3.10, CUDA 12.1, PyTorch 2.3 |</p>
+<p>| 3D ops | <code>torch-scatter</code>, <code>spconv</code>, <code>pointnet2_ops</code>, <code>chamferdist</code> — all require CUDA compilation |</p>
+<p>| Attention | Flash Attention 2 (optional but used by default; requires Ampere+ GPU) |</p>
+<p>| GPU for 3D-LOTUS | Single A100 for training (~14 h); inference can run on smaller GPU (model is ~50 M params) |</p>
+<p>| GPU for 3D-LOTUS++ | 1 A100 for motion planner + OWLv2-large + SAM-huge; authors mention 2 A100s if the 3D captioner is also loaded |</p>
+<p>| LLM for 3D-LOTUS++ | Either local Llama 3 8B weights (requires ~16 GB VRAM) or a Groq API key (<code>GROQ<em>API</em>KEY</code>) |</p>
+<p>| Headless machine | CoppeliaSim requires a display; the repo ships a Singularity/Docker image with Xvfb |</p>
+<p>| <strong>CPU-only verdict</strong> | Not viable. <code>torch-scatter</code>, <code>spconv</code>, <code>chamferdist</code>, and Flash Attention all require CUDA. Even if you comment them out, the simulation itself requires CoppeliaSim&#x27;s GUI/X11 stack. |</p>
+<hr>
+<h2>Read-it-in-this-order</h2>
+<p>For a new reader wanting to understand the system top-to-bottom:</p>
+<ul>
+<li><strong><code>README.md</code></strong> — overview of GemBench benchmark structure, four generalization levels, and the two-model hierarchy.</li>
+<li><strong><code>INSTALL.md</code></strong> — understand the dependency graph (CoppeliaSim → PyRep → RLBench → spconv/pointnet2 → genrobo3d).</li>
+<li><strong><code>genrobo3d/models/base.py</code></strong> — <code>BaseModel</code> (weight init, device management) and <code>RobotPoseEmbedding</code> (how the 8-dim gripper pose is embedded into a vector via sin/cos of Euler angles).</li>
+<li><strong><code>genrobo3d/models/PointTransformerV3/model.py</code></strong> — <code>Point</code> dict schema (lines 50–75), <code>PDNorm</code> for adaptive conditioning (lines 257–304), <code>SerializedAttention</code> (lines 329–580), and <code>PointTransformerV3.forward</code> (lines 1072–1101). This is the longest file (~1200 lines) but the serialization and attention are the core algorithmic novelty of the backbone.</li>
+<li><strong><code>genrobo3d/models/PointTransformerV3/model_ca.py</code></strong> — <code>CrossAttention</code> and <code>PointTransformerV3CA</code>. Read after model.py; it only adds ~120 lines.</li>
+<li><strong><code>genrobo3d/models/simple<em>policy</em>ptv3.py</code></strong> — <code>ActionHead</code> (position heatmap + rotation head), then <code>SimplePolicyPTV3AdaNorm.prepare<em>ptv3</em>batch</code> and <code>forward</code>. This is where the backbone becomes a robot policy.</li>
+<li><strong><code>preprocess/gen<em>simple</em>policy_data.py</code></strong> — how raw RLBench demos become training-ready LMDB files (workspace clipping → voxelization → serialization).</li>
+<li><strong><code>genrobo3d/train/train<em>simple</em>policy.py</code></strong> — training loop, <code>DATASET<em>FACTORY</code> / <code>MODEL</em>FACTORY</code>, DDP setup.</li>
+<li><strong><code>job<em>scripts/train</em>3dlotus<em>policy.sh</code></strong> — the actual hyperparameters used (enc/dec depths, <code>SimplePolicyPTV3CA</code>, <code>heatmap</em>disc</code> position head, <code>euler_disc</code> rotation, 150 k steps).</li>
+<li><strong><code>genrobo3d/evaluation/eval<em>simple</em>policy.py</code></strong> — <code>Actioner</code> class: how a loaded checkpoint drives the RLBench environment step-by-step.</li>
+<li><strong><code>prompts/rlbench/system<em>prompt.txt</code> + <code>planner</em>prompts.txt</code> + <code>in<em>context</em>examples.txt</code></strong> — the complete LLM prompt design; the six primitives, the few-shot format, and concrete worked examples.</li>
+<li><strong><code>genrobo3d/vlm<em>models/llm</em>task_planner.py</code></strong> — <code>LlamaTaskPlanner</code>: sentence-BERT retrieval augmentation (lines 114–178) and the multi-turn dialog structure (lines 180–214).</li>
+<li><strong><code>genrobo3d/evaluation/common.py</code></strong> — <code>parse_code</code> regex: how LLM output (&quot;grasp(object=&quot;blue cup&quot;)&quot;) is parsed into a structured plan dict.</li>
+<li><strong><code>genrobo3d/vlm<em>models/vlm</em>pipeline.py</code></strong> — <code>VLMPipeline.run</code>: OWLv2 detection → SAM segmentation → 3D lift → multi-view merge via Chamfer distance. <code>ground<em>object</em>with_query</code>: cosine similarity between query and OWLv2 patch embeddings.</li>
+<li><strong><code>genrobo3d/evaluation/robot_pipeline.py</code></strong> — <code>RobotPipeline.predict</code>: the full 3D-LOTUS++ inference loop tying LLM plan → VLM grounding → semantic labels → motion planner → action execution.</li>
+<li><strong><code>genrobo3d/models/motion<em>planner</em>ptv3.py</code></strong> — <code>MotionPlannerPTV3AdaNorm</code>: like the simple policy but with a 4-class label embedding input and a trajectory head that predicts <code>max<em>traj</em>len</code> waypoints plus a stop signal.</li>
+</ul></article></div>
+  <footer>Repos cloned under analysis/detail/vla/code/ (gitignored — GPU/CUDA needed to run) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>

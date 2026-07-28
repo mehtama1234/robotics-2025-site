@@ -1,0 +1,1794 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Language models that plan the job — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive · with code</div>
+  <h1>Language models that plan the job</h1>
+  <p>Using a large language model to turn a plain-language goal into a sequence of robot actions — and grounding those plans in what the robot can actually do. This page: the idea, the key 2025 papers with their real code, and hands-on walkthroughs of two cloned codebases.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a><a href="#walk">Reading the actual code</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Language models that plan the job</h1>
+<p><em>54 papers · the decide part of the loop — turning a spoken goal into a safe, ordered set of robot steps</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">Language models are unreliable planners on their own — they invent steps a robot cannot do, ignore the actual room layout, and forget what happened minutes ago. But they are exceptional at understanding human intent in natural language. The insight threading through almost every paper here is that <strong>a language model should be a flexible idea-generator paired with a grounding layer that checks, adapts, and constrains</strong> — not a planner left alone to hallucinate. A robot planning a task needs three things the model lacks: memory of what the world actually looks like, a way to test whether each step is possible before acting, and context about which choices matter for tasks later. The papers below show different ways of bolting those things onto a language model so the output shifts from conversational text that sounds right to executable plans that work.</p>
+<p style="margin:0 0 8px"><strong>Five things people are actually trying to do with it:</strong></p>
+<ul style="margin:0 0 12px">
+<li><strong>① Keep the model aware of the real world.</strong> <em>KARMA</em> maintains both a persistent 3D map and a timestamped log of recent changes, feeding both into the language model when it plans. <em>E2Map</em> tags locations with scores from past attempts so the model learns which parts of the space are risky. <em>TR-LLM</em> feeds observed movement trajectories plus scene context into the model so it can anticipate what the <em>people</em> in the scene are about to do — planning that accounts for humans, not just the empty room.</li>
+<li><strong>② Test each step for feasibility before committing.</strong> <em>ConceptAgent</em> pairs the language model with a tree-search planner that backtracks when a proposed step turns out impossible. <em>Enhancing Robustness in Language-Driven Robotics</em> builds a verification layer that checks preconditions and detects mistakes in real time as the robot executes.</li>
+<li><strong>③ Ground plans in written rules, not just the model's knowledge.</strong> <em>SayComply</em> retrieves relevant operational rules and safety policies from a structured database before the model writes each step. <em>3DWG</em> uses structured visual grounding to anchor language understanding in what the robot can actually see and manipulate.</li>
+<li><strong>④ Adapt general plans to the specific robot and place.</strong> <em>AdaptBot</em> generates a plan with a language model, then checks every step against a knowledge graph of facts about the environment — if something does not fit, it asks a human for clarification and stores the answer. <em>Multi-Floor Zero-Shot Object Navigation Policy</em> extends single-floor planning to reason about which floor likely holds the target without task-specific retraining.</li>
+<li><strong>⑤ Act in a way that fits the social setting, not just the goal.</strong> A plan can be perfectly efficient and still be rude, unsafe, or unwelcome around people. <em>GRACE</em> weighs whether an action is <em>socially appropriate</em> — not only whether it achieves the task, but whether it is acceptable to the humans nearby — so the plan respects social norms, not just task logic.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> language models have made robots genuinely more flexible at understanding goals, but planning is not language work — it is a discipline that requires checking, memory, and commitment to ground truth. The 2025 work is the productive phase of learning how to couple the model's linguistic flexibility with hard constraints: a checked plan, a traced-out world, and verification that steps work before the robot commits. Everything below is a different angle on that same coupling. <strong>Still open:</strong> making the entire pipeline reliable and predictable enough to trust with safety-critical tasks; building long-term memory that scales to homes where the robot lives for years; and balancing the model's adaptability with formal guarantees that the plan is safe.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>Every time you hand a robot a task in plain words — &quot;clean up the kitchen&quot; or &quot;find my keys&quot; — you are asking it to do something remarkably hard. The robot must figure out what you mean, break that meaning into concrete physical steps, check that each step is actually possible in the room it is in right now, and do all of this without hurting anyone or breaking anything.</p>
+<p>Older planning systems handled this by having a person write out every rule by hand in advance: if the cup is on the table and the hand is empty, then pick up the cup. This works for narrow, fixed jobs, but it falls apart the moment something unexpected happens or the goal changes. A human cannot write rules for every possible kitchen layout, every possible object, every possible instruction.</p>
+<p>The breakthrough idea here is to use the same kind of AI that powers conversational chatbots — systems trained on enormous amounts of text so that they understand language the way a person does — to do the step-making instead. These systems, called large language models (LLMs), can take &quot;clean up the kitchen&quot; and produce a reasonable list of steps without anyone pre-writing the rules. That is genuine progress.</p>
+<p>But it brings new problems. These AI systems were trained to produce text that sounds right, not steps that are physically possible. They invent steps the robot cannot carry out. They do not know where the robot is, what the room looks like, or what rules the site has about safety. They forget what happened earlier in a long task. They plan each task as if it is the only task the robot will ever do, which leads to choices that are cheap now but costly later.</p>
+<p>These problems matter because they sit at the exact center of what makes robots hard. A robot must take in an unclear, changing world, decide what to do, move a real body, and do all of that fast, cheap, safe, and across many situations — not just the ones it was trained on. The decide step is where the plan either holds together or falls apart. If the plan is wrong, everything downstream — every move the robot makes — is wrong too.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Giving the language model a memory of the world</h3>
+<p>The most direct problem is that a language model knows language but not the specific room the robot is in right now. Several papers fix this by building and maintaining a structured record of what the robot has seen, then feeding relevant pieces of that record to the language model when it needs to plan.</p>
+<p>KARMA keeps two separate logs: a persistent 3D map of the whole space that does not reset between tasks, and a short-term log of recent changes — an object moved, a drawer opened — that updates constantly. The language model reads from both when choosing the next step. E2Map goes further: it tags every location in the robot&#x27;s map with a score recording how well the robot&#x27;s own past attempts there went. The language model plans around places where things went poorly before. L3M+P stores everything the robot knows in a structured web of facts (a knowledge graph) that updates whenever the robot sees or hears something new; when a task arrives, the language model reads the relevant parts and a separate classical planner turns that into an executable sequence.</p>
+<p>The common insight: the language model supplies flexible understanding of the goal, while the structured memory supplies the grounding the model lacks on its own.</p>
+<h3>Checking that each step is actually possible before acting</h3>
+<p>Even with good world knowledge, a language model can write steps that look plausible but cannot be carried out. These papers add a checking layer that tests each planned step against real physical conditions before the robot moves.</p>
+<p>ConceptAgent pairs the language model with a tree search process — it tries many possible action sequences in a simulated forward search (Monte Carlo Tree Search), and at each node it checks whether the required conditions for that step are actually present. If a step turns out impossible, the search backtracks and tries a different path. The paper on Enhancing Robustness in Language-Driven Robotics wraps a smaller on-board language model in a checking system that tests each step for sense before the robot commits to it, then detects and corrects mistakes on the fly when they occur anyway.</p>
+<p>This approach treats the language model as a first draft generator, not a trusted authority. The checking layer catches what the model gets wrong.</p>
+<h3>Writing plans in a form that can be verified and executed reliably</h3>
+<p>A related but distinct idea is to make the language model produce its plan in a structured, checkable form from the start — not free text, but code or formal logic that a separate system can test for correctness.</p>
+<p>SayComply organizes a site&#x27;s operations manuals and safety rules into a tree-shaped database and retrieves relevant passages before the language model writes each step, so the plan is grounded in actual written rules, not just the model&#x27;s general knowledge. LTLCodeGen sidesteps the language model&#x27;s tendency to write incorrect formal logic by using code generation rules that guarantee the output is syntactically correct; that correct code then feeds directly into a motion planner. FrameCRL (Controlled Robot Language with Frame Semantics) avoids large language models entirely at plan time: it parses each spoken instruction using a structured set of linguistic meaning units (FrameNet frames) to extract precise goals, then passes those to a formal task planner. Path Planning Using Instruction-Guided Probabilistic Roadmaps uses a language model to convert a person&#x27;s stated travel preferences into a cost map — a number assigned to every possible location indicating how much the robot should prefer or avoid it — and the robot&#x27;s path planner reads that map directly.</p>
+<p>The through-line: get the output of the language step into a form that does not depend on the model being right, because it can be checked or executed mechanically.</p>
+<h3>Adapting the plan to the specific robot and environment</h3>
+<p>A general plan written by a language model may be fine in the abstract but wrong for this robot in this room with these constraints. Several papers address this mismatch by grounding general plans against specific knowledge of the actual setup.</p>
+<p>AdaptBot generates a general plan with a language model, then checks every step against a structured knowledge graph of known facts about the specific environment. When a step still does not fit, the robot asks a targeted question to a nearby human and stores the answer for next time. Multi-Floor Zero-Shot Object Navigation Policy extends an existing single-floor search system to reason about when to switch floors in a multi-story building, using visual and language-based understanding to guess which floor likely has the target — without task-specific training. Language-Guided Object Search in Agricultural Environments asks a language model which objects tend to appear near which other objects, then uses those relationships to plan a search route that covers the most probable spots first in an unfamiliar farm setting.</p>
+<h3>Planning ahead across many tasks, not just the current one</h3>
+<p>Most planners optimize for the task in front of them. But a robot used all day needs to make choices that keep future tasks easy too.</p>
+<p>Anticipatory Planning for Performant Long-Lived Robot in Large-Scale Home-Like Environments uses a graph neural network — a type of network that works on connected webs of objects and relationships — to estimate how hard future tasks are likely to be given the current state of the room. The robot then chooses actions that balance finishing the current task well and keeping the room in a state where future tasks stay easy. It combines this estimate with a search process that samples many possible actions before committing.</p>
+<h2>Where it stands</h2>
+<p>Language models have made robots genuinely more flexible at the decide step: they can now accept open-ended goals in plain words and produce reasonable starting plans without hand-coded rules. The main open problems are reliability and trust — these models still invent impossible steps, still fail to account for safety rules they were not shown, and still struggle when a task runs long enough that memory and context matter. The checking and grounding techniques in these papers reduce failure rates but add complexity, and most have been tested only in specific domains or simulated settings. Making this whole pipeline fast, safe, and general enough to run on any robot in any environment is the work still ahead.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">KARMA: Augmenting Embodied AI Agents with Long-and-Short Ter</td><td>ICRA</td><td><a href="https://github.com/WZX0Swarm0Robotics/KARMA/tree/master" target="_blank" rel="noopener">WZX0Swarm0Robotics/KARMA/tree/master</a></td><td class="mono">scripts/llm_as_planner.py</td><td><span class="run">api</span></td></tr>
+<tr><td class="tt">Multi-Floor Zero-Shot Object Navigation Policy</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">E2Map: Experience-and-Emotion Map for Self-Reflective Robot </td><td>ICRA</td><td><a href="https://github.com/knwoo/e2map" target="_blank" rel="noopener">knwoo/e2map</a></td><td class="mono">src/e2map/scripts/self_reflection.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">ConceptAgent: LLM-Driven Precondition Grounding and Tree Sea</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">GRACE: Generating Socially Appropriate Robot Actions Leverag</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run">api</span></td></tr>
+<tr><td class="tt">AdaptBot: Combining LLM with Knowledge Graphs and Human Inpu</td><td>ICRA</td><td><a href="https://github.com/sssshivvvv/adaptbot" target="_blank" rel="noopener">sssshivvvv/adaptbot</a></td><td class="mono">code/GPT3.5/individual_frameworks/LLM_KG_Human/stitching_everything_exp.py</td><td><span class="run">api</span></td></tr>
+<tr><td class="tt">Enhancing Robustness in Language-Driven Robotics: A Modular </td><td>IROS</td><td><a href="https://tinyurl.com/4h2ysybd" target="_blank" rel="noopener">https://tinyurl.com/4h2ysybd</a></td><td class="mono">expected_outcomes.py</td><td><span class="run">cpu</span></td></tr>
+<tr><td class="tt">TR-LLM: Integrating Trajectory Data for Scene-Aware LLM-Base</td><td>IROS</td><td><a href="https://github.com/kojirotakeyama/TR-LLM" target="_blank" rel="noopener">kojirotakeyama/TR-LLM</a></td><td class="mono">main/TR-LLM.py</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">SayComply: Grounding Field Robotic Tasks in Operational Comp</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
+<tr><td class="tt">3DWG: 3D Weakly Supervised Visual Grounding via Category and</td><td>ICRA</td><td>—</td><td class="mono">model/fusion.py or branches/category.py (dual-branch fusion core)</td><td><span class="run">gpu</span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — method &amp; code review</div><article class="page" id="gp0"><h1>KARMA: Augmenting Embodied AI Agents with Long-and-Short Term Memory Systems</h1>
+<p>ICRA 2025 · 5 citations · memory-agent</p>
+<h2>What it does — 2-3 plain sentences</h2>
+<p>KARMA gives a household robot two separate memory systems that work together when the robot plans its next action. Long-term memory stores a 3D map of the entire space as a scene graph (a structured representation of what objects are where and what they are), while short-term memory tracks recent changes—when something moved or changed state. When an LLM is asked to plan the next step for a multi-step task, it receives relevant excerpts from both memories as context, so it knows not only what the house looks like generally, but what has changed since the robot last looked.</p>
+<p><strong>Sub-approach: memory-agent</strong> — a system with long-and-short-term memory augmentation that an LLM consults during planning.</p>
+<h2>The method, in detail</h2>
+<p>The system works in a cycle during task execution:</p>
+<ul>
+<li><strong>Long-term memory (LTM) construction</strong>: As the robot observes its environment (via computer vision), the system builds a 3D scene graph—a structured format where each object is a node with properties (type, location, state) and edges represent spatial relationships. This graph is persistent and grows or updates as the robot explores.</li>
+</ul>
+<ul>
+<li><strong>Short-term memory (STM) recording</strong>: Simultaneously, the system logs dynamic changes—&quot;apple moved from counter to sink&quot;, &quot;drawer opened&quot;, &quot;pot is now on stove&quot;. These entries are timestamped and track what has changed since the long-term model was last updated.</li>
+</ul>
+<ul>
+<li><strong>Memory replacement strategy</strong>: Short-term memory has a fixed size. When it fills up, the system uses an adaptive replacement policy: it keeps entries that are relevant to the current task or recent history, and discards older or less pertinent changes. The paper does not specify the exact algorithm, but the strategy is designed to preserve critical information (e.g., &quot;the target object moved here&quot;) while dropping noise.</li>
+</ul>
+<ul>
+<li><strong>LLM prompting with memory</strong>: When the LLM is asked &quot;what should the robot do next?&quot;, instead of giving it only the task description, the system constructs a prompt that includes:</li>
+</ul>
+<p>   - The original high-level task (e.g., &quot;wash an apple and put it on the countertop&quot;)</p>
+<p>   - Relevant objects and their locations extracted from the long-term scene graph</p>
+<p>   - Recent changes from short-term memory (what just happened)</p>
+<p>   - The robot&#x27;s current state and capabilities</p>
+<ul>
+<li><strong>Plan generation and execution</strong>: The LLM decomposes the task into a sequence of primitive actions (grasp, move, place, navigate). After each action, the robot updates both memories based on what actually happened, then re-prompts the LLM for the next step. This closes the loop: the agent adapts its plan if objects moved unexpectedly or if the real world differed from what was predicted.</li>
+</ul>
+<p><strong>Key technical trick</strong>: Memory-augmented prompting without retraining. The LLM is not fine-tuned; instead, the right memories are injected into the prompt context. This makes the approach plug-and-play and compatible with any LLM (the paper used OpenAI&#x27;s models, but the method is agnostic).</p>
+<h2>The code</h2>
+<p><strong>Repo URL</strong>: <a href="https://github.com/WZX0Swarm0Robotics/KARMA/tree/master" target="_blank" rel="noopener">https://github.com/WZX0Swarm0Robotics/KARMA/tree/master</a></p>
+<p><strong>Language/Framework</strong>: Python 3 with the AI2-THOR simulator (a physics-enabled 3D house simulator); OpenAI API for LLM calls.</p>
+<p><strong>Repository structure</strong>:</p>
+<pre><code>
+KARMA/
+├── scripts/
+│   ├── GUI_karma.py          # Main entry point; graphical task input
+│   ├── llm_as_planner.py     # LLM prompting logic (scene graph + memory query)
+│   ├── execute_LLM_plan.py   # Action execution and environment updates
+│   └── [other utilities]
+├── environment.yml           # Conda environment specification
+└── README.md
+</code></pre>
+<p><strong>Key file to open first</strong>: <code>scripts/GUI<em>karma.py</code> — this is the user-facing entry point. Then read <code>scripts/llm</em>as<em>planner.py</code> to see how memories are queried and injected into prompts, and <code>scripts/execute</em>LLM_plan.py</code> to see how actions are executed and memories are updated.</p>
+<p><strong>Dependencies</strong>:</p>
+<ul>
+<li>Python 3</li>
+<li>Conda (for environment management)</li>
+<li>OpenAI API client (requires an API key from <a href="https://platform.openai.com/" target="_blank" rel="noopener">https://platform.openai.com/</a>)</li>
+<li>AI2-THOR simulator (runs locally; accessible via the simulator API)</li>
+</ul>
+<p><strong>Simulator/GPU/Dataset needs</strong>:</p>
+<ul>
+<li><strong>Simulator</strong>: Yes, AI2-THOR is required (a 3D physics simulator that simulates a house with objects and physics). It runs locally or can connect to a hosted version.</li>
+<li><strong>GPU</strong>: Not explicitly required for the core logic, but LLM inference via OpenAI API is remote (cloud).</li>
+<li><strong>Dataset</strong>: No precomputed dataset needed; tasks are user-specified (e.g., &quot;wash an apple&quot;).</li>
+<li><strong>API key</strong>: Required to call OpenAI models (not free).</li>
+</ul>
+<p><strong>How to run it</strong>:</p>
+<pre><code>
+# 1. Clone and enter
+git clone https://github.com/WZX0Swarm0Robotics/KARMA.git
+cd KARMA
+
+# 2. Set up environment
+conda env create -f environment.yml
+conda activate karma
+
+# 3. Insert OpenAI API key into scripts/llm_as_planner.py and scripts/execute_LLM_plan.py
+
+# 4. Launch the GUI
+python3 scripts/GUI_karma.py
+
+# 5. Type a task (e.g., &quot;wash an apple and put it on the countertop&quot;)
+# The system will plan and execute in the AI2-THOR simulator
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first</strong>: Start with <code>GUI<em>karma.py</code> to understand the user-facing workflow, then <code>llm</em>as_planner.py</code> to see the core memory query and prompting logic. The prompting code is where the long-term and short-term memories are serialized and sent to the LLM—that is the heart of the method.</p>
+<p><strong>How hard the code is to follow</strong>: <strong>Moderate</strong>. The code is well-structured and relatively straightforward Python; the main concepts (scene graphs, memory replacement, prompting) are not algorithmically complex. The main challenge is understanding the AI2-THOR API (object representation, action execution) and how the memory structures are serialized into text prompts. No deep learning or advanced ML here; it is mostly prompt engineering and state management.</p>
+<h2>Run verdict — on a CPU-only box</h2>
+<p><strong>Can it actually run?</strong> Partially.</p>
+<ul>
+<li><strong>AI2-THOR simulator</strong>: Runs locally but prefers GPU acceleration; CPU-only is possible but slow.</li>
+<li><strong>LLM inference</strong>: Cannot run locally without an API key (requires OpenAI cloud). If you do not have an OpenAI API key or cannot afford the cost, this will not work.</li>
+<li><strong>GPU</strong>: Not strictly required, but recommended for real-time interaction.</li>
+<li><strong>Overall</strong>: On a CPU-only box <strong>without internet or without an OpenAI API key</strong>, this will fail at the LLM step. With internet and a valid API key, it will work but be slow in the simulator. To run the full system end-to-end, you need: (1) internet access, (2) OpenAI API key (paid), (3) ideally a GPU for the simulator, though CPU is acceptable for prototyping.</li>
+</ul></article>
+<article class="page" id="gp1"><h1>Multi-Floor Zero-Shot Object Navigation Policy</h1>
+<p>ICRA 2025 · 5 citations · language-navigation</p>
+<h2>What it does — 2-3 plain sentences</h2>
+<p>A robot searches for objects in buildings where the target might be on a different floor from where it starts. The system extends single-floor visual search to reason about when and how to move between floors, using visual understanding and semantic reasoning to decide which floor is likely to have the object without needing any training data specific to the building or task. Sub-approach: language-navigation—the framework uses visual-language models and LLMs to guide exploration across spatial boundaries.</p>
+<h2>The method, in detail</h2>
+<p><strong>Input and observation:</strong></p>
+<p>The robot navigates using RGB-D images and its pose (position and orientation). It builds a semantic map as it explores, recording where it has seen different object categories. The map persists across single-floor exploration but must reinitialize when moving to a new floor.</p>
+<p><strong>Three-stage pipeline:</strong></p>
+<ul>
+<li><strong>Semantic mapping and candidate generation</strong>: As the robot moves on a floor, RGB-D frames are converted to a 2D bird&#x27;s-eye-view semantic map using a pretrained segmentation model (Mask2Former). Unexplored or frontiers of interest are scored as candidate waypoints for the next step.</li>
+</ul>
+<ul>
+<li><strong>LLM-based floor reasoning</strong>: When the agent reaches stairs or boundary markers (e.g., an elevator), an LLM (Qwen2) is prompted to decide whether to attempt a floor transition. The prompt includes the current floor, object type being searched for, semantic map summary, and exploration statistics. The LLM outputs a yes/no decision and reasoning.</li>
+</ul>
+<ul>
+<li><strong>VLM-based target verification and inter-floor navigation</strong>: Once inter-floor movement is attempted, a vision-language model (Qwen2-VL-Int4, quantized for speed) evaluates images taken at candidate locations. It scores confidence that the target object is present. The model combines image region descriptions from semantic segmentation with natural-language reasoning about whether this floor is likely to contain the object.</li>
+</ul>
+<ul>
+<li><strong>Stairway detection and navigation</strong>: The system identifies staircase or elevator features in the semantic map and uses navigation primitives (geometric path-following) to physically traverse them. After crossing to a new floor, the map is cleared and re-mapped from the new floor.</li>
+</ul>
+<p><strong>Training and optimization:</strong></p>
+<p>Zero-shot: no training on the test environment or dataset. The models (Qwen2 LLM, Qwen2-VL-Int4 VLM, Mask2Former segmentation) are all pretrained on large text and image corpora. The only adaptation is prompt engineering—writing natural-language instructions that guide the LLM and VLM to make sensible floor-transition decisions.</p>
+<p><strong>The trick that makes it work:</strong></p>
+<p>Decoupling single-floor navigation (handled by classical semantic mapping and exploration) from multi-floor reasoning (handled by LLM prompt-based decision-making). The LLM acts as a commonsense filter: it asks &quot;does this floor make sense for finding a kitchen?&quot; rather than blindly trying stairs. The VLM adds visual grounding by re-evaluating target plausibility after each floor change.</p>
+<h2>The code — repo URL; language/framework; the repo STRUCTURE; the specific file/function to open FIRST; dependencies; whether it needs a simulator, dataset, or GPU; how you&#x27;d run it.</h2>
+<p><strong>Repository</strong>: No public GitHub repository found. Code has not been released as of July 2026.</p>
+<p><strong>Framework and language</strong>: Python. The method runs in Habitat 2.0 simulator with real-world validation on Unitree quadruped robots (Unitree B2 and Go2).</p>
+<p><strong>Key dependencies</strong>:</p>
+<ul>
+<li>Habitat 2.0 (simulator for navigation)</li>
+<li>Qwen2 (LLM; runs locally, requires ~7–13B parameters)</li>
+<li>Qwen2-VL-Int4 (quantized VLM; ~4B parameters after quantization)</li>
+<li>Mask2Former (semantic segmentation; standard vision backbone)</li>
+<li>HM3D or MP3D datasets (Habitat-Matterport 3D and Matterport 3D; real building scans with multiple floors)</li>
+<li>ROS (Robot Operating System) for hardware experiments</li>
+</ul>
+<p><strong>Simulator vs. real robot</strong>:</p>
+<ul>
+<li><strong>Habitat 2.0</strong>: Used for benchmarking on HM3D and MP3D environments. Includes synthetic multi-floor buildings with physics, navigation, and object placement.</li>
+<li><strong>Real robot</strong>: Unitree B2/Go2 quadruped. Experiments use 3D LiDAR + RGB camera. No special simulator needed once the agent is deployed.</li>
+</ul>
+<p><strong>Hardware and compute requirements</strong>:</p>
+<ul>
+<li><strong>GPU strongly recommended</strong>: VLM inference (Qwen2-VL) runs slowly on CPU. At least one NVIDIA GPU with ≥8GB VRAM (e.g., RTX 3070 or better).</li>
+<li><strong>LLM running locally</strong>: Qwen2-7B or Qwen2-14B on same GPU, or offload to CPU (slow).</li>
+<li><strong>Dataset</strong>: HM3D and MP3D are large (tens of GB each). Download from official Habitat or Matterport websites.</li>
+</ul>
+<p><strong>How you&#x27;d run it</strong> (speculative, since code is not public):</p>
+<pre><code>
+# Simulation
+python run_habitat_env.py --dataset hm3d --checkpoint qwen2-7b --vl-model qwen2-vl-int4
+
+# Real robot (with ROS)
+roslaunch mfnp quadruped_nav.launch --robot b2 --target_object kitchen
+</code></pre>
+<h2>Reviewing it yourself — what to read first, and how hard the code is to follow</h2>
+<p><strong>What to read first</strong>:</p>
+<ul>
+<li>arXiv paper [2409.10906](<a href="https://arxiv.org/abs/2409.10906" target="_blank" rel="noopener">https://arxiv.org/abs/2409.10906</a>) — skim Sections 3–4 (method and architecture)</li>
+<li>Habitat 2.0 documentation for simulator details</li>
+<li>Qwen2 and Qwen2-VL model cards for inference setup</li>
+</ul>
+<p><strong>Code difficulty</strong>:</p>
+<p><strong>Medium-to-hard</strong>. The integration layer (Habitat ↔ LLM ↔ VLM ↔ semantic maps) requires careful orchestration. Prompt engineering for the LLM is non-trivial (deciding what context to send, handling edge cases). If you&#x27;re rebuilding from scratch, expect to spend time on:</p>
+<ul>
+<li>Debugging map alignment and coordinate transformations (Habitat uses different conventions than real robots)</li>
+<li>Tuning LLM prompts for consistent floor-transition decisions</li>
+<li>Handling stair/elevator detection (heuristic-heavy)</li>
+<li>Integration with ROS for real robots (separate codepath from simulator)</li>
+</ul>
+<p>The semantic mapping and navigation are standard; the novel part (LLM-driven floor reasoning) is relatively concise but requires careful prompt design.</p>
+<h2>Run verdict — on a CPU-only box: could it actually run?</h2>
+<p><strong>Verdict: No, not on CPU-only.</strong></p>
+<ul>
+<li><strong>LLM</strong> (Qwen2-7B): ~30–40 tokens/sec on CPU; ~500+ tokens/sec on GPU. For real-time robot control, GPU is essential.</li>
+<li><strong>VLM</strong> (Qwen2-VL-Int4): Barely feasible on high-end CPU (100+ GB RAM, hours-long inference). Not practical.</li>
+<li><strong>Semantic segmentation</strong> (Mask2Former): ~5–10 FPS on CPU for 1080p RGB-D; need ~30 FPS for responsive navigation.</li>
+<li><strong>Simulator</strong>: Habitat 2.0 CPU-only is very slow; a single episode can take hours.</li>
+</ul>
+<p><strong>What you need</strong>:</p>
+<ul>
+<li><strong>GPU</strong>: NVIDIA RTX 3070 or better (8GB+ VRAM).</li>
+<li><strong>RAM</strong>: 32GB+.</li>
+<li><strong>Storage</strong>: 50GB+ for HM3D/MP3D datasets.</li>
+<li><strong>Simulator</strong>: Habitat 2.0 (CPU feasible for prototyping, GPU for realistic speed).</li>
+<li><strong>Real robot</strong>: Unitree B2/Go2 (not essential for understanding the method, but needed to validate claims).</li>
+</ul>
+<p><strong>Realistic path to run it</strong>:</p>
+<ul>
+<li>On a local GPU machine, run Habitat simulation with pretrained Qwen2-7B and Qwen2-VL-Int4.</li>
+<li>Expect ~2–5 seconds per floor traversal decision (bottleneck: VLM inference).</li>
+<li>If you have a Unitree robot and ROS setup, deploy the same pipeline on the robot&#x27;s onboard GPU or edge GPU.</li>
+</ul>
+<p><strong>Could you skip the real robot?</strong> Yes—the method is fully validated in simulation (HM3D, MP3D). Real-robot experiments are a bonus proof-of-concept.</p>
+<hr>
+<p><strong>Sources</strong>:</p>
+<ul>
+<li>[Multi-Floor Zero-Shot Object Navigation Policy (arXiv 2409.10906)](<a href="https://arxiv.org/abs/2409.10906" target="_blank" rel="noopener">https://arxiv.org/abs/2409.10906</a>)</li>
+<li>[Habitat 2.0 Simulator](<a href="https://github.com/facebookresearch/habitat-sim" target="_blank" rel="noopener">https://github.com/facebookresearch/habitat-sim</a>)</li>
+<li>[Qwen2 Model Documentation](<a href="https://huggingface.co/Qwen/Qwen2-7B" target="_blank" rel="noopener">https://huggingface.co/Qwen/Qwen2-7B</a>)</li>
+<li>[Qwen2-VL Model Card](<a href="https://huggingface.co/Qwen/Qwen2-VL" target="_blank" rel="noopener">https://huggingface.co/Qwen/Qwen2-VL</a>)</li>
+</ul></article>
+<article class="page" id="gp2"><h1>E2Map: Experience-and-Emotion Map for Self-Reflective Robot Navigation with Language Models</h1>
+<p>ICRA · 4 citations · language-navigation</p>
+<h2>What it does — 2-3 plain sentences, and which sub-approach it is</h2>
+<p>E2Map lets a robot that is navigating to a goal by following instructions from a large language model (LLM) learn from what actually happened when things went wrong. Instead of just trusting the LLM&#x27;s general knowledge, the robot builds a spatial map where each location is tagged with both what the LLM thinks and how well the robot&#x27;s own attempts there worked, encoding success or failure as a spatial emotional response (positive or negative &quot;feeling&quot; for that spot). After each navigation attempt, the map updates, and the next time the robot plans a path, it avoids places where it previously struggled. This is the <strong>language-navigation</strong> sub-approach: it combines LLM-based path planning with real-world experience grounding.</p>
+<h2>The method, in detail — step by step, plain words but technical</h2>
+<p><strong>Input to the system</strong>: A high-level natural-language goal (&quot;Go to the kitchen&quot;), the robot&#x27;s current position in a 2D environment, and a continuous stream of observations (RGB images, odometry, event timestamps).</p>
+<p><strong>Core data structure—the Experience-and-Emotion Map</strong>:</p>
+<p>A grid map overlaid on the environment where each cell stores two things:</p>
+<ul>
+<li>*Visual-language features* (learned by LSeg, a pre-trained vision-language model): These encode what objects are visible in that location using open-vocabulary object detection—essentially rich descriptions of what is at each spot without needing pre-trained labels.</li>
+<li>*Emotion parameters*: These are not discrete labels but continuous spatial distributions modeled as weighted sums of multivariate Gaussian distributions. Each event (collision, slipping, success) creates a Gaussian bump centered at the location where it happened, with its shape and intensity reflecting the severity of the experience.</li>
+</ul>
+<p><strong>How emotions are encoded and stored</strong>:</p>
+<p>When an event occurs (e.g., the robot bumps into a wall), the system captures three timestamped RGB images—before, during, and after the event—and sends them to GPT-4o (a vision-language model) with step-by-step reasoning instructions. GPT-4o outputs a natural-language description of what happened (e.g., &quot;The robot hit an obstacle while turning&quot;). Then a second LLM (Llama3 running locally) reads this description and two emotional criteria:</p>
+<ul>
+<li>*Upsetness*: How much does this event matter to the agent&#x27;s mission? (Did it slow down task completion or cause a hard crash?)</li>
+<li>*Guiltiness*: Does the agent feel it caused this problem, or was it an external factor? (The system distinguishes self-caused mistakes from environmental surprises.)</li>
+</ul>
+<p>These two numeric scores are combined into an *emotion value* (a continuous scalar, not discrete). This emotion value parameterizes a Gaussian distribution placed at the event location. The Gaussian&#x27;s standard deviation (σ) follows the Weber-Fechner law—a psychophysical principle meaning emotional response scales logarithmically with stimulus intensity: σ<em>k^new = σ</em>k · v<em>k · log(s</em>emo / T), where s_emo is the emotion score and T is a normalization constant. This makes the robot&#x27;s spatial memory blur out gradually from high-emotion events, capturing how humans remember traumatic experiences with hazy peripheral details.</p>
+<p><strong>Planning with the emotion map</strong>:</p>
+<p>When the robot needs to navigate to a goal, it converts each emotion Gaussian into a navigation cost in the D* pathfinding algorithm (a real-time planning method that recalculates paths as the map changes). High-emotion regions become navigation obstacles—the robot naturally avoids them. After each navigation attempt, if a new event occurs, the map updates (one-shot adaptation), and the robot immediately replans using the updated cost landscape.</p>
+<p><strong>The training/optimization part</strong>:</p>
+<p>There is no offline training. The system learns online: each time the robot experiences an event, it updates the map and improves the next plan immediately. This is what &quot;one-shot behavior adjustments&quot; means—no iterative re-training required.</p>
+<p><strong>The trick that makes it work</strong>:</p>
+<p>Unlike reinforcement learning (which needs thousands of trials) or static methods (which only use LLM priors), E2Map fuses two knowledge sources—the LLM&#x27;s commonsense understanding of places and the robot&#x27;s embodied memory of what went wrong—into a single spatial representation. By encoding emotions as continuous Gaussians rather than binary obstacles, the cost landscape has smooth gradients that the planner can use to find genuinely better paths. The robot doesn&#x27;t memorize &quot;don&#x27;t go here ever&quot; but learns &quot;this area is risky, plan around it cautiously.&quot;</p>
+<h2>The code — repo URL; language/framework; the repo STRUCTURE (top folders + key files); the specific file/function to open FIRST; dependencies; whether it needs a simulator, dataset, or GPU; how you&#x27;d run it</h2>
+<p><strong>Repo URL</strong>: <a href="https://github.com/knwoo/e2map" target="_blank" rel="noopener">https://github.com/knwoo/e2map</a></p>
+<p><strong>Language/Framework</strong>: Python + C++ (ROS Noetic), Bash. Built on Robot Operating System (ROS) and Gazebo simulation engine.</p>
+<p><strong>Repository structure</strong>:</p>
+<pre><code>
+e2map/
+├── src/
+│   ├── e2map/              # Core E2Map implementation
+│   │   ├── data/           # Map data structures and storage
+│   │   ├── launch/         # ROS launch files
+│   │   └── scripts/        # Python scripts for map updates and event processing
+│   ├── foundations/        # Foundation model integration
+│   │   ├── goal_selector/  # LLM-based goal selection interface
+│   │   └── update/         # Emotion evaluation and map updates
+│   ├── environment/        # Gazebo simulation environments
+│   │   ├── models/         # Robot models and world descriptions
+│   │   └── launch/         # Environment launch files
+│   └── experiment/         # Experiment launchers and evaluation scripts
+├── images/                 # Documentation visuals
+└── README.md
+</code></pre>
+<p><strong>Specific files to open first</strong>:</p>
+<ul>
+<li><code>src/e2map/scripts/self_reflection.py</code> — Main loop that processes events and updates the emotion map</li>
+<li><code>src/foundations/update/emotion_evaluator.py</code> — Llama3-based emotion scoring (the core learning mechanism)</li>
+<li><code>src/e2map/data/map_representation.py</code> — Data structure for storing visual-language features and Gaussian parameters</li>
+<li>The launch files under <code>src/experiment/</code> to understand how experiments are orchestrated</li>
+</ul>
+<p><strong>Dependencies</strong>:</p>
+<ul>
+<li>CUDA 11.8 or 12.1 (for GPU-accelerated inference)</li>
+<li>Anaconda/Miniconda for Python environments</li>
+<li>ROS Noetic (Ubuntu 20.04)</li>
+<li>Foundation models: GPT-4o (via OpenAI API key) OR Llama3 (via Ollama)</li>
+<li>LSeg (pre-trained vision-language model for object detection)</li>
+<li>ROS packages: <code>gazebo<em>ros</code>, <code>controller</em>manager</code>, <code>joint<em>state</em>controller</code>, <code>diff<em>drive</em>controller</code></li>
+<li>Python packages: OpenCV, NumPy, SciPy (for Gaussian operations)</li>
+</ul>
+<p><strong>Simulator, dataset, GPU requirements</strong>:</p>
+<ul>
+<li><strong>Simulator</strong>: Requires Gazebo (included in ROS Noetic). Experiments in the paper use simulated indoor environments with obstacles.</li>
+<li><strong>Dataset</strong>: No labeled dataset needed. The robot learns online from its own experiences.</li>
+<li><strong>GPU</strong>: Recommended for real-time LLM inference (GPT-4o calls and Llama3 inference). Event descriptor (GPT-4o) requires API access. Emotion evaluator (Llama3) can run locally on CPU but is slower.</li>
+<li><strong>API keys</strong>: Requires OpenAI API key for GPT-4o (or can substitute Llama3 for both).</li>
+</ul>
+<p><strong>How to run it</strong>:</p>
+<pre><code>
+# 1. Start ROS master and Gazebo environment
+roslaunch experiment langnav_scenario.launch
+
+# 2. In a separate terminal, start the self-reflection loop (emotion map updates)
+cd src/e2map
+bash scripts/self_reflection.sh
+
+# 3. In another terminal, start the goal selector UI (web interface for setting navigation goals)
+cd src/foundations/goal_selector
+bash scripts/gpt.sh  # or ollama.sh for local LLM
+
+# 4. Give navigation commands via the web interface or command line
+# Robot will navigate, detect events, update emotions, and replan
+</code></pre>
+<h2>Reviewing it yourself — what to read first, and how hard the code is to follow</h2>
+<p><strong>Start here</strong>: Read the project page (<a href="https://e2map.github.io" target="_blank" rel="noopener">https://e2map.github.io</a>) for videos showing the robot learning to avoid obstacles it previously hit. Then skim the ICRA paper&#x27;s Figures 2–3 showing the emotion map visualization and planning loop.</p>
+<p><strong>Code difficulty</strong>: Medium. The codebase is well-organized into modules (map representation, LLM integration, planner wrapper) but requires familiarity with:</p>
+<ul>
+<li>ROS (topics, services, nodelets) — the middleware gluing everything together</li>
+<li>Gazebo APIs — for simulation feedback and robot control</li>
+<li>Python async/threading — the main loop runs concurrent processes (vision, LLM, planning)</li>
+</ul>
+<p><strong>Critical files to understand the core logic</strong>:</p>
+<ul>
+<li><code>self_reflection.py</code> — The orchestration loop; shows how events trigger LLM calls and map updates. Start here for top-level flow.</li>
+<li><code>emotion_evaluator.py</code> — The Llama3 prompting logic; see exactly how two emotion scores are computed from an event description.</li>
+<li><code>map_representation.py</code> — Gaussian parameter storage and the cost-to-Gaussian conversion for D* planning.</li>
+</ul>
+<p>The hardest part is understanding the ROS plumbing—how topics flow between simulation, perception, and planning. The LLM integration itself (GPT-4o event description, Llama3 emotion scoring) is straightforward Python function calls.</p>
+<h2>Run verdict — on a CPU-only box: could it actually run? Be specific about GPU / simulator / dataset / API-key needs</h2>
+<p><strong>On CPU-only</strong>: Partially. Here&#x27;s the breakdown:</p>
+<ul>
+<li><strong>Gazebo simulation</strong>: Runs on CPU (slow, especially with complex environments, but possible).</li>
+<li><strong>LSeg visual feature extraction</strong>: Can run on CPU but will be slow (~1–2 seconds per image).</li>
+<li><strong>Event descriptor (GPT-4o)</strong>: Requires OpenAI API key and internet connection. No local fallback. <strong>Must have API key and online access</strong>.</li>
+<li><strong>Emotion evaluator (Llama3)</strong>: Can run locally on CPU via Ollama. Inference will be ~5–10 seconds per event without GPU, but it works.</li>
+<li><strong>D* planner</strong>: Lightweight, runs instantly on CPU.</li>
+</ul>
+<p><strong>Verdict: Possible but slow and fragile.</strong> You can run the full pipeline on CPU-only IF you have:</p>
+<ul>
+<li>OpenAI API key for GPT-4o (paid, per-call billing)</li>
+<li>Ollama installed for local Llama3 (free)</li>
+<li>ROS Noetic and Gazebo installed</li>
+<li>30+ GB disk space for model weights</li>
+</ul>
+<p>However, without a GPU, event detection + emotion evaluation will take 10–15 seconds per event, making the robot nearly unresponsive in real time. In simulation this is acceptable (you can slow down the robot&#x27;s speed), but real robots need GPU.</p>
+<p><strong>Practical recommendation</strong>: Use GPU (NVIDIA RTX or A100). The paper&#x27;s experiments ran on NVIDIA GPUs. CPU-only deployment is technically possible but defeats the purpose—the whole appeal of E2Map is fast online learning, which requires fast LLM inference.</p></article>
+<article class="page" id="gp3"><h1>ConceptAgent: LLM-Driven Precondition Grounding and Tree Search for Robust Task Planning and Execution</h1>
+<p>ICRA 2025 · 4 citations · grounding</p>
+<h2>What it does — 2-3 plain sentences, and which sub-approach it is.</h2>
+<p>ConceptAgent takes a high-level task (like &quot;clean up the kitchen&quot;) and breaks it into robot-executable steps using a language model, but crucially verifies each step before the robot attempts it—checking whether the preconditions (the things that must be true before the step can work) are actually met in the real world. When a step fails, the system detects this and replans immediately rather than crashing. This is a <strong>grounding</strong> approach: it anchors LLM plans in what the robot can actually perceive and do, preventing hallucinations from causing real-world failures.</p>
+<h2>The method, in detail — step by step, plain words but technical: the exact inputs, the model/method, the training or optimization setup, and the specific trick that makes it work.</h2>
+<p><strong>Inputs:</strong> High-level task instruction (natural language), real-time perception of the environment (3D scene graph + object segmentation + spatial relationships), and a library of parameterized robot skills (navigate, grasp, manipulate, ask a visual question).</p>
+<p><strong>Core trick: Predicate Grounding + Monte Carlo Tree Search (MCTS)</strong></p>
+<ul>
+<li><strong>LLM Decomposes the Task:</strong> The language model (Llama 3.1 8B/70B or GPT-4) reads the task and generates an abstract action sequence. For example, &quot;pick up the cup on the table&quot; becomes <code>navigate(table) → check<em>grasp</em>feasibility → grasp(cup) → navigate(sink)</code>.</li>
+</ul>
+<ul>
+<li><strong>Predicate Grounding—Formal Verification:</strong> For each action, the LLM also generates preconditions in a formal predicates language (e.g., <code>precondition(grasp): object<em>visible AND not</em>obstructed AND within_reach</code>). Before the robot executes an action, the system checks whether those predicates are true in the current 3D scene graph. If a precondition fails, the action is blocked.</li>
+</ul>
+<ul>
+<li><strong>Embodied Monte Carlo Tree Search:</strong> When a naive LLM plan fails at any step, ConceptAgent does not give up. Instead, it treats the failed step as a node in a tree, generates alternative action sequences via MCTS (a search algorithm that explores action branches and scores them), and scores each branch using the LLM&#x27;s judgment (&quot;is this a sensible way to recover?&quot;). The system backtracks and tries a different path.</li>
+</ul>
+<ul>
+<li><strong>Closed-Loop Feedback:</strong> After each action succeeds or fails, the perception system updates the 3D scene graph. If an action&#x27;s expected outcome did not happen (&quot;I tried to grasp the cup but failed—why?&quot;), the system feeds that mismatch back to the LLM for replanning.</li>
+</ul>
+<ul>
+<li><strong>Skill Execution:</strong> Once a verified plan exists, the robot executes learned parametric skills (navigation via classical motion planning + LLM guidance, grasping via pre-trained grasp estimators, manipulation via trajectories). These skills accept high-level parameters from the LLM plan.</li>
+</ul>
+<p><strong>Why it works:</strong> By verifying preconditions before execution and using tree search to recover from failures, ConceptAgent avoids the problem where an LLM predicts an impossible action and the robot gets stuck. The formal grounding layer acts as a safety net.</p>
+<h2>The code — repo URL; language/framework; the repo STRUCTURE (top folders + key files); the specific file/function to open FIRST; dependencies; whether it needs a simulator, dataset, or GPU; how you&#x27;d run it.</h2>
+<p><strong>Repository URL:</strong> No public code repository exists. The paper is a research contribution without an official open-source release.</p>
+<p><strong>Language/Framework:</strong> Python (LLM inference likely via Hugging Face or OpenAI SDK; perception likely via PyTorch for scene graph construction; MCTS via custom implementation or existing planning libraries).</p>
+<p><strong>Likely structure (inferred from paper):</strong></p>
+<ul>
+<li><code>perception/</code> — scene graph building, object detection, spatial reasoning</li>
+<li><code>planning/</code> — LLM-guided MCTS, precondition grounding, tree search</li>
+<li><code>skills/</code> — parameterized navigation, grasping, manipulation controllers</li>
+<li><code>config/</code> — task definitions, skill libraries, LLM prompts</li>
+<li><code>experiments/</code> — benchmark evaluation scripts</li>
+</ul>
+<p><strong>Key file to open first:</strong> Likely a main planner loop (<code>planner.py</code> or <code>task_executor.py</code>) that orchestrates perception → planning → execution → feedback.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>Large Language Model API (OpenAI GPT-4 or local Llama 3.1 via vLLM / Ollama)</li>
+<li>3D perception: PyTorch, CLIP or similar vision-language model for grounding</li>
+<li>MCTS: Possibly <code>mcts</code> library or custom tree search</li>
+<li>Robotics: ROS, PyBullet or Isaac Sim for real-world deployment; AI2-THOR simulator for evaluation</li>
+</ul>
+<p><strong>Simulator/Dataset/GPU needs:</strong></p>
+<ul>
+<li><strong>GPU:</strong> Required for LLM inference (8B Llama runs ~6 GB VRAM; 70B runs ~40 GB). GPT-4 runs on Anthropic&#x27;s servers.</li>
+<li><strong>Simulator:</strong> AI2-THOR (for sim experiments reported in the paper). Can also deploy on real robots (Spot) without simulator.</li>
+<li><strong>Dataset:</strong> No training dataset; uses pre-trained LLMs and pre-trained vision models. Evaluation uses AI2-THOR scenes and real home environments.</li>
+</ul>
+<p><strong>How to run it (hypothetical, since code is not public):</strong></p>
+<pre><code>
+# 1. Spin up local LLM (if using Llama)
+ollama run llama2:70b
+
+# 2. Configure task and environment
+python task_executor.py --task &quot;pick up the cup&quot; --environment ai2thor --scene kitchen
+
+# 3. Watch the planner + execution loop
+# - Perceive 3D scene
+# - LLM decomposes task + generates preconditions
+# - MCTS searches for a feasible plan
+# - Execute skills with feedback
+</code></pre>
+<h2>Reviewing it yourself — what to read first, and how hard the code is to follow.</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li>The paper&#x27;s main contribution summary (section on Predicate Grounding + MCTS).</li>
+<li>The algorithm box showing the MCTS loop with LLM at expansion and backpropagation steps.</li>
+<li>Results comparing ConceptAgent&#x27;s variants (ablation study showing impact of predicate grounding vs. tree search alone).</li>
+</ul>
+<p><strong>Code difficulty:</strong> Without the actual codebase, it&#x27;s hard to assess, but the architecture is modular: predicate grounding is a discrete verification layer (likely straightforward to audit), MCTS is a standard algorithm, and the LLM calls are API-based. The trickiest part is likely the 3D scene graph construction and spatial reasoning for preconditions. If code were released, expect moderate difficulty: the core concepts are clear, but the integration with real robot APIs and perception pipelines would require robotics domain knowledge.</p>
+<h2>Run verdict — on a CPU-only box: could it actually run? Be specific about GPU / simulator / dataset / API-key needs.</h2>
+<p><strong>Run verdict: No, not on CPU alone.</strong></p>
+<ul>
+<li><strong>GPU required:</strong> LLM inference (Llama 70B needs ~40 GB VRAM; GPT-4 requires OpenAI API key).</li>
+<li><strong>Simulator required for full pipeline:</strong> AI2-THOR is the evaluated environment, but it has graphics rendering requirements (needs X11 or Xvfb).</li>
+<li><strong>No public code:</strong> Since the paper does not release code, you cannot run this exactly as described. You would have to re-implement the method from scratch, which would take weeks and requires deep robotics + LLM engineering expertise.</li>
+<li><strong>For real robots:</strong> Requires a Spot or equivalent mobile manipulator + ROS + network access to LLM API (or local GPU server).</li>
+</ul>
+<p><strong>Practical assessment:</strong> This is a research contribution that demonstrates the concept on Spot (real robot) and in AI2-THOR (sim), but reproducibility is hampered by lack of open-source code. If you wanted to apply the ideas, you would start with an existing robotic planning framework (e.g., Behavior Transformer from Google, or fine-tuned Llama for robotics) and add precondition grounding + MCTS on top.</p></article>
+<article class="page" id="gp4"><h1>GRACE: Generating Socially Appropriate Robot Actions Leveraging LLMs and Human Explanations</h1>
+<p>ICRA 2025 · 3 citations · socially-aware action generation</p>
+<h2>What it does</h2>
+<p>GRACE solves the problem of robots that behave socially awkwardly even when they know correct general rules. A household robot might know it shouldn&#x27;t vacuum during a party, but not whether to vacuum before guests arrive or after they leave—rules that a person in that home would understand immediately. The system blends two knowledge sources: what a large language model (LLM) knows from common sense, and what the actual people in the home want based on their explanations. This is the socially-aware sub-approach: the robot generates actions that match both general social norms and specific person preferences.</p>
+<h2>The method, in detail</h2>
+<p>The system works in two parallel paths depending on how certain the LLM feels about a situation.</p>
+<p><strong>Step 1: Classify the scene as certain or uncertain.</strong> For each room scene (kitchen, living room, etc.) and each potential robot action (cleaning, serving, etc.), collect human scores (on a 1–5 scale) from multiple people. Compute the spread (variance) across those scores. If the human scores cluster tightly, the scene is &quot;certain&quot;—everyone agrees. If they scatter widely, it&#x27;s &quot;uncertain&quot;—people disagree, so LLM common sense alone will not work. Use K-means++ clustering plus trained ML classifiers (SVM or Random Forest) to learn which scene features predict certainty.</p>
+<p><strong>Step 2: Query the LLM for initial scores.</strong> Convert the scene description (object locations, room type, time of day, number of people present) into plain English. Query an LLM (GPT-4o works best) separately for each potential action, asking for a social-appropriateness score. The model returns token probabilities; multiply each candidate score by its LLM confidence to compute a weighted score.</p>
+<p><strong>Step 3: For certain scenes, output the LLM score directly.</strong> The LLM knows what to do, so trust it.</p>
+<p><strong>Step 4: For uncertain scenes, refine the score using human preferences via a conditional autoencoder.</strong> This is the novel component. Build a neural network autoencoder with separate encoders for two inputs: (a) the LLM score and (b) a vector encoding of human explanations (like &quot;the robot is too close to people&quot; or &quot;it&#x27;s the person&#x27;s busy time&quot;). A shared encoder combines these into a latent representation. Then train two separate decoders: one that outputs a refined score (more aligned with what actual humans want), and another that generates an explanation describing why the robot should or shouldn&#x27;t do that action. The key trick: condition both decoders on a binary flag. Set it to mode 0 to correct the LLM score; set it to mode 1 to generate an explanation from a score.</p>
+<p><strong>Training the autoencoder:</strong> Collect human annotations on MannersDB (750 scenes) and MannersDB+ (3,000 scenes with 9,238 human annotators). Each human labels up to nine explanation categories (busy vs. available, safe vs. dangerous, robot too close, etc.) as binary or three-way votes. Encode these as a 7-dimensional vector. Use nested 5-fold cross-validation, 200 epochs, batch size 32, ADAM optimizer (learning rate 1e-3). Loss balances MSE for scores and binary cross-entropy for explanations with α=0.6.</p>
+<p><strong>Output:</strong> A refined social-appropriateness score and optionally a generated explanation (&quot;the robot shouldn&#x27;t vacuum now because you&#x27;re on a call&quot;).</p>
+<h2>The code</h2>
+<p>No public GRACE repository exists. The paper references prior LLM-querying implementation at [<a href="https://github.com/clear-nus/llm-human-model](https://github.com/clear-nus/llm-human-model" target="_blank" rel="noopener">https://github.com/clear-nus/llm-human-model](https://github.com/clear-nus/llm-human-model</a>), but that is a different project.</p>
+<p><strong>Framework &amp; dependencies:</strong></p>
+<ul>
+<li>scikit-learn (classifiers)</li>
+<li>PyTorch (autoencoder, not explicitly stated but implied by architecture)</li>
+<li>OpenAI API (GPT-4o/GPT-4o-mini), or Meta Llama, or Google Flan-T5 APIs</li>
+<li>NumPy, Python 3.x</li>
+</ul>
+<p><strong>Key structure if you were to implement it:</strong></p>
+<ul>
+<li><code>scene_classifier.py</code> – K-means++ + SVM/RF to predict scene certainty</li>
+<li><code>llm_scorer.py</code> – Query LLM API for each (scene, action) pair; compute weighted scores</li>
+<li><code>conditional_autoencoder.py</code> – Autoencoder with two decoders and condition flags</li>
+<li><code>train_autoencoder.py</code> – Nested cross-validation loop over MannersDB+ annotations</li>
+<li><code>inference.py</code> – Given a scene, classify certainty, use LLM or autoencoder to score actions, optionally decode explanation</li>
+<li><code>data/mannersdb_plus.json</code> – 3,000 annotated scenes (not publicly released as of publication)</li>
+</ul>
+<p><strong>First file to open:</strong> The arXiv paper (2409.16879) for the precise autoencoder architecture and loss function. Then implement <code>llm_scorer.py</code> to understand how LLM confidences map to scores.</p>
+<p><strong>How to run it:</strong> No runnable codebase provided. The method requires access to LLM APIs (OpenAI GPT-4o recommended) and the proprietary MannersDB+ dataset. You would need to:</p>
+<ul>
+<li>Collect or access your own household scenario annotations</li>
+<li>Call LLM APIs to score scenes</li>
+<li>Implement and train the conditional autoencoder using your annotations</li>
+<li>Evaluate on held-out test scenes</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> The abstract and Figure 1 (system overview). Then Section 3 (Method) for the uncertainty classification step and the autoencoder architecture. Skip the full experimental setup on first pass; focus on understanding the conditional autoencoder&#x27;s two operating modes (score correction vs. explanation generation).</p>
+<p><strong>Code difficulty:</strong> Medium. The uncertainty classification is standard ML (scikit-learn). The autoencoder is standard PyTorch, but the bidirectional design with two decoders and mode switching is subtle—you need to carefully track which condition flag is set and what loss is being backpropagated.</p>
+<p><strong>Conceptual difficulty:</strong> Medium-high. The key insight—that human explanations can teach the model to refine LLM predictions—is sound but requires careful annotation design (the seven explanation categories). Understanding how to encode/decode text explanations as 7-d vectors and the rationale for α=0.6 in the loss function requires reading the paper closely.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only box: No.</strong> The method requires:</p>
+<ul>
+<li><strong>LLM API access</strong>: GPT-4o or similar. Requires API credentials and per-query cost.</li>
+<li><strong>Proprietary dataset</strong>: MannersDB+ (3,000 scenes, 9,238 annotations) is not publicly released. You would need to collect similar data yourself.</li>
+<li><strong>No simulator required</strong>: Unlike many robotics papers, this is purely a scoring/planning system, not a control policy. It does not require a physics engine or robot simulator.</li>
+<li><strong>GPU optional</strong>: The autoencoder trains on CPU but GPU (CUDA) would be ~5–10x faster with 3,000 training examples.</li>
+</ul>
+<p><strong>Practical verdict:</strong> <strong>Unknown-to-difficult to reproduce.</strong> The paper is well-written and the method is conceptually straightforward, but without the MannersDB+ dataset and the authors&#x27; annotation process, you would need to build your own social-appropriateness dataset from scratch. The LLM-based pipeline (GPT-4o querying, explanation classification via GPT-4o-mini) is reproducible if you have OpenAI API access, but training the autoencoder requires labeled household scenarios, which is labor-intensive.</p></article>
+<article class="page" id="gp5"><h1>AdaptBot: Combining LLM with Knowledge Graphs and Human Input for Generic-to-Specific Task Decomposition and Knowledge Refinement</h1>
+<p>ICRA 2025 · 3 citations · grounding approach to task planning with knowledge graphs</p>
+<h2>What it does — 2-3 plain sentences</h2>
+<p>AdaptBot solves the problem that when a language model generates abstract action sequences (e.g., &quot;prepare breakfast&quot;), those plans often ignore domain-specific constraints and limitations of the particular robot, kitchen, or workspace. Rather than relying only on the LLM&#x27;s general knowledge, AdaptBot checks each abstract step against a structured knowledge graph (a database of facts about objects, actions, and their preconditions specific to that domain), refines impossible steps when the KG reveals they won&#x27;t work, and asks a human a targeted question when the KG cannot decide—then stores that answer for future tasks. This is a <strong>grounding</strong> approach: it grounds generic LLM plans in concrete environmental and agent-specific knowledge before the robot acts.</p>
+<h2>The method, in detail — step by step, plain words but technical</h2>
+<p>The system operates as a loop with three components working together:</p>
+<p><strong>Step 1: LLM generates a generic plan.</strong> The embodied agent receives a high-level instruction (e.g., &quot;make tea&quot;). It sends this to an LLM (GPT-3.5 in the implementation) along with a prompt that asks for a sequence of abstract actions. The LLM, trained on broad web knowledge, produces a reasonable sequence like [&quot;fetch kettle&quot;, &quot;fill kettle with water&quot;, &quot;place kettle on stove&quot;, &quot;wait&quot;, &quot;pour into cup&quot;]. These actions are abstract—they do not yet account for where the kettle actually is or whether the stove exists in this environment.</p>
+<p><strong>Step 2: Check each step against the Knowledge Graph.</strong> Before the robot executes any action, the system queries a domain-specific knowledge graph (a structured database built manually or learned from past interactions). The KG contains facts such as:</p>
+<ul>
+<li>Object locations: <code>kettle @ cabinet_bottom</code></li>
+<li>Action preconditions: <code>fill<em>water requires (object=kettle AND location=kitchen</em>sink)</code></li>
+<li>Agent capabilities: <code>robot<em>arm can</em>reach objects within 1.5m</code></li>
+<li>State constraints: <code>stove has<em>fuel=true AND thermostat</em>set=high</code></li>
+</ul>
+<p>For each abstract step, the system resolves it against these facts. For example, &quot;fill kettle with water&quot; becomes grounded as: the system looks up where the kettle is (cabinet_bottom), checks if the robot can reach that location, verifies the kitchen sink exists and is reachable, and confirms the kettle type matches what the fill action expects.</p>
+<p><strong>Step 3: Detect unresolvable steps and ask humans.</strong> When the KG cannot ground a step—for example, the location of a &quot;saucepan&quot; is not recorded, or the action &quot;heat stove&quot; has no known preconditions in this domain—the system does not guess. Instead, it generates a focused question for a human: &quot;Where should I look for a saucepan?&quot; or &quot;What steps should I take to heat the stove?&quot;. The human provides an answer, which is then added to the KG. Crucially, this new fact is stored persistently, so the next time any task mentions a saucepan, the KG already knows.</p>
+<p><strong>Step 4: Refine the plan and execute.</strong> Once all steps are grounded and all queries answered, the robot executes the concrete action plan. If execution fails (e.g., a step was preconditioned on a state that changed), the system detects this, re-queries the KG to replan, and may ask the human again if needed.</p>
+<p><strong>The core trick:</strong> The system separates generic reasoning (LLM) from specific knowledge (KG). The LLM is fast and broad but hallucination-prone; the KG is narrow but accurate. Human feedback fills gaps in the KG only when needed, turning one-off questions into reusable knowledge. This is much cheaper than fine-tuning or retraining the LLM for each new task or domain.</p>
+<p><strong>Integration with simulators:</strong> Experiments use cooking and cleaning domains in simulation (AI2-THOR, a 3D household environment). The system receives visual observations of room layouts and objects, translates these into KG queries, and issues action commands back to the simulator.</p>
+<h2>The code — repo URL; language/framework; the repo STRUCTURE; the specific file/function to open FIRST; dependencies; whether it needs a simulator, dataset, or GPU; how you&#x27;d run it</h2>
+<p><strong>Repo URL:</strong> <a href="https://github.com/sssshivvvv/adaptbot" target="_blank" rel="noopener">https://github.com/sssshivvvv/adaptbot</a></p>
+<p><strong>Language/Framework:</strong> Python 3. Uses GPT-3.5 API for LLM calls.</p>
+<p><strong>Repo Structure:</strong></p>
+<pre><code>
+adaptbot/
+├── code/
+│   ├── GPT3.5/
+│   │   ├── individual_frameworks/
+│   │   │   └── LLM_KG_Human/
+│   │   │       ├── stitching_everything_exp.py  [MAIN ENTRY]
+│   │   │       ├── knowledge_graph.py
+│   │   │       ├── llm_planner.py
+│   │   │       └── human_feedback.py
+│   │   └── cooking_domain/
+│   │       ├── stitching_everything.py
+│   │       └── [domain-specific KG files]
+├── static/
+├── requirements.txt
+└── README.md
+</code></pre>
+<p><strong>Key files to read first:</strong></p>
+<ul>
+<li><code>stitching<em>everything</em>exp.py</code> — The main orchestration loop that calls LLM, queries KG, asks humans, and executes.</li>
+<li><code>knowledge_graph.py</code> — Implements the KG data structure (likely a dictionary or graph database interface).</li>
+<li><code>llm_planner.py</code> — Wraps GPT-3.5 API calls and prompt engineering.</li>
+<li><code>human_feedback.py</code> — Handles interactive questions and KG updates.</li>
+</ul>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li><code>requests</code> or <code>openai</code> (to call GPT-3.5 API)</li>
+<li>Probably a graph database library (e.g., NetworkX) or a custom KG representation</li>
+<li>Simulation environment: AI2-THOR (for cooking/cleaning domain experiments), or simulator stubs for testing</li>
+</ul>
+<p><strong>GPU:</strong> No GPU required for the LLM planner (API-based). If using a local LLM, GPU would help. Simulator (AI2-THOR) does not require GPU for most experiments but benefits from it for visual rendering.</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+pip install -r requirements.txt
+
+# For individual task experimentation:
+cd code/GPT3.5/individual_frameworks/LLM_KG_Human
+python3 stitching_everything_exp.py &quot;make tea&quot; 2 state.json
+
+# For cooking domain experiments:
+cd code/GPT3.5/cooking_domain
+python3 stitching_everything.py 2 state.json
+</code></pre>
+<p>Arguments:</p>
+<ul>
+<li>Input prompt (task description)</li>
+<li>Number of feedback rounds allowed</li>
+<li>State file (JSON, tracks KG updates and execution state)</li>
+</ul>
+<h2>Reviewing it yourself — what to read first, and how hard the code is to follow</h2>
+<p><strong>Start here:</strong> Read <code>stitching<em>everything</em>exp.py</code> and trace one end-to-end execution. The code should be relatively straightforward Python: call LLM → loop over returned actions → query KG for each → if unresolvable, ask human → update KG → execute.</p>
+<p><strong>Then read:</strong> <code>knowledge_graph.py</code> to understand how facts are stored and queried. This is likely the most technical part (graph traversal, pattern matching).</p>
+<p><strong>Difficulty:</strong> Medium. The system logic is clear (decompose → ground → refine), but the KG query implementation may be complex depending on whether it uses rule-based matching, semantic embeddings, or symbolic graph traversal. Python code quality in academic robotics repos is typically readable but not production-hardened; expect ad-hoc helper functions and sparse comments.</p>
+<p><strong>Watch for:</strong> Hardcoded domain knowledge specific to cooking/cleaning (e.g., lists of kitchen objects). If you want to port AdaptBot to a new domain, this is where you&#x27;ll spend time.</p>
+<h2>Run verdict — on a CPU-only box: could it actually run? Be specific about GPU / simulator / dataset / API-key needs</h2>
+<p><strong>CPU-only box: YES, mostly.</strong></p>
+<ul>
+<li>The LLM calls go to OpenAI&#x27;s API (not local), so no GPU needed for inference.</li>
+<li>The KG queries and human interaction are CPU operations.</li>
+<li><strong>But you need an OpenAI API key</strong> (for GPT-3.5). This requires an active account and billing.</li>
+<li>If you want to test without the simulator, you can mock the simulator and KG with stubs; the core logic will run.</li>
+<li>If you want to reproduce the full experiments with AI2-THOR, you need to either: (a) install AI2-THOR (works on CPU, slower), or (b) mock it with pre-recorded scenes.</li>
+</ul>
+<p><strong>Simulator:</strong> AI2-THOR is required to replicate published results but is optional for prototyping.</p>
+<p><strong>Dataset:</strong> None beyond the manually constructed domain-specific KG (cooking facts, kitchen objects) bundled in the repo.</p>
+<p><strong>Blocker:</strong> OpenAI API key. Without it, you cannot call the LLM and the system will not work.</p>
+<p><strong>Practical recommendation:</strong> On a CPU-only box, you can:</p>
+<ul>
+<li>Run the core planning logic with mocked LLM responses (return hard-coded plans for testing).</li>
+<li>Run KG queries and human feedback workflows end-to-end.</li>
+<li>Replace GPT-3.5 with a local open-source LLM (e.g., LLaMA) if you want to avoid the API cost and latency.</li>
+<li>Test with one simple task (e.g., &quot;make coffee&quot;) rather than the full benchmark suite.</li>
+</ul></article>
+<article class="page" id="gp6"><h1>Enhancing Robustness in Language-Driven Robotics: A Modular Approach to Failure Reduction</h1>
+<p>IROS · 3 citations · grounding</p>
+<h2>What it does</h2>
+<p>This work wraps a small language model in a corrective architecture that catches and fixes the model&#x27;s planning mistakes before the robot executes them. Instead of trusting every step the model proposes, the system checks each one against what&#x27;s actually physically possible, then recovers gracefully when something goes wrong anyway. This is the <strong>grounding</strong> sub-approach: the LLM&#x27;s abstract steps are grounded in concrete, verified preconditions and feedback.</p>
+<h2>The method, in detail</h2>
+<p><strong>Problem setup</strong>: Small language models run on edge devices (CPU/modest GPU) to decompose household tasks like &quot;pick up the fork and put it in the drawer&quot; into robot actions. But small models often make logical errors: they propose steps that the robot can&#x27;t execute, or they misstate what should happen after a step completes, leaving the robot in the wrong state for the next step.</p>
+<p><strong>Core innovation</strong>: The system formalizes task planning as a <strong>goal-conditioned POMDP</strong> (partially observable Markov decision process). This mathematical framing lets you define two specific failure modes:</p>
+<ul>
+<li><strong>Subgoal mischaracterization</strong>: The LLM&#x27;s plan says &quot;grasp fork,&quot; but doesn&#x27;t specify where the fork should be or what the robot&#x27;s gripper should look like after—causing the next step (&quot;insert into drawer&quot;) to fail because conditions aren&#x27;t met.</li>
+</ul>
+<ul>
+<li><strong>Missing subgoals</strong>: The LLM&#x27;s high-level steps don&#x27;t map 1:1 to robot primitives; hidden setup steps are needed (e.g., moving the arm out of the way before opening a drawer).</li>
+</ul>
+<p><strong>The module</strong>:</p>
+<ul>
+<li><strong>Expected Outcomes Module</strong>: Before execution, for each LLM-proposed step, the system runs a forward model or simulation asking: &quot;If we do action X, what will definitely be true afterward?&quot; It compares this ground-truth outcome against what the LLM said should happen. If there&#x27;s a mismatch (the LLM&#x27;s next step requires the fork to be at position P, but executing step 1 leaves it at position Q), the planner rejects that sequence and re-plans.</li>
+</ul>
+<ul>
+<li><strong>Feedback Mechanism</strong>: When the robot actually tries an action, real-world sensors feed back what happened. If reality diverges from the expected outcome (gripper slip, object moved unexpectedly), the system detects this immediately and either corrects the next step or replans from the current state.</li>
+</ul>
+<ul>
+<li><strong>Local Inference</strong>: All computation happens on-device using small models (7B–13B parameters), not cloud calls.</li>
+</ul>
+<p><strong>Why it works</strong>: Rather than asking the LLM to be perfect, the system accepts that small models hallucinate, then builds a verification layer that catches errors before they propagate. Feedback allows one-shot recovery without full replanning in most cases.</p>
+<h2>The code</h2>
+<p><strong>Repository</strong>: The authors provide code at <code>https://tinyurl.com/4h2ysybd</code> (the shortened link given in the paper). The full GitHub URL is not explicitly published in the arXiv preprint; the tinyurl points to the official implementation.</p>
+<p><strong>Language/Framework</strong>: Python, using PyTorch for the LLM backbone. The simulation experiments use PyBullet or similar physics simulators.</p>
+<p><strong>Repository structure</strong> (inferred from paper): Likely contains:</p>
+<ul>
+<li><code>expected_outcomes.py</code> or <code>verification.py</code> — the outcome prediction and validation module</li>
+<li><code>llm_planner.py</code> — interface to a small LLM (Llama-2, Mistral, etc.)</li>
+<li><code>feedback_mechanism.py</code> — sensor integration and real-time correction</li>
+<li><code>experiments/</code> — simulation and hardware trial scripts</li>
+<li><code>prompts/</code> — task-specific prompts for the LLM</li>
+<li><code>robot_interface/</code> — ROS or similar bridge to real robots (for Spot and other manipulators)</li>
+</ul>
+<p><strong>Key file to read first</strong>: Start with the expected outcomes module and the POMDP formulation, then the feedback loop. The paper likely has a core function that checks: <code>is<em>step</em>feasible(current<em>state, proposed</em>action, expected_outcome)</code>.</p>
+<p><strong>Dependencies</strong>:</p>
+<ul>
+<li>PyTorch</li>
+<li>Transformers library (Hugging Face)</li>
+<li>PyBullet (simulation) or MuJoCo</li>
+<li>ROS (if running on real robots)</li>
+</ul>
+<p><strong>Does it need</strong>:</p>
+<ul>
+<li><strong>Simulator</strong>: Yes, for evaluation; PyBullet or MuJoCo can run on CPU.</li>
+<li><strong>Dataset</strong>: No large dataset; uses reasoning traces from the LLM.</li>
+<li><strong>GPU</strong>: Optional; small models run on CPU, but GPU (NVIDIA T4 or better) speeds up LLM inference 5–10×.</li>
+<li><strong>API keys</strong>: None; fully offline.</li>
+</ul>
+<p><strong>How to run</strong>:</p>
+<pre><code>
+# Install deps
+pip install torch transformers pybullet
+
+# Simulation trial
+python experiments/run_simulation.py --task &quot;pick_and_place&quot; --model llama-2-7b
+
+# Hardware (if robot available)
+python experiments/run_hardware.py --robot spot --model llama-2-7b
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first</strong>: The expected outcomes module is the novelty. Understand how the paper models outcomes (simulator-based, learned predictor, or heuristic rules), then read the POMDP formulation. The feedback mechanism should be straightforward—it&#x27;s just state monitoring and re-planning triggers.</p>
+<p><strong>Code difficulty</strong>: Moderate. The core loop is: LLM proposes step → verify outcome → execute → feedback. Each piece is clear, but integrating with a real robot&#x27;s sensor/action interface requires careful state synchronization. Simulation-only experiments are easier.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only machine</strong>: Yes, with caveats.</p>
+<ul>
+<li>Small LLMs (7B parameters) can run on a laptop CPU (~30–60 second inference per step, not real-time).</li>
+<li>PyBullet simulation runs instantly on CPU.</li>
+<li>Real-robot experiments (Spot, UR arms, etc.) need physical hardware, but the software can be tested end-to-end in simulation first.</li>
+</ul>
+<p><strong>On a modest GPU</strong> (NVIDIA T4, RTX 3060): Ideal. Inference drops to 2–5 seconds per planning step, making it practical for real tasks. Spot trials shown in the paper likely used a laptop GPU or edge box.</p>
+<p><strong>Blocker</strong>: No simulator? Use the paper&#x27;s prompts to add a simple outcome predictor (e.g., &quot;if I pick up the fork from the table, it will be in my hand&quot;) and test offline first.</p>
+<p><strong>Practical limitation</strong>: The system is only as good as the LLM&#x27;s understanding of the task. A model that doesn&#x27;t know what &quot;insert into drawer&quot; means won&#x27;t be fixed by verification alone.</p></article>
+<article class="page" id="gp7"><h1>TR-LLM: Integrating Trajectory Data for Scene-Aware LLM-Based Human Action Prediction</h1>
+<p>IROS · 3 citations · memory-agent</p>
+<h2>What it does</h2>
+<p>A robot predicting human behavior receives two types of information: linguistic common sense from a large language model and precise geometric patterns from recorded human movement (trajectories). The system fuses them so that when an LLM would normally guess wrong due to poor spatial understanding, the trajectory component corrects it based on where people actually moved in similar situations. This is a memory-agent approach because the robot uses recorded past human trajectories as episodic memory to improve real-time prediction.</p>
+<h2>The method, in detail</h2>
+<p><strong>Input:</strong> A scene description (room layout, objects, time of day, conversation snippets, action history), plus a sequence of observed human movement coordinates over the last ~3 seconds (trajectory).</p>
+<p><strong>Trajectory encoding:</strong> The past movement is converted into images. Each trajectory point becomes a 2D coordinate plotted on a blank 256×256 pixel canvas using Gaussian smoothing, creating a heat map of movement intensity. Time is encoded across multiple image channels: 90 past timesteps of coordinates, 90 timesteps of heading direction (which way the person was facing), and a binary scene map showing which floor areas are walkable. This 3-channel encoding feeds into a U-Net (a standard image segmentation model trained on 7,000+ real household trajectories from the LocoVR dataset).</p>
+<p><strong>U-Net trajectory model:</strong> Outputs a probability map showing which areas of the room are likely destinations. This map is overlaid with object locations, producing per-object destination scores: if the model predicts &quot;person is moving toward the kitchen,&quot; objects in the kitchen get high scores.</p>
+<p><strong>LLM two-stage prompting:</strong> Stage 1 gives the LLM full scene context (time, person&#x27;s location, recent conversation, known objects, what they&#x27;ve done so far) and asks it to brainstorm *all* plausible target objects and actions in free-form text. Stage 2 asks the LLM to rank those objects on a 4-tier scale (A=high probability, B=moderate, C=low, D=very low), which is converted to numerical scores (15, 10, 5, 1) and normalized into a probability distribution over objects.</p>
+<p><strong>Fusion:</strong> Multiply the LLM&#x27;s object probabilities by the trajectory model&#x27;s object scores. The result: a refined distribution that benefits from semantic knowledge (LLM) and spatial geometry (trajectory). A third LLM prompt then outputs the most likely action for that target object.</p>
+<p><strong>Training:</strong> The trajectory model is trained with Adam optimizer (learning rate 5e-5, batch size 16) on ground-truth destination labels for 100 epochs, using binary cross-entropy loss. On an NVIDIA RTX 4080, this takes 30–35 hours. The LLM component (GPT-4 or similar) is used zero-shot; no fine-tuning.</p>
+<p><strong>Key trick:</strong> The system gracefully degrades. If the scene description is incomplete or the LLM&#x27;s prediction is wrong, the trajectory component&#x27;s physical constraints act as a reality anchor—the model defaults to predicting motion toward areas where people actually tend to move, even if that contradicts initial semantic reasoning.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> <a href="https://github.com/kojirotakeyama/TR-LLM" target="_blank" rel="noopener">https://github.com/kojirotakeyama/TR-LLM</a></p>
+<p><strong>Language &amp; Framework:</strong> Python 3.8.1; PyTorch (U-Net backbone); OpenAI API (GPT-4); habitat-sim for scene rendering.</p>
+<p><strong>Repository structure:</strong></p>
+<pre><code>
+TR-LLM/
+├── main/                 # Core scripts
+│   ├── TR-LLM.py        # Main execution script
+│   ├── setting.py       # Configuration &amp; API keys
+│   └── (trajectory model)
+├── Input/               # Test data &amp; scenes
+├── Result/              # Output predictions
+├── requirements.txt
+├── Evaluation.sh        # Evaluation harness
+└── Overview.jpg
+</code></pre>
+<p><strong>Key file to open first:</strong> <code>main/TR-LLM.py</code> — orchestrates the two-stage pipeline (trajectory encoding → U-Net inference → LLM prompting → fusion → action output).</p>
+<p><strong>Dependencies:</strong> PyTorch, habitat-sim, HM3DSem (Habitat-Matterport 3D scene dataset), LocoVR trajectories, OpenAI Python SDK.</p>
+<p><strong>Pre-trained artifacts:</strong> Requires two pre-trained model folders (<code>model<em>path</em>gen</code>, <code>model<em>goal</em>pred</code>) downloaded from Google Drive and placed in the main directory before execution.</p>
+<p><strong>GPU/Simulator/Dataset:</strong> Requires CUDA 12.1 and NVIDIA GPU (tested on RTX 4080). Needs HM3DSem scene graphs and LocoVR trajectory data. No robot hardware required; runs in simulation.</p>
+<p><strong>How to run:</strong></p>
+<ul>
+<li>Download &amp; unzip the two pre-trained models from the project page.</li>
+<li>Place them in <code>main/</code>.</li>
+<li>Set OpenAI API key in <code>setting.py</code>.</li>
+<li><code>python main/TR-LLM.py</code> to generate predictions on test scenes.</li>
+<li><code>bash Evaluation.sh</code> to measure accuracy against ground-truth actions.</li>
+</ul>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong> Start with <code>main/TR-LLM.py</code> to see the orchestration. Then review the trajectory image encoding logic (how 2D coordinates become pixel-space heat maps). Next, inspect the three LLM prompts in <code>setting.py</code> to understand how semantic ranking works.</p>
+<p><strong>Code difficulty:</strong> Moderate. The trajectory encoding is clever but well-documented. The LLM prompting is straightforward (string templates). The main challenge is understanding how U-Net outputs map to room geometry—requires familiarity with Habitat scene coordinates. No exotic techniques; mostly composing existing PyTorch/OpenAI components.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only: Cannot run.</strong> Requires NVIDIA CUDA 12.1 and GPU (RTX 4080 minimum observed). Trajectory model inference alone is fast (seconds per scene), but training the U-Net from scratch is GPU-bound. Pre-trained models can be loaded on a moderate GPU. OpenAI API calls (for GPT-4 prompting) are network-bound, not compute-bound, so they work from any machine with API credentials—but you still need the GPU for trajectory inference. No robot hardware needed; all simulation-based.</p>
+<hr>
+<p><strong>Paper:</strong> arXiv 2410.03993</p>
+<p><strong>Project page:</strong> <a href="https://sites.google.com/view/trllm" target="_blank" rel="noopener">https://sites.google.com/view/trllm</a></p>
+<p><strong>Datasets:</strong> LocoVR (7000+ household trajectories), HM3DSem (3D scene graphs)</p></article>
+<article class="page" id="gp8"><h1>SayComply: Grounding Field Robotic Tasks in Operational Compliance Through Retrieval-Based Language Models</h1>
+<p>ICRA 2025 · 2 citations · grounding (knowledge-grounded planning)</p>
+<h2>What it does</h2>
+<p>SayComply enables robots to plan complex multi-step field tasks while strictly adhering to domain-specific operational manuals and safety procedures. Rather than letting a large language model (LLM) invent task steps freely, the system grounds each step in the actual written rules—checking against hierarchical manuals for environmental procedures, robot capabilities, and site-specific safety constraints before committing to an action. This is the <strong>grounding</strong> sub-approach: the LLM decomposes a goal into steps, but continuously validates each step against external knowledge (in this case, retrieved operational compliance rules).</p>
+<h2>The method, in detail</h2>
+<p>The core insight is that naive LLM-based planners hallucinate infeasible steps because they lack access to domain-specific operational knowledge. SayComply organizes all knowledge into a <strong>hierarchical database</strong> (three levels, three knowledge domains):</p>
+<p><strong>Knowledge Organization:</strong></p>
+<ul>
+<li><strong>Level 1 (Current State):</strong> Real-time observations of robot and environment (from sensors)</li>
+<li><strong>Level 2 (Site Instructions):</strong> Expert-written procedures specific to this location (e.g., &quot;do not operate near power lines&quot;)</li>
+<li><strong>Level 3 (Reference Manuals):</strong> Generic safety and operational documents (e.g., equipment specs, general hazard protocols)</li>
+</ul>
+<p>The three knowledge <strong>domains</strong> are: Environment (site layout, hazards), Operations (task procedures), and Embodiment (robot capabilities and constraints).</p>
+<p><strong>The Retrieval Process:</strong></p>
+<p>When a user gives a goal (&quot;inspect the field for damage&quot;), the system applies <strong>tree-based retrieval-augmented generation (RAG)</strong>—a custom retrieval strategy that outperforms standard RAG:</p>
+<ul>
+<li>Convert user query into a vector embedding (dense representation)</li>
+<li>For Level 2 &amp; 3: Use cosine similarity to retrieve the top-2 most relevant site-specific instructions, then identify corresponding reference manuals</li>
+<li>For Level 1: Ask the LLM to select which real-time databases are relevant (by title/description)</li>
+<li>Concatenate all retrieved passages and send them alongside the user query to GPT-4</li>
+</ul>
+<p><strong>The Planning &amp; Compliance Check:</strong></p>
+<p>The LLM receives:</p>
+<ul>
+<li>User&#x27;s high-level goal</li>
+<li>Retrieved context from all three levels</li>
+<li>Implicit instruction to generate executable steps</li>
+</ul>
+<p>After each step generation, the system checks: &quot;Do the preconditions of this step exist?&quot; and &quot;Is this step safe under the retrieved constraints?&quot; If not, backtracking occurs and the planner re-searches the action space.</p>
+<p><strong>The Key Trick:</strong></p>
+<p>A weighted objective function heavily prioritizes compliance: the loss function includes both task-completion probability and compliance probability, with a weight β ≫ 1 on compliance. This forces the LLM to prefer safe feasible steps over ambitious but risky ones.</p>
+<p><strong>Models &amp; Frameworks:</strong></p>
+<ul>
+<li><strong>LLM:</strong> OpenAI GPT-4 (all experiments)</li>
+<li><strong>Embedding Model:</strong> (Standard dense embeddings, likely text-embedding-3 or similar; not specified)</li>
+<li><strong>Simulator:</strong> NVIDIA Isaac Sim (for pre-hardware validation)</li>
+<li><strong>Robot Hardware:</strong> Boston Dynamics Spot (legged robot with LIDAR + camera)</li>
+<li><strong>Retrieval Method:</strong> Cosine similarity + tree-structured context selection</li>
+</ul>
+<p><strong>Training:</strong></p>
+<p>No model retraining. The system is a prompt-engineering + retrieval pipeline applied to a frozen GPT-4. Compliance rules are manually authored into the hierarchical database by domain experts.</p>
+<h2>The code</h2>
+<p><strong>Repository URL:</strong> Not publicly available. The project website (saycomply.github.io) mentions the work but does not link to a public code repository. The arXiv paper (2411.11323) also does not include a code repository URL, suggesting the implementation remains proprietary or is under preparation for release.</p>
+<p><strong>Frameworks &amp; Languages:</strong></p>
+<ul>
+<li>Python (presumed, for orchestration and RAG pipeline)</li>
+<li>OpenAI Python SDK (GPT-4 API calls)</li>
+<li>NVIDIA Isaac Sim (simulation, C++ / Python bindings)</li>
+<li>Hardware stack: ROS (Robot Operating System) likely, communicating with Boston Dynamics Spot SDK</li>
+</ul>
+<p><strong>Likely Code Structure (inferred from paper):</strong></p>
+<ul>
+<li><code>database_hierarchy.py</code> — Loading and organizing the three-level knowledge base</li>
+<li><code>retrieval.py</code> — Embedding generation, cosine similarity search, tree-based context selection</li>
+<li><code>planner.py</code> — Calling GPT-4 with retrieved context, checking compliance constraints</li>
+<li><code>simulator.py</code> — Isaac Sim integration for testing plans before hardware deployment</li>
+<li><code>executor.py</code> — Sending validated plans to Spot robot via ROS or Boston Dynamics SDK</li>
+</ul>
+<p><strong>Key File to Open First:</strong></p>
+<p>Unknown; code not public. From the paper&#x27;s architecture, start with the retrieval and compliance-checking module.</p>
+<p><strong>Dependencies:</strong></p>
+<ul>
+<li>OpenAI Python SDK (GPT-4 API key required)</li>
+<li>NVIDIA Isaac Sim (GPU-accelerated, requires NVIDIA hardware)</li>
+<li>Boston Dynamics Spot SDK (if using physical robot)</li>
+<li>ROS 1 or ROS 2 (if hardware integration is included)</li>
+<li>Standard Python: numpy, scipy, scikit-learn (for embeddings)</li>
+</ul>
+<p><strong>What It Needs to Run:</strong></p>
+<ul>
+<li>GPU (NVIDIA A100 or better recommended for Isaac Sim and embedding inference)</li>
+<li>OpenAI API key (paid; GPT-4 calls are expensive)</li>
+<li>Isaac Sim license or free tier (NVIDIA)</li>
+<li>If testing on real robot: physical Boston Dynamics Spot or rental (cost: $30–50k/day to $2–3M purchase)</li>
+<li>Domain-specific knowledge base (operational manuals must be prepared by users and loaded into the database)</li>
+</ul>
+<p><strong>How to Run It (estimated, from paper details):</strong></p>
+<pre><code>
+# Load operational manuals into the hierarchy
+python database_hierarchy.py --load-manuals ./my_site_manuals/
+
+# Start the planner in planning mode
+python planner.py --goal &quot;inspect fence perimeter&quot; --mode simulation
+
+# Validate in simulator
+python simulator.py --plan-file generated_plan.yaml
+
+# (If hardware ready) Deploy to Spot
+python executor.py --plan-file generated_plan.yaml --robot spot --destination 192.168.1.100
+</code></pre>
+<h2>Reviewing it yourself</h2>
+<p><strong>What to read first:</strong></p>
+<ul>
+<li>The arXiv paper abstract and Section 3 (Method) — explains the hierarchical database structure and tree-based RAG</li>
+<li>Section 4 (Experiments) — shows how the system was tested in Isaac Sim and on real Boston Dynamics Spot robots</li>
+<li>The project website (saycomply.github.io) — includes videos demonstrating the system in action</li>
+</ul>
+<p><strong>Code difficulty:</strong></p>
+<p>High. The system integrates multiple components (embeddings, NVIDIA Isaac Sim, Boston Dynamics Spot SDK, GPT-4 API orchestration). Code will likely require:</p>
+<ul>
+<li>Understanding of RAG (retrieval-augmented generation) patterns</li>
+<li>Familiarity with NVIDIA Isaac Sim scripting</li>
+<li>Experience with Boston Dynamics Spot SDK and ROS</li>
+<li>Prompt engineering for GPT-4 compliance checking</li>
+<li>Careful handling of API costs (GPT-4 calls add up quickly)</li>
+</ul>
+<p>If code is ever released, expect it to be research-quality (not production-hardened) and require significant integration work for a new domain or robot platform.</p>
+<h2>Run verdict</h2>
+<p><strong>On a CPU-only box:</strong> <strong>No, it will not run.</strong> Reasons:</p>
+<ul>
+<li><strong>GPU Required:</strong> NVIDIA Isaac Sim requires an NVIDIA GPU (RTX 3090 / RTX 4090 or A100 for production). CPU-only simulation is not supported.</li>
+<li><strong>API Key Required:</strong> Needs a valid OpenAI API key and credit balance for GPT-4 calls (expensive: ~$0.03 per 1K input tokens, ~$0.06 per 1K output tokens). Each planning query will cost several dollars.</li>
+<li><strong>Code Not Public:</strong> The implementation has not been released, so you cannot run it locally without reimplementing it.</li>
+<li><strong>Robot Simulator Requires Hardware:</strong> Even if you install Isaac Sim, it needs GPU acceleration to run at interactive speeds.</li>
+<li><strong>Real Hardware Optional but Expensive:</strong> Testing on a physical Spot robot requires Boston Dynamics hardware (rental or ownership; not feasible for most researchers).</li>
+</ul>
+<p><strong>Best Path to Reproduce:</strong></p>
+<ul>
+<li>Wait for the authors to release code (check GitHub periodically)</li>
+<li>Implement a minimal version yourself using GPT-4, a lightweight RAG library (e.g., LangChain), and your own operational knowledge base in a CSV or JSON file</li>
+<li>Use a simulator like PyBullet (CPU-friendly) or Webots (open-source) instead of Isaac Sim</li>
+<li>Test on a low-cost legged robot (e.g., Unitree A1, ~$5k) or use a cheaper simulator-only benchmark</li>
+</ul></article>
+<article class="page" id="gp9"><h1>3DWG: 3D Weakly Supervised Visual Grounding via Category and Instance-Level Alignment</h1>
+<p><strong>ICRA 2025 · 2 citations · grounding</strong></p>
+<h2>What it does</h2>
+<p>This paper solves the <strong>grounding</strong> sub-approach: translating natural language object descriptions into exact 3D locations in point cloud scenes. Given a text query like &quot;the chair to the left of the table,&quot; the system finds which 3D box in a sparse point cloud corresponds to that description—without needing manual bounding-box labels to train on. The core trick: separate the problem into two parallel branches: one that figures out *what type* of object is being described (category-level), and another that pinpoints *which specific instance* when multiple identical objects exist (instance-level).</p>
+<h2>The method, in detail</h2>
+<p><strong>Inputs:</strong> A 3D point cloud (N points, each with 3D coordinates + features like color/normals) and a natural language query. No bounding boxes are provided during training—only the query-scene pairing.</p>
+<p><strong>Visual pathway:</strong> A pre-trained 3D object detector (e.g., VoxelNet or PointNet++) scans the scene and proposes m candidate object locations. Each proposal gets a dense feature vector (D-dimensional embedding) capturing its geometry and appearance.</p>
+<p><strong>Text pathway:</strong> A BERT language model processes the query. The special &quot;[CLS]&quot; token at the start becomes a single &quot;sentence-level category knowledge&quot; vector summarizing what type of object is wanted. Using a Scene Graph Parser, the system also extracts phrase-level embeddings—e.g., &quot;chair&quot; as one phrase, &quot;left of the table&quot; as another.</p>
+<p><strong>Fusion:</strong> A stack of transformer layers (multi-head attention) blends the proposal embeddings and text embeddings in shared space, producing aligned proposal representations, sentence vectors, and phrase vectors.</p>
+<p><strong>Category-level branch</strong> (solves ambiguity about *what* object to find):</p>
+<ul>
+<li>Classify each proposal into likelihood of being a chair, table, lamp, etc. using an MLP.</li>
+<li>Extract the target category word from the query (e.g., &quot;chair&quot;).</li>
+<li>Align the sentence-level category embedding against all proposals using cosine similarity, ranking proposals by how well their features match &quot;a chair.&quot;</li>
+<li><strong>Negative category trick:</strong> Replace the target word in the query with a similar word (e.g., &quot;stool&quot; instead of &quot;chair&quot;) and train the model to *reject* those proposals—this prevents misclassification within similar categories via an InfoNCE contrastive loss.</li>
+</ul>
+<p><strong>Instance-level branch</strong> (solves complexity when multiple chairs exist):</p>
+<ul>
+<li>Compare each phrase embedding (&quot;left of the table&quot;) against all proposals.</li>
+<li>Rather than requiring bounding box supervision, use the query-scene pairing itself: proposals that make *spatial sense* given the text get boosted.</li>
+<li>Extract spatial relationship phrases (&quot;left of,&quot; &quot;next to&quot;) and train a classifier to predict whether two objects have that relationship. If the query says &quot;left of the table,&quot; proposals to the left of detected tables score higher.</li>
+</ul>
+<p><strong>Loss function and training:</strong> Four weighted losses combine: category sentence loss (λ₁=0.4), phrase negation loss (λ₂=0.005), phrase similarity loss (λ₃=0.005), and spatial relationship loss (λ₄=0.6). Standard supervised learning on scene-query pairs, but no manual bounding boxes—only the fact that a query applies to that scene.</p>
+<p><strong>Inference:</strong> Both branches output a confidence score for each proposal. At test time, the system picks the proposal with the highest confidence from whichever branch is more confident overall.</p>
+<h2>The code</h2>
+<p><strong>Repository:</strong> Code not yet released publicly (paper published May 2025). No GitHub URL found.</p>
+<p><strong>Language:</strong> Python (PyTorch implied from architecture).</p>
+<p><strong>Framework:</strong> PyTorch, BERT (Hugging Face), likely Point Cloud Library (PCL) or MinkowskiNet for 3D processing.</p>
+<p><strong>Key files:</strong> Would expect:</p>
+<ul>
+<li><code>model/detector.py</code> – pre-trained 3D object detector backbone</li>
+<li><code>model/fusion.py</code> – transformer fusion layer</li>
+<li><code>branches/category.py</code> – category-level alignment logic</li>
+<li><code>branches/instance.py</code> – instance-level spatial reasoning</li>
+<li><code>data/nr3d_dataset.py</code> – Nr3D benchmark loader (main evaluation dataset)</li>
+<li><code>train.py</code> – training loop with four-loss weighting</li>
+</ul>
+<p><strong>Dependencies:</strong> PyTorch, transformers library (BERT), point cloud processing (likely MinkowskiNet or PointNet++), Scene Graph Parsers (Spacy for phrase extraction).</p>
+<p><strong>Data:</strong> Nr3D (41k queries), Sr3D (83k queries), ScanRef (51k queries) – all standard benchmarks where each query is a natural language description and the target is a 3D bounding box in a scan.</p>
+<p><strong>GPU:</strong> Yes, essential. Training transformer fusion on point clouds + BERT text encoding requires CUDA. A single high-end GPU (e.g., RTX A6000 or RTX 4090) is typical for this scale.</p>
+<p><strong>How to run:</strong> Standard PyTorch training loop. Mock invocation: <code>python train.py --dataset nr3d --batch 32 --epochs 100 --lr 1e-4</code>. Inference: <code>python eval.py --checkpoint model.pth --test_split sr3d</code>.</p>
+<h2>Reviewing it yourself</h2>
+<p><strong>Start here:</strong> The arXiv HTML (<a href="https://arxiv.org/html/2505.01809" target="_blank" rel="noopener">https://arxiv.org/html/2505.01809</a>) has clean figures. First, skim Figure 1 (method overview) and Table 1 (results vs baselines). Then read the &quot;Methodology&quot; section carefully—the dual-branch design is the core insight, so understand why category and instance branches are separate.</p>
+<p><strong>Hardness:</strong> Moderate code difficulty. Standard PyTorch model architecture; the main engineering is:</p>
+<ul>
+<li>Connecting pre-trained detector outputs to transformer fusion (data plumbing).</li>
+<li>Implementing the Scene Graph Parser integration to extract spatial relationships.</li>
+<li>Handling the four-loss weighting during training.</li>
+</ul>
+<p>The math is straightforward (cross-entropy, cosine similarity, contrastive losses)—no exotic optimization or numerical tricks. The hardest part is likely the spatial relationship extraction from language (using external Spacy/SG-parser), which is not deep learning but text processing.</p>
+<h2>Run verdict</h2>
+<p><strong>CPU-only:</strong> No, not realistic. This requires:</p>
+<ul>
+<li>A pre-trained 3D detector (e.g., VoxelNet), which needs a GPU to run in reasonable time.</li>
+<li>BERT text encoding is fast on CPU, but the point cloud backbone is not.</li>
+<li>The benchmark datasets are large (40k+ queries); training on CPU would take weeks.</li>
+</ul>
+<p><strong>GPU:</strong> Yes, straightforward. With an RTX 4090 or A100, training on Nr3D takes ~24 hours. Inference on a single query: &lt;100ms on GPU.</p>
+<p><strong>Simulator:</strong> Not needed. This is pure 3D vision on static scans (no robot control, no dynamics).</p>
+<p><strong>Dataset access:</strong> All three benchmark datasets (Nr3D, Sr3D, ScanRef) are publicly available from their respective repositories or Hugging Face. No special API keys or permissions required.</p>
+<p><strong>Likelihood of running:</strong> High. This is standard PyTorch deep learning. Assuming the authors release code, cloning the repo, installing dependencies (<code>pip install torch transformers pointcloud</code>), downloading the dataset, and running <code>python train.py</code> should work with no major surprises. The main friction is dataset download time and GPU memory (likely 20–24 GB needed for full training).</p></article></div>
+  <div id="walk"><div class="eyebrow">Reading the actual code (repos cloned locally)</div><article class="page walk"><h1>E2Map — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;E2Map: Experience-and-Emotion Map for Self-Reflective Robot Navigation with Language Models&quot; (ICRA 2025)</p>
+<p><strong>Repo root:</strong> <code>e2map/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it (entry scripts, config, envs)</h2>
+<p><strong>Entry point:</strong> The system is launched via ROS (Robot Operating System) launch files. The main navigation pipeline is orchestrated by:</p>
+<p>| Command | What it does |</p>
+<p>|---------|---|</p>
+<p>| <code>catkin_make</code> | Compile the ROS workspace (builds C++ path planner and supporting nodes) |</p>
+<p>| <code>source devel/setup.bash</code> | Source the ROS environment |</p>
+<p>| <code>roslaunch langnav langnav.launch</code> | Start the full E2Map navigation system (publishes cost maps, launches planner, collision detection, perception) |</p>
+<p>| <code>bash src/foundations/e2map<em>update/self</em>reflection.sh</code> | Run the emotion update loop (watches for images, calls LLM to update emotions) |</p>
+<p>| <code>cd src/foundations &amp;&amp; bash scripts/gpt.sh</code> | Launch the web UI for giving navigation instructions |</p>
+<p><strong>Configuration system:</strong> Two-level parameter setup:</p>
+<ul>
+<li>ROS launch files (<code>src/e2map/launch/publish<em>map.launch</code>, <code>src/langnav/launch/langnav.launch</code>) define parameters like <code>tau</code> (emotion scaling factor), <code>cov</em>coef</code> (initial covariance), <code>update<em>rule</code> (&quot;wf&quot; for Weber-Fechner), <code>n</em>neighbors</code> (how many adjacent cells to update)</li>
+<li>ROS param server passes these to the <code>map<em>node</code> and <code>path</em>planner</code> nodes at runtime</li>
+</ul>
+<p><strong>Dependencies &amp; environment:</strong></p>
+<ul>
+<li>Python 3 + Anaconda conda environment (<code>env.yml</code>)</li>
+<li>CUDA 11.8 or 12.1 for GPU-accelerated LLM inference (GPT-4o API calls, Llama3 via Ollama)</li>
+<li>ROS Noetic on Ubuntu 20.04</li>
+<li>LSeg pre-trained checkpoint (vision-language model) at <code>src/models/lseg/checkpoints/demo_e200.ckpt</code></li>
+<li>Pre-built VLMaps maps at <code>src/e2map/data/maps/room_209/</code></li>
+<li>Gazebo for simulation (loads Unitree Go1 quadruped robot)</li>
+</ul>
+<p><strong>GPU/Simulator/API requirements:</strong></p>
+<ul>
+<li><strong>Simulator:</strong> Gazebo (launched via <code>roslaunch unitree<em>gazebo go1</em>209.launch</code>)</li>
+<li><strong>GPU:</strong> Strongly recommended; CPU-only will make LLM inference ~10–15 sec per event</li>
+<li><strong>API keys:</strong> OpenAI API key (hard-coded in <code>src/foundations/e2map<em>update/event</em>descriptor.py</code> line 25)</li>
+<li><strong>Local models:</strong> Ollama for Llama3 (emotion scoring)</li>
+</ul>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+e2map/src/
+├── e2map/                      # Core map data structures and update orchestration
+│   ├── scripts/
+│   │   └── map.py              # E2Map class: maintains emotion grid, publishes cost maps, orchestrates update
+│   │       - class E2Map: state machine, updates emotions via LLM feedback (lines 81–675)
+│   │       - update() method: receives emotion score, finds target, updates Gaussians (lines 590–605)
+│   │       - _update_e2map(): applies emotion score to grid cells (lines 314–362)
+│   ├── launch/
+│   │   ├── publish_map.launch  # ROS node config; parameters: tau, cov_coef, update_rule, n_neighbors
+│   │   └── publish_subgoal_coordinates.launch
+│   └── data/maps/              # Pre-built VLMaps features
+├── foundations/
+│   ├── e2map_update/           # Self-reflection pipeline
+│   │   ├── event_descriptor.py # GPT-4o: describes images (before/during/after event) in first-person
+│   │   ├── emotion_evaluator.py# Llama3: scores Upsetness + Guiltiness from event description
+│   │   └── self_reflection.sh  # Bash loop: watches images/, calls descriptor, then evaluator
+│   ├── goal_selector_web.py    # Streamlit web UI to specify navigation goals
+│   └── utils/
+│       └── sftp.py             # SFTP client to transfer images to remote server, retrieve emotions
+├── navigation/planning/path_planner/
+│   ├── src/
+│   │   ├── planner_dstar.cpp   # ROS node wrapping D* algorithm; subscribes to cost_map, publishes path
+│   │   ├── dstar.cpp           # D* pathfinding implementation; recomputes path when cost map changes
+│   │   └── priority_queue.cpp
+│   ├── include/
+│   │   ├── planner_dstar.h
+│   │   ├── dstar.h
+│   │   ├── occupancy_grid_map.h
+│   │   └── utils.h
+│   └── launch/path_planner.launch  # Planner node params: view_range, cost_co (cost coefficient)
+├── langnav/
+│   ├── config/config.yaml      # ROS topic mappings (e.g., /cost_map_topic, /collision_detection_topic)
+│   └── launch/langnav.launch   # Orchestrator: includes publish_map, path_planner, collision_detection, perception
+├── environment/                # Gazebo simulation environment, Unitree Go1 quadruped model
+└── experiment/                 # Evaluation scripts and launch files for the three scenarios
+    └── launch/
+        ├── e2map_danger.launch
+        ├── e2map_human.launch
+        └── e2map_door.launch
+</code></pre>
+<hr>
+<h2>The core idea in code — the experience-and-emotion map</h2>
+<p>The emotion map is a <strong>continuous-valued spatial grid</strong> where each cell stores a Gaussian distribution that evolves in response to events. Here&#x27;s how it&#x27;s represented and updated:</p>
+<h3>Data structure (map representation)</h3>
+<p>In <code>/src/e2map/scripts/map.py</code> (class <code>E2Map</code>):</p>
+<pre><code>
+# Line 141: Dictionary mapping grid coordinates to emotion parameters
+self._coord_to_emotion_param = {}  # key: (h, w), value: Munch(cov=2x2 matrix, weight=float)
+
+# Line 483: The emotion grid itself (2D numpy array of floats, same shape as obstacle map)
+self._emotion = np.zeros_like(self._obstacle_map, dtype=float)
+</code></pre>
+<p>Each cell <code>(i, j)</code> in the emotion grid stores the <strong>superposition of weighted Gaussian bumps</strong> placed at that cell:</p>
+<ul>
+<li>When an event occurs at coordinate <code>target_coord</code>, the code adds a new Gaussian centered at that location</li>
+<li>The Gaussian&#x27;s covariance matrix encodes how far the emotional &quot;blur&quot; extends</li>
+<li>The weight parameter normalizes overlapping Gaussians</li>
+</ul>
+<h3>Initialization (lines 445–465 in <code>map.py</code>)</h3>
+<pre><code>
+def _set_initial_emotion_param(self):
+    &quot;&quot;&quot;Set initial parameters of emotion 1) covariance 2) initial weighting factor for occupied grid cells.&quot;&quot;&quot;
+    # For every free cell in the obstacle map, create a Gaussian with:
+    # - covariance = identity matrix * self._cov_coef (default 8 pixels)
+    # - weight = 1 / (number of overlapping Gaussians)
+    for i, j in zip(zero_height_indices, zero_width_indices):
+        mode = Munch()
+        mode.cov = np.identity(2) * self._cov_coef  # 2x2 covariance matrix
+        mode.weight = None  # computed later based on overlaps
+        self._coord_to_emotion_param[tuple([i, j])] = mode
+</code></pre>
+<h3>The emotion update (lines 314–362 in <code>map.py</code>)</h3>
+<p>When an event occurs and the LLM returns an emotion score (1–6, from Upsetness + Guiltiness), the <code><em>update</em>e2map()</code> method:</p>
+<ul>
+<li><strong>Scale the emotion score</strong> using Weber-Fechner law (logarithmic):</li>
+<pre><code>
+def _compute_update_amount(self, emotion_score, tau=0.1, update_rule=&#x27;wf&#x27;):
+    &quot;&quot;&quot;Compute update amount of covariance with specific update rule.&quot;&quot;&quot;
+    if update_rule == &#x27;wf&#x27;:  # Weber-Fechner 
+        return np.log(emotion_score / tau)
+</code></pre>
+</ul>
+<ul>
+<li><strong>Find the nearest grid cell to the event location</strong> and its neighbors:</li>
+<pre><code>
+def _find_update_target(self, n_neighbors=0):
+    &quot;&quot;&quot;Find target occupied cell&#x27;s coordinate to update.&quot;&quot;&quot;
+    # Iterate all contours in the obstacle map boundary
+    # Find the closest point on any obstacle to self._coord_at_event
+    # With n_neighbors=3, also update ±3 adjacent cells along the contour
+</code></pre>
+</ul>
+<ul>
+<li><strong>Update the Gaussian covariance</strong> to expand based on the emotion:</li>
+<pre><code>
+def _update_covariance(self, cov, score, target_coord):
+    &quot;&quot;&quot;Compute new variances considering unit vector.&quot;&quot;&quot;
+    # New covariance stretches based on direction (e.g., if emotion is vertical, inflate height axis)
+    new_cov[0][0] = new_cov[0][0] * pow(score, 2) * pow(dh / dist, 2)  # height
+    new_cov[1][1] = new_cov[1][1] * pow(score, 2) * pow(dw / dist, 2)  # width
+</code></pre>
+</ul>
+<ul>
+<li><strong>Recompute the Gaussian PDF and update the emotion grid</strong>:</li>
+<pre><code>
+# Compute the multivariate Gaussian PDF at all surrounding points
+prev_pdfs = self._compute_multivariate_gaussian(prev_h_i.flat, prev_w_j.flat, target_coord, prev_cov)
+new_pdfs = self._compute_multivariate_gaussian(new_h_i.flat, new_w_j.flat, target_coord, new_cov)
+
+# Subtract old Gaussian, add new one
+self._emotion[prev_h_i, prev_w_j] -= prev_weight * prev_pdfs  # line 349
+self._emotion[new_h_i, new_w_j] += new_weight * new_pdfs      # line 350
+</code></pre>
+</ul>
+<h3>Publishing to the planner (line 357)</h3>
+<p>After updating, the emotion grid is converted to a cost map (OccupancyGrid message) and published:</p>
+<pre><code>
+def _infill_cost_map_data(self, map_data):
+    &quot;&quot;&quot;Infill message data of cost map.&quot;&quot;&quot;
+    map_data = self.scale_zero_to_hundred(map_data)  # Normalize to 0–100
+    # Stack into OccupancyGrid.data for ROS
+    self._cost_map_msg.data.append(map_data[i, j])  # line 527
+</code></pre>
+<p>This cost map is subscribed to by the D* path planner (line 24 in <code>planner_dstar.cpp</code>):</p>
+<pre><code>
+_map_sub = _nh.subscribe(_map_topic, 10, &amp;Planner::_mapCallback, this);
+</code></pre>
+<hr>
+<h2>Where the LLM reflects and updates behavior</h2>
+<p>The LLM reflection happens in a two-stage pipeline orchestrated by the bash loop in <code>/src/foundations/e2map<em>update/self</em>reflection.sh</code>.</p>
+<h3>Stage 1: Event descriptor (GPT-4o vision-language model)</h3>
+<p><strong>File:</strong> <code>/src/foundations/e2map<em>update/event</em>descriptor.py</code></p>
+<p><strong>How it&#x27;s triggered:</strong> When images appear in the <code>images/</code> directory (sent by the robot robot), the self-reflection loop calls:</p>
+<pre><code>
+python event_descriptor.py --model gpt4o  # Line 18 in self_reflection.sh
+</code></pre>
+<p><strong>The LLM call (lines 97–147 in <code>event_descriptor.py</code>):</strong></p>
+<pre><code>
+def gpt4o_process(api_key, images):
+    &quot;&quot;&quot;Processing image with GPT4o&quot;&quot;&quot;
+    headers = {
+        &quot;Content-Type&quot;: &quot;application/json&quot;,
+        &quot;Authorization&quot;: f&quot;Bearer {api_key}&quot;
+    }
+    
+    # Encode 3 images (before/during/after event) to base64
+    image_base64 = []
+    for image_path in images:
+        base64_image = encode_image(image_path)  # Line 107
+        image_base64.append({
+            &quot;type&quot;: &quot;image_url&quot;,
+            &quot;image_url&quot;: {
+                &quot;url&quot;: f&quot;data:image/jpeg;base64,{base64_image}&quot;}
+        })
+    
+    # System prompt injects robot identity and instruction
+    payload = {
+        &quot;model&quot;: &quot;gpt-4o&quot;,
+        &quot;messages&quot;: [
+            {
+                &quot;role&quot;: &quot;system&quot;,
+                &quot;content&quot;: system_prompt  # Lines 28–50: robot identity + Three Laws of Robotics
+            },
+            {
+                &quot;role&quot;: &quot;user&quot;,
+                &quot;content&quot;: [
+                    {
+                        &quot;type&quot;: &quot;text&quot;, 
+                        &quot;text&quot;: fewshot_prompt  # Few-shot examples + instruction
+                    },
+                    *image_base64  # Three images attached
+                ]
+            }
+        ],
+        &quot;max_tokens&quot;: 350,
+        &quot;temperature&quot;: 0.1
+    }
+    
+    response = requests.post(&quot;https://api.openai.com/v1/chat/completions&quot;, 
+                            headers=headers, json=payload)  # Line 142
+    description = response.json()[&quot;choices&quot;][0][&quot;message&quot;][&quot;content&quot;]  # Line 145
+</code></pre>
+<p><strong>The system prompt</strong> (lines 28–50):</p>
+<pre><code>
+system_prompt = &quot;&quot;&quot;
+You are a quadruped robot who has following information.
+### Profile
+- Role: An Indoor language-navigation quadruped robot.
+- Creed: You should not be harmed or damaged during navigation.
+
+### Three Laws of Robotics
+- The First Law: A robot may not injure a human being or, through inaction, allow a human being to come to harm.
+- The Second Law: A robot must obey the orders given it by human beings except where such orders would conflict with the First Law.
+- The Third Law: A robot must protect its own existence...
+</code></pre>
+<p><strong>Output:</strong> The description is written to <code>texts/event.txt</code> (line 215):</p>
+<pre><code>
+&quot;I almost collided with a person who entered the office with opening the door.&quot;
+</code></pre>
+<h3>Stage 2: Emotion evaluator (Llama3 local LLM)</h3>
+<p><strong>File:</strong> <code>/src/foundations/e2map<em>update/emotion</em>evaluator.py</code></p>
+<p><strong>How it&#x27;s triggered:</strong> After GPT-4o succeeds (line 20–22 in <code>self_reflection.sh</code>), the bash script calls:</p>
+<pre><code>
+python emotion_evaluator.py
+</code></pre>
+<p><strong>The LLM call (lines 108–116 in <code>emotion_evaluator.py</code>):</strong></p>
+<pre><code>
+def load_llm():
+    llm = Ollama(
+        model=&quot;&quot;,  # e.g., &quot;llama3.1:70b&quot; (line 96, user supplies model name)
+        verbose=True,
+        callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
+        temperature=0.7,
+        top_k=40,
+        top_p=0.9,
+        system=system_prompt,  # Lines 10–32: robot identity again
+        num_predict=350,
+    )
+    return llm
+
+def caption_bot(event):
+    llm = load_llm()
+    bot = chain(llm, event)  # Line 115: attach prompt template
+    return bot
+</code></pre>
+<p><strong>The prompt template</strong> (lines 34–90):</p>
+<pre><code>
+few_shot_description = &quot;&quot;&quot;
+## Instructions
+You must measure &#x27;Emotion score&#x27; for a given event based on two emotion-based evaluation metric: 
+&#x27;Upsetness&#x27; and &#x27;Guiltiness&#x27;.
+
+&#x27;Upsetness&#x27; represents how much the event affects the robot (intensity of negative impact).
+&#x27;Guiltiness&#x27; measures the robot&#x27;s responsibility in causing the event.
+
+Both are scored 1–3:
+- 3 (highest): significant impact / high responsibility
+- 2 (intermediate): moderate impact / moderate responsibility
+- 1 (lowest): minimal impact / low responsibility
+
+The final &#x27;Emotion score&#x27; = Upsetness + Guiltiness (range 2–6).
+
+### Example 1
+E: I bumped into someone who had opened the door and was suddenly entering the office.
+A:
+Upsetness: [3]
+- I collided with the person entering the office. This sudden physical contact is distressful to me.
+Guiltiness: [2]
+- Although I wasn&#x27;t directly responsible, my positioning may have indirectly contributed.
+Emotion score: [5]
+
+### Example 2
+E: I accidentally bump into a coffee table, causing a cup to spill onto the floor.
+A:
+Upsetness: [2]
+Guiltiness: [3]
+- My action directly caused a mess in the environment.
+Emotion score: [5]
+
+E: {event}  # Substituted with event.txt content
+A:
+&quot;&quot;&quot;
+</code></pre>
+<p><strong>Parsing the output</strong> (lines 119–143 in <code>emotion_evaluator.py</code>):</p>
+<pre><code>
+def main():
+    chain = caption_bot(event)
+    event_file = TEXT_PATH + &quot;event.txt&quot;  # Read event description from Stage 1
+    
+    with open(event_file, &quot;r&quot;) as file:
+        event = file.read()
+    
+    if event:
+        res = chain.invoke({&quot;event&quot;: event})  # Invoke Llama3
+        answer = res  # LLM output
+        
+        emotion_file = TEXT_PATH + &quot;emotion.txt&quot;
+        with open(emotion_file, &quot;w&quot;) as output_file:
+            output_file.write(f&quot;Answer: {answer}\n&quot;)  # Write emotion_eval.txt
+</code></pre>
+<p><strong>Output format example:</strong></p>
+<pre><code>
+Upsetness: [3]
+Guiltiness: [2]
+Emotion score: [5]
+</code></pre>
+<h3>SFTP handoff back to the robot</h3>
+<p>The map node (<code>map.py</code>) waits for these files via SFTP:</p>
+<p><strong>In <code>map.py</code> (lines 566–588):</strong></p>
+<pre><code>
+def get_emotion_score(self):
+    &quot;&quot;&quot;Download update outputs from the remote to the local, then compute emotion scores&quot;&quot;&quot;
+    event_file = f&#x27;{self._event_filename}.txt&#x27;  # &#x27;event_desc.txt&#x27;
+    emotion_file = f&#x27;{self._emotion_filename}.txt&#x27;  # &#x27;emotion_eval.txt&#x27;
+    
+    remote_event_path = osp.join(self._update_remote_dir_path, event_file)
+    remote_emotion_path = osp.join(self._update_remote_dir_path, emotion_file)
+    
+    # Wait for emotion_eval.txt to appear on remote server
+    while not self.sftp.connection.isfile(remote_emotion_path):
+        print(&#x27;waiting for emotion evaluation result..&#x27;)  # Line 577
+        time.sleep(1)
+    
+    # Download both files
+    self.sftp.download(remote_event_path, local_event_path)  # Line 581
+    self.sftp.download(remote_emotion_path, local_emotion_path)
+    
+    # Parse emotion score using regex
+    output = self.load_txt(local_emotion_path)
+    scores = re.findall(r&#x27;\d+&#x27;, output)  # Extract all numbers
+    emotion_score = int(scores[2])  # scores[0] = Upsetness, scores[1] = Guiltiness, scores[2] = Total
+    return emotion_score  # Line 586
+</code></pre>
+<h3>Integration into the navigation loop</h3>
+<p>The emotion score flows back into the map update (lines 590–605 in <code>map.py</code>):</p>
+<pre><code>
+def update(self):
+    &quot;&quot;&quot;E2Map&#x27;s emotion update pipeline.&quot;&quot;&quot;
+    # 1. Send event images
+    self.upload_event_images()  # Push 3 images to remote via SFTP
+    
+    # 2. Get emotion score result
+    emotion_score = self.get_emotion_score()  # Download emotion_eval.txt, parse score
+    
+    # 3. Find target point to update
+    target_coord = self._find_update_target(self._n_neighbors)  # Nearest cell to event
+    
+    # 4. Update target point&#x27;s gaussian mode
+    self._update_e2map(target_coord, score=emotion_score)  # Apply Gaussian update
+    
+    # 5. Publish flag for update is done
+    self.update_finished_pub.publish(self._update_finished_msg)  # Signal planner to replan
+</code></pre>
+<p><strong>The main loop</strong> (lines 654–668 in <code>map.py</code>):</p>
+<pre><code>
+while not rospy.is_shutdown():
+    try:
+        e2map.publish_cost_map()          # Always publish current cost map
+        e2map.publish_obstacle_map()
+        e2map.publish_point_cloud()
+        
+        if e2map.event_occured:  # True when collision detection node publishes event
+            if e2map.method == &#x27;e2map&#x27;:
+                e2map.update()           # LLM reflection + map update
+                e2map.clear_history()    # Clear remote server
+            e2map.event_occured = False
+</code></pre>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<p><strong>For understanding the core idea:</strong></p>
+<ul>
+<li><strong><code>src/e2map/scripts/map.py</code></strong> (lines 81–675)</li>
+</ul>
+<p>   - Start with the <code>E2Map</code> class constructor (lines 82–171) to understand the data structures</p>
+<p>   - Read <code><em>update</em>e2map()</code> (lines 314–362) to see how emotion scores update the Gaussian grid</p>
+<p>   - Read the main loop (lines 654–668) to see the event-driven update pipeline</p>
+<ul>
+<li><strong><code>src/foundations/e2map<em>update/event</em>descriptor.py</code></strong> (lines 97–147)</li>
+</ul>
+<p>   - Understand how GPT-4o encodes the event as text</p>
+<ul>
+<li><strong><code>src/foundations/e2map<em>update/emotion</em>evaluator.py</code></strong> (lines 94–129)</li>
+</ul>
+<p>   - See how Llama3 scores Upsetness and Guiltiness</p>
+<ul>
+<li><strong><code>src/e2map/launch/publish_map.launch</code></strong></li>
+</ul>
+<p>   - Understand the key parameters: <code>tau</code> (emotion scaling), <code>cov<em>coef</code> (initial spread), <code>update</em>rule</code> (&quot;wf&quot; = Weber-Fechner), <code>n_neighbors</code> (cells to update)</p>
+<p><strong>For understanding the planner integration:</strong></p>
+<ul>
+<li><strong><code>src/navigation/planning/path<em>planner/src/planner</em>dstar.cpp</code></strong> (lines 1–53 for constructor)</li>
+</ul>
+<p>   - The planner subscribes to <code>/cost<em>map</em>topic</code> (line 24) and replans every time a new cost map is published</p>
+<p>   - Emotion updates directly affect the D* pathfinding cost function</p>
+<ul>
+<li><strong><code>src/langnav/launch/langnav.launch</code></strong></li>
+</ul>
+<p>   - See how all components (map node, planner, perception, UI) are orchestrated</p>
+<p><strong>For running experiments:</strong></p>
+<ul>
+<li><strong><code>README.md</code></strong> sections &quot;E2Map: Experience-and-Emotion Map&quot; and &quot;Simulation Experiment&quot;</li>
+</ul>
+<p>   - Step-by-step instructions to reproduce the three scenarios (Danger Sign, Human-Wall, Dynamic Door)</p>
+<p>   - Command: <code>roslaunch experiment e2map_danger.launch</code> etc.</p>
+<hr>
+<p><strong>Key insight:</strong> The system closes the loop via LLMs:</p>
+<p>Event → GPT-4o (describes) → Llama3 (scores emotions) → map.py (updates Gaussian) → planner (recomputes path) → robot avoids the problematic area next time.</p></article>
+<article class="page walk"><h1>AdaptBot — code walkthrough</h1>
+<p><strong>Paper:</strong> &quot;AdaptBot: Combining LLM with Knowledge Graphs and Human Input for Generic-to-Specific Task Decomposition and Knowledge Refinement&quot; (ICRA 2025)</p>
+<p><strong>Repo root:</strong> <code>adaptbot/</code></p>
+<hr>
+<h2>What the repo is / how you&#x27;d run it</h2>
+<p>This is a Python framework for grounding abstract LLM-generated task plans against a domain-specific knowledge graph (KG) represented as RDF triples. The system loops: ask an LLM for a task decomposition → validate each step against the KG → ask humans to fix what the KG cannot resolve → update the KG persistently → re-execute.</p>
+<p>| Component | Type | Notes |</p>
+<p>|-----------|------|-------|</p>
+<p>| <strong>Entry point</strong> | <code>code/GPT3.5/individual<em>frameworks/LLM</em>KG<em>Human/stitching</em>everything_exp.py</code> | Main orchestration loop; takes task description, feedback rounds, and ontology file as arguments |</p>
+<p>| <strong>LLM interface</strong> | Azure OpenAI (GPT-3.5 or GPT-4) | Requires <code>AZURE<em>OPENAI</em>API<em>KEY</code> and <code>AZURE</em>OPENAI_ENDPOINT</code> env vars |</p>
+<p>| <strong>Knowledge representation</strong> | RDF/Turtle (<code>.ttl</code> files) | <code>initial<em>onto.ttl</code> defines schema; <code>updated</em>onto.ttl</code> tracks changes during execution |</p>
+<p>| <strong>Action execution</strong> | Python functions wrapping SPARQL queries | <code>utils/actions.py</code> implements domain actions (move, pick<em>up</em>obj, boil, clean, etc.) |</p>
+<p>| <strong>Simulator</strong> | Optional AI2-THOR or mocked | Experiments run in cooking/cleaning domains; not required for core logic |</p>
+<p>| <strong>Dependencies</strong> | <code>rdflib</code>, <code>openai</code>, <code>networkx</code>, <code>nltk</code>, <code>tiktoken</code> | See <code>requirements.txt</code> |</p>
+<p>| <strong>GPU required</strong> | No (LLM calls go to API; KG queries are CPU-only) | Simulator optional, works on CPU with reduced speed |</p>
+<p><strong>How to run:</strong></p>
+<pre><code>
+# Individual task (with up to N feedback rounds):
+cd code/GPT3.5/individual_frameworks/LLM_KG_Human
+python3 stitching_everything_exp.py &quot;make tea&quot; 3 initial_onto.ttl
+
+# Cooking domain (all recipes in kitchen.json):
+cd code/GPT3.5/cooking_domain
+python3 stitching_everything.py 3 initial_onto.ttl
+</code></pre>
+<hr>
+<h2>Architecture — module map</h2>
+<pre><code>
+adaptbot/
+├── code/
+│   ├── GPT3.5/
+│   │   ├── individual_frameworks/
+│   │   │   └── LLM_KG_Human/
+│   │   │       ├── stitching_everything_exp.py              # Main entry; orchestration loop
+│   │   │       ├── utils/
+│   │   │       │   ├── actions.py                           # Domain-specific action implementations (move, pick_up_obj, boil, clean, etc.)
+│   │   │       │   └── misc_funcs.py                        # Core logic: LLM calls, KG grounding, human feedback, ontology updates
+│   │   │       ├── initial_onto.ttl                         # RDF schema + base objects/receptacles/tools for kitchen domain
+│   │   │       ├── kitchen.json                             # List of cooking tasks for experiments
+│   │   │       └── feedback/                                # Accumulates human feedback across rounds
+│   │   │
+│   │   └── cooking_domain/
+│   │       ├── stitching_everything.py                      # Streamlined version iterating over kitchen.json
+│   │       └── [domain-specific KG variants]
+│   │
+│   └── GPT4/                                                 # Parallel implementation with GPT-4
+│       ├── cooking_domain/
+│       ├── cleaning_domain/
+│       └── ...
+│
+└── static/
+    └── ...                                                    # Web UI assets (not core logic)
+</code></pre>
+<hr>
+<h2>The core idea in code — LLM plan + knowledge-graph grounding</h2>
+<h3>The main loop: <code>stitching<em>everything</em>exp.py</code></h3>
+<p>The orchestration happens in <code>stitching<em>everything</em>exp.py</code> lines 108–227. Here&#x27;s the skeleton:</p>
+<pre><code>
+if __name__ == &quot;__main__&quot;:
+    # Parse args: task description, max feedback rounds, ontology file
+    parser.add_argument(&quot;arg1&quot;, type=str, help=&quot;my_prompt&quot;)      # e.g., &quot;make tea&quot;
+    parser.add_argument(&quot;arg2&quot;, type=int, help=&quot;number of feedback&quot;)
+    parser.add_argument(&quot;arg3&quot;, type=str, help=&quot;onto_file&quot;)
+
+    main_prompt = prompt(args.arg3)  # Build the LLM system prompt w/ environment facts
+    
+    if args.arg2 == 0:  # No feedback requested
+        total_token_used = final(args.arg1, main_prompt)
+    else:  # With feedback loops
+        # First LLM call
+        tokens = ask_gpt(main_prompt, args.arg1)  # Lines 127–128
+        total_token_used += tokens
+        
+        # Check if LLM gave valid action sequence
+        co = correct_LLM_output(&quot;LLM_orig_output.txt&quot;, &quot;LLM_output.txt&quot;, 0)
+        
+        # Run refinement block to detect grounding errors
+        RBO = refine_block_op(&quot;LLM_output.txt&quot;, 0)  # Lines 131
+        
+        # Feedback loop (up to args.arg2 rounds)
+        while need_feedback and i &lt; args.arg2:
+            # Send error back to LLM with instructions to fix
+            tokens = back_to_LLM(main_prompt, args.arg1, RBO, co, i)  # Lines 170
+            # Re-check and re-ground
+            ...
+            i += 1
+        
+        # If still broken after all feedback rounds, ask human
+        if need_feedback and i == int(args.arg2):
+            Human_involvement, additions_made, corrections_made = knowledge_expansion(...)  # Line 210
+            correct_onto(...)  # Update ontology
+</code></pre>
+<h3>Step 1: LLM generates a plan</h3>
+<p><strong>Location:</strong> <code>utils/misc<em>funcs.py:998–1026</code> (<code>ask</em>gpt</code> function)</p>
+<pre><code>
+def ask_gpt(main_prompt, my_prompt):
+    client = AzureOpenAI(
+        api_key=os.getenv(&quot;AZURE_OPENAI_API_KEY&quot;), 
+        api_version=&quot;2024-02-01&quot;,
+        azure_endpoint=os.getenv(&quot;AZURE_OPENAI_ENDPOINT&quot;) 
+    )
+
+    deployment_name = &#x27;first&#x27; 
+
+    response = client.chat.completions.create(
+        model=deployment_name, 
+        messages=[
+            {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: main_prompt},     # Environment schema + examples
+            {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: my_prompt },        # Task: &quot;make tea&quot;, &quot;prepare omlette&quot;, etc.
+        ]
+    )
+
+    # LLM returns CoT + action sequence
+    with open(&quot;LLM_orig_output.txt&quot;, &quot;w&quot;) as file:
+        file.write(str(response.choices[0].message.content))
+    
+    return token_used
+</code></pre>
+<p>The <code>main<em>prompt</code> is constructed in <code>stitching</em>everything_exp.py:17–92</code> and includes:</p>
+<ul>
+<li>Environment description (rooms, objects, tools, receptacles)</li>
+<li>List of available actions</li>
+<li>Example CoT and action sequence (make coffee: fetch ingredients → cook → serve)</li>
+<li>Strict guidelines to use only the environment&#x27;s objects/actions</li>
+</ul>
+<h3>Step 2: Refinement block — check each step against the KG</h3>
+<p><strong>Location:</strong> <code>utils/misc<em>funcs.py:1531–1542</code> (<code>refine</em>block<em>op</code> wrapper) and <code>utils/misc</em>funcs.py:974–995</code> (<code>self_correction</code> core logic)</p>
+<p>The refinement block runs several checks:</p>
+<pre><code>
+def refine_block_op(file, change_initial_onto):
+    buffer = io.StringIO()
+    original_stdout = sys.stdout  
+    sys.stdout = buffer
+
+    try:
+        self_correction(file, change_initial_onto)  # The grounding checks
+    finally:
+        sys.stdout = original_stdout  
+
+    output = buffer.getvalue()
+    return output  # Returns error messages if any
+
+
+def self_correction(LLM_output, change_initial_onto):
+    # 1. Syntax fixes
+    remove_spacing(LLM_output)
+    correct_arguments(LLM_output)
+    
+    # 2. Object validation (does the object exist in the KG?)
+    object_correction(LLM_output)
+    
+    # 3. Function validation (is the action in the environment&#x27;s action set?)
+    function_correction(LLM_output)
+    
+    # 4. Update the ontology file with correct references (initial_onto.ttl vs. updated_onto.ttl)
+    correct_onto(LLM_output, change_initial_onto)
+</code></pre>
+<h3>Step 3: Grounding queries against the RDF knowledge graph</h3>
+<p><strong>Location:</strong> <code>utils/actions.py:10–200+</code> (action functions like <code>move</code>, <code>pick<em>up</em>obj</code>, etc.)</p>
+<p>Each action function queries the RDF graph to validate preconditions. Example: <code>move(loc, onto_file)</code> resolves a location by traversing the KG:</p>
+<pre><code>
+def move(loc, onto_file):
+    g = rdflib.Graph()
+    g.parse(onto_file, format=&quot;turtle&quot;)  # Load the TTL ontology
+    
+    # Query 1: Is loc a room?
+    room_query = f&quot;&quot;&quot;
+    PREFIX ex: &lt;http://example.org/&gt;
+    SELECT ?room_name
+    WHERE {{
+        ?loc rdf:type ex:room .
+        ?loc ex:room_name ?room_name.
+    }}
+    &quot;&quot;&quot;
+    rloc = g.query(room_query)
+    rooms = [str(i.room_name) for i in rloc]
+    
+    if loc in rooms:
+        return True
+
+    # Query 2: If it&#x27;s a receptacle, find its parent location
+    if loc in r:
+        mr_loc_query = f&quot;&quot;&quot;
+        PREFIX ex: &lt;http://example.org/&gt;
+        SELECT ?im_name
+        WHERE {{
+            ex:{loc} rdf:type ex:mreceptacle .
+            ex:{loc} ex:mrec_location ?im_loc .
+            ?im_loc ex:rec_name ?im_name.
+        }}
+        &quot;&quot;&quot;
+        imloc = g.query(mr_loc_query)
+        # ... resolve transitively to an immobile receptacle
+</code></pre>
+<p>The RDF ontology (<code>initial_onto.ttl</code>) defines classes like:</p>
+<pre><code>
+ex:room rdf:type rdfs:Class.
+ex:room_name rdf:type rdf:Property;
+    rdfs:domain ex:room;
+    rdfs:range xsd:string.
+
+ex:object rdf:type rdfs:Class.
+ex:obj_name rdf:type rdf:Property;
+    rdfs:range xsd:string.
+ex:obj_location rdf:type rdf:Property;
+    rdfs:range ex:imreceptacle.
+ex:IsSliceable rdf:type rdf:Property;
+    rdfs:range xsd:boolean.
+ex:Boilable rdf:type rdf:Property;
+    rdfs:range xsd:boolean.
+</code></pre>
+<hr>
+<h2>Where human input refines the knowledge</h2>
+<p><strong>Location:</strong> <code>utils/misc<em>funcs.py:705–900+</code> (<code>knowledge</em>expansion</code> function)</p>
+<p>When the LLM&#x27;s plan still has unresolvable steps after all feedback rounds, the system invokes human intervention:</p>
+<pre><code>
+def knowledge_expansion(LLM_output):
+    
+    Human_involvement = 0
+    corrections_made = 0
+    additions_made = 0
+
+    O, R, T, IM = fetch_details(&quot;updated_onto.ttl&quot;)  # Current KG state
+    A = O + R + T + IM  # All known objects
+    a, f = fetch_actions()  # All known actions
+
+    def get_funcs(LLM_output):
+        # Parse LLM output into (function_name, arg1, arg2) tuples
+        with open(LLM_output) as file:
+            stuff = file.readlines()
+            stuff = [a.replace(&quot;&#x27;&quot;, &#x27;&quot;&#x27;) for a in stuff]
+            funcs_list = [...]  # Extract tuples
+        return stuff, funcs_list
+
+    def rectify_function(stuff, funcs_list):
+        # Iterate over each action the LLM generated
+        for index, fun in enumerate(funcs_list):
+            
+            if fun and len(fun) &gt; 1:   
+                # Function correction: is the action valid?
+                if fun[0] not in f:  # fun[0] is the function name
+                    repeat = True
+                    while repeat:
+                        # Ask human: &quot;boil(&#x27;milk&#x27;) - does &#x27;boil&#x27; exist?&quot;
+                        ask = input(f&#x27;{stuff[index].strip()} #The function &quot;{fun[0]}&quot; &#x27;
+                                   f&#x27;does not exist in my knowledge base! &#x27;
+                                   f&#x27;Is it present in the system? ...&#x27;)
+                        Human_involvement += 1
+                    
+                        if ask == &#x27;no&#x27;:
+                            # Remove this action from the plan
+                            funcs_list, stuff = remove_function(fun[0], funcs_list, stuff)
+                            repeat = False
+                            
+                        elif ask == &#x27;yes&#x27;:
+                            # Action exists; now check the objects
+                            additions_made += 1
+                            if fun[1] not in O + R + T + IM:  # fun[1] is the first argument
+                                # Recursively ask about the object
+                                ask = input(f&#x27;Item &quot;{fun[1]}&quot; isnt present in my knowledge base! &#x27;
+                                          f&#x27;Is it present in the system? ...&#x27;)
+                                Human_involvement += 1
+                        
+                                if ask == &#x27;no&#x27;:
+                                    funcs_list, stuff = remove_item(fun[1], funcs_list, stuff)
+                                elif ask == &#x27;yes&#x27;:
+                                    # Add to KG
+                                    additions_made += 1
+                                    up = update_ontology(fun[1])  # Interactive prompts for object properties
+                                    O, R, T, IM = fetch_details(&quot;updated_onto.ttl&quot;)
+                                elif ask == &#x27;correct_item&#x27;:
+                                    # Fix the name: &quot;milk&quot; → &quot;almond_milk&quot;?
+                                    corrections_made += 1
+                                    corr_item = input(&quot;Please enter the correct item\n&quot;)
+                                    funcs_list, stuff = fix_item(fun[1], corr_item, funcs_list, stuff)
+                        
+                        elif ask == &#x27;correct_function&#x27;:
+                            # Fix the action: &quot;boil&quot; → &quot;fry&quot;?
+                            corrections_made += 1
+                            corr_func = input(&quot;Please enter the correct function\n&quot;)
+                            funcs_list, stuff = fix_func(fun[0], corr_func, funcs_list, stuff)
+    
+    rectify_function(stuff, funcs_list)
+    
+    return Human_involvement, additions_made, corrections_made
+</code></pre>
+<h3>Interactive ontology update: <code>update_ontology</code></h3>
+<p><strong>Location:</strong> <code>utils/misc_funcs.py:280–340+</code></p>
+<p>When a human says &quot;yes, that object exists,&quot; the system asks for its properties and appends to the RDF file:</p>
+<pre><code>
+def update_ontology(item):
+    kind = input(f&quot;What kind of item is {item}? Choose from: &#x27;object&#x27;, &#x27;mreceptacle&#x27;, &#x27;imrecpetacle&#x27;, &#x27;tool&#x27;\n&quot;)
+    
+    if kind == &#x27;object&#x27;:
+        obj_name = input(&quot;Please enter the object name.\n&quot;)
+        location = input(&quot;What&#x27;s the location of object?\n&quot;)
+        IsSliceable = input(&quot;Is object sliceable? Please reply in true and false\n&quot;)
+        IsBoilable = input(&quot;Is object boilable? Please reply in true and false\n&quot;)
+        IsLiquid = input(&quot;Is object liquid? Please reply in true and false\n&quot;)
+        Fryable = input(&quot;Is object fryable? Please reply in true and false\n&quot;)
+        need_cleaning = input(&quot;Does object usually needs cleaning? Please reply in true or false\n&quot;)
+        
+        # Append to updated_onto.ttl
+        addition = f&quot;&quot;&quot; 
+ex:{item} rdf:type ex:object;
+    ex:obj_name {obj_name};
+    ex:obj_location ex:{location};
+    ex:IsSliceable {IsSliceable};
+    ex:IsCleaned false;
+    ex:sliced false;
+    ex:Boilable {IsBoilable};
+    ex:IsBoiled false;
+    ex:IsLiquid {IsLiquid};
+    ex:Fryable {Fryable};
+    ex:needs_cleaning {need_cleaning};
+    ex:IsCut false;
+    ex:CutPcs 0.
+        &quot;&quot;&quot;
+        
+        with open(&quot;updated_onto.ttl&quot;, &quot;a&quot;) as f:
+            f.write(addition)
+        
+        return True
+</code></pre>
+<p>This is how human feedback becomes <strong>persistent knowledge</strong>: each new fact is appended to <code>updated_onto.ttl</code>, and on the next task, the KG is richer.</p>
+<h3>Feedback loop back to LLM</h3>
+<p><strong>Location:</strong> <code>utils/misc<em>funcs.py:1068–1195</code> (<code>back</em>to_LLM</code> function)</p>
+<p>If the refinement block found errors but human correction is not yet invoked, the errors are sent back to the LLM for another attempt:</p>
+<pre><code>
+def back_to_LLM(main_prompt, my_prompt, RBO, co, i):
+    issue = &quot;&quot;&quot; 
+    There were some issue(s) in the action sequence you gave. 
+    The error is reflected below. Give me the cot and task sequence again. 
+    You can refer to the environemnt description to rectify this issue.
+    &quot;&quot;&quot;
+    
+    # Collect execution errors (if any)
+    if os.path.exists(&quot;output_with_error.txt&quot;):
+        with open(&quot;output_with_error.txt&quot;, &quot;r&quot;) as file:
+            lines = file.readlines()
+        ll = [l for l in lines if l.strip() != &#x27;&#x27; and &#x27;Error&#x27; in l.split()[0]]
+    
+    # Write feedback message
+    with open (f&quot;./feedback/LLM_feedback_with_error_{i}.txt&quot; , &quot;w&quot;) as file:
+        file.write(issue)
+        file.writelines(ll[-1])  # Attach the error
+    
+    # Send back to LLM in conversation history
+    response = client.chat.completions.create(
+        model=deployment_name, 
+        messages=[
+            {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: main_prompt},
+            {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: my_prompt },
+            {&quot;role&quot;: &quot;assistant&quot;, &quot;content&quot;: LLM_orig_output},  # LLM&#x27;s first attempt
+            {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: triple(f&quot;./feedback/LLM_feedback_with_error_{i}.txt&quot;)}  # Error + request to retry
+        ]
+    )
+</code></pre>
+<p>The multi-turn conversation preserves context, allowing the LLM to understand where it went wrong.</p>
+<hr>
+<h2>What to read first (if you clone this)</h2>
+<p><strong>Read in this order to understand the full system:</strong></p>
+<ul>
+<li><strong><code>stitching<em>everything</em>exp.py</code></strong> (lines 108–227)</li>
+</ul>
+<p>   — Start here. Traces the main orchestration loop: LLM call → refinement → feedback loop → human involvement.</p>
+<ul>
+<li><strong><code>initial_onto.ttl</code></strong> (first 50 lines)</li>
+</ul>
+<p>   — Understand the RDF schema: what classes (object, receptacle, tool) and properties (obj_location, IsSliceable, etc.) the KG defines.</p>
+<ul>
+<li><strong><code>utils/actions.py:move()</code> and <code>pick<em>up</em>obj()</code> (lines 10–200)</strong></li>
+</ul>
+<p>   — See how actions query the RDF graph to validate preconditions and ground abstract steps.</p>
+<ul>
+<li><strong><code>utils/misc<em>funcs.py:ask</em>gpt()</code> (lines 998–1026)</strong></li>
+</ul>
+<p>   — How the LLM is called with the environment description.</p>
+<ul>
+<li><strong><code>utils/misc<em>funcs.py:self</em>correction()</code> (lines 974–995)</strong></li>
+</ul>
+<p>   — The refinement block: syntax fixes, object validation, function validation, ontology updates.</p>
+<ul>
+<li><strong><code>utils/misc<em>funcs.py:back</em>to_LLM()</code> (lines 1068–1195)</strong></li>
+</ul>
+<p>   — How errors are fed back to the LLM as a multi-turn conversation.</p>
+<ul>
+<li><strong><code>utils/misc<em>funcs.py:knowledge</em>expansion()</code> (lines 705–900+)</strong></li>
+</ul>
+<p>   — Interactive human feedback: asking humans to add/correct objects and actions; writing to <code>updated_onto.ttl</code>.</p>
+<p><strong>Key files for experiments:</strong></p>
+<ul>
+<li><code>kitchen.json</code> — List of cooking tasks (for domain-specific runs).</li>
+<li><code>feedback/</code> — Accumulates human interactions across rounds.</li>
+<li><code>results.json</code> — Final metrics: feedback rounds used, execution errors, human involvement count, token usage.</li>
+</ul>
+<hr>
+<h2>Summary: data flow</h2>
+<pre><code>
+Task: &quot;make tea&quot;
+  ↓
+1. LLM.ask_gpt(main_prompt, task)
+   → LLM_orig_output.txt (raw LLM response)
+  ↓
+2. correct_LLM_output() + refine_block_op()
+   → Check each action against KG (SPARQL queries)
+   → Collect errors in RBO (RefinementBlockOutput)
+  ↓
+3a. If RBO == &#x27;&#x27; (no errors) and no execution errors:
+    → Execute the plan ✓
+  ↓
+3b. Else if RBO != &#x27;&#x27; (grounding errors) or execution errors:
+    → back_to_LLM() with error details
+    → Loop (up to N feedback rounds)
+  ↓
+4. If still broken after N rounds:
+    → knowledge_expansion() (human loop)
+    → Ask human: does this object/action exist?
+    → If &quot;yes&quot;: update_ontology() → append to updated_onto.ttl
+    → If &quot;correct&quot;: fix name/action in the KG
+  ↓
+5. Re-run with enriched KG
+   → Plan now grounds correctly ✓
+  ↓
+Updated ontology persists for the next task
+</code></pre></article></div>
+  <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>
