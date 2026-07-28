@@ -1,0 +1,177 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cheap, fast, reliable seeing — deep dive + code</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.68}
+ .wrap{max-width:840px;margin:0 auto;padding:0 26px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 38px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:32px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:13px 0 0;color:#AEBABD;font-size:16px;max-width:64ch}
+ nav{position:sticky;top:0;background:rgba(15,22,25,.96);z-index:5;border-bottom:1px solid #263237}
+ nav .wrap{display:flex;gap:4px;padding:9px 26px;flex-wrap:wrap}
+ nav a{font-family:var(--mono);font-size:12px;color:#AEBABD;text-decoration:none;padding:6px 10px;border-radius:6px} nav a:hover{background:#1b262c;color:#fff}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:34px 0 6px}
+ .doc h1{font-size:25px;margin:6px 0 8px} .doc h2{font-size:20px;margin:26px 0 6px} .doc h3{font-size:16px;margin:18px 0 4px}
+ .doc p{font-size:16px;color:#23302C;margin:11px 0} .doc li{font-size:15.5px;color:#23302C;margin:5px 0}
+ .doc em{color:var(--graphite);font-style:normal;font-family:var(--mono);font-size:12.5px}
+ .tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:14px 0}
+ table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+ th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite);padding:10px 12px;background:var(--tint);border-bottom:1px solid var(--line)}
+ td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} tr:last-child td{border-bottom:none}
+ td.tt{font-weight:600} td.mono,.mono{font-family:var(--mono);font-size:11.5px;color:var(--accent-deep)}
+ .run{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
+ .page{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin:14px 0}
+ .page.walk{border-left:3px solid var(--accent)}
+ .page h1{font-size:22px;margin:0 0 4px} .page h2{font-size:16px;color:var(--accent-deep);margin:20px 0 6px} .page h3{font-size:14.5px;margin:14px 0 3px}
+ .page p{font-size:15.5px;color:#23302C;margin:10px 0} .page li{font-size:15px;margin:4px 0}
+ .page code{font-family:var(--mono);font-size:12.5px;background:var(--tint);padding:1px 5px;border-radius:4px}
+ .page pre{background:var(--ink);color:#D7DEDF;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px}
+ .page pre code{background:none;color:inherit;padding:0} .page a{color:var(--accent-deep);word-break:break-word} .page hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:24px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">Topic deep dive</div>
+  <h1>Cheap, fast, reliable seeing</h1>
+  <p>Turning raw camera, radar, and event-sensor streams into an accurate picture of the world — fast enough and cheap enough to run on a robot, and robust when the scene is hard. This page: the core problem, the approaches, and the key 2025 papers with their methods. (A methods-forward theme — most of this work is very recent, with code not yet publicly released.)</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#overview">Overview</a><a href="#code">Papers &amp; code</a><a href="#papers">Method breakdowns</a>
+</div></nav>
+<div class="wrap">
+  <div id="overview" class="doc"><div class="eyebrow">What it is &amp; why robots use it</div><h1>Cheap, fast, reliable seeing</h1>
+<p><em>21 papers · sense — the first part of the loop: taking in the world</em></p>
+
+<div style="background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px;margin:18px 0">
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:8px">The big picture — connecting the dots</div>
+<p style="margin:0 0 12px">Everything a robot does rests on one thing it must do first: turn raw sensor signals — a camera's pixels, a radar's echoes, a chip that fires only when something moves — into an accurate picture of what is around it. And that picture has to satisfy <strong>four demands that pull against each other</strong>: it must be <strong>accurate</strong> (get the world right), <strong>fast</strong> (keep up with a moving robot), <strong>cheap</strong> (run on a battery, not a server), and <strong>robust</strong> (still work on glass, in the dark, on a blur that crosses the frame in a tenth of a second). You can usually buy any one by giving up another — a bigger model is more accurate but too slow; a lighter one is fast but misses things. The papers here are each a specific way to win two of those at once without paying full price for the rest.</p>
+<p style="margin:0 0 8px"><strong>Four moves the field is making:</strong></p>
+<ul style="margin:0 0 12px">
+<li style="margin:0 0 6px"><strong>① Make the program leaner so it runs on small hardware.</strong> Cut the math that doesn't change the answer. <em>NeuFlow-V2</em> redesigns motion-between-frames (optical flow) to hit 20+ FPS on cheap edge chips without losing much accuracy. <em>Context-aware Sparse Spatiotemporal Learning</em> does the same for event cameras — sensors that fire only on change — by setting a per-cell activity threshold, so the program stays idle when the scene is quiet and only works when something moves.</li>
+<li style="margin:0 0 6px"><strong>② Fuse sensors so one covers the other's blind spot.</strong> Instead of fighting a single sensor's limits, pair sensors that fail differently. <em>mmDEAR</em> trains on camera + radar together so that at run time, sparse radar (which sees through walls and darkness) can be filled in to act like a dense camera — with no camera needed. <em>Estimating User Engagement</em> fuses a color and a thermal camera to read whether a person is paying attention, since no single cue (gaze, head tilt, expression) is reliable alone.</li>
+<li style="margin:0 0 6px"><strong>③ Attack the exact cases where cameras break.</strong> <em>Depth Estimation Through Translucent Surfaces</em> handles glass — where a depth sensor gets a confused half-through, half-reflected reading — and recovers usable depth anyway. <em>YO-CSA-T</em> tracks a badminton shuttlecock that moves so fast it blurs into the background, by using two cameras for 3D, predicting where it will go, and filling in frames where it vanishes.</li>
+<li style="margin:0"><strong>④ Recover 3D position without a depth sensor.</strong> Depth sensors are heavy and costly; a plain colour camera is cheap. <em>A Unified End-to-End Network for Category- and Instance-Level</em> pose and <em>Robotic 3D Flower Pose Estimation</em> infer an object's full position and orientation from colour images alone, and <em>Unified Human Localization and Trajectory Prediction</em> folds where-a-person-is and where-they're-going into one pass instead of two.</li>
+</ul>
+<p style="margin:0"><strong>The throughline:</strong> this theme is the field paying down the cost of <em>seeing</em> — trimming the compute, borrowing a cheaper sensor's strengths, and hardening perception against the specific conditions that used to break it — so an accurate picture of the world becomes something a small, moving, battery-powered robot can actually afford to compute in real time. That matters because it is the constraint under everything else: across this whole analysis, the single most common limitation was <em>"accurate, but too expensive to run in real time."</em> <strong>Still open:</strong> most of this work is very recent, evaluated on narrow benchmarks with code not yet released — so whether these efficiency wins hold up across the full mess of the real world, and compose into one perception stack rather than many point solutions, is unsettled.</p>
+</div>
+
+<h2>The problem — in depth</h2>
+<p>Every robot starts with the same task: figure out what is around it. Before a robot can plan a route, pick up an object, or avoid hitting a person, it has to understand the scene in front of it. That understanding comes from sensors — cameras, depth sensors, radar, microphones — and from software that turns raw sensor readings into useful information: where things are, what they are, how fast they are moving, and what they are about to do next.</p>
+<p>This sounds straightforward. It is not.</p>
+<p>The first difficulty is speed. A robot moving through the world cannot wait several seconds for its computer to figure out what it sees. A drone avoiding a wall, a car stopping for a pedestrian, or a factory arm reaching for a moving part all need answers in well under a second. But the programs that give accurate answers are usually large and slow. Running them fast enough requires either a powerful computer — which is heavy, expensive, and drains batteries — or a smaller, cheaper computer that cannot keep up with the big programs. Most robots today use the smaller computers. That tension between accuracy and speed is at the center of this topic.</p>
+<p>The second difficulty is the gap between clean lab conditions and the real world. In a lab, lighting is good, objects sit still, and sensors work as expected. In the real world, lights are dim or shifting, objects move fast and blur, glass surfaces reflect and confuse depth sensors, rain scatters radar and camera signals, and important things — a small flower on a plant, a shuttlecock in flight, a cable on a cluttered bench — are tiny or partially hidden. Programs trained to work in clean conditions often fail in these conditions.</p>
+<p>The third difficulty is that no single sensor covers everything. A camera gives rich color detail but cannot measure distance well and fails in the dark. A depth sensor (called a lidar or RGB-D camera) measures distance but fails on transparent or shiny surfaces. Radar works in rain and through walls but gives only a rough scatter of points — too sparse to understand a scene. Each sensor has gaps, and a robot that relies on just one will fail whenever that sensor hits its limits.</p>
+<p>Together these three difficulties create a hard constraint: the robot needs to see the world accurately, fast, and under a wide range of conditions, all on hardware that fits in a small machine with limited power. This is the sensing problem, and it sits at the entrance to everything else a robot does. If the robot sees wrong, every downstream decision — where to go, what to pick up, how to avoid danger — is built on a faulty foundation.</p>
+<h2>The approaches — how the field actually tackles it</h2>
+<h3>Make programs leaner so they can run on small hardware</h3>
+<p>The most direct answer to the speed-versus-accuracy problem is to redesign the program itself so it does less unnecessary math. This is called model compression or lightweight design, but the underlying idea is simple: cut out everything in the program that does not contribute much to the final answer.</p>
+<p>NeuFlow-V2 does this for measuring motion between video frames (called optical flow). Measuring how pixels move from one frame to the next is a key input for understanding a moving scene, but existing methods are either accurate or fast, not both. NeuFlow-V2 redesigns the math model so it reaches more than 20 frames per second on cheap edge hardware without giving up much accuracy. The key move is identifying which parts of the computation actually drive the answer and keeping only those.</p>
+<p>Context-aware Sparse Spatiotemporal Learning (CSSL) takes a similar approach for event-based cameras — sensors that fire only when something in the scene changes, rather than capturing full frames. These sensors can run on very low power on brain-inspired chips, but pairing them with useful software has been hard. CSSL solves this by setting activity thresholds per individual sensor cell based on what that cell actually sees, rather than one global rule. The result is a program that stays sparse (does little work when the scene is quiet) but stays accurate when things move.</p>
+<h3>Combine sensors so gaps in one are covered by another</h3>
+<p>A second major approach is not to fight any single sensor&#x27;s limits but to pair sensors whose weaknesses are different. When one sensor fails, another covers for it. This is called sensor fusion.</p>
+<p>The paper on mmDEAR illustrates this well. Radar works through walls and in darkness, but it gives only a sparse scatter of points — far too few to reconstruct the shape of a human body. The researchers solve this by training a network on camera images and radar together, so the network learns to fill in the missing radar points using knowledge of what human bodies look like. At test time, no camera is needed — the network has learned to make the sparse radar data act like the denser camera data.</p>
+<p>Estimating User Engagement using a Dynamic Bayesian Network (DBN) takes the same logic into human-robot interaction. Deciding whether a person is engaged with a robot requires reading many signals at once: where their eyes are pointing, how their head is tilted, what expression is on their face, and even their skin temperature. No single one of these is reliable alone. The DBN combines a color camera and a thermal camera into a single model that tracks all of these signals and how they change over time, giving a much more stable read of engagement than any one sensor could.</p>
+<h3>Learn to handle hard visual conditions directly</h3>
+<p>A third approach targets specific failure cases — the situations where cameras and depth sensors break down — and trains programs to handle them explicitly rather than hoping they generalize.</p>
+<p>Depth Estimation Through Translucent Surfaces addresses one of the most common and least-discussed failure modes: glass. Depth sensors work by bouncing signals off surfaces. Glass lets the signal partly through and partly reflects it, producing a confused mixed reading. The paper adapts a learning-based depth model to recognize and handle this mixed signal, recovering useful depth estimates even when the scene includes semi-transparent material.</p>
+<p>The Complete Corruption-Aware Retinex Framework tackles low-light image improvement (called enhancement). The standard approach to dark images is to brighten them — but brightening a dark image amplifies noise and can introduce blurring. This paper treats the brightening and the cleanup as a single problem, decomposing the image into a light layer and a shadow layer, improving both, and then removing the distortions that the brightening process itself introduced.</p>
+<p>YO-CSA-T addresses fast-moving small objects — specifically a badminton shuttlecock, which moves so fast it blurs into the background. The system uses two cameras to get a 3D position, pays attention to context around where the shuttlecock should be, predicts where it will go next, and fills in frames where it disappears entirely.</p>
+<h3>Estimate position and orientation without depth sensors</h3>
+<p>Many tasks require knowing not just that an object is present but exactly where it is and which way it is facing — its full position and rotation in space. This is called pose estimation. The standard approach uses a depth sensor to get 3D information directly. A growing set of papers shows how to do this from a plain color camera alone, which is cheaper and lighter.</p>
+<p>RGBTrack tracks the exact position and rotation of an object in real time with no depth sensor. It renders many views of a known 3D model and uses a binary search to find which view best matches what the camera sees — a method called render-and-compare. It pairs this with a tracker that follows the object between frames and a statistical filter (Kalman filter) to smooth out noisy estimates.</p>
+<p>RCGNet and CIPE take a learning approach: they train networks that absorb knowledge of what 3D shapes look like and then apply that knowledge to infer position and rotation from color images alone.</p>
+<h3>Use non-visual sensing for special environments</h3>
+<p>Some environments where robots operate simply defeat cameras. Underwater, murky water scatters light. Behind walls, cameras cannot see at all. In these cases, researchers turn to other signals entirely.</p>
+<p>The two underwater gesture-recognition papers (One-Shot Gesture Recognition and Action Recognition for Underwater Gesture Communication) both deal with water&#x27;s effect on visual signals — blur, shadow, shifting light. One uses mathematical shape descriptors that describe a gesture by its overall form rather than pixel-by-pixel detail, making it robust to visual noise. The other tracks how a gesture changes across many frames rather than relying on any single frame, which lets it ignore individual bad frames.</p>
+<p>The 3-D Sound Source Localization paper uses five microphones and timing differences between them to compute where sounds are coming from in three dimensions, bypassing cameras entirely.</p>
+<h2>Where it stands</h2>
+<p>Robots today can see well in controlled, predictable settings, and the programs to do it have gotten leaner and faster in recent years. Combining sensors has become a practical tool for filling in each sensor&#x27;s gaps. The hard cases — glass, darkness, rain, tiny fast objects, through-wall sensing — are solvable one at a time, but no system handles all of them robustly at once. Doing all of this on the small computers that fit inside actual robots, without sacrificing accuracy or speed, remains an open problem with steady but incomplete progress.</p></div>
+  <div id="code"><div class="eyebrow">The key papers &amp; their methods</div>
+    <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">NeuFlow-V2: Push High-Efficiency Optical Flow To the Limit</td><td>IROS 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Estimating User Engagement in Human Robot Interaction Using </td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">YO-CSA-T: A Real-time Badminton Tracking System Utilizing YO</td><td>IROS 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Unified Human Localization and Trajectory Prediction with Mo</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">mmDEAR: mmWave Point Cloud Density Enhancement for Accurate </td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Context-aware Sparse Spatiotemporal Learning for Event-based</td><td>IROS 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Depth Estimation Through Translucent Surfaces</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Seeing Eye to Eye: Design and Evaluation of a Custom Express</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">Robotic 3D Flower Pose Estimation for Small-Scale Urban Farm</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr>
+<tr><td class="tt">A Unified End-to-End Network for Category-Level and Instance</td><td>ICRA 2025</td><td>—</td><td class="mono">—</td><td><span class="run"></span></td></tr></tbody></table></div>
+  </div>
+  <div id="papers"><div class="eyebrow">Paper by paper — the method</div><article class="page" id="gp0"><h1>NeuFlow-V2: Push High-Efficiency Optical Flow To the Limit</h1>
+<h2>What it solves</h2>
+<p>Measuring motion between video frames is either accurate or fast, but not both on cheap robot hardware.</p>
+<h2>How it works</h2>
+<p>They designed a lightweight math model optimized to do less computation while keeping accuracy. It runs faster than 20 times per second on cheap edge hardware at standard resolution.</p>
+<h2>Why it matters</h2>
+<p>Lightweight optical flow network achieving 10x-70x speedup over SOTA accuracy-matched methods while generalizing to real-world datasets, validated on embedded robotic hardware.</p></article>
+<article class="page" id="gp1"><h1>Estimating User Engagement in Human Robot Interaction Using a Dynamic Bayesian Network</h1>
+<h2>What it solves</h2>
+<p>Figuring out whether a person talking to a robot is genuinely engaged is hard because the relevant signals — eye contact, head position, facial expression, body heat — come from different sensors and shift over time.</p>
+<h2>How it works</h2>
+<p>A Dynamic Bayesian Network (DBN) combines head rotation, eye gaze, facial expressions from a color camera, and skin temperature from a thermal camera into a single model that tracks how engagement evolves from moment to moment.</p>
+<h2>Why it matters</h2>
+<p>Achieves 0.83 accuracy and 0.82 AUC for binary engagement classification in HRI by combining thermal and visual modalities within a DBN framework.</p></article>
+<article class="page" id="gp2"><h1>YO-CSA-T: A Real-time Badminton Tracking System Utilizing YOLO Based on Contextual and Spatial Attention</h1>
+<h2>What it solves</h2>
+<p>Tracking a fast shuttlecock in real time is hard because it moves so fast it blurs and blends into the court lines.</p>
+<h2>How it works</h2>
+<p>They improved a detection system to pay attention to clues around the shuttlecock, use two cameras to figure out its 3D position, guess where it is going next, and fill in frames when it disappears.</p>
+<h2>Why it matters</h2>
+<p>A real-time shuttlecock 3D tracking system achieving 90.43% mAP@0.75 at &gt;130 fps by integrating attention-enhanced YOLO detection, stereo 3D mapping, trajectory prediction, and frame compensation.</p></article>
+<article class="page" id="gp3"><h1>Unified Human Localization and Trajectory Prediction with Monocular Vision</h1>
+<h2>What it solves</h2>
+<p>Predicting where a person will walk next using only one ordinary camera requires first knowing exactly where they are in the real world, and current prediction models break down when that position estimate is noisy.</p>
+<h2>How it works</h2>
+<p>A single Transformer-based network (MonoTransmotion) estimates a person&#x27;s real-world ground position from 2D body keypoints using a direction-aware loss, and at the same time predicts their future path. Both tasks are trained together end-to-end.</p>
+<h2>Why it matters</h2>
+<p>Joint monocular BEV localization and trajectory prediction framework that improves robustness to noisy inputs through multi-task training with a directional loss, achieving ~12% improvement over baselines.</p></article>
+<article class="page" id="gp4"><h1>mmDEAR: mmWave Point Cloud Density Enhancement for Accurate Human Body Reconstruction</h1>
+<h2>What it solves</h2>
+<p>Radar sensors that work through walls give only a very sparse scatter of points, which is not enough to reconstruct the shape and pose of a human body.</p>
+<h2>How it works</h2>
+<p>They use a two-step process: first, a network trained with camera images as a guide fills in the missing radar points to make the cloud much denser; then a second network reads the denser cloud to estimate the body shape and pose. At test time no camera is needed.</p>
+<h2>Why it matters</h2>
+<p>A privacy-preserving mmWave-only inference pipeline that improves human body reconstruction accuracy by densifying point clouds with image-supervised training while avoiding image use at test time.</p></article>
+<article class="page" id="gp5"><h1>Context-aware Sparse Spatiotemporal Learning for Event-based Vision</h1>
+<h2>What it solves</h2>
+<p>Neuromorphic chips give spiking vision networks high sparsity but low accuracy, while deep learning gets accuracy but wastes power and can&#x27;t run on neuromorphic chips.</p>
+<h2>How it works</h2>
+<p>Context-aware Sparse Spatiotemporal Learning (CSSL) sets activation thresholds per neuron based on local input stats, not global rules. No need to hand-tune sparsity. It works on spiking nets for object spotting and motion.</p>
+<h2>Why it matters</h2>
+<p>A context-aware thresholding mechanism that simultaneously achieves high neuronal sparsity and competitive task accuracy in event-based object detection and optical flow without manual sparsity tuning.</p></article>
+<article class="page" id="gp6"><h1>Depth Estimation Through Translucent Surfaces</h1>
+<h2>What it solves</h2>
+<p>Depth sensors and stereo cameras cannot measure distance through or behind translucent materials because the mixed light signals confuse them.</p>
+<h2>How it works</h2>
+<p>A learning-based depth model is adapted to handle the mixed signals that come through semi-transparent surfaces, where both the surface itself and objects behind it affect the reading.</p>
+<h2>Why it matters</h2>
+<p>Addresses depth estimation specifically for translucent surfaces, a known failure mode of conventional RGB-D and LiDAR sensors.</p></article>
+<article class="page" id="gp7"><h1>Seeing Eye to Eye: Design and Evaluation of a Custom Expressive Eye Display Module for the Stretch Mobile Manipulator</h1>
+<h2>What it solves</h2>
+<p>Mobile robots have no good way to signal to nearby people where they are looking or what state they are in, making it hard for people to work alongside them.</p>
+<h2>How it works</h2>
+<p>A custom LED panel shaped like eyes is added to the Hello Robot Stretch and programmed to show gaze direction and simple expressions; 32 people used it in a shared task and rated the experience.</p>
+<h2>Why it matters</h2>
+<p>An LED expressive eye module for mobile manipulators shown in controlled study to improve task performance and social closeness ratings compared to no-eye baseline.</p></article>
+<article class="page" id="gp8"><h1>Robotic 3D Flower Pose Estimation for Small-Scale Urban Farms</h1>
+<h2>What it solves</h2>
+<p>A robot that pollinates strawberry plants needs to know exactly where each small flower is and which way it faces, which is hard from raw 3D sensor data.</p>
+<h2>How it works</h2>
+<p>The algorithm converts a 3D point cloud into six flat images by projecting it from different directions, detects flowers in those images with a 2D detector, maps the detections back into 3D, and then fits a simple 3D shape to each flower cluster to get its position and orientation.</p>
+<h2>Why it matters</h2>
+<p>A 3D flower pose estimation pipeline achieving ~80% detection rate and 7.7-degree mean pose error on a FarmBot platform, sufficient for robotic pollination.</p></article>
+<article class="page" id="gp9"><h1>A Unified End-to-End Network for Category-Level and Instance-Level Object Pose Estimation from RGB Images</h1>
+<h2>What it solves</h2>
+<p>Figuring out the exact position and orientation of an object from a plain color photo — with no depth sensor — is hard, and most methods work for either a specific object or a category of objects, not both.</p>
+<h2>How it works</h2>
+<p>A single network (CIPE) treats pose estimation as a set prediction task: it uses a learned rotation representation that works in 3D Euclidean space and merges learned shape features from a point-cloud model with bounding-box detections to estimate pose directly from the color image.</p>
+<h2>Why it matters</h2>
+<p>A unified end-to-end network (CIPE) that achieves state-of-the-art RGB-only pose estimation at both category and instance levels via a novel rotation representation and prior-query fusion.</p></article></div>
+  <footer>Repos cloned under analysis/detail/ (gitignored) · method detail from arXiv · code structure read from the real repos.</footer>
+</div>
+</body></html>
