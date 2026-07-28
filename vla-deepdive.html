@@ -94,6 +94,11 @@
 <p>&quot;ICRT: In-Context Imitation Learning via Next-Token Prediction&quot; uses a large transformer that predicts the next sensor reading or action from a sequence of past ones. At test time, a few example demonstrations of a new task are dropped in as a prompt — the model then does the new task with no retraining at all, the same way a language model answers a new question when you give it a few examples.</p>
 <h2>Where it stands</h2>
 <p>Systems that split planning from acting are reliable enough to run on real robots in real rooms today, and the ability to describe a failure in plain words and replan around it is now routine in research demos. What remains hard is the full loop: a single model that perceives 3D space accurately, reasons about a novel task, produces correct movements at the speed the arm needs, and does all of this on the onboard computer a real product can afford. Each paper solves one piece; no single system yet closes all the gaps at once.</p></div>
+  <figure style="margin:26px 0 8px;background:#0A0E13;border:1px solid #1D2A34;border-radius:14px;padding:10px 10px 4px;background-image:linear-gradient(#141E27 1px,transparent 1px),linear-gradient(90deg,#141E27 1px,transparent 1px);background-size:34px 34px">
+    <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#38E1CF;padding:6px 8px 2px">Mechanism · animated</div>
+    <canvas data-viz="vla" height="280" style="display:block;width:100%;height:auto;border-radius:8px"></canvas>
+    <figcaption style="font-family:var(--sans);font-size:13.5px;line-height:1.5;color:#8B9BA2;padding:9px 10px 10px">A vision-language-action model turns <em style="color:#C4D0D3;font-style:normal">image patches and words into one stream of tokens</em>, then reads out the next tokens as robot actions &mdash; the same architecture that powers chatbots, pointed at a gripper. <a href="techniques.html#stack" style="color:#38E1CF;white-space:nowrap">See all mechanisms &rarr;</a></figcaption>
+  </figure>
   <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
     <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">Guiding Long-Horizon Task and Motion Planning with Vision La</td><td>ICRA</td><td><a href="https://github.com/zt-yang/pybullet_planning" target="_blank" rel="noopener">zt-yang/pybullet_planning</a></td><td class="mono">vlm_tools/tutorials/test_vlm_tamp.py</td><td><span class="run">cpu</span></td></tr>
 <tr><td class="tt">SpatialBot: Precise Spatial Understanding with Vision Langua</td><td>ICRA</td><td><a href="https://github.com/BAAI-DCAI/SpatialBot" target="_blank" rel="noopener">BAAI-DCAI/SpatialBot</a></td><td class="mono">bunny/serve/cli_depth.py</td><td><span class="run">cpu</span></td></tr>
@@ -1349,4 +1354,5 @@ pcd_label[best_obj_id][:] = 2   # mark as object-to-manipulate
 </ul></article></div>
   <footer>Repos cloned under analysis/detail/vla/code/ (gitignored — GPU/CUDA needed to run) · method detail from arXiv · code structure read from the real repos.</footer>
 </div>
+<script src="assets/viz.js"></script>
 </body></html>

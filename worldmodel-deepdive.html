@@ -83,6 +83,11 @@
 <p>SR-AIF and Curiosity-Driven Imagination both address the case where the robot only gets a signal when it actually succeeds at a task — which happens rarely when it is first learning. SR-AIF uses a method called active inference, which drives the robot to act in ways that reduce its own uncertainty about the future, pushing it naturally toward goal states even without frequent rewards. Curiosity-Driven Imagination adds a curiosity module that points the robot toward situations it does not understand yet. When it finds something new, a high-level planning system adds a new rule to its knowledge and generates a training signal to teach the robot the motion that goes with it.</p>
 <h2>Where it stands</h2>
 <p>World models and diffusion-based planning have moved from research curiosities to methods that beat older approaches on real robot tasks, especially when the supply of labeled data is limited or the environment changes. The main gaps that remain are speed — world models are still expensive to run on small onboard computers — and reliability outside the situations they were trained on. Detecting when a model&#x27;s predictions have gone stale is a solved problem only in narrow cases. Combining fast models, good uncertainty awareness, and broad coverage of real-world variation in a single system is still open work.</p></div>
+  <figure style="margin:26px 0 8px;background:#0A0E13;border:1px solid #1D2A34;border-radius:14px;padding:10px 10px 4px;background-image:linear-gradient(#141E27 1px,transparent 1px),linear-gradient(90deg,#141E27 1px,transparent 1px);background-size:34px 34px">
+    <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#38E1CF;padding:6px 8px 2px">Mechanism · animated</div>
+    <canvas data-viz="worldmodel" height="280" style="display:block;width:100%;height:auto;border-radius:8px"></canvas>
+    <figcaption style="font-family:var(--sans);font-size:13.5px;line-height:1.5;color:#8B9BA2;padding:9px 10px 10px">A world model learns to <em style="color:#C4D0D3;font-style:normal">imagine the next frame</em>. Feed it a few real frames, let it roll the future forward on its own, and plan by trying several rollouts &mdash; keeping the one that ends well, without touching the real robot. <a href="techniques.html#loop" style="color:#38E1CF;white-space:nowrap">See all mechanisms &rarr;</a></figcaption>
+  </figure>
   <div id="code"><div class="eyebrow">The key papers &amp; their code</div>
     <div class="tw"><table><thead><tr><th>Paper</th><th>Conf</th><th>Code repo</th><th>Core file to read</th><th>Run</th></tr></thead><tbody><tr><td class="tt">LUMOS: Language-Conditioned Imitation Learning with World Mo</td><td>ICRA</td><td><a href="https://github.com/nematoli/lumos" target="_blank" rel="noopener">nematoli/lumos</a></td><td class="mono">lumos/behavior_models/lumos.py</td><td><span class="run">gpu</span></td></tr>
 <tr><td class="tt">LIMT: Language-Informed Multi-Task Visual World Models</td><td>ICRA</td><td>—</td><td class="mono">—</td><td><span class="run">gpu</span></td></tr>
@@ -1389,4 +1394,5 @@ return self.alpha * prior_loss + (1 - self.alpha) * posterior_loss
 </ul></article></div>
   <footer>Repos cloned under analysis/detail/worldmodel/code/ (gitignored — GPU/CUDA needed to run) · method detail from arXiv · code structure read from the real repos.</footer>
 </div>
+<script src="assets/viz.js"></script>
 </body></html>
