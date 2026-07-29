@@ -372,6 +372,163 @@
     label(ctx,14,h-10,'a word → nearest-feature lookup lights the matching blobs (open-vocabulary)',C.mut);
   };
 
+  // 14 MESHES — a fat blob's normal is ambiguous; flatten to a 2D disk → one clear normal; disks tile a surface.
+  A.mesh_normal=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'A surface needs to know which way it faces — a fat blob doesn’t',C.dim);
+    // left: fat blob with ambiguous normals
+    const lx=w*0.2,ly=h*0.45;splat(ctx,lx,ly,34,28,0.3,C.violet,0.6);
+    for(let k=-2;k<=2;k++){const a=-Math.PI/2+k*0.5;arrow(ctx,lx,ly,lx+Math.cos(a)*44,ly+Math.sin(a)*44,hexA(C.coral,0.7),1.2);}
+    label(ctx,lx-30,ly+50,'which way is “out”? ambiguous',C.coral);
+    // flatten arrow
+    arrow(ctx,w*0.36,ly,w*0.46,ly,C.ink,1.6);label(ctx,w*0.36,ly-10,'flatten',C.dim);
+    // right: oriented 2D disk with one normal
+    const rx=w*0.58,ry=ly;ctx.save();ctx.translate(rx,ry);ctx.rotate(0.3);ctx.scale(2.4,0.5);
+    const g=ctx.createRadialGradient(0,0,0,0,0,18);g.addColorStop(0,hexA(C.cyan,0.8));g.addColorStop(1,hexA(C.cyan,0));
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,18,0,TAU);ctx.fill();ctx.restore();
+    arrow(ctx,rx,ry,rx+Math.cos(-1.0)*40,ry+Math.sin(-1.0)*40,C.cyan,1.8);
+    label(ctx,rx-20,ly+50,'a 2D disk → one clear normal',C.cyan);
+    // bottom: disks tiling a curved surface
+    const by=h*0.86;ctx.strokeStyle=hexA(C.mut,0.4);ctx.beginPath();
+    for(let i=0;i<=40;i++){const x=w*0.1+ (w*0.8)*i/40,y=by-14*Math.sin(i/40*Math.PI);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
+    for(let i=0;i<11;i++){const u=i/10,x=w*0.1+w*0.8*u,y=by-14*Math.sin(u*Math.PI);
+      const sl=-14*Math.PI/40*Math.cos(u*Math.PI);ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan(sl/ (w*0.8/40)));
+      ctx.fillStyle=hexA(C.cyan,0.6);ctx.fillRect(-8,-2,16,4);ctx.restore();}
+    label(ctx,w*0.1,by+16,'oriented disks tile the real surface (2D Gaussian splatting)',C.mut);
+  };
+
+  // 15 SPARSE/FEED-FORWARD — skip per-scene optimization; a network predicts the whole cloud in one pass.
+  A.feedfwd=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'Vanilla splatting wants many photos + minutes of fitting per scene',C.dim);
+    // top: fast feed-forward path
+    const ty=h*0.36;for(let i=0;i<3;i++)cam(ctx,w*0.1,ty-20+i*20,0,C.amber,9);
+    label(ctx,w*0.05,ty+30,'3–4 views',C.mut);
+    arrow(ctx,w*0.16,ty,w*0.30,ty,C.cyan,1.6);
+    rrect(ctx,w*0.30,ty-18,w*0.2,36,7,C.cyan,hexA(C.cyan,0.06));label(ctx,w*0.32,ty,'network — ONE pass',C.cyan,10);
+    arrow(ctx,w*0.51,ty,w*0.62,ty,C.cyan,1.6);
+    const cx=w*0.75;for(let i=0;i<7;i++){const a=i*0.9;splat(ctx,cx+Math.cos(a)*24,ty+Math.sin(a)*18,11,8,a,i%2?C.cyan:C.violet,0.7);}
+    label(ctx,cx-24,ty+34,'full blob cloud, instantly',C.cyan);
+    // bottom: slow per-scene loop, crossed out
+    const by=h*0.74;label(ctx,w*0.05,by-22,'the old way:',C.dim);
+    ctx.strokeStyle=hexA(C.mut,0.6);ctx.beginPath();ctx.arc(w*0.3,by,20,0.5,TAU);ctx.stroke();
+    arrow(ctx,w*0.3+18,by-8,w*0.3+20,by+2,hexA(C.mut,0.6),1.2);
+    label(ctx,w*0.35,by,'optimize this scene… minutes',C.mut);
+    ctx.strokeStyle=C.coral;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(w*0.24,by-16);ctx.lineTo(w*0.62,by+16);ctx.stroke();
+  };
+
+  // 16 MATERIALS — split a blob's look into material × illumination, so you can move the light.
+  A.material_split=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'A trained blob bakes the capture lighting in — you can’t move the sun',C.dim);
+    const cx=w*0.7,cy=h*0.55,R=Math.min(w,h)*0.26,ang=t*0.8;
+    // the rendered sphere
+    splat(ctx,cx,cy,R*1.15,R*1.15,0,C.cyan2,0.6);
+    const hx=cx+Math.cos(ang)*R*0.55,hy=cy+Math.sin(ang)*R*0.55;
+    splat(ctx,hx,hy,R*0.35,R*0.35,0,'#ffffff',0.75);
+    // moving light
+    const lx=cx+Math.cos(ang)*R*1.8,ly=cy+Math.sin(ang)*R*1.8;
+    ctx.fillStyle=C.amber;ctx.beginPath();ctx.arc(lx,ly,6,0,TAU);ctx.fill();
+    ctx.strokeStyle=hexA(C.amber,0.35);ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(hx,hy);ctx.stroke();ctx.setLineDash([]);
+    label(ctx,lx-16,ly-12,'move the light',C.amber);
+    // the split: look = material × illumination
+    const px=w*0.06,py=h*0.4;
+    label(ctx,px,py-16,'the render splits into two factors:',C.dim);
+    rrect(ctx,px,py,w*0.24,34,6,C.line,hexA(C.violet,0.12));label(ctx,px+8,py+17,'MATERIAL — albedo, roughness (fixed)',C.violet,10);
+    label(ctx,px+w*0.11,py+48,'×',C.dim,16);
+    rrect(ctx,px,py+58,w*0.24,34,6,C.line,hexA(C.amber,0.12));label(ctx,px+8,py+75,'ILLUMINATION — the light (editable)',C.amber,10);
+    label(ctx,14,h-10,'separate the two → relight the object, or drop it into a new scene',C.mut);
+  };
+
+  // 17 SENSORS — same blobs, swap the observation model (RGB / event / thermal).
+  A.sensor_swap=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'RGB dies in the dark, at speed, in smoke — swap the observation model',C.dim);
+    const cx=w*0.24,cy=h*0.52;for(let i=0;i<7;i++){const a=i*0.9;splat(ctx,cx+Math.cos(a)*26,cy+Math.sin(a)*20,12,9,a,i%2?C.cyan:C.violet,0.6);}
+    label(ctx,cx-24,cy+44,'one blob cloud',C.mut);
+    const modes=[['RGB → pixels',C.cyan],['EVENT → brightness spikes',C.amber],['THERMAL → heat',C.coral]];
+    const mi=Math.floor(saw(t,6)*3)%3;
+    modes.forEach((m,i)=>{const y=h*0.3+i*h*0.2,on=i===mi;
+      arrow(ctx,w*0.4,cy,w*0.52,y,on?m[1]:hexA(m[1],0.3),on?1.8:1);
+      rrect(ctx,w*0.53,y-16,w*0.4,32,7,on?m[1]:C.line,on?hexA(m[1],0.08):null);
+      label(ctx,w*0.55,y,m[0],on?m[1]:C.dim,11);
+      // little readout glyph
+      if(on&&i===0){for(let k=0;k<5;k++)for(let j=0;j<2;j++){ctx.fillStyle=hexA(C.cyan,0.5);ctx.fillRect(w*0.85+k*5,y-6+j*6,4,4);}}
+      if(on&&i===1){for(let k=0;k<6;k++){ctx.fillStyle=C.amber;ctx.beginPath();ctx.arc(w*0.85+k*6,y-3+((k*7)%2)*6,1.6,0,TAU);ctx.fill();}}
+      if(on&&i===2){const g=ctx.createLinearGradient(w*0.85,0,w*0.92,0);g.addColorStop(0,hexA(C.coral,0.6));g.addColorStop(1,hexA(C.amber,0.3));ctx.fillStyle=g;ctx.fillRect(w*0.85,y-6,w*0.07,12);}
+    });
+    label(ctx,14,h-10,'the blobs are the same; only the rule turning a blob into a measurement changes',C.mut);
+  };
+
+  // 18 COMPRESSION — merge / quantize / prune shrink the cloud; the picture stays the same.
+  A.compress=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'A room is millions of blobs — too much for a drone or a phone',C.dim);
+    const u=saw(t,5);
+    // left dense
+    const lx=w*0.22,ly=h*0.5;for(let i=0;i<40;i++){const a=i*2.4,r=(Math.min(w,h)*0.28)*Math.sqrt((i%30)/30);
+      splat(ctx,lx+Math.cos(a)*r,ly+Math.sin(a)*r,7,6,a,i%2?C.cyan:C.violet,0.5);}
+    label(ctx,lx-30,ly+ Math.min(w,h)*0.32,'2,000,000 blobs',C.mut);
+    // ops
+    const ops=['merge near-duplicates','quantize into codebooks','prune the invisible'];
+    const oi=Math.floor(u*3)%3;
+    arrow(ctx,w*0.42,ly,w*0.56,ly,C.ink,1.6);
+    ops.forEach((o,i)=>label(ctx,w*0.43,ly-30+i*16,(i===oi?'▸ ':'   ')+o,i===oi?C.accent||C.cyan:C.dim));
+    // right sparse (same look)
+    const rx=w*0.78;for(let i=0;i<14;i++){const a=i*2.4,r=(Math.min(w,h)*0.26)*Math.sqrt((i%12)/12);
+      splat(ctx,rx+Math.cos(a)*r,ly+Math.sin(a)*r,11,9,a,i%2?C.cyan:C.violet,0.6);}
+    const shown=Math.round(2000000-(1700000)*u);
+    label(ctx,rx-24,ly+Math.min(w,h)*0.32,(300000).toLocaleString()+' blobs',C.cyan);
+    label(ctx,rx-24,ly+Math.min(w,h)*0.32+15,'✓ same picture',C.mut);
+  };
+
+  // 19 LOCALIZATION/SAFETY — score candidate poses by render-match; overlap with blobs = collision cost.
+  A.localize=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'Given a splat map: where am I, and how do I move without hitting anything?',C.dim);
+    const cx=w*0.4,cy=h*0.52;for(let i=0;i<9;i++){const a=i*0.7;splat(ctx,cx+Math.cos(a)*32,cy+Math.sin(a)*24,13,10,a,C.violet,0.5);}
+    label(ctx,cx-16,cy+44,'the map',C.mut);
+    // candidate cameras with match %
+    const best=Math.floor(saw(t,5)*5)%5;
+    for(let i=0;i<5;i++){const a=(i/5)*TAU,r=Math.min(w,h)*0.42;const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;
+      const on=i===best;cam(ctx,x,y,a+Math.PI,on?C.cyan:hexA(C.amber,0.5),9);
+      label(ctx,x-10,y-14,(on?'94%':((40+i*8)+'%')),on?C.cyan:C.dim,10);
+      if(on){label(ctx,x-14,y+16,'you are here',C.cyan);}}
+    label(ctx,cx-60,cy-Math.min(w,h)*0.42-2,'render each guess, keep the best match',C.dim);
+    // a path with an overlapping (unsafe) segment
+    const py=h*0.9;ctx.strokeStyle=C.cyan;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(w*0.12,py);ctx.lineTo(w*0.5,py);ctx.stroke();
+    ctx.strokeStyle=C.coral;ctx.beginPath();ctx.moveTo(w*0.5,py);ctx.lineTo(w*0.62,py);ctx.stroke();
+    label(ctx,w*0.64,py,'red = path overlaps blobs → collision cost',C.mut);
+  };
+
+  // 20 MEDICAL — endoscope light is bolted to the camera; model the glare, and the tissue deforms.
+  A.endo_light=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'An endoscope: a moving camera with its light bolted on, on wet moving tissue',C.dim);
+    // scope tube from left
+    const sy=h*0.5;ctx.fillStyle=hexA(C.mut,0.5);rrect(ctx,0,sy-14,w*0.22,28,6,C.line,hexA(C.mut,0.25));
+    cam(ctx,w*0.22,sy,0,C.ink,11);
+    // light cone
+    ctx.fillStyle=hexA(C.amber,0.12);ctx.beginPath();ctx.moveTo(w*0.23,sy-8);ctx.lineTo(w*0.75,sy-h*0.22);ctx.lineTo(w*0.75,sy+h*0.22);ctx.lineTo(w*0.23,sy+8);ctx.closePath();ctx.fill();
+    label(ctx,w*0.02,sy+26,'light rigidly attached to the camera',C.amber);
+    // tissue surface, deforming
+    ctx.strokeStyle=hexA(C.coral,0.8);ctx.lineWidth=2;ctx.beginPath();
+    for(let i=0;i<=40;i++){const x=w*0.55+ (w*0.4)*i/40;const y=sy+30*Math.sin(i/40*3+t*1.2)*0.5+ h*0.12*Math.sin(i/40*Math.PI);ctx.lineTo(x,y);}ctx.stroke();
+    label(ctx,w*0.72,sy+h*0.24,'tissue deforms (non-rigid)',C.coral);
+    // specular glare spot that moves with breathing — modeled, not baked
+    const gx=w*0.68+10*Math.sin(t),gy=sy-6+8*Math.sin(t*1.2);
+    splat(ctx,gx,gy,16,10,0,'#ffffff',0.7);label(ctx,gx-20,gy-18,'glare explained, not baked in',C.dim);
+    label(ctx,14,h-10,'2D-Gaussian surfaces + a physical light model → sub-2mm depth a surgeon can trust',C.mut);
+  };
+
+  // 21 CREATIVE/VFX — the pipeline: capture → align → train → render-with-DoF → composite.
+  A.vfx_pipe=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'Film wants real places as editable, relightable assets — in minutes',C.dim);
+    const stages=[['5-cam rig','3-min capture'],['align','RealityCapture'],['train','a splat'],['render','+ depth of field'],['composite','one 3D layer']];
+    const y=h*0.5,bw=w*0.155,gap=(w-0.04*w)/5;const active=Math.floor(saw(t,6)*5)%5;
+    stages.forEach((s,i)=>{const x=w*0.02+i*gap,on=i<=active;
+      rrect(ctx,x,y-26,bw,52,8,on?C.cyan:C.line,on?hexA(C.cyan,0.07):null);
+      label(ctx,x+8,y-6,s[0],on?C.cyan:C.dim,11);label(ctx,x+8,y+10,s[1],on?C.mut:C.dim,9.5);
+      if(i<4)arrow(ctx,x+bw+2,y,x+gap-2,y,on&&i<active?C.cyan:hexA(C.mut,0.4),1.4);});
+    // focus ring illustration on the render stage
+    const rx=w*0.02+3*gap+bw*0.5;
+    if(active>=3){ctx.strokeStyle=hexA(C.amber,0.7);ctx.beginPath();ctx.arc(rx,y-40,7,0,TAU);ctx.stroke();label(ctx,rx-30,y-52,'defocus simulated in-render',C.amber);}
+    label(ctx,14,h-10,'the depth-of-field is not in the scan — it is added at render time, because the splat is real geometry',C.mut);
+  };
+
   // ---- boot (mirrors techniques.js) ----
   const running=new Map();
   function start(cv){ if(running.has(cv))return; const anim=A[cv.dataset.gsanim]; if(!anim)return;
