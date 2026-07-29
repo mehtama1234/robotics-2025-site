@@ -4,7 +4,7 @@
 <style>
 :root{--ink:#12100E;--paper:#F3F1EC;--panel:#FBFAF7;--tint:#ECE7DC;--line:#DAD4C8;
  --graphite:#5C554B;--g2:#877E70;--accent:#1F6F8B;--accent-deep:#164F63;--accent-lite:#4FB0CC;
- --robo:#B4531F;--cvpr:#2F6F8B;--data:#2F7A4F;
+ --robo:#B4531F;--cvpr:#2F6F8B;--field:#6B4C9A;--data:#2F7A4F;
  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
 *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
@@ -19,38 +19,40 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
 .part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
 .part h2{font-size:27px;margin:4px 0 6px}
-.part .intro{font-size:15.5px;color:#3A362E;max-width:70ch;margin:0 0 6px}
+.part .intro{font-size:15.5px;color:#3A362E;max-width:72ch;margin:0 0 6px}
+.part .intro b{color:var(--accent-deep)}
 .fp{border-top:1px solid var(--line);padding:30px 0 6px}
 .kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
 .fp h2{margin:2px 0 15px}
 .instrument{margin:0 0 18px;background:#0C1218;border:1px solid #22323F;border-radius:12px;padding:14px 14px 10px}
 .instrument canvas{display:block;width:100%;height:auto}
 .instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#8FA3AE;margin-top:8px}
-.essay p{font-size:15.5px;color:#22201B;margin:11px 0;max-width:70ch}.essay em{font-style:italic}
+.essay p{font-size:15.5px;color:#22201B;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
 .eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
 .ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
 .ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
 .ranfig video,.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#0C1218}
 .ranfig figcaption{font-size:13px;color:#3A362E;margin-top:11px;max-width:76ch}.ranfig figcaption b{color:var(--accent-deep)}
-.ba{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:620px){.ba{grid-template-columns:1fr}}
 .bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
 .ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
 .ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#2A2820}
-.famgrid{display:grid;gap:13px;margin-top:16px}
-.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:15px 17px;position:relative}
-.famn{position:absolute;top:13px;right:15px;font-family:var(--mono);font-size:12px;color:var(--g2)}
-.fam h3{margin:0 0 9px;font-size:17px;font-family:var(--serif);max-width:56ch}
-.famrow{display:grid;grid-template-columns:96px 1fr;gap:11px;margin:5px 0}
-@media(max-width:560px){.famrow{grid-template-columns:1fr}}
-.fl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--graphite);padding-top:3px}
-.fl.gs{color:var(--accent-deep)}
-.famrow p{margin:0;font-size:13.5px;color:#22201B}
-.papers{list-style:none;margin:11px 0 0;padding:11px 0 0;border-top:1px dashed var(--line)}
-.papers li{display:flex;gap:8px;align-items:baseline;margin:5px 0;font-size:12.5px;color:#33302A}
-.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.04em;padding:2px 5px;border-radius:4px;flex:none;color:#fff}
-.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}
-.pt{line-height:1.45}
-.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:10px}
+.frame{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:14px 16px;margin:12px 0 4px}
+.frame b{color:var(--accent-deep)}.frame .m{font-family:var(--mono);font-size:12px;color:var(--accent-deep)}
+.famgrid{display:grid;gap:15px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:60%}
+.move{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 7px;border-radius:20px;white-space:nowrap}
+.move.attr{background:#EAF2E7;color:#2F6B3A;border:1px solid #C9E0C2}
+.move.cloud{background:#E7EEF3;color:#1F5673;border:1px solid #C4D8E4}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#22201B}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#33302A;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.fb{background:var(--field)}
+.pt b{color:#1a1815}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.7}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#2A2820}.op b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
@@ -152,186 +154,189 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <div class="part">
   <div class="pl">Part III</div>
   <h2>Every way the field is bending it</h2>
-  <p class="intro">The explicit-blob representation turned out to be a substrate you can twist in dozens of directions. Sixteen families, each with the problem it solves, the specific splat twist, and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA / IROS / CoRL / RSS) and <span style="color:var(--cvpr);font-weight:600">computer vision</span> (CVPR&nbsp;2026).</p>
+  <p class="intro">The explicit-blob representation turned out to be a substrate you can twist in dozens of directions &mdash; but under the variety there are really just <b>two moves</b>.</p>
+  <div class="frame">
+    <p><span class="m">move A &mdash; add an attribute.</span> Bolt an extra channel onto every Gaussian beyond color and opacity: a semantic <b>feature</b> (so you can query the scene in words), a <b>motion</b> (so it can move over time), a <b>material</b> (so it can be relit). The cloud stays a cloud; each blob just carries more.</p>
+    <p><span class="m">move B &mdash; constrain the cloud.</span> Leave the blobs alone but pin or reshape the whole cloud &mdash; onto a <b>surface</b> or SDF, to a <b>sensor's</b> physics, to a body <b>rig</b>, to a <b>physics</b> engine, or to known <b>geometry</b> like a road. You change what the cloud is allowed to be.</p>
+  </div>
+  <p class="intro">Sixteen families below, each with how the twist works and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA / IROS / CoRL / RSS) and <span style="color:var(--cvpr);font-weight:600">computer vision</span> (CVPR&nbsp;2026). Each family is tagged with its dominant move.</p>
   <div class="famgrid">
 <div class="fam">
-  <div class="famn">01</div>
-  <h3>Live SLAM &amp; dense mapping</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>A robot moving through a place must build a map and stay located in it, right now, from a live camera.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>The map itself is a blob cloud, optimized frame-by-frame from the incoming video; because it renders in real time, the robot can localize by matching its camera against the map it is still building.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">Gaussian-LIC: real-time photo-realistic SLAM with LiDAR-inertial-camera fusion</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">MemGS: memory-efficient Gaussian splatting for real-time SLAM</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">MGSO: monocular real-time photometric SLAM</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">ODGS-SLAM: omnidirectional Gaussian splatting SLAM</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">CGS-SLAM: compact 3D Gaussian splatting for dense visual SLAM</span></li></ul>
+  <div class="famhd"><span class="famn">01</span><h3>Live SLAM &amp; dense mapping</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>Vanilla splatting assumes you already know every camera pose and have all the photos up front. A robot exploring a building has <em>neither</em>: frames arrive one at a time and the camera's position is exactly what you're trying to find. The move is to run two optimizations against the same blob cloud, alternating. <b>Track</b>: freeze the map and solve for the new frame's pose by sliding the virtual camera until its rendered view matches the incoming photo — the photometric error <em>is</em> the tracking signal. <b>Map</b>: freeze the pose and grow/adjust blobs to fold the new frame in.</p>
+<p>Because the render is real-time, this tracking-by-rendering closes the loop fast enough to keep up with a moving robot — the thing NeRF-based SLAM could never do. The two hard parts are both about the explicit cloud: it grows without bound (a memory problem) and small pose errors accumulate into drift, so much of the work here is merging, pruning, and bundle-adjusting the blobs.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ICRA</span><span class="pt"><b>Gaussian-LIC</b> &mdash; seeds blobs from LiDAR + triangulated points, adds a sky model + exposure comp; C++/CUDA — beats methods that use ground-truth poses</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>MemGS</b> &mdash; merges redundant blobs in voxel space by geometric similarity + patch-grid init → cuts GPU memory without losing quality (memory is the SLAM wall)</span></li>
+<li><span class="vbadge rb">ICRA</span><span class="pt"><b>MGSO</b> &mdash; a photometric SLAM front-end seeds a dense point cloud to initialize the blobs → far fewer Gaussians, runs on a laptop</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>CGS-SLAM</b> &mdash; sliding-window masking prunes ellipsoids + a geometry codebook quantizes their attributes → compact map, local-to-global bundle adjustment</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ODGS-SLAM</b> &mdash; first omnidirectional (360°) splatting SLAM</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">02</div>
-  <h3>Self-driving &amp; street-scene reconstruction</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Rebuild a whole moving street from a car’s cameras and LiDAR so you can replay it, test in it, or predict what happens next.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Static background blobs are constrained by road/sky geometry and LiDAR depth, while moving vehicles get their own time-varying blobs — a replayable, editable digital twin of the drive.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">AutoSplat: constrained Gaussian splatting for autonomous driving scenes</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">GS-SDF: LiDAR-augmented Gaussian splatting + neural SDF</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">GaussianDWM: 3D Gaussian driving world model</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">RaGS: 3DGS from 4D radar and a monocular camera</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">Gau-Occ: geometry-completed Gaussians for 3D occupancy</span></li></ul>
+  <div class="famhd"><span class="famn">02</span><h3>Self-driving &amp; street-scene reconstruction</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>A street is not one static scene: it is a rigid world plus cars that move, filmed from a car that only ever sees each surface from one side. Fit one blob cloud naively and the moving cars smear into streaks while the unseen backs of objects fill with garbage. So the cloud is split — static background versus dynamic actors — and each half is constrained differently.</p>
+<p>The static blobs get pinned to physical structure so they don't float: road and sky are forced flat and consistent across views, and LiDAR depth anchors where blobs are allowed to sit. Each moving vehicle gets its own pose track over time plus a color that is allowed to change frame-to-frame. The payoff is a replayable, editable digital twin of a drive — you can pull a car out, add one, or re-render the whole street from a lane that never existed.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ICRA</span><span class="pt"><b>AutoSplat</b> &mdash; geometry constraints on road/sky blobs; a “reflected Gaussian consistency” trick supervises a car's unseen far side via a mirrored 3D template; per-object residual spherical harmonics model changing appearance</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>GS-SDF</b> &mdash; trains a neural signed-distance field on LiDAR as a geometry scaffold, then initializes + regularizes the blobs against it so geometry doesn't drift</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianDWM</b> &mdash; a driving “world model” — the Gaussian scene encodes space + language and predicts what happens next</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RaGS</b> &mdash; fuses 4D radar + a single camera into blobs for 3D detection when vision alone fails</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Gau-Occ</b> &mdash; geometry-completed Gaussians fuse camera/radar/LiDAR into 3D occupancy</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">03</div>
-  <h3>Manipulation &amp; world models</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>To grasp and rearrange objects, a robot needs a 3D model of the scene it can actually reason over and act on.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Distill vision-model features into the blobs so the scene is editable and queryable, sample grasps on it, or couple the blobs to physics particles so the render doubles as a dynamics model.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">Splat-MOVER: open-vocabulary manipulation via editable Gaussian splatting</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">GraspSplats: efficient manipulation with 3D feature splatting</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">Physically Embodied Gaussian Splatting: a physically-grounded 3D representation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">GeoPredict: 3D Gaussian geometry for precise VLA manipulation</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">Cloth-Splatting: 3D cloth state estimation from RGB</span></li></ul>
+  <div class="famhd"><span class="famn">03</span><h3>Manipulation &amp; world models</h3>
+    <span class="move attr" title="give every Gaussian an extra channel — a feature, a motion, a material, a label">add an attribute</span></div>
+  <div class="essay fessay"><p>To pick something up a robot needs two things a raw blob cloud lacks: <em>meaning</em> (“which blobs are the mug's handle?”) and <em>editability</em> (“if I move this, what does the scene become?”). The first move is to hang an extra vector on every Gaussian — a distilled CLIP/feature embedding — so the scene becomes queryable in words and graspable by part. The second is to treat the explicit cloud as a scene you can rewrite, so the robot can simulate the consequence of an action before taking it.</p>
+<p>The most striking versions fuse the render with physics: keep a twin set of <em>particles</em> for the dynamics and a set of <em>Gaussians</em> for the look, and let the mismatch between predicted and observed images push the particles around like a visual force. Now the same representation both renders and predicts how the world will move.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">CoRL</span><span class="pt"><b>Splat-MOVER</b> &mdash; three modules — ASK-Splat distills semantics+affordances into the cloud, SEE-Splat edits the scene live via 3D masks, Grasp-Splat samples grasps on the edited scene → true multi-stage tasks</span></li>
+<li><span class="vbadge rb">CoRL</span><span class="pt"><b>GraspSplats</b> &mdash; depth-supervised blobs; samples grasps by point-tracking (no differentiable rendering); 60s capture; beats NeRF baselines F3RM & LERF-TOGO on part manipulation</span></li>
+<li><span class="vbadge rb">CoRL</span><span class="pt"><b>Physically Embodied GS</b> &mdash; dual particle+Gaussian — particles do physics, Gaussians render; a “visual force” from render-vs-observation error corrects the particles → predict the future AND stay synced to reality</span></li>
+<li><span class="vbadge rb">CoRL</span><span class="pt"><b>Cloth-Splatting</b> &mdash; mesh-backed Gaussians make cloth state differentiable straight from RGB → 85% faster convergence</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoPredict</b> &mdash; couples Gaussian geometry with predicted kinematics for precise vision-language-action manipulation</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">04</div>
-  <h3>Photoreal simulators &amp; sim-to-real</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Learned policies need endless photorealistic training views, but collecting them on real robots is slow and expensive.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Capture the world once as a splat, render unlimited novel viewpoints and poses to train in simulation, then deploy on hardware — the render is realistic enough that the policy transfers.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">DISCOVERSE: 3DGS + MuJoCo for real2sim2real robot learning</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">GRaD-Nav: visual drone navigation with Gaussian radiance fields</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">Video2Robo: scalable robot learning from one video via 3DGS</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">Gaussian Splatting-to-real flight transfer with liquid networks</span></li></ul>
+  <div class="famhd"><span class="famn">04</span><h3>Photoreal simulators &amp; sim-to-real</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>Learned policies are hungry for millions of photorealistic training views, but a real robot produces them slowly and expensively. Classic simulators are fast but plasticky, and a policy trained on cartoon renders falls apart the moment it meets a real camera. The move: capture the real place <em>once</em> as a splat, then render unlimited novel viewpoints and poses inside a physics engine — the render is photographic enough that the policy transfers with no fine-tuning.</p>
+<p>This is the cleanest example of splatting's real-time-plus-explicit combo paying off: the scene is realistic like a photo but cheap to re-render like a game, and because it is explicit geometry you can drop it into MuJoCo and let physics act on it.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">IROS</span><span class="pt"><b>DISCOVERSE</b> &mdash; 3DGS appearance + MuJoCo physics in one framework → the first 3DGS real2sim2real, state-of-the-art zero-shot imitation transfer</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>GRaD-Nav</b> &mdash; renders the blobs inside a <em>differentiable</em> RL sim + a runtime context-estimator → sample-efficient, zero-shot drone gate-flying</span></li>
+<li><span class="vbadge rb">CoRL</span><span class="pt"><b>GS→flight + Liquid nets</b> &mdash; full-stack protocol: GS sim + liquid neural networks → transfers to a real quadrotor outdoors</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Video2Robo</b> &mdash; turns ONE monocular video into 3DGS synthetic training data for scalable robot learning</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">05</div>
-  <h3>Dynamic &amp; 4D scenes</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>The world moves — a static blob cloud can’t capture a waving hand, a driving car, or a beating heart.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Give each blob motion: a deformation over time, a velocity, or a learnable “lifespan”, turning the cloud into a 4D reconstruction you can scrub through.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">Embracing Dynamics: dynamics-aware 4D Gaussian splatting SLAM</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">ReFlow: self-correcting motion learning for dynamic scenes</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">SharpTimeGS: dynamic splatting via lifespan modulation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">MoRGS: per-Gaussian motion for streamable dynamic scenes</span></li></ul>
+  <div class="famhd"><span class="famn">05</span><h3>Dynamic &amp; 4D scenes</h3>
+    <span class="move attr" title="give every Gaussian an extra channel — a feature, a motion, a material, a label">add an attribute</span></div>
+  <div class="essay fessay"><p>A static cloud cannot hold a waving hand, a passing car, or a beating heart. So time becomes a new attribute: each blob gains either a <em>deformation</em> (where it sits at time t) or an explicit temporal extent, turning the cloud into a 4D reconstruction you can scrub through.</p>
+<p>The catch is stability — give blobs free rein over time and they flicker and over-fit the motion. So the research is mostly about <em>regularizing what is allowed to move</em>: deciding which points are dynamic, how long a blob should live, and tying motion to sparse flow so it stays coherent.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">IROS</span><span class="pt"><b>Embracing Dynamics (D4DGS-SLAM)</b> &mdash; literal 4D Gaussians (x,y,z,t); an InfoModule scores each point's dynamics/visibility/reliability to filter unstable movers → first 4DGS SLAM</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SharpTimeGS</b> &mdash; a learnable “lifespan” per blob controls when it exists → sharp, stable motion instead of smear</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MoRGS</b> &mdash; per-Gaussian motion with light sparse-flow supervision → streamable dynamic scenes</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ReFlow</b> &mdash; learns 3D motion directly from video via 3D↔2D consistency, no external tracker</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">06</div>
-  <h3>Human avatars, faces &amp; bodies</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Build a photorealistic person you can animate — pose, expression, speech — from just a few views or one video.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Bind the blobs to a skeleton and a face model (linear blend skinning + spacetime Gaussians) so driving the rig moves the cloud, keeping detail while staying animatable.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">STG-Avatar: animatable human avatars via spacetime Gaussians</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">HumanNOVA: photorealistic avatars from a single image</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">HyperGaussians: high-dimensional conditioning for facial detail</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">Large-scale Codec Avatars: million-scale avatar pretraining</span></li></ul>
+  <div class="famhd"><span class="famn">06</span><h3>Human avatars, faces &amp; bodies</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>You want a person you can re-pose, re-light, and make talk — from a few views or one video. A free blob cloud has no notion of “elbow” or “smile,” so it cannot be driven. The move is to <em>bind</em> the Gaussians to a body-and-face rig: as the underlying skeleton or expression model moves, the blobs are carried along by linear blend skinning, the same weighting scheme that drives game characters.</p>
+<p>The remaining art is where detail concentrates — creases, specular skin, hair — so several methods find the high-motion or high-detail regions and pour extra blobs there.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">IROS</span><span class="pt"><b>STG-Avatar</b> &mdash; linear-blend-skinning for skeletal control + Spacetime Gaussians; optical flow finds high-motion regions and densifies there → real-time animatable</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>HumanNOVA</b> &mdash; a photoreal, drivable avatar from a single image in under a second</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>HyperGaussians</b> &mdash; higher-dimensional Gaussian conditioning recovers fine facial detail</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Large-scale Codec Avatars</b> &mdash; million-scale avatar pretraining resolves the fidelity-vs-generalization trade-off</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">07</div>
-  <h3>Generative 3D — text/image/video to scene</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Make a 3D scene you never photographed, from a prompt, a picture, or a short clip.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Let a diffusion or video model hallucinate the missing viewpoints, then fit or directly predict Gaussians from them — dreaming the scene, then solidifying it into blobs.</p></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt">DIFF4SPLAT: repurposing video diffusion for dynamic scene generation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">WonderZoom: multi-scale 3D world generation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">GaussianZoom: progressive zoom-in generative 3DGS</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">CUPID: generative 3D reconstruction via joint object + pose modeling</span></li></ul>
+  <div class="famhd"><span class="famn">07</span><h3>Generative 3D — text/image/video to scene</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>Reconstruction needs photos of a place that exists; <em>generation</em> conjures a scene from a prompt or a single image, where almost every viewpoint is simply missing. The move is to borrow a 2D or video diffusion model — which has already learned what worlds look like — to hallucinate the missing views, then fit or directly predict Gaussians from them. Dream the pictures, then solidify them into blobs.</p>
+<p>Because the diffusion prior is doing the imagining, the same trick scales from a single object to a whole zoomable world, with the Gaussian layer providing the consistent, real-time-renderable 3D substrate underneath.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DIFF4SPLAT</b> &mdash; repurposes a video-diffusion model to emit a dynamic Gaussian scene in one forward pass</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WonderZoom</b> &mdash; scale-adaptive surfels reveal new detail as you zoom into a generated world</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianZoom</b> &mdash; VLM-guided progressive zoom-in adds semantically-correct detail</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CUPID</b> &mdash; jointly predicts the 3D object and the camera pose via flow matching</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">08</div>
-  <h3>Language-embedded, open-vocabulary semantics</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>A cloud of blobs has no meaning — a robot asked for “the mug” needs to know which blobs are the mug.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Bake CLIP/SAM/DINO features into each blob so the map is queryable in plain words, without a fixed list of object classes.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">OVSG-SLAM: open-vocabulary semantic Gaussian splatting SLAM</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">Hier-SLAM: hierarchically categorical semantics in SLAM</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">ReLaGS: relational language Gaussian splatting</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">LightSplat: open-vocabulary 3D understanding in 5 seconds</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">MLLMSplat: a 2D-MLLM framework for 3DGS understanding + editing</span></li></ul>
+  <div class="famhd"><span class="famn">08</span><h3>Language-embedded, open-vocabulary semantics</h3>
+    <span class="move attr" title="give every Gaussian an extra channel — a feature, a motion, a material, a label">add an attribute</span></div>
+  <div class="essay fessay"><p>A map of blobs is meaningless to a planner — “go to the kitchen sink” needs the blobs labelled, and you can't enumerate every possible object in advance. The move: give each Gaussian an extra <em>feature vector</em>, trained to match the features a 2D foundation model (CLIP, SAM, DINO) produces, rendered exactly the way color is. Then a natural-language query becomes nearest-feature lookup — open-vocabulary, no fixed class list.</p>
+<p>Done naively this is enormous — a 512-dimensional vector bolted onto millions of blobs — so the real engineering is compression: encoding semantics as compact ids or hierarchies instead of raw embeddings.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">IROS</span><span class="pt"><b>OVSG-SLAM</b> &mdash; SAM + VLM embeddings into the cloud with an identity-aware encoding + identity loss to cut ambiguity and cost; open-vocab, no closed set</span></li>
+<li><span class="vbadge rb">ICRA</span><span class="pt"><b>Hier-SLAM</b> &mdash; encodes semantics as a compact <em>hierarchical</em> categorical code (built by an LLM) → 500+ classes, 2× faster, less storage</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LightSplat</b> &mdash; open-vocabulary understanding via compact 2-byte masks, in five seconds</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MLLMSplat</b> &mdash; drives a 2D multimodal-LLM to understand, generate, and edit the 3DGS without retraining</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">09</div>
-  <h3>Surfaces &amp; meshes out of blobs</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Blobs look great but engineering, physics and collision need a clean surface or watertight mesh.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Flatten the 3D Gaussians into oriented 2D disks (2D Gaussian splatting) or tie them to a signed-distance field, so a real surface with correct normals falls out.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">Endo-2DTAM: 2D-Gaussian surface-normal-aware tracking + mapping</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">GS-SDF: geometrically consistent rendering + reconstruction</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">Mesh-Learner: texturing meshes with spherical harmonics</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">VSS-SLAM: voxelized surfel splatting for accurate SLAM</span></li></ul>
+  <div class="famhd"><span class="famn">09</span><h3>Surfaces &amp; meshes out of blobs</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>Blobs are wonderful to look at but a fuzzy, overlapping cloud has no crisp surface — and physics, collision, and CAD all need one. Worse, a fat 3D Gaussian has an <em>ambiguous</em> surface normal, so “which way does this bit of wall face?” has no clean answer. Two moves fix it. Flatten each 3D Gaussian into an oriented 2D disk (2D Gaussian splatting) so its normal is well-defined and the disks tile a surface like scales; or tie the whole cloud to a signed-distance field that <em>defines</em> the true surface and pulls the blobs onto it.</p>
+<p>The reward is a mesh with correct normals you can drop into a simulator or a game engine — the bridge from “pretty render” to “usable geometry.”</p></div>
+  <ul class="papers"><li><span class="vbadge rb">IROS</span><span class="pt"><b>Endo-2DTAM</b> &mdash; 2D-Gaussian surfels + surface-normal-aware tracking → sub-2mm depth on surgical tissue (we ran this one)</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>GS-SDF</b> &mdash; a neural SDF on LiDAR acts as a manifold field that regularizes the blobs into consistent geometry</span></li>
+<li><span class="vbadge rb">ICRA</span><span class="pt"><b>VSS-SLAM</b> &mdash; voxelized surfels decoded from per-voxel feature vectors → removes redundant primitives, enforces regular surfaces</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>Mesh-Learner</b> &mdash; puts learnable spherical-harmonic <em>textures</em> on a real mesh, rasterized normally; off-screen textures swap to CPU RAM → unlimited scale, Blender-native</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">10</div>
-  <h3>Sparse-view, few-shot &amp; feed-forward</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Vanilla splatting needs many photos and a per-scene optimization; often you only have three or four views — or want an instant answer.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Learn strong priors so 3&ndash;4 views suffice, or train a network that predicts the whole blob cloud in a single forward pass with no per-scene fitting at all.</p></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt">SR3R: super-resolution 3D reconstruction with feed-forward splatting</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">TWINGS: thin-plate-spline warp initialization for sparse views</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">HeroGS: hierarchical guidance for robust sparse-view splatting</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">Feed-forward Gaussian registration for head avatars</span></li></ul>
+  <div class="famhd"><span class="famn">10</span><h3>Sparse-view, few-shot &amp; feed-forward</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>Vanilla 3DGS wants dozens of overlapping photos and a per-scene optimization taking minutes; often you have three or four views, or want an answer instantly. Two moves. Inject <em>priors</em> — learned depth, geometric warps, pseudo-views — so a handful of images still pins the cloud down. Or go fully <em>feed-forward</em>: train one network that predicts the entire blob cloud in a single pass, with no per-scene fitting at all.</p>
+<p>Feed-forward is the bigger shift: it turns splatting from an optimization you run per scene into a function you evaluate once, which is what makes on-the-fly and single-image reconstruction plausible.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SR3R</b> &mdash; a feed-forward net predicts Gaussians directly from low-res sparse views, skipping optimization entirely</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TWINGS</b> &mdash; thin-plate-spline warps align sparse views to give the cloud a good starting shape</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>HeroGS</b> &mdash; stacks pseudo-dense labels + geometric-consistency guidance for robust 3–4-view reconstruction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Feed-forward head registration</b> &mdash; predicts an avatar's Gaussians in one pass for a 10× speedup</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">11</div>
-  <h3>Materials, lighting &amp; relighting</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Reconstructions bake the original lighting in — you can’t move the sun or drop the object into a new scene.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Split each blob’s appearance into material versus illumination (inverse rendering), so the scene can be relit, edited, or path-traced afterwards.</p></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt">GHPT: real-time relightable Gaussian splatting via hybrid path tracing</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">MatSpray: fusing 2D material knowledge onto 3D geometry</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">PhyGaP: physically-grounded Gaussians with polarization cues</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">SGS-Intrinsic: sparse-view indoor inverse rendering</span></li></ul>
+  <div class="famhd"><span class="famn">11</span><h3>Materials, lighting &amp; relighting</h3>
+    <span class="move attr" title="give every Gaussian an extra channel — a feature, a motion, a material, a label">add an attribute</span></div>
+  <div class="essay fessay"><p>A trained splat bakes the capture lighting into each blob's color — so you cannot move the sun, or drop the object into a new scene with new light, without it looking wrong. The move is inverse rendering: split each Gaussian's appearance into <em>material</em> (albedo, roughness) and <em>illumination</em>, so lighting becomes a separate factor you can change afterward.</p>
+<p>This is strictly harder than plain reconstruction — you're asking one set of photos to reveal both what things are made of and how they were lit — so these methods lean on extra physics (path tracing, polarization) or 2D material priors to break the ambiguity.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GHPT</b> &mdash; differentiable Gaussian rendering + GPU path tracing → relightable at 113 fps</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MatSpray</b> &mdash; fuses a 2D diffusion model's material (PBR) knowledge onto the 3D blobs</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhyGaP</b> &mdash; uses polarization cues to separate reflection and recover material</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SGS-Intrinsic</b> &mdash; semantic-aware Gaussians disentangle material vs illumination from sparse indoor views</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">12</div>
-  <h3>Beyond RGB — event, thermal, radar, touch</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Ordinary cameras fail in the dark, at high speed, in smoke, or on transparent objects.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Rewrite the observation model for another sensor’s physics — an event camera’s asynchronous spikes, a thermal camera’s radiation, radar returns, or a fingertip’s touch.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">Event3DGS: event-based splatting for high-speed robot egomotion</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">PhysIR-Splat: physically consistent thermal-infrared splatting</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">FusionSense: fusing vision + touch for sparse-view reconstruction</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">3D Gaussian splatting from unposed spike streams</span></li></ul>
+  <div class="famhd"><span class="famn">12</span><h3>Beyond RGB — event, thermal, radar, touch</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>An ordinary camera dies in the dark, at high speed, in smoke, or on transparent objects. But splatting doesn't actually require RGB — it requires a <em>differentiable observation model</em>, the rule that turns a blob into a measurement. Rewrite that rule for another sensor's physics and the whole machine still works.</p>
+<p>So an event camera's asynchronous brightness spikes, a thermal camera's emitted radiation, a radar's returns, or a fingertip's contact each get their own forward model, and the blobs are optimized against <em>that</em> signal instead of pixels.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">IROS</span><span class="pt"><b>Event3DGS</b> &mdash; reconstructs from an event camera's brightness spikes → +3dB and 95% less compute under high-speed motion</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysIR-Splat</b> &mdash; assigns a temperature + emissivity to each blob with full thermal radiative-transfer physics</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>FusionSense</b> &mdash; fuses vision + touch + priors to reconstruct transparent/reflective objects vision alone can't see</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>3DGS from spike streams</b> &mdash; pose-free reconstruction straight from an event camera, no depth sensor</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">13</div>
-  <h3>Compression &amp; on-device speed</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>A few million blobs won’t fit — or run fast enough — on a drone, a headset, or a phone.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Merge blobs in voxels, quantize their attributes into codebooks, and prune the invisible ones — shrinking the cloud and speeding training without a visible quality drop.</p></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt">FastGS: training 3D Gaussian splatting in 100 seconds</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">Turbo-GS: accelerating high-resolution radiance-field fitting</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">MemGS: voxel-merging for memory-efficient SLAM</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">CGS-SLAM: geometry-codebook quantization</span></li></ul>
+  <div class="famhd"><span class="famn">13</span><h3>Compression &amp; on-device speed</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>A single room is millions of blobs — too much memory and bandwidth for a drone, a headset, or a phone, which is where robots actually live. The move is to shrink the cloud without visibly hurting the render: merge near-duplicate blobs, quantize their attributes into small codebooks, prune the ones that contribute no visible light, and cut the training time.</p>
+<p>This is unglamorous but decisive — it is the difference between a splat that lives in a datacenter and one that runs on the machine in front of you.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>FastGS</b> &mdash; trains a full scene in under 100 seconds</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Turbo-GS</b> &mdash; dilated rendering sidesteps the expensive depth-sort bottleneck</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>MemGS</b> &mdash; voxel-space merging of redundant blobs shrinks the GPU footprint (also the SLAM workhorse)</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>CGS-SLAM</b> &mdash; geometry-codebook quantization compresses the per-blob attributes</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">14</div>
-  <h3>Localization, navigation &amp; safety on GS maps</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Given a splat map, a robot still has to answer: where am I, and how do I move through here without hitting anything?</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Localize by rendering candidate views and matching, plan through a differentiable collision cost built from blob overlap, and filter motions with a safety barrier — all on the live map.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">GSplatLoc: grounding keypoint descriptors into 3DGS for localization</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">LoGS: visual localization via Gaussian splatting, fewer images</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">FOCI: trajectory optimization on Gaussian splats</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">A control barrier function for safe navigation on online GS maps</span></li></ul>
+  <div class="famhd"><span class="famn">14</span><h3>Localization, navigation &amp; safety on GS maps</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>Once you <em>have</em> a splat map, a robot still has to answer two questions: where am I in it, and how do I move without hitting anything? The map's photorealism helps the first — you can localize by rendering candidate viewpoints and sliding the pose until the render matches the live camera (analysis-by-synthesis). Its explicit geometry helps the second: because a blob has a shape, you can compute how much a proposed path overlaps the cloud and treat that overlap as a differentiable collision cost.</p>
+<p>That makes planning and even formal safety filtering run <em>on the map itself</em>, in real time — the kind of thing NeRF's slow implicit geometry made impractical.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">IROS</span><span class="pt"><b>GSplatLoc</b> &mdash; distills keypoint descriptors into the blobs, then refines the pose photometrically</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>LoGS</b> &mdash; builds a structure-from-motion Gaussian map, PnP for a coarse pose, refine on the render — with fewer images</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>FOCI</b> &mdash; optimizes a trajectory directly against a differentiable Gaussian-overlap collision cost</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>CBF on GS maps</b> &mdash; a control-barrier-function safety filter on the live map — 20–50× faster than NeRF-based safety</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">15</div>
-  <h3>Medicine — surgery, endoscopy, MRI</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Reconstruct wet, deforming tissue from a moving endoscope for surgical guidance — or upsample a scan.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>Model the scope’s co-located light and the tissue’s reflectance physically, use 2D-Gaussian surfaces for accurate depth, and add deformation fields for non-rigid anatomy.</p></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBOTICS</span><span class="pt">Endo-2DTAM: dense endoscopic reconstruction, sub-2mm depth</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">Gaussian splatting with reflectance regularization for endoscopy</span></li>
-<li><span class="vbadge rb">ROBOTICS</span><span class="pt">Sim2real in 5 minutes: stylized Gaussian splatting for endoscopy</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">Adaptive anisotropic Gaussian splatting for MRI super-resolution</span></li></ul>
+  <div class="famhd"><span class="famn">15</span><h3>Medicine — surgery, endoscopy, MRI</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>A surgeon's endoscope is a moving camera with its light source rigidly bolted alongside, staring at wet, textureless, <em>deforming</em> tissue. Every assumption plain splatting likes — fixed lighting, static scene, rich texture — is violated at once. The move is to put the missing physics back: model the co-located light so specular glare is explained rather than baked in, use 2D-Gaussian surfaces for honest sub-millimeter depth, and add a deformation field for the non-rigid anatomy.</p>
+<p>The stakes make the accuracy worth it — this is the difference between a pretty reconstruction and one a surgeon could navigate by.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">IROS</span><span class="pt"><b>Endo-2DTAM</b> &mdash; 2D-GS surfaces + normal-aware tracking → sub-2mm depth on live surgical scenes (our medical demo)</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>Reflectance-regularized endoscopy</b> &mdash; an inverse-rendering reflectance term handles the endoscope's co-located illumination</span></li>
+<li><span class="vbadge rb">IROS</span><span class="pt"><b>Stylized-GS endoscopy</b> &mdash; GS-generated synthetic endoscopy enables a 5-minute sim-to-real domain transfer</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Anisotropic GS for MRI</b> &mdash; 2D Gaussian splatting for arbitrary-scale MRI super-resolution with anatomy guidance</span></li></ul>
 </div>
 
 <div class="fam">
-  <div class="famn">16</div>
-  <h3>Creative capture &amp; VFX / production</h3>
-  <div class="famrow"><span class="fl">the problem</span><p>Filmmakers and ad-makers want real places and objects as editable, relightable 3D assets — captured in minutes, not modeled for weeks.</p></div>
-  <div class="famrow"><span class="fl gs">the splat twist</span><p>A short multi-camera capture is aligned and trained into a splat, then rendered inside a production engine with simulated depth-of-field and composited like any other 3D layer.</p></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt">VW “Think Small” Beetle scan — 5× DJI Osmo, RealityCapture + Postshot, live in OctaneRender</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt">(the field’s reconstruction + NVS advances above feed straight into this pipeline)</span></li></ul>
+  <div class="famhd"><span class="famn">16</span><h3>Creative capture &amp; VFX / production</h3>
+    <span class="move cloud" title="pin or reshape the whole blob cloud — to a surface, a sensor, a rig, a physics engine">constrain the cloud</span></div>
+  <div class="essay fessay"><p>Film and advertising want real places and objects as editable, relightable 3D assets captured in minutes — where classic photogrammetry meant weeks of shooting and cleanup. Here the twist is not a new attribute on the Gaussian; it is the <em>pipeline</em>. A fast multi-camera capture is posed, trained into a splat, and dropped into a production renderer as one more 3D layer — with lens effects added at render time precisely because the splat is real explicit geometry the renderer can focus, defocus, and composite.</p>
+<p>The viral VW “Think Small” Beetle scan is the clean example: five DJI Osmo Action cameras, a <b>three-minute</b> capture, aligned in RealityCapture, trained in Postshot, then rendered live in OctaneRender inside Cinema&nbsp;4D. The depth-of-field you see is <em>not</em> in the scan — it is simulated in-render, and the car breaks out of the vintage ad frame because it is a second splat composited in front via Octane's AOV compositor. Every reconstruction, relighting, and feed-forward advance above is what keeps this pipeline getting faster and cleaner.</p></div>
+  <ul class="papers"><li><span class="vbadge fb">FIELD</span><span class="pt"><b>VW “Think Small” Beetle scan</b> &mdash; 5× DJI Osmo Action 6 · 3-min capture → RealityCapture align → Postshot train → live in OctaneRender / Cinema 4D, depth-of-field simulated in-render, composited via AOV</span></li></ul>
 </div></div>
-  <p class="legend"><span class="vbadge rb">ROBOTICS</span> = ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp;&nbsp; <span class="vbadge vb">CVPR</span> = CVPR 2026 &nbsp;&mdash;&nbsp; titles are real, drawn from the analyzed corpora.</p>
+  <p class="legend"><span class="vbadge rb">ICRA</span><span class="vbadge rb">IROS</span><span class="vbadge rb">CoRL</span><span class="vbadge rb">RSS</span> = robotics venues (2024&ndash;25) &nbsp;&middot;&nbsp; <span class="vbadge vb">CVPR</span> = CVPR 2026 &nbsp;&middot;&nbsp; <span class="vbadge fb">FIELD</span> = in-the-wild practice. Titles are real, drawn from the analyzed corpora; per-paper notes summarize each paper's own stated method.</p>
 </div>
 
 <div class="part">
@@ -347,6 +352,6 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<footer><div class="wrap">3D Gaussian Splatting explainer &middot; mechanism diagrams are live JavaScript (assets/gs-anim.js), not video &middot; two scenes run by us (Mip-NeRF360 garden, SeaSplat) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 per-paper analyses &middot; companion to the <a href="gs-deepdive.html">robotics GS deep-dive</a>, the <a href="cvpr2026/cluster-gaussian-splatting.html">CVPR GS cluster</a>, and the <a href="index.html">Robotics 2025</a> home.</div></footer>
+<footer><div class="wrap">3D Gaussian Splatting explainer &middot; mechanism diagrams are live JavaScript (assets/gs-anim.js), not video &middot; two scenes run by us (Mip-NeRF360 garden, SeaSplat) &middot; application map + per-paper methods mined from ICRA/IROS/CoRL/RSS + CVPR 2026 per-paper analyses &middot; companion to the <a href="gs-deepdive.html">robotics GS deep-dive</a>, the <a href="cvpr2026/cluster-gaussian-splatting.html">CVPR GS cluster</a>, and the <a href="index.html">Robotics 2025</a> home.</div></footer>
 <script src="assets/gs-anim.js"></script>
 </body></html>
