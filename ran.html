@@ -41,7 +41,7 @@
 <header><div class="wrap">
   <div class="bug">● we actually ran it</div>
   <h1>We ran the methods — not just read them</h1>
-  <p>For ten of the standout 2025 papers we cloned the real code and ran it ourselves, on GPUs and laptop CPUs, to produce the results below. These are our own outputs, not figures lifted from the papers. Each links to the theme where it lives. <a href="index.html">⌂ Home</a></p>
+  <p>For eleven of the standout 2025 papers we cloned the real code and ran it ourselves, on GPUs and laptop CPUs, to produce the results below. These are our own outputs, not figures lifted from the papers. Each links to the theme where it lives. <a href="index.html">⌂ Home</a></p>
 </div></header>
 <div class="wrap">
   <div class="intro">Reading a method tells you what it claims; <b>running it tells you what it does</b>. Every visual here came out of a real run — a self-driving stack turning six camera feeds into a plan, a colon rebuilt from endoscope video, thirty-two robots threading a maze. Where a paper's weights were locked away, we say so and use an honest stand-in.</div>
@@ -118,6 +118,13 @@
       <div class="learned"><b>What running it taught us</b>A brand-new 2025 paper still calls <em>np.int</em>, which NumPy removed years ago — so it won't import on a current machine. Even fresh research code rots against its own dependencies within months.</div>
       <div class="go"><a href="multirobot-deepdive.html">Multi-robot deep-dive →</a></div></div></div>
 
+    <div class="demo"><div class="shot"><img src="assets/modest/modest_result.png" alt="MODEST transparent-object depth and segmentation on a glass of water"></div>
+      <div class="body"><h3>MODEST — transparent-object perception <span class="badge b-cpu">CPU · Colab</span></h3>
+      <p>From a single RGB photo of a clear glass, it estimates depth <em>and</em> segments the transparent object (red) — exactly the case where ordinary depth cameras fail, because the light passes straight through the glass and the sensor reads the table behind it.</p>
+      <div class="how">L-J-Yuan/MODEST · ClearPose weights · CPU-forced inference · our own glass photo as input</div>
+      <div class="learned"><b>What running it taught us</b>The repo's only bundled &ldquo;test image&rdquo; is the paper's own pipeline diagram — run it as-shipped and you get nonsense. You must supply a real transparent-object photo yourself, and only after a NumPy-2 downgrade, removing the shadowing <em>datasets</em> package, and fixing a device-placement bug does it run at all.</div>
+      <div class="go"><a href="grasping-deepdive.html">Grasping deep-dive →</a></div></div></div>
+
   </div>
 </div>
   <div class="synth">
@@ -129,5 +136,5 @@
     <p><b>Domain match beats cleverness.</b> LightStereo's architecture was secondary to using weights trained on the right kind of image.</p>
     <p class="kick">Reading a paper tells you the idea; running it tells you the cost — and the cost is where the real understanding lives.</p>
   </div>
-<footer>Ten live runs · six GPU (Colab L4), four CPU · all outputs our own · code cloned from the authors' repos, run 2025–26. See each theme page for the full method breakdown and the animated mechanism it demonstrates.</footer>
+<footer>Eleven live runs · seven GPU (Colab L4), four CPU · all outputs our own · code cloned from the authors' repos, run 2025–26. See each theme page for the full method breakdown and the animated mechanism it demonstrates.</footer>
 </body></html>
