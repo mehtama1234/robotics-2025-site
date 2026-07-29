@@ -67,7 +67,7 @@
   A.alphablend = function(ctx,w,h,t){
     clear(ctx,w,h);
     label(ctx,14,18,'RENDER A PIXEL = blend depth-sorted splats, front → back',C.dim);
-    const bx=w*0.14, by=h*0.60, gap=(w*0.62)/5;
+    const bx=w*0.14, by=h*0.45, gap=(w*0.62)/5;
     const cols=[C.coral,C.amber,C.cyan,C.violet,C.green];
     const alphas=[0.55,0.4,0.7,0.3,0.6];
     // the accumulation sweep
@@ -77,8 +77,8 @@
       const x=bx+gap*i, reached=k>i;
       const rgb=hexToRgb(cols[i]);
       splat(ctx,x,by,gap*0.5,gap*0.62,0,cols[i], reached?0.75:0.28);
-      // depth label
-      label(ctx,x-8,by+gap*0.85,'z'+(i+1),C.dim);
+      // depth label (just under each blob)
+      label(ctx,x-8,by+gap*0.6+14,'z'+(i+1),C.dim);
       if(reached){ const a=alphas[i]; accR+=T*a*rgb[0];accG+=T*a*rgb[1];accB+=T*a*rgb[2]; T*=(1-a); }
     }
     // marching front line
@@ -121,12 +121,12 @@
     ctx.fillStyle=g;ctx.beginPath();ctx.arc(mx,ly,s,0,TAU);ctx.fill();
     label(ctx,mx-s*0.5,ly+s+16,'ground-truth photo',C.mut);
     // clone/split/prune callout, cycling
-    const ops=[['CLONE','a too-small blob in a blurry area is copied',C.green],
-               ['SPLIT','a too-big blob over sharp detail is cut in two',C.amber],
-               ['PRUNE','a nearly-transparent blob is deleted',C.coral]];
+    const ops=[['CLONE','copy a blob into a gap',C.green],
+               ['SPLIT','cut a big blob in two',C.amber],
+               ['PRUNE','delete a faded blob',C.coral]];
     const oi=Math.floor(saw(t,7)*3)%3;
-    label(ctx,w*0.72,h*0.34,'ADAPTIVE DENSITY CONTROL',C.dim);
-    ops.forEach((o,i)=>{ const on=i===oi; label(ctx,w*0.72,h*0.34+20+i*18,(on?'▸ ':'   ')+o[0]+' — '+o[1], on?o[2]:C.dim); });
+    label(ctx,w*0.71,h*0.30,'ADAPTIVE DENSITY CONTROL',C.dim);
+    ops.forEach((o,i)=>{ const on=i===oi; label(ctx,w*0.71,h*0.30+18+i*17,(on?'▸ ':'   ')+o[0]+' — '+o[1], on?o[2]:C.dim); });
     // error curve falling
     const ex=w*0.72, ey=h*0.86, ew=w*0.24, eh=h*0.16;
     ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(ex,ey-eh);ctx.lineTo(ex,ey);ctx.lineTo(ex+ew,ey);ctx.stroke();
@@ -347,11 +347,11 @@
     const denoise=Math.min(1,ph*1.6);
     for(let i=0;i<8;i++){const a=(i/8)*TAU;const jitter=(1-denoise)*10;
       cam(ctx,cx+Math.cos(a)*r+(((i*13)%7-3))*jitter*0.2,cy+Math.sin(a)*r,a+Math.PI,denoise>0.3?C.amber:hexA(C.amber,0.4),8);}
-    label(ctx,cx-52,cy-r-8,'diffusion imagines views around it',C.amber);
+    label(ctx,cx-52,cy-r-18,'diffusion imagines views around it',C.amber);
     // blobs condense in center as ph advances
     const solid=Math.max(0,(ph-0.55)/0.45);
     for(let i=0;i<7;i++){const a=i*0.9;splat(ctx,cx+Math.cos(a)*22,cy+Math.sin(a)*16,12,9,a,i%2?C.cyan:C.violet,0.7*solid);}
-    label(ctx,cx-24,cy+r+6, solid>0.2?'→ blobs solidify the scene':'',C.mut);
+    label(ctx,cx-24,cy+r+20, solid>0.2?'→ blobs solidify the scene':'',C.mut);
   };
 
   // 13 SEMANTICS — each blob carries a CLIP feature; a word lights the matching blobs.
@@ -468,7 +468,7 @@
     const ops=['merge near-duplicates','quantize into codebooks','prune the invisible'];
     const oi=Math.floor(u*3)%3;
     arrow(ctx,w*0.42,ly,w*0.56,ly,C.ink,1.6);
-    ops.forEach((o,i)=>label(ctx,w*0.43,ly-30+i*16,(i===oi?'▸ ':'   ')+o,i===oi?C.accent||C.cyan:C.dim));
+    ops.forEach((o,i)=>label(ctx,w*0.43,ly-46+i*15,(i===oi?'▸ ':'   ')+o,i===oi?C.cyan:C.dim));
     // right sparse (same look)
     const rx=w*0.78;for(let i=0;i<14;i++){const a=i*2.4,r=(Math.min(w,h)*0.26)*Math.sqrt((i%12)/12);
       splat(ctx,rx+Math.cos(a)*r,ly+Math.sin(a)*r,11,9,a,i%2?C.cyan:C.violet,0.6);}
@@ -484,11 +484,11 @@
     label(ctx,cx-16,cy+44,'the map',C.mut);
     // candidate cameras with match %
     const best=Math.floor(saw(t,5)*5)%5;
-    for(let i=0;i<5;i++){const a=(i/5)*TAU,r=Math.min(w,h)*0.42;const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;
+    for(let i=0;i<5;i++){const a=(i/5)*TAU+0.35,r=Math.min(w,h)*0.36;const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;
       const on=i===best;cam(ctx,x,y,a+Math.PI,on?C.cyan:hexA(C.amber,0.5),9);
       label(ctx,x-10,y-14,(on?'94%':((40+i*8)+'%')),on?C.cyan:C.dim,10);
       if(on){label(ctx,x-14,y+16,'you are here',C.cyan);}}
-    label(ctx,cx-60,cy-Math.min(w,h)*0.42-2,'render each guess, keep the best match',C.dim);
+    label(ctx,14,h*0.34,'render each guess,',C.dim);label(ctx,14,h*0.34+15,'keep the best match',C.dim);
     // a path with an overlapping (unsafe) segment
     const py=h*0.9;ctx.strokeStyle=C.cyan;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(w*0.12,py);ctx.lineTo(w*0.5,py);ctx.stroke();
     ctx.strokeStyle=C.coral;ctx.beginPath();ctx.moveTo(w*0.5,py);ctx.lineTo(w*0.62,py);ctx.stroke();
