@@ -28,6 +28,14 @@
  .demo .go{margin-top:9px;font-family:var(--mono);font-size:12px}
  .demo a{color:var(--accent-deep);text-decoration:none} .demo a:hover{text-decoration:underline}
  footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:20px}
+
+ .learned{margin-top:9px;font-size:13px;color:#3a2f1a;background:#F5EBD8;border-left:3px solid var(--warn);border-radius:0 6px 6px 0;padding:8px 11px;line-height:1.5}
+ .learned b{color:#8a5e18;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:2px}
+ .synth{background:var(--ink);color:#E7ECED;border-radius:13px;padding:24px 26px;margin:26px 0}
+ .synth .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-lite)}
+ .synth h2{margin:8px 0 12px;font-size:23px;color:#F8FAFA;letter-spacing:-.02em}
+ .synth p{margin:0 0 10px;color:#C4D0D3;font-size:15px} .synth b{color:#F8FAFA}
+ .synth .kick{font-family:var(--mono);font-size:12px;color:var(--accent-lite);margin-top:14px}
 </style></head>
 <body>
 <header><div class="wrap">
@@ -44,63 +52,82 @@
       <div class="body"><h3>SparseDrive <span class="badge b-gpu">GPU · Colab L4</span></h3>
       <p>End-to-end self-driving from 6 cameras: detection, tracking, motion forecasts, and a planned &ldquo;turn right&rdquo; path — all from ~100 sparse tokens in a single forward pass.</p>
       <div class="how">clone + run on nuScenes-mini · torch 1.13 / cu116 · the sparse-token idea, executed</div>
+      <div class="learned"><b>What running it taught us</b>The clean sparse-token story hides fragile plumbing: the planner's anchor must be a 4-D (3,6,6,2) tensor and map ground-truth an empty <em>dict</em> — both undocumented — and on torch 1.13 you hand-write the attention the paper assumes exists.</div>
       <div class="go"><a href="driving-deepdive.html">Self-driving deep-dive →</a></div></div></div>
 
     <div class="demo"><div class="shot"><img src="assets/mctrack/mctrack_bev.png" alt="MCTrack bird's-eye-view of ID-consistent 3D tracks"></div>
       <div class="body"><h3>MCTrack <span class="badge b-cpu">CPU · laptop</span></h3>
       <p>267 noisy, sometimes-missed detections plus clutter &rarr; 5 clean, ID-consistent 3D tracks at 30&nbsp;FPS. Predict &rarr; associate &rarr; update, no GPU needed.</p>
       <div class="how">Kalman + Hungarian + Ro-GDIoU · ran local in a venv</div>
+      <div class="learned"><b>What running it taught us</b>It really does run on a laptop CPU with no GPU — but the official KITTI export is broken, so the real effort is data plumbing, not the tracker. The method is often the easy part.</div>
       <div class="go"><a href="driving-deepdive.html">Self-driving deep-dive →</a></div></div></div>
 
     <div class="demo"><div class="shot"><img src="assets/lightstereo/kitti_depth_beforeafter.png" alt="LightStereo depth map from a KITTI stereo pair"></div>
       <div class="body"><h3>LightStereo <span class="badge b-gpu">GPU · Colab L4</span></h3>
       <p>Depth from two cameras a fixed gap apart: near road warm, far scene cool, the pedestrian and cars resolved as distinct distances — the disparity-to-depth law, live.</p>
       <div class="how">pure torch, no custom op · KITTI-finetuned weights (domain-matched)</div>
+      <div class="learned"><b>What running it taught us</b>Depth quality collapses if you use the paper's default (synthetic SceneFlow) weights on a real photo — you must swap to the KITTI-finetuned checkpoint. Domain-match mattered more than the architecture.</div>
       <div class="go"><a href="seeing-deepdive.html">Cheap seeing deep-dive →</a></div></div></div>
 
     <div class="demo"><div class="shot"><img src="assets/gaussian-splatting/garden_gt_vs_render.png" alt="3D Gaussian Splatting garden render vs ground truth"></div>
       <div class="body"><h3>3D Gaussian Splatting <span class="badge b-gpu">GPU · Colab L4</span></h3>
       <p>The Mip-NeRF360 &ldquo;garden&rdquo;: ~185 photos &rarr; 5.2M optimised blobs &rarr; a smooth fly-through of viewpoints the camera never actually visited.</p>
       <div class="how">gsplat, pinned torch 2.4/cu121 · render → compare → nudge, for real</div>
+      <div class="learned"><b>What running it taught us</b>The &ldquo;15-minute&rdquo; training is real — after an hour of dependency archaeology (pin torch 2.4, shim fused-SSIM, hold numpy below 2). The ecosystem moves faster than the code.</div>
       <div class="go"><a href="gs-deepdive.html">Gaussian Splatting deep-dive →</a></div></div></div>
 
     <div class="demo"><div class="shot"><img src="assets/seasplat/curasao_beforeafter_1.png" alt="SeaSplat underwater colour restoration, before and after"></div>
       <div class="body"><h3>SeaSplat <span class="badge b-gpu">GPU · Colab L4</span></h3>
       <p>Un-watering a Curaçao reef: the murky blue-green input restored to true warm colours, with far structure that had vanished into the haze brought back.</p>
       <div class="how">2DGS + a depth-dependent water model · COLMAP undistort · ~1&nbsp;hr</div>
+      <div class="learned"><b>What running it taught us</b>The physically-based water model is both the whole point and the whole cost: ~2–3× slower than plain splatting, a tradeoff the paper underplays. Undoing the water is not free.</div>
       <div class="go"><a href="gs-deepdive.html">Gaussian Splatting deep-dive →</a></div></div></div>
 
     <div class="demo"><div class="shot"><img src="assets/endo2dtam/colon_recon_eval.png" alt="Endo-2DTAM dense colon reconstruction evaluation"></div>
       <div class="body"><h3>Endo-2DTAM <span class="badge b-gpu">GPU · Colab L4</span></h3>
       <p>Dense 3D reconstruction of the inside of a colon from endoscope video (PSNR&nbsp;23.5) — a live, consistent surgical map from nothing but a moving camera.</p>
       <div class="how">2D-Gaussian-Splatting SLAM · modern-torch path · C3VD data</div>
+      <div class="learned"><b>What running it taught us</b>The README demands old torch / Python 3.10, but the rasterizer built fine on the VM's modern torch. Version pins in medical-imaging repos are often over-cautious — try the new stack first.</div>
       <div class="go"><a href="medical-deepdive.html">Medical robots deep-dive →</a></div></div></div>
 
     <div class="demo"><div class="shot"><img src="assets/vlm/qwenvl_two_cats.png" alt="Qwen2-VL spatial reasoning on an image, with a depth cue"></div>
       <div class="body"><h3>Vision-language spatial reasoning <span class="badge b-gpu">GPU · Colab L4</span></h3>
       <p>An open VLM grounding language in an image: &ldquo;the right cat is closer — larger, more in focus.&rdquo; The perception core the VLA methods are built on.</p>
       <div class="how">Qwen2-VL-2B (open stand-in — SpatialBot's weights are gated) + Depth-Anything</div>
+      <div class="learned"><b>What running it taught us</b>The paper's own model (SpatialBot) is <em>gated</em> — so the &ldquo;reproducible&rdquo; result isn't, without approval. And a torchaudio/CUDA mismatch silently breaks every transformers import: the single biggest gotcha of this hardware era.</div>
       <div class="go"><a href="vla-deepdive.html">VLA deep-dive →</a></div></div></div>
 
     <div class="demo"><div class="shot"><img src="assets/tamp/kuka_pick.gif" alt="KUKA arm planning and executing a pick, PyBullet"></div>
       <div class="body"><h3>KUKA task-and-motion planning <span class="badge b-cpu">CPU · headless</span></h3>
       <p>A robot arm planning and executing a pick: sample a grasp &rarr; solve inverse kinematics &rarr; BiRRT a collision-free path. Every joint move is searched, not scripted.</p>
       <div class="how">zt-yang/pybullet_planning · DIRECT + TinyRenderer · 170 captured frames</div>
+      <div class="learned"><b>What running it taught us</b>The &ldquo;classic&rdquo; pick demo won't even import without a git submodule the shallow clone skips (motion_planners). Headless rendering works — but capture frames only during execution, or you get planning-jitter noise.</div>
       <div class="go"><a href="motion-deepdive.html">Motion-planning deep-dive →</a></div></div></div>
 
     <div class="demo"><div class="shot"><img src="assets/neuflow/neuflow_flow.gif" alt="NeuFlow-V2 dense optical flow over a walking sequence"></div>
       <div class="body"><h3>NeuFlow-V2 optical flow <span class="badge b-gpu">GPU · Colab L4</span></h3>
       <p>Dense motion from two frames: the two walkers light up in different colours (they move differently) while the static hallway stays flat — the network segmenting by motion alone.</p>
       <div class="how">in-repo weights · pure torch · hue = direction, brightness = speed</div>
+      <div class="learned"><b>What running it taught us</b>The rare paper that just works: weights in the repo, one <em>python infer.py</em>, pure torch. This is the bar reproducibility should clear — and most don't.</div>
       <div class="go"><a href="seeing-deepdive.html">Cheap seeing deep-dive →</a></div></div></div>
 
     <div class="demo"><div class="shot"><img src="assets/sigma/sigma_mapf.gif" alt="SIGMA multi-agent pathfinding, 32 agents on a grid maze"></div>
       <div class="body"><h3>SIGMA multi-agent pathfinding <span class="badge b-cpu">CPU · Colab</span></h3>
       <p>32 robots threading a maze to their own goals — each deciding from only a local view via a learned policy, so the coordination emerges with no central controller.</p>
       <div class="how">marmotlab/SIGMA · pretrained maze policy · blue=agent, orange=goal, green=arrived</div>
+      <div class="learned"><b>What running it taught us</b>A brand-new 2025 paper still calls <em>np.int</em>, which NumPy removed years ago — so it won't import on a current machine. Even fresh research code rots against its own dependencies within months.</div>
       <div class="go"><a href="multirobot-deepdive.html">Multi-robot deep-dive →</a></div></div></div>
 
   </div>
 </div>
+  <div class="synth">
+    <div class="lbl">the pattern across ten runs</div>
+    <h2>What actually running them taught us</h2>
+    <p><b>Reproducibility is a spectrum, not a yes/no.</b> One paper ran with a single command (NeuFlow); others needed an hour of dependency archaeology, a gated-weights workaround, or an honest stand-in.</p>
+    <p><b>The paper is often the easy part.</b> The undocumented tensor shape, the broken export script, the wrong default checkpoint — these decide whether a method works, and none of them are in the PDF.</p>
+    <p><b>Code rots fast.</b> 2025 papers already break against NumPy&nbsp;2, CUDA&nbsp;13, and torch's moving API. &ldquo;State of the art&rdquo; has a shelf life measured in months.</p>
+    <p><b>Domain match beats cleverness.</b> LightStereo's architecture was secondary to using weights trained on the right kind of image.</p>
+    <p class="kick">Reading a paper tells you the idea; running it tells you the cost — and the cost is where the real understanding lives.</p>
+  </div>
 <footer>Ten live runs · six GPU (Colab L4), four CPU · all outputs our own · code cloned from the authors' repos, run 2025–26. See each theme page for the full method breakdown and the animated mechanism it demonstrates.</footer>
 </body></html>
