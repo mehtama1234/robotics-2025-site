@@ -190,7 +190,7 @@
 <div class="bigidea"><span class="lbl">The big idea — first principles</span>
 <p><b>The problem.</b> A surgical robot assistant must pick up and hand over the right tool when the surgeon asks, but surgical instruments vary widely in shape and appearance, and the robot may never have seen the exact one before.</p>
 <p><b>The approach.</b> When the surgeon names a tool, a vision model finds it in the camera image, and a language model figures out the best grip point and handover angle based on the tool's identity and shape, linking language reasoning directly to robotic action.</p>
-<p><b>What's unique.</b> Rather than training a separate model per tool, the system leverages a general-purpose vision model (SAM 2) and language model (Llama 2) that work zero-shot on previously unseen instruments, transferring knowledge from generic images to novel surgical tools.</p></div>
+<p><b>What's unique.</b> Rather than training a separate model per tool, the system uses a general-purpose vision model (SAM 2) and language model (Llama 2) that work zero-shot on previously unseen instruments, transferring knowledge from generic images to new surgical tools.</p></div>
 <h2>What it solves</h2>
 <p>A robot surgical assistant needs to pick up and hand over the right surgical tool when the surgeon asks, but tools vary widely in shape and the robot may never have seen the exact one before.</p>
 <h2>How it works</h2>

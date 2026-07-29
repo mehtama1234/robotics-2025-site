@@ -176,7 +176,7 @@
 <article class="page" id="gp3"><h1>Unified Human Localization and Trajectory Prediction with Monocular Vision</h1>
 <div class="bigidea"><span class="lbl">The big idea — first principles</span>
 <p><b>The problem.</b> Predicting where a person will walk next from a single camera normally requires first finding where they are in real-world coordinates, then predicting their path — but prediction models break down when position estimates are noisy.</p>
-<p><b>The approach.</b> Train a single Transformer-based network to estimate ground position and predict future path together, end-to-end, so both tasks help each other become more robust.</p>
+<p><b>The approach.</b> Train a single Transformer-based network to estimate ground position and predict future path together, end-to-end, so both tasks help each other become more reliable.</p>
 <p><b>What's unique.</b> Folds localization and prediction into one joint task with a directional loss, letting the two branches share information and improve robustness over sequential pipelines.</p></div>
 <h2>What it solves</h2>
 <p>Predicting where a person will walk next using only one ordinary camera requires first knowing exactly where they are in the real world, and current prediction models break down when that position estimate is noisy.</p>
@@ -243,7 +243,7 @@
 <div class="bigidea"><span class="lbl">The big idea — first principles</span>
 <p><b>The problem.</b> Figuring out an object's exact position and rotation from a plain color photo with no depth sensor is hard, and most methods work for either a specific object or a category of objects, not both.</p>
 <p><b>The approach.</b> Treat pose estimation as a set prediction task: learn a rotation representation that works in 3D Euclidean space and merge learned shape features with bounding-box detections to estimate pose directly from the color image.</p>
-<p><b>What's unique.</b> Unified network handles both category-level and instance-level pose in a single model using a novel 3D rotation representation and prior-query fusion.</p></div>
+<p><b>What's unique.</b> Unified network handles both category-level and instance-level pose in a single model using a new 3D rotation representation and prior-query fusion.</p></div>
 <h2>What it solves</h2>
 <p>Figuring out the exact position and orientation of an object from a plain color photo — with no depth sensor — is hard, and most methods work for either a specific object or a category of objects, not both.</p>
 <h2>How it works</h2>

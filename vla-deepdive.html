@@ -554,8 +554,8 @@ python demo.py
 <p><strong>Full pipeline (building memory from video) needs a GPU.</strong> NVIDIA recommends a Jetson Orin 32GB for the edge case or a workstation GPU for the 13B model. An A100 or similar is needed to run VILA1.5-13B at the paper&#x27;s 2 FPS rate. The NaVQA evaluation additionally requires ~500 GB of storage for the CODa dataset.</p></article>
 <article class="page" id="gp6"><h1>Towards Generalizable Vision-Language Robotic Manipulation: A Benchmark and LLM-Guided 3D Policy</h1>
 <div class="bigidea"><span class="lbl">The big idea — first principles</span>
-<p><b>The problem.</b> Robot manipulation generalizes poorly to novel objects and placements; benchmarks are small and do not measure realistic generalization. Long-horizon tasks fail because policies overfit to training distributions.</p>
-<p><b>The approach.</b> Build GemBench, a sim benchmark with four difficulty levels (novel placements → novel objects → novel articulated objects → long-horizon). Propose 3D-LOTUS: predict end-effector waypoints from point clouds conditioned on language.</p>
+<p><b>The problem.</b> Robot manipulation generalizes poorly to new objects and placements; benchmarks are small and do not measure realistic generalization. Long-horizon tasks fail because policies overfit to training distributions.</p>
+<p><b>The approach.</b> Build GemBench, a sim benchmark with four difficulty levels (new placements → new objects → new articulated objects → long-horizon). Propose 3D-LOTUS: predict end-effector waypoints from point clouds conditioned on language.</p>
 <p><b>What's unique.</b> 3D-LOTUS++ wraps the policy in an LLM planner that decomposes instructions into primitives and grounds object references via open-vocabulary detection, so the policy sees semantic roles instead of raw pixels.</p></div>
 <p><em>ICRA 2025 · 8 citations · VLM-as-high-level-planner + generalist-policy benchmark</em></p>
 <h2>What it does</h2>
@@ -625,7 +625,7 @@ jupyter notebook notebooks/eval_3dlotus_policy.ipynb
 <div class="bigidea"><span class="lbl">The big idea — first principles</span>
 <p><b>The problem.</b> Social robots in hospitals and offices must keep appropriate distance from people and not cut through groups — standard navigation ignores humans entirely.</p>
 <p><b>The approach.</b> Distill a large VLM into lightweight encoders trained on social captions, then use those encoders to feed a trajectory predictor that learns social norms from real-world data.</p>
-<p><b>What's unique.</b> A lifelong learning updater re-trains the encoders when novel social contexts appear during deployment, so the robot adapts to new environments without retraining from scratch.</p></div>
+<p><b>What's unique.</b> A lifelong learning updater re-trains the encoders when new social contexts appear during deployment, so the robot adapts to new environments without retraining from scratch.</p></div>
 <p>ICRA 2025 · 8 citations · VLM used as a high-level planner / social context encoder for navigation</p>
 <h2>What it does</h2>
 <p>OLiVia-Nav is a mobile robot navigation system that must respect social norms (keeping appropriate distance from people, not cutting through groups) in environments like hospitals and offices. It is not a VLA that directly outputs joint actions; instead it is a <strong>VLM-as-planner</strong> approach where a large VLM generates scene captions that are distilled into a lightweight encoder, and that encoder feeds a separate trajectory prediction network. The framework is &quot;online lifelong&quot; because it can absorb new social norms encountered during deployment without forgetting previously learned ones — a property called continual or lifelong learning.</p>

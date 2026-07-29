@@ -1,0 +1,106 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>We ran it — live demos from the papers</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--warn:#B37A1E;--warn-bg:#F5EBD8;--good:#2F7A4F;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;}
+ *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+ header{background:var(--ink);color:#E7ECED;padding:44px 0 36px;border-bottom:1px solid #000}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}
+ header h1{margin:11px 0 0;font-size:33px;letter-spacing:-.03em;color:#F8FAFA}
+ header p{margin:12px 0 0;color:#AEBABD;font-size:16px;max-width:70ch}
+ header a{color:var(--accent-lite)}
+ .intro{background:var(--tint);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:16px 20px;margin:26px 0 8px;font-size:15.5px}
+ .intro b{color:var(--ink)}
+ .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:20px 0}
+ @media(max-width:720px){.grid{grid-template-columns:1fr}}
+ .demo{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+ .demo .shot{background:#0A0E13;display:flex;align-items:center;justify-content:center;min-height:150px}
+ .demo .shot img{width:100%;height:auto;display:block;max-height:280px;object-fit:contain}
+ .demo .body{padding:15px 17px 16px}
+ .demo h3{margin:0;font-size:16.5px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+ .badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:20px;border:1px solid}
+ .b-gpu{color:var(--accent-deep);border-color:var(--accent)} .b-cpu{color:var(--good);border-color:#9DC7AE}
+ .demo p{margin:8px 0 0;font-size:14.5px;color:#23302C}
+ .demo .how{margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--graphite);border-top:1px solid var(--line);padding-top:9px;line-height:1.5}
+ .demo .go{margin-top:9px;font-family:var(--mono);font-size:12px}
+ .demo a{color:var(--accent-deep);text-decoration:none} .demo a:hover{text-decoration:underline}
+ footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:26px 0 60px;border-top:1px solid var(--line);margin-top:20px}
+</style></head>
+<body>
+<header><div class="wrap">
+  <div class="bug">● we actually ran it</div>
+  <h1>We ran the methods — not just read them</h1>
+  <p>For ten of the standout 2025 papers we cloned the real code and ran it ourselves, on GPUs and laptop CPUs, to produce the results below. These are our own outputs, not figures lifted from the papers. Each links to the theme where it lives. <a href="index.html">⌂ Home</a></p>
+</div></header>
+<div class="wrap">
+  <div class="intro">Reading a method tells you what it claims; <b>running it tells you what it does</b>. Every visual here came out of a real run — a self-driving stack turning six camera feeds into a plan, a colon rebuilt from endoscope video, thirty-two robots threading a maze. Where a paper's weights were locked away, we say so and use an honest stand-in.</div>
+
+  <div class="grid">
+
+    <div class="demo"><div class="shot"><img src="assets/sparsedrive/0040.jpg" alt="SparseDrive detections and planned path on a nuScenes camera frame"></div>
+      <div class="body"><h3>SparseDrive <span class="badge b-gpu">GPU · Colab L4</span></h3>
+      <p>End-to-end self-driving from 6 cameras: detection, tracking, motion forecasts, and a planned &ldquo;turn right&rdquo; path — all from ~100 sparse tokens in a single forward pass.</p>
+      <div class="how">clone + run on nuScenes-mini · torch 1.13 / cu116 · the sparse-token idea, executed</div>
+      <div class="go"><a href="driving-deepdive.html">Self-driving deep-dive →</a></div></div></div>
+
+    <div class="demo"><div class="shot"><img src="assets/mctrack/mctrack_bev.png" alt="MCTrack bird's-eye-view of ID-consistent 3D tracks"></div>
+      <div class="body"><h3>MCTrack <span class="badge b-cpu">CPU · laptop</span></h3>
+      <p>267 noisy, sometimes-missed detections plus clutter &rarr; 5 clean, ID-consistent 3D tracks at 30&nbsp;FPS. Predict &rarr; associate &rarr; update, no GPU needed.</p>
+      <div class="how">Kalman + Hungarian + Ro-GDIoU · ran local in a venv</div>
+      <div class="go"><a href="driving-deepdive.html">Self-driving deep-dive →</a></div></div></div>
+
+    <div class="demo"><div class="shot"><img src="assets/lightstereo/kitti_depth_beforeafter.png" alt="LightStereo depth map from a KITTI stereo pair"></div>
+      <div class="body"><h3>LightStereo <span class="badge b-gpu">GPU · Colab L4</span></h3>
+      <p>Depth from two cameras a fixed gap apart: near road warm, far scene cool, the pedestrian and cars resolved as distinct distances — the disparity-to-depth law, live.</p>
+      <div class="how">pure torch, no custom op · KITTI-finetuned weights (domain-matched)</div>
+      <div class="go"><a href="seeing-deepdive.html">Cheap seeing deep-dive →</a></div></div></div>
+
+    <div class="demo"><div class="shot"><img src="assets/gaussian-splatting/garden_gt_vs_render.png" alt="3D Gaussian Splatting garden render vs ground truth"></div>
+      <div class="body"><h3>3D Gaussian Splatting <span class="badge b-gpu">GPU · Colab L4</span></h3>
+      <p>The Mip-NeRF360 &ldquo;garden&rdquo;: ~185 photos &rarr; 5.2M optimised blobs &rarr; a smooth fly-through of viewpoints the camera never actually visited.</p>
+      <div class="how">gsplat, pinned torch 2.4/cu121 · render → compare → nudge, for real</div>
+      <div class="go"><a href="gs-deepdive.html">Gaussian Splatting deep-dive →</a></div></div></div>
+
+    <div class="demo"><div class="shot"><img src="assets/seasplat/curasao_beforeafter_1.png" alt="SeaSplat underwater colour restoration, before and after"></div>
+      <div class="body"><h3>SeaSplat <span class="badge b-gpu">GPU · Colab L4</span></h3>
+      <p>Un-watering a Curaçao reef: the murky blue-green input restored to true warm colours, with far structure that had vanished into the haze brought back.</p>
+      <div class="how">2DGS + a depth-dependent water model · COLMAP undistort · ~1&nbsp;hr</div>
+      <div class="go"><a href="gs-deepdive.html">Gaussian Splatting deep-dive →</a></div></div></div>
+
+    <div class="demo"><div class="shot"><img src="assets/endo2dtam/colon_recon_eval.png" alt="Endo-2DTAM dense colon reconstruction evaluation"></div>
+      <div class="body"><h3>Endo-2DTAM <span class="badge b-gpu">GPU · Colab L4</span></h3>
+      <p>Dense 3D reconstruction of the inside of a colon from endoscope video (PSNR&nbsp;23.5) — a live, consistent surgical map from nothing but a moving camera.</p>
+      <div class="how">2D-Gaussian-Splatting SLAM · modern-torch path · C3VD data</div>
+      <div class="go"><a href="medical-deepdive.html">Medical robots deep-dive →</a></div></div></div>
+
+    <div class="demo"><div class="shot"><img src="assets/vlm/qwenvl_two_cats.png" alt="Qwen2-VL spatial reasoning on an image, with a depth cue"></div>
+      <div class="body"><h3>Vision-language spatial reasoning <span class="badge b-gpu">GPU · Colab L4</span></h3>
+      <p>An open VLM grounding language in an image: &ldquo;the right cat is closer — larger, more in focus.&rdquo; The perception core the VLA methods are built on.</p>
+      <div class="how">Qwen2-VL-2B (open stand-in — SpatialBot's weights are gated) + Depth-Anything</div>
+      <div class="go"><a href="vla-deepdive.html">VLA deep-dive →</a></div></div></div>
+
+    <div class="demo"><div class="shot"><img src="assets/tamp/kuka_pick.gif" alt="KUKA arm planning and executing a pick, PyBullet"></div>
+      <div class="body"><h3>KUKA task-and-motion planning <span class="badge b-cpu">CPU · headless</span></h3>
+      <p>A robot arm planning and executing a pick: sample a grasp &rarr; solve inverse kinematics &rarr; BiRRT a collision-free path. Every joint move is searched, not scripted.</p>
+      <div class="how">zt-yang/pybullet_planning · DIRECT + TinyRenderer · 170 captured frames</div>
+      <div class="go"><a href="motion-deepdive.html">Motion-planning deep-dive →</a></div></div></div>
+
+    <div class="demo"><div class="shot"><img src="assets/neuflow/neuflow_flow.gif" alt="NeuFlow-V2 dense optical flow over a walking sequence"></div>
+      <div class="body"><h3>NeuFlow-V2 optical flow <span class="badge b-gpu">GPU · Colab L4</span></h3>
+      <p>Dense motion from two frames: the two walkers light up in different colours (they move differently) while the static hallway stays flat — the network segmenting by motion alone.</p>
+      <div class="how">in-repo weights · pure torch · hue = direction, brightness = speed</div>
+      <div class="go"><a href="seeing-deepdive.html">Cheap seeing deep-dive →</a></div></div></div>
+
+    <div class="demo"><div class="shot"><img src="assets/sigma/sigma_mapf.gif" alt="SIGMA multi-agent pathfinding, 32 agents on a grid maze"></div>
+      <div class="body"><h3>SIGMA multi-agent pathfinding <span class="badge b-cpu">CPU · Colab</span></h3>
+      <p>32 robots threading a maze to their own goals — each deciding from only a local view via a learned policy, so the coordination emerges with no central controller.</p>
+      <div class="how">marmotlab/SIGMA · pretrained maze policy · blue=agent, orange=goal, green=arrived</div>
+      <div class="go"><a href="multirobot-deepdive.html">Multi-robot deep-dive →</a></div></div></div>
+
+  </div>
+</div>
+<footer>Ten live runs · six GPU (Colab L4), four CPU · all outputs our own · code cloned from the authors' repos, run 2025–26. See each theme page for the full method breakdown and the animated mechanism it demonstrates.</footer>
+</body></html>
