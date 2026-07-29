@@ -360,6 +360,141 @@
     txt(ctx,'the soft body conforms — its shape does part of the control',w/2,h-11,C.mut,10,'center');
   };
 
+  /* DIFFUSION POLICY — start from random noise, denoise into a committed action path.
+     Beat A: 3 jagged noisy candidate trajectories jitter toward the target.
+     Beat B: they smooth out (denoising steps). Beat C: two fade, one commits; gripper runs it. */
+  A.diffusion=function(ctx,w,h,t){
+    ctx.clearRect(0,0,w,h);
+    const T=8, ph=(t%T)/T;
+    const bx=w*0.12, by=h*0.6, tx=w*0.8, ty=h*0.42;   // base -> target(mug)
+    // denoise progress 0..1 across beat A+B, commit in beat C
+    const denoise=Math.min(1, ph/0.62), commit=ph>0.72, cp=commit?(ph-0.72)/0.28:0;
+    // three candidate trajectories: shared endpoints, different mid control points
+    const mids=[[-0.18,-0.9],[0.05,-1.15],[0.22,-0.7]];
+    function pathPt(m,s){ // quadratic bezier base->ctrl->target, s in 0..1
+      const cx=bx+(tx-bx)*(0.5+m[0]), cy=by+(ty-by)*0.5+(h*0.34)*m[1];
+      const u=1-s; return [u*u*bx+2*u*s*cx+s*s*tx, u*u*by+2*u*s*cy+s*s*ty];
+    }
+    txt(ctx, commit?'③ commit to one':(denoise<0.99?'② denoise into a smooth path':'① start from random noise'),
+        w*0.5, 15, commit?C.cyan:(denoise<0.99?C.amber:C.mut), 11,'center');
+    // base + target
+    ctx.save();ctx.fillStyle='rgba(139,155,162,.10)';ctx.beginPath();ctx.arc(bx,by,11,0,7);ctx.fill();
+    ctx.strokeStyle=C.mut;ctx.lineWidth=1.4;ctx.stroke();ctx.restore();
+    txt(ctx,'robot',bx,by+22,C.mut,9,'center');
+    // mug
+    ctx.save();ctx.strokeStyle=C.line;ctx.lineWidth=2;roundRect(ctx,tx-8,ty-9,16,18,3);ctx.stroke();
+    ctx.beginPath();ctx.arc(tx+10,ty-1,6,-1.2,1.2);ctx.stroke();ctx.restore();
+    for(let c=0;c<3;c++){
+      const best=(c===1), fade=commit&&!best?(1-cp*0.85):1;
+      ctx.save();ctx.globalAlpha=fade;
+      ctx.lineWidth=best&&commit?2.4:1.5;
+      ctx.strokeStyle=best&&commit?C.cyan:(commit?C.dim:C.amber);
+      if(best&&commit){ctx.shadowColor=C.cyan;ctx.shadowBlur=10;}
+      ctx.beginPath();
+      for(let s=0;s<=1.0001;s+=0.05){
+        const p=pathPt(mids[c],s);
+        const jit=(1-denoise)*(h*0.09)*Math.sin(s*22+c*3+t*7); // noise shrinks as we denoise
+        const x=p[0], y=p[1]+jit;
+        if(s===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }
+      ctx.stroke();ctx.restore();
+    }
+    // gripper travels the committed path in beat C
+    if(commit){const s=Math.min(1,cp*1.15), p=pathPt(mids[1],s);
+      ctx.save();ctx.fillStyle=C.cyan;ctx.shadowColor=C.cyan;ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(p[0],p[1],4.5,0,7);ctx.fill();ctx.restore();}
+    txt(ctx, commit?'one clean trajectory, not the average of all three'
+                  :'several good moves at once — kept separate, not blurred together',
+        w/2, h-11, C.mut,10,'center');
+  };
+
+  /* IMITATION LEARNING — copying demos works until the robot drifts into a state the demo never showed.
+     green = what the human showed; the copy tracks it, then a small error compounds into unseen (grey) territory;
+     then a correction is added back (DAgger). */
+  A.imitation=function(ctx,w,h,t){
+    ctx.clearRect(0,0,w,h);
+    const T=9, ph=(t%T)/T;
+    const x0=w*0.1, x1=w*0.9, yb=h*0.5;
+    function demo(s){return [x0+(x1-x0)*s, yb - Math.sin(s*3.1)*h*0.18];}   // the shown path
+    // unseen band (top-right) the demo never covers
+    ctx.save();ctx.fillStyle='rgba(139,155,162,.06)';roundRect(ctx,w*0.5,h*0.12,w*0.44,h*0.3,6);ctx.fill();
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(139,155,162,.35)';ctx.lineWidth=1;
+    roundRect(ctx,w*0.5,h*0.12,w*0.44,h*0.3,6);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+    txt(ctx,'states the demo never showed',w*0.72,h*0.12+13,C.dim,9,'center');
+    // demo path (always shown)
+    ctx.save();ctx.strokeStyle=C.green;ctx.lineWidth=2.2;ctx.beginPath();
+    for(let s=0;s<=1.0001;s+=0.02){const p=demo(s);s===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]);}
+    ctx.stroke();ctx.restore();
+    txt(ctx,'what the human showed',x0,yb+Math.sin(0)*0+26,C.green,10,'left');
+    const fixing=ph>0.7, prog=Math.min(1, (ph%0.7)/0.55);
+    // rollout: tracks demo, then diverges upward into the unseen band as error compounds
+    const divStart=0.45;
+    ctx.save();ctx.strokeStyle=C.coral;ctx.lineWidth=2.2;ctx.beginPath();
+    let lastp=null;
+    for(let s=0;s<=prog+1e-4;s+=0.02){
+      const d=demo(s); let y=d[1];
+      if(s>divStart){const k=(s-divStart)/(1-divStart); y=d[1]-k*k*h*0.34;} // compounding drift
+      const x=d[0]; s===0?ctx.moveTo(x,y):ctx.lineTo(x,y); lastp=[x,y];
+    }
+    ctx.stroke();
+    if(lastp){ctx.fillStyle=C.coral;ctx.shadowColor=C.coral;ctx.shadowBlur=8;ctx.beginPath();ctx.arc(lastp[0],lastp[1],4,0,7);ctx.fill();}
+    ctx.restore();
+    // correction arrows pulling the drifted path back to the demo (DAgger), in the fix beat
+    if(fixing){for(let s=divStart+0.12;s<0.92;s+=0.16){const d=demo(s);const k=(s-divStart)/(1-divStart);
+      arrow(ctx,d[0],d[1]-k*k*h*0.34, d[0],d[1]-4, C.amber,1.3);}
+      txt(ctx,'fix: add corrections for the drifted states (DAgger)',w/2,h-11,C.amber,10,'center');
+    } else {
+      txt(ctx,'a small error → unseen state → the error compounds',w/2,h-11,C.mut,10,'center');
+    }
+  };
+
+  /* CONTACT CLIFF — free motion is smooth; the instant a finger touches, the physics jumps.
+     top: finger sweeps toward a surface. bottom: the force curve is flat, then spikes at contact. */
+  A.contact=function(ctx,w,h,t){
+    ctx.clearRect(0,0,w,h);
+    const T=6, ph=(t%T)/T;
+    const cxWall=w*0.62;                    // contact x
+    const fx=w*0.12+ph*(w*0.6);             // finger x sweeps left->right
+    const touching=fx>=cxWall-6;
+    txt(ctx,'reach through free air, then touch',w*0.5,15,touching?C.amber:C.cyan,11,'center');
+    // surface
+    ctx.save();ctx.strokeStyle=C.line;ctx.lineWidth=2;
+    const sy0=h*0.16, sy1=h*0.5;
+    ctx.beginPath();ctx.moveTo(cxWall,sy0);ctx.lineTo(cxWall,sy1);ctx.stroke();
+    // soft object deforms a touch on contact
+    const dent=touching?Math.min(8,(fx-(cxWall-6))*0.5):0;
+    ctx.strokeStyle=C.dim;ctx.beginPath();ctx.moveTo(cxWall,sy0);
+    ctx.quadraticCurveTo(cxWall+dent,(sy0+sy1)/2,cxWall,sy1);ctx.stroke();ctx.restore();
+    // finger (a small bar + tip)
+    const fy=(sy0+sy1)/2;
+    ctx.save();ctx.strokeStyle=touching?C.amber:C.cyan;ctx.lineWidth=3;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(fx-26,fy);ctx.lineTo(Math.min(fx,cxWall-6+dent),fy);ctx.stroke();
+    ctx.fillStyle=touching?C.amber:C.cyan;if(touching){ctx.shadowColor=C.amber;ctx.shadowBlur=8;}
+    ctx.beginPath();ctx.arc(Math.min(fx,cxWall-6+dent),fy,3.5,0,7);ctx.fill();ctx.restore();
+    // force curve (bottom half): flat until contact x, then a cliff
+    const gy0=h*0.62, gy1=h*0.92, gx0=w*0.1, gx1=w*0.9;
+    ctx.save();ctx.strokeStyle='rgba(139,155,162,.25)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(gx0,gy1);ctx.lineTo(gx1,gy1);ctx.stroke();      // axis
+    txt(ctx,'force',gx0-2,gy0-4,C.mut,9,'left');
+    const contactFrac=(cxWall-gx0)/(gx1-gx0);
+    ctx.strokeStyle=C.violet;ctx.lineWidth=2.2;ctx.beginPath();
+    for(let s=0;s<=1.0001;s+=0.01){
+      const gx=gx0+s*(gx1-gx0);
+      let f= s<contactFrac ? 0.04 : Math.min(1, 0.04+ (s-contactFrac)*9); // flat then steep cliff
+      const gy=gy1-(gy1-gy0)*f;
+      s===0?ctx.moveTo(gx,gy):ctx.lineTo(gx,gy);
+    }
+    ctx.stroke();
+    // marker at the current finger position along the curve
+    const cs=Math.max(0,Math.min(1,(fx-gx0)/(gx1-gx0)));
+    let cf= cs<contactFrac?0.04:Math.min(1,0.04+(cs-contactFrac)*9);
+    ctx.fillStyle=touching?C.amber:C.cyan;ctx.beginPath();ctx.arc(gx0+cs*(gx1-gx0),gy1-(gy1-gy0)*cf,3.5,0,7);ctx.fill();
+    ctx.setLineDash([3,3]);ctx.strokeStyle='rgba(156,140,255,.4)';ctx.beginPath();
+    ctx.moveTo(cxWall,gy0-4);ctx.lineTo(cxWall,gy1);ctx.stroke();ctx.setLineDash([]);
+    txt(ctx,'contact',cxWall,gy0-10,C.violet,9,'center');ctx.restore();
+    txt(ctx,'smooth to model in the air — a cliff the instant you touch',w/2,h-4,C.mut,10,'center');
+  };
+
   // ---- runner ----
   const running=new Map();
   function start(cv){
