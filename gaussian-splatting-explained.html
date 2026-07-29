@@ -33,6 +33,11 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
 .ranfig video,.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#0C1218}
 .ranfig figcaption{font-size:13px;color:#3A362E;margin-top:11px;max-width:76ch}.ranfig figcaption b{color:var(--accent-deep)}
+.ranbadge.tb{background:var(--accent-deep)}
+.splatview{display:block;width:100%;height:440px;border-radius:8px;background:#0C1218;cursor:grab;touch-action:none}
+.splatview:active{cursor:grabbing}
+@media(max-width:620px){.splatview{height:320px}}
+.splatnote{display:none;font-family:var(--mono);font-size:12.5px;color:var(--graphite);background:var(--tint);border-radius:8px;padding:14px;text-align:center}
 .bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
 .ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
 .ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#2A2820}
@@ -197,6 +202,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
   <img src="assets/gaussian-splatting/garden_gt_vs_render.png" alt="ground truth vs splat render">
   <figcaption>Left, a real held-out photo; right, the splat’s render of the same view it was never trained on. The match is the whole game &mdash; the blobs learned the scene, not the pictures.</figcaption></figure>
+  <figure class="ranfig"><div class="ranbadge tb">&#9673; touch it</div>
+  <canvas id="splatcanvas" class="splatview" height="440"></canvas>
+  <div id="splatnote" class="splatnote"></div>
+  <figcaption><b>Drag to orbit &middot; scroll to zoom.</b> This is a real Gaussian splat rendered live in your browser &mdash; 30,000 soft blobs, sorted back-to-front and re-blended every time you move. We <em>generated</em> this one (a rainbow torus) so it&rsquo;s self-contained and honest &mdash; it is a synthetic shape, not a captured scene, but the representation and the renderer are exactly the real thing. Watch the far side show through the near side as it turns: that is the alpha-blending from Part I, happening 60 times a second.</figcaption></figure>
 </section>
 
 <div class="part">
@@ -518,4 +527,5 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 <footer><div class="wrap">3D Gaussian Splatting explainer &middot; mechanism diagrams are live JavaScript (assets/gs-anim.js), not video &middot; two scenes run by us (Mip-NeRF360 garden, SeaSplat) &middot; application map + per-paper methods mined from ICRA/IROS/CoRL/RSS + CVPR 2026 per-paper analyses &middot; companion to the <a href="gs-deepdive.html">robotics GS deep-dive</a>, the <a href="cvpr2026/cluster-gaussian-splatting.html">CVPR GS cluster</a>, and the <a href="index.html">Robotics 2025</a> home.</div></footer>
 <script src="assets/gs-anim.js"></script>
+<script src="assets/splat-viewer.js"></script>
 </body></html>
