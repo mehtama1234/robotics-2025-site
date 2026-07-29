@@ -203,6 +203,175 @@
 
   function hexToRgb(hex){const n=parseInt(hex.slice(1),16);return[(n>>16)&255,(n>>8)&255,n&255];}
 
+  // ===== shared helpers for the per-family diagrams =====
+  function arrow(ctx,x1,y1,x2,y2,col,w){ctx.save();ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w||1.6;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    const a=Math.atan2(y2-y1,x2-x1),s=6;ctx.beginPath();ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-s*Math.cos(a-0.4),y2-s*Math.sin(a-0.4));ctx.lineTo(x2-s*Math.cos(a+0.4),y2-s*Math.sin(a+0.4));
+    ctx.closePath();ctx.fill();ctx.restore();}
+  function rrect(ctx,x,y,w,h,r,stroke,fill){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+    if(fill){ctx.fillStyle=fill;ctx.fill();} if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1.2;ctx.stroke();}}
+  function cam(ctx,x,y,ang,col,s){s=s||9;ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.fillStyle=col;
+    ctx.beginPath();ctx.moveTo(-s*0.8,-s*0.6);ctx.lineTo(s,0);ctx.lineTo(-s*0.8,s*0.6);ctx.closePath();ctx.fill();ctx.restore();}
+  function bars(ctx,x,y,vals,col,scl){scl=scl||14;vals.forEach((v,i)=>{ctx.fillStyle=col;ctx.fillRect(x+i*4,y-v*scl,3,v*scl);});}
+
+  // 06 SLAM — alternate TRACK (match render to find pose) and MAP (grow blobs); loop forever.
+  A.slam_loop=function(ctx,w,h,t){clear(ctx,w,h);
+    const ph=saw(t,6),track=ph<0.5,u=track?ph/0.5:(ph-0.5)/0.5;
+    label(ctx,14,16,'SLAM: a frame arrives, its camera pose is unknown, the map is half-built',C.dim);
+    // TRACK panel (left)
+    const lx=w*0.06,ly=h*0.30,pw=w*0.36,phh=h*0.44;
+    rrect(ctx,lx,ly,pw,phh,8,track?C.cyan:C.line,null);
+    label(ctx,lx+4,ly-8,track?'▸ TRACK — find the camera':'TRACK',track?C.cyan:C.dim);
+    // real frame (fixed box) vs rendered (offset shrinking)
+    const off=track?(1-ease(u))*pw*0.28:0;
+    ctx.strokeStyle=hexA(C.amber,0.9);ctx.lineWidth=1.4;ctx.strokeRect(lx+pw*0.28,ly+phh*0.28,pw*0.42,phh*0.44);
+    ctx.strokeStyle=hexA(C.cyan,0.9);ctx.strokeRect(lx+pw*0.28+off,ly+phh*0.28-off*0.3,pw*0.42,phh*0.44);
+    label(ctx,lx+4,ly+phh+14,track?'slide pose until render (cyan) = photo (amber)':'',C.mut);
+    // MAP panel (right)
+    const rx=w*0.56,ry=ly;
+    rrect(ctx,rx,ry,pw,phh,8,!track?C.cyan:C.line,null);
+    label(ctx,rx+4,ry-8,!track?'▸ MAP — grow the blobs':'MAP',!track?C.cyan:C.dim);
+    const N=6+ (!track?Math.round(u*6):0);
+    for(let i=0;i<12;i++){const ang=i*2.4,rad=(pw*0.34)*Math.sqrt((i%8)/8);
+      const bx=rx+pw*0.5+Math.cos(ang)*rad,by=ry+phh*0.5+Math.sin(ang)*rad;
+      splat(ctx,bx,by,10,8,ang,i%2?C.cyan:C.violet, i<N?0.7:0.12);}
+    label(ctx,rx+4,ry+phh+14,!track?'clone blobs where the frame is still blurry':'',C.mut);
+    // loop arrow
+    arrow(ctx,rx-6,ly+phh+30, lx+pw+6, ly+phh+30, hexA(C.ink,0.4),1.2);
+    arrow(ctx,lx+pw+6,ly-2, rx-6, ly-2, hexA(C.ink,0.4),1.2);
+    label(ctx,w*0.42,ly-2,'every frame',C.dim);
+  };
+
+  // 07 DRIVING — pin static world blobs to road/sky; give the moving car its own blob track + mirrored far side.
+  A.drive_split=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'A street = a rigid world + things that move, seen from one side only',C.dim);
+    const hy=h*0.42; // horizon
+    ctx.fillStyle=hexA(C.cyan2,0.10);ctx.fillRect(0,h*0.24,w,hy-h*0.24); // sky band
+    // road trapezoid
+    ctx.fillStyle=hexA(C.dim,0.18);ctx.beginPath();ctx.moveTo(w*0.42,hy);ctx.lineTo(w*0.58,hy);ctx.lineTo(w*0.98,h*0.92);ctx.lineTo(w*0.02,h*0.92);ctx.closePath();ctx.fill();
+    label(ctx,w*0.03,h*0.30,'world blobs — pinned to road + sky (they never move)',C.mut);
+    // static blobs along buildings
+    for(let i=0;i<8;i++){const x=w*(0.08+i*0.11),y=hy-6-((i*53)%22);splat(ctx,x,y,9,12,0,C.violet,0.55);}
+    // moving car with its own blobs
+    const cx=w*(0.15+saw(t,5)*0.7),cy=h*0.72;
+    splat(ctx,cx,cy,26,13,0,C.amber,0.8);splat(ctx,cx,cy,15,9,0,C.coral,0.7);
+    // mirrored far side (ghost)
+    splat(ctx,cx,cy-16,20,7,0,C.amber,0.22);
+    arrow(ctx,cx,cy-20,cx,cy-9,hexA(C.ink,0.4),1);
+    label(ctx,cx-30,cy+22,'car blobs — own moving track',C.amber);
+    label(ctx,w*0.5,cy-30,'unseen far side filled by a mirror',C.dim);
+  };
+
+  // 08 MANIPULATION — tag each blob-object with a feature (query by word), then edit the scene; particles shadow for physics.
+  A.manip_feat=function(ctx,w,h,t){clear(ctx,w,h);
+    const ph=saw(t,6),query=ph<0.5;
+    label(ctx,14,16,'To grasp, a robot needs meaning ("the mug") and a scene it can change',C.dim);
+    const objs=[['mug',w*0.24,C.cyan],['bowl',w*0.5,C.amber],['box',w*0.76,C.violet]];
+    const oy=h*0.6, move=(!query)?ease((ph-0.5)/0.5):0;
+    objs.forEach((o,i)=>{const dx=(i===0)?move*w*0.12:0;
+      splat(ctx,o[1]+dx,oy,26,20,0,o[2], (query&&i===0)?0.95:0.6);
+      // feature tag
+      rrect(ctx,o[1]-14,oy-46,28,12,3,o[2],null);bars(ctx,o[1]-10,oy-36,[0.5+0.4*((i*7)%3),0.3+((i*5)%2)*0.5,0.6],o[2],10);
+      // particle shadow
+      ctx.fillStyle=hexA(o[2],0.4);ctx.beginPath();ctx.arc(o[1]+dx,oy+26,2,0,TAU);ctx.fill();
+    });
+    if(query){const q='"mug"';label(ctx,w*0.24-14,h*0.9,q+' → its blobs light up',C.cyan);
+      label(ctx,14,h-10,'each blob-object carries a CLIP feature → query the scene in plain words',C.mut);}
+    else{cam(ctx,w*0.24+move*w*0.12-40,oy,0,C.ink,10);label(ctx,w*0.4,h*0.9,'gripper moves it → scene updates live',C.amber);
+      label(ctx,14,h-10,'edit the explicit cloud → simulate an action before taking it',C.mut);}
+  };
+
+  // 09 SIM2REAL — capture once, render unlimited virtual views, train, deploy on the real robot.
+  A.sim2real=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'Policies need millions of photoreal views; real robots make them slowly',C.dim);
+    // captured scene (blobs) center-left
+    const sx=w*0.28,sy=h*0.5;for(let i=0;i<7;i++){const a=i*0.9;splat(ctx,sx+Math.cos(a)*30,sy+Math.sin(a)*22,12,9,a,i%2?C.cyan:C.violet,0.6);}
+    label(ctx,sx-40,sy+52,'captured once → a splat',C.mut);
+    // fan of virtual cameras orbiting, spawning views
+    const n=8;for(let i=0;i<n;i++){const a=(i/n)*TAU+t*0.4,r=70;const lit=(Math.floor(t*4+i)%n===0);
+      cam(ctx,sx+Math.cos(a)*r,sy+Math.sin(a)*r,a+Math.PI,lit?C.amber:hexA(C.amber,0.45),8);}
+    label(ctx,sx-30,sy-60,'render unlimited views',C.amber);
+    // arrow to real robot
+    arrow(ctx,w*0.52,sy,w*0.72,sy,C.cyan,1.8);
+    rrect(ctx,w*0.74,sy-22,w*0.2,44,8,C.cyan,hexA(C.cyan,0.06));
+    label(ctx,w*0.76,sy-4,'real robot',C.cyan);label(ctx,w*0.76,sy+12,'zero-shot, no fine-tune',C.mut);
+  };
+
+  // 10 4D — each blob gets a position-over-time; static points filtered, movers get a lifespan.
+  A.four_d=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'A static cloud can’t hold a waving hand — time becomes a blob attribute',C.dim);
+    const u=saw(t,5);
+    // static blob (stays)
+    splat(ctx,w*0.22,h*0.5,16,14,0,C.violet,0.55);label(ctx,w*0.13,h*0.72,'static blob — filtered out',C.mut);
+    // moving blob along a path
+    const px=w*(0.45+0.35*u),py=h*(0.5+0.18*Math.sin(u*TAU));
+    // ghost trail
+    for(let k=1;k<=5;k++){const uu=u-k*0.05;if(uu<0)continue;const gx=w*(0.45+0.35*uu),gy=h*(0.5+0.18*Math.sin(uu*TAU));splat(ctx,gx,gy,12,10,0,C.cyan,0.12);}
+    splat(ctx,px,py,16,13,0,C.cyan,0.85);label(ctx,px-24,py-24,'blob(t)',C.cyan);
+    // timeline
+    const tx=w*0.13,tw=w*0.74,tyy=h*0.9;ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(tx,tyy);ctx.lineTo(tx+tw,tyy);ctx.stroke();
+    ctx.fillStyle=C.cyan;ctx.beginPath();ctx.arc(tx+tw*u,tyy,4,0,TAU);ctx.fill();
+    label(ctx,tx,tyy+14,'time t →',C.dim);
+    // lifespan bar
+    label(ctx,w*0.62,h*0.28,'lifespan: when this blob exists',C.dim);ctx.fillStyle=C.line;ctx.fillRect(w*0.62,h*0.33,w*0.28,6);ctx.fillStyle=C.amber;ctx.fillRect(w*0.62+w*0.06,h*0.33,w*0.16,6);
+  };
+
+  // 11 AVATARS — bind blobs to a bone rig; move the skeleton, blobs follow (linear blend skinning).
+  A.avatar_rig=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'You want a person you can re-pose — bind the blobs to a skeleton',C.dim);
+    const sx=w*0.3,sy=h*0.4,L=Math.min(w,h)*0.34;
+    const ang=0.5+0.5*Math.sin(t*0.9); // elbow angle
+    const ex=sx+Math.cos(0.6)*L,ey=sy+Math.sin(0.6)*L; // elbow
+    const hx=ex+Math.cos(0.6+ang)*L,hy=ey+Math.sin(0.6+ang)*L; // hand
+    // bones
+    ctx.strokeStyle=hexA(C.ink,0.7);ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.lineTo(hx,hy);ctx.stroke();
+    [[sx,sy],[ex,ey],[hx,hy]].forEach(p=>{ctx.fillStyle=C.amber;ctx.beginPath();ctx.arc(p[0],p[1],3.5,0,TAU);ctx.fill();});
+    // blobs bound along bones
+    for(let k=0;k<=4;k++){const f=k/4;splat(ctx,sx+(ex-sx)*f,sy+(ey-sy)*f,13,10,0,C.cyan,0.5);}
+    for(let k=1;k<=4;k++){const f=k/4;splat(ctx,ex+(hx-ex)*f,ey+(hy-ey)*f,13,10,0,C.violet,0.5);}
+    label(ctx,ex+8,ey-8,'blob near joint blends two bones (weights)',C.mut);
+    label(ctx,14,h-10,'move a bone → its blobs move with it, via skinning weights',C.mut);
+  };
+
+  // 12 GENERATIVE — no photos exist; a diffusion model imagines the views, blobs condense from them.
+  A.gen_diff=function(ctx,w,h,t){clear(ctx,w,h);
+    const ph=saw(t,7);
+    label(ctx,14,16,'Generation makes a scene that doesn’t exist — most views are missing',C.dim);
+    // prompt
+    rrect(ctx,w*0.05,h*0.44,w*0.2,26,6,C.cyan,null);label(ctx,w*0.07,h*0.57,'“a mossy ruin”',C.cyan);
+    arrow(ctx,w*0.26,h*0.57,w*0.34,h*0.57,C.dim,1.2);
+    // diffusion: noise->views ring
+    const cx=w*0.62,cy=h*0.55,r=Math.min(w,h)*0.3;
+    const denoise=Math.min(1,ph*1.6);
+    for(let i=0;i<8;i++){const a=(i/8)*TAU;const jitter=(1-denoise)*10;
+      cam(ctx,cx+Math.cos(a)*r+(((i*13)%7-3))*jitter*0.2,cy+Math.sin(a)*r,a+Math.PI,denoise>0.3?C.amber:hexA(C.amber,0.4),8);}
+    label(ctx,cx-52,cy-r-8,'diffusion imagines views around it',C.amber);
+    // blobs condense in center as ph advances
+    const solid=Math.max(0,(ph-0.55)/0.45);
+    for(let i=0;i<7;i++){const a=i*0.9;splat(ctx,cx+Math.cos(a)*22,cy+Math.sin(a)*16,12,9,a,i%2?C.cyan:C.violet,0.7*solid);}
+    label(ctx,cx-24,cy+r+6, solid>0.2?'→ blobs solidify the scene':'',C.mut);
+  };
+
+  // 13 SEMANTICS — each blob carries a CLIP feature; a word lights the matching blobs.
+  A.sem_query=function(ctx,w,h,t){clear(ctx,w,h);
+    label(ctx,14,16,'A map of blobs is meaningless to a planner — give each blob a feature',C.dim);
+    // query word + its feature bars
+    const qv=[0.8,0.3,0.6,0.4];
+    rrect(ctx,w*0.06,h*0.3,w*0.2,30,6,C.cyan,null);label(ctx,w*0.08,h*0.4,'query: “handle”',C.cyan);
+    bars(ctx,w*0.08,h*0.56,qv,C.cyan,16);label(ctx,w*0.08,h*0.62,'its CLIP feature',C.dim);
+    // cloud of blobs each with feature bars; some match
+    const cells=[[0.45,0.35,[0.8,0.3,0.55,0.42],true],[0.62,0.3,[0.2,0.7,0.3,0.6],false],
+      [0.78,0.4,[0.78,0.34,0.6,0.4],true],[0.5,0.62,[0.3,0.2,0.8,0.5],false],
+      [0.7,0.66,[0.82,0.28,0.58,0.44],true],[0.86,0.6,[0.25,0.6,0.35,0.7],false]];
+    cells.forEach(c=>{const x=w*c[0],y=h*c[1];const match=c[3];
+      const sim=1-Math.hypot(...c[2].map((v,i)=>v-qv[i]))/1.4;
+      splat(ctx,x,y,18,15,0,match?C.cyan:C.violet, match?0.9:0.28);
+      bars(ctx,x-8,y-20,c[2],match?C.cyan:C.dim,12);});
+    label(ctx,14,h-10,'a word → nearest-feature lookup lights the matching blobs (open-vocabulary)',C.mut);
+  };
+
   // ---- boot (mirrors techniques.js) ----
   const running=new Map();
   function start(cv){ if(running.has(cv))return; const anim=A[cv.dataset.gsanim]; if(!anim)return;
