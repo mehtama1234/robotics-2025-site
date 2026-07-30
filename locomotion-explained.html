@@ -79,6 +79,10 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#2B242A}.op b{color:var(--accent-deep)}
 .related{border-top:1px solid var(--line);margin-top:26px;padding:15px 0 2px;font-size:13px;line-height:1.9}.related b{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2);display:block;margin-bottom:5px}.related a{color:var(--accent-deep);text-decoration:none}.related a:hover{text-decoration:underline}
+.ranfig{margin:16px 0 2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;max-width:360px;margin:0 auto;height:auto;border-radius:8px;background:#0C1218}
+.ranfig figcaption{font-size:13px;color:#2A2230;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
 </style></head><body>
 <header><div class="wrap">
@@ -155,7 +159,9 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <p>Loco-manipulation couples a moving base with the manipulation task &mdash; solved jointly, not in sequence.</p></div></details>
 </section>
 <section class="fp">
-  <div class="note"><b>An honest note on demos.</b> The five diagrams above are live JavaScript, but &mdash; unlike our driving and splatting pages &mdash; we haven&rsquo;t run a locomotion policy on GPU for this one. A learned quadruped or humanoid gait in a randomized sim is the natural next &lsquo;we ran it&rsquo; to add.</div>
+  <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
+  <img src="assets/lo/slip_hopper.gif" alt="A spring-mass hopper storing and returning energy in its leg, integrated under gravity">
+  <figcaption>Locomotion, for real: we simulated a <b>spring-mass hopper</b> &mdash; a point mass on a springy leg, integrated numerically under gravity (CPU). In flight it falls; on the ground the leg compresses and springs it back up, storing the landing energy and returning it, so it hops almost for free. This spring-mass template is the model beneath real legged gaits &mdash; balance and push made concrete. Our own run.</figcaption></figure>
 </section>
 
 <div class="part">

@@ -82,6 +82,10 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#2C2640}.op b{color:var(--accent-deep)}
 .related{border-top:1px solid var(--line);margin-top:26px;padding:15px 0 2px;font-size:13px;line-height:1.9}.related b{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2);display:block;margin-bottom:5px}.related a{color:var(--accent-deep);text-decoration:none}.related a:hover{text-decoration:underline}
+.ranfig{margin:16px 0 2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;max-width:380px;margin:0 auto;height:auto;border-radius:8px;background:#0C1218}
+.ranfig figcaption{font-size:13px;color:#22203A;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
 </style></head><body>
 <header><div class="wrap">
@@ -174,7 +178,9 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <p>Convergence: video models are implicit world models; latent models often add a decoder to generate video as a check.</p></div></details>
 </section>
 <section class="fp">
-  <div class="note"><b>An honest note on demos.</b> Our Gaussian-splatting page has &lsquo;we ran it&rsquo; panels; this one doesn&rsquo;t &mdash; yet. The five diagrams above are live JavaScript, but we haven&rsquo;t trained a world model on GPU for this page. A Dreamer-style latent-imagination run, or a small driving world model, is the natural next demo to add.</div>
+  <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
+  <img src="assets/wm/world_model.gif" alt="A learned world model imagining a bouncing-ball trajectory versus true physics">
+  <figcaption>World models, for real: we trained a tiny network to predict the next state of a bouncing ball, then let it <b>imagine</b> a rollout from a fresh start &mdash; violet is the model dreaming forward, green is true physics. It tracks reality closely at first, then drifts as small errors compound (worst right after a bounce) &mdash; exactly the world-model trade-off: cheap imagination, limited horizon. It was never given the physics, only learned to predict the next step. Our own run.</figcaption></figure>
 </section>
 
 <div class="part">
