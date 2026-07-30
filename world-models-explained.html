@@ -338,70 +338,119 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DreamSAC</b> &mdash; Hamiltonian latent dynamics + symmetry exploration extrapolate physics</span></li></ul>
 </div>
 
-<div class="fam" id="wm9">
+<div class="fam rich" id="wm9">
   <div class="famhd"><span class="famn">09</span><h3>Physics-grounded prediction</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>A learned model can generate futures that look right but break physics &mdash; objects that pass through each other, fluids that gain energy. This family bakes physical law back in, either as a constraint in the loss or by putting a real simulator in the generation loop.</p>
-<p>The result is prediction that respects conservation and contact, which is what makes it trustworthy for control.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A learned model can generate a future that looks perfectly convincing yet is physically impossible &mdash; objects passing through each other, a ball that speeds up on its own. Convincing is not the same as correct.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>A learned model can generate futures that look right but break physics &mdash; objects that pass through each other, fluids that gain energy. This family bakes physical law back in, either as a constraint in the loss or by putting a real simulator in the generation loop.</p>
+<p>The result is prediction that respects conservation and contact, which is what makes it trustworthy for control.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_physics" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Let the model propose a future rollout</b> as usual.</li>
+<li><b>Check it against a physical law</b> &mdash; momentum, energy, non-penetration.</li>
+<li><b>Where it violates the law,</b> add a correction (a loss term, or a real physics step in the loop) that pulls it back onto a valid path.</li>
+<li><b>Re-roll;</b> now objects fall, collide, and conserve energy instead of drifting.</li>
+<li><b>The future is not just plausible-looking</b> &mdash; it is physically possible.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>NS-Diff</b> &mdash; enforces Navier-Stokes + jerk constraints in a video diffusion&rsquo;s latent space via RL</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Physical Simulator In-the-Loop Video Generation</b> &mdash; interleaves a material-point-method simulator during generation for consistency</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DreamSAC</b> &mdash; Hamiltonian structure keeps energy sane and enables extrapolation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Goal Force</b> &mdash; force overlays teach a video model to obey physics-conditioned goals</span></li></ul>
 </div>
 
-<div class="fam" id="wm10">
+<div class="fam rich" id="wm10">
   <div class="famhd"><span class="famn">10</span><h3>Long video: memory, horizon &amp; consistency</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>A world model is only useful if it stays coherent over time &mdash; the same room when you look back, no drift, no flicker. Rolling far into the future without collapsing is a hard, distinct problem.</p>
-<p>Solutions add memory, hierarchical coarse-to-fine generation, and attention tricks that keep long rollouts stable for seconds to hours.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Roll a world model far enough and it forgets: the room quietly changes, colors drift, details flicker, or the whole thing collapses into a frozen frame. Staying coherent over long horizons is its own hard problem.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>A world model is only useful if it stays coherent over time &mdash; the same room when you look back, no drift, no flicker. Rolling far into the future without collapsing is a hard, distinct problem.</p>
+<p>Solutions add memory, hierarchical coarse-to-fine generation, and attention tricks that keep long rollouts stable for seconds to hours.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_memory" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Generate the video in chunks,</b> not all at once.</li>
+<li><b>Keep a memory</b> of what the scene already contained &mdash; objects, layout, style.</li>
+<li><b>Condition each new chunk on that memory</b> so the room stays the same room.</li>
+<li><b>Refresh the memory as you go,</b> without letting it collapse into a single frozen frame.</li>
+<li><b>Result:</b> seconds-to-hours of video that stays consistent instead of drifting.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>LoL: Longer than Longer</b> &mdash; multi-head RoPE jitter prevents collapse, enabling 12-hour continuous generation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>TempoMaster</b> &mdash; coarse-to-fine next-frame-rate prediction for efficient long video</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>HoloCine</b> &mdash; windowed cross-attention gives per-shot control across a long multi-shot narrative</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Captain Safari</b> &mdash; a pose-aligned 3D memory keeps a world engine consistent under aggressive camera moves</span></li></ul>
 </div>
 
-<div class="fam" id="wm11">
+<div class="fam rich" id="wm11">
   <div class="famhd"><span class="famn">11</span><h3>Object-centric &amp; relational dynamics</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Instead of one monolithic state, factor the scene into objects and learn how they <em>interact</em>. A graph of objects-and-relations predicts the next state and generalises to arrangements never seen, because the rules of interaction are shared.</p>
-<p>This is how world models reach long-horizon, multi-object tasks that a flat latent can&rsquo;t hold.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A single blob of latent state smears many objects together, so it generalizes badly &mdash; rearrange the objects and it is lost. But the world is made of <em>things</em> that interact by shared rules.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Instead of one monolithic state, factor the scene into objects and learn how they <em>interact</em>. A graph of objects-and-relations predicts the next state and generalises to arrangements never seen, because the rules of interaction are shared.</p>
+<p>This is how world models reach long-horizon, multi-object tasks that a flat latent can&rsquo;t hold.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_graph" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Split the scene into objects</b> &mdash; each a node with its state (pose, velocity).</li>
+<li><b>Draw edges</b> between objects that can affect each other (touching, near).</li>
+<li><b>Predict each object&rsquo;s next state</b> by passing messages along its edges (a graph net).</li>
+<li><b>Because the interaction rules are shared,</b> a brand-new arrangement of the same objects just works.</li>
+<li><b>Chain the predictions</b> to plan a multi-object, long-horizon task.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Points2Plans</b> &mdash; composable relational dynamics turn point clouds into long-horizon manipulation plans</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Differentiable Tensegrity Dynamics</b> &mdash; a GNN models cable connectivity for a soft-rigid robot</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>NOD-TAMP</b> &mdash; neural object descriptors + task-and-motion planning generalise from a few demos</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>MI-HGNN</b> &mdash; a morphology-informed graph net improves contact perception with tiny parameter cost</span></li></ul>
 </div>
 
-<div class="fam" id="wm12">
+<div class="fam rich" id="wm12">
   <div class="famhd"><span class="famn">12</span><h3>World models for VLA &amp; policy learning</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>The hottest seam: use a world model to <em>train or supervise</em> a vision-language-action policy. Generate the practice, imagine the consequences, and compute rewards from imagined success &mdash; often with a handful of real demos or none.</p>
-<p>The world model becomes the safe, cheap post-training ground for foundation-model robot policies.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Vision-language-action policies are powerful but hungry for demonstrations, and every real demo is slow and expensive to collect. Where does all that practice come from?</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>The hottest seam: use a world model to <em>train or supervise</em> a vision-language-action policy. Generate the practice, imagine the consequences, and compute rewards from imagined success &mdash; often with a handful of real demos or none.</p>
+<p>The world model becomes the safe, cheap post-training ground for foundation-model robot policies.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_vla" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Take a VLA policy and a world-model simulator</b> of the task.</li>
+<li><b>Let the policy act inside the simulator;</b> roll the consequences forward.</li>
+<li><b>Score whether the imagined rollout succeeded</b> (reached the instruction&rsquo;s goal).</li>
+<li><b>Use that as reward</b> to improve the policy &mdash; offline, safely, cheaply.</li>
+<li><b>Touch the real robot only for a handful of demos</b> (or none) to ground the simulator.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>RehearseVLA</b> &mdash; a geometry-aware world-model simulator post-trains VLAs with &lt;5 demos per task via offline RL</span></li>
 <li><span class="vbadge bb">BOTH</span><span class="pt"><b>NIL: No-Data Imitation Learning</b> &mdash; text-conditioned video diffusion generates the reference to imitate &mdash; no collected demos</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dreamitate</b> &mdash; a fine-tuned video-diffusion model generates the task execution that guides control</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SRPO</b> &mdash; latent world representations compute rewards from in-batch successes, no reward engineering</span></li></ul>
 </div>
 
-<div class="fam" id="wm13">
+<div class="fam rich" id="wm13">
   <div class="famhd"><span class="famn">13</span><h3>Safety, uncertainty &amp; anomaly world models</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>A model that knows what <em>should</em> happen can flag when reality diverges &mdash; and rehearse danger before it&rsquo;s real. This family uses world models for run-time safety: predict, compare, and veto or recover.</p>
-<p>It also quantifies its own uncertainty, so planning can stay conservative exactly where the model is unsure.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A learned model is only trusted where its training data went. The moment reality does something the model never saw, blindly following it is dangerous &mdash; so the model has to know when it is out of its depth.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>A model that knows what <em>should</em> happen can flag when reality diverges &mdash; and rehearse danger before it&rsquo;s real. This family uses world models for run-time safety: predict, compare, and veto or recover.</p>
+<p>It also quantifies its own uncertainty, so planning can stay conservative exactly where the model is unsure.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_safety" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>At each step, the world model predicts</b> what should happen next.</li>
+<li><b>Compare the prediction to what the sensors actually report.</b></li>
+<li><b>If they agree, carry on.</b></li>
+<li><b>If they diverge past a threshold,</b> that is an anomaly &mdash; stop, or switch to a safe fallback.</li>
+<li><b>Or, ahead of time:</b> play out a virtual adversary in imagination and only act if the plan survives it.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Gameplay Filters</b> &mdash; a safety filter plays out a virtual adversary in imagination for zero-shot robustness</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>World Models for Anomaly Detection in MBRL</b> &mdash; run-time prediction error triggers safety stops on a quadcopter</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>OCCUQ</b> &mdash; efficient epistemic uncertainty for 3D occupancy handles out-of-distribution inputs</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>UNREST</b> &mdash; an uncertainty-aware decision transformer handles stochastic driving</span></li></ul>
 </div>
 
-<div class="fam" id="wm14">
+<div class="fam rich" id="wm14">
   <div class="famhd"><span class="famn">14</span><h3>Sim-to-real learned simulators</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Rather than trust a hand-built simulator, learn one from data &mdash; then train in it and deploy for real. The learned simulator captures the messy dynamics a physics engine misses, closing the sim-to-real gap from the sim side.</p>
-<p>The strongest results learn the model from tiny amounts of real data, or denoise the gap between dream and reality.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Hand-built simulators are fast but wrong in the details that matter, so policies trained in them break on the real robot. What if you <em>learned</em> the simulator from reality instead?</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Rather than trust a hand-built simulator, learn one from data &mdash; then train in it and deploy for real. The learned simulator captures the messy dynamics a physics engine misses, closing the sim-to-real gap from the sim side.</p>
+<p>The strongest results learn the model from tiny amounts of real data, or denoise the gap between dream and reality.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_sim2real" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Collect a small amount of real-world data</b> &mdash; even a few minutes.</li>
+<li><b>Fit a simulator to it:</b> a learned model that reproduces the real dynamics, including what a physics engine would miss.</li>
+<li><b>Train the policy inside that learned simulator,</b> for as long as you like.</li>
+<li><b>Deploy on the real robot;</b> because the sim was learned from reality, the gap is small.</li>
+<li><b>Optionally keep collecting</b> to refine the simulator over time.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning to Walk from Three Minutes of Real Data</b> &mdash; physics + a learned force residual learns a gait from 3 minutes of real quadruped data</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Denoising World Model Learning</b> &mdash; a denoising world model gives zero-shot humanoid transfer to real terrain</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>GRaD-Nav</b> &mdash; a 3DGS simulator inside differentiable RL transfers drone gate-flying zero-shot</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Privileged-Dreamer</b> &mdash; imagining hidden physics parameters bridges sim and real</span></li></ul>
 </div>
 
-<div class="fam" id="wm15">
+<div class="fam rich" id="wm15">
   <div class="famhd"><span class="famn">15</span><h3>Measuring world models (evaluation)</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>As world models proliferate, telling a good one from a plausible-looking one becomes its own problem. Do they respect geometry, physics, and causality &mdash; or just paint convincing frames? This family builds the benchmarks that ask.</p>
-<p>The recurring finding is sobering: many models that render beautifully fail the moment you perturb the action or check causality.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>As world models multiply, a hard question grows: is this one actually a good simulator, or just a pretty video generator? Rendering beautifully and predicting correctly are not the same thing.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>As world models proliferate, telling a good one from a plausible-looking one becomes its own problem. Do they respect geometry, physics, and causality &mdash; or just paint convincing frames? This family builds the benchmarks that ask.</p>
+<p>The recurring finding is sobering: many models that render beautifully fail the moment you perturb the action or check causality.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_eval" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Take a trained world model and a starting state.</b></li>
+<li><b>Feed it action A; record the predicted future.</b> Feed it a different action B; record that future.</li>
+<li><b>A real world model gives genuinely different, correct futures</b> for A and B.</li>
+<li><b>A model that only learned to paint frames gives nearly the same future</b> regardless &mdash; it failed the causality test.</li>
+<li><b>Also perturb the camera</b> and check geometry stays consistent; score across many such probes.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Beyond Simulation</b> &mdash; shows world models fail under ego perturbation; proposes causality-aware metrics</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldLens</b> &mdash; full-spectrum driving-world-model evaluation exposes texture-vs-geometry-vs-behaviour trade-offs</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Ref4D-VideoBench</b> &mdash; a 12-metric suite across semantics, motion, temporal and world-knowledge consistency</span></li>

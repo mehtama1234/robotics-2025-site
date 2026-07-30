@@ -280,6 +280,135 @@
     lab(ctx,'roll tokens far ahead for ~100× cheaper planning; only decode to pixels if a human needs to look',14,h-12,C.mut);
   };
 
+  // ===== per-family diagrams (wave 2b: families 9-15) =====
+
+  // F9 PHYSICS-GROUNDED — unconstrained prediction drifts; a physical law pulls it onto a valid path.
+  A.wmf_physics=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Convincing is not correct: bake in physics so the future is possible, not just plausible',14,16,C.dim);
+    const x0=w*0.1,y0=h*0.7;dot(ctx,x0,y0,6,C.ink);lab(ctx,'throw',x0-6,y0+16,C.ink,10);
+    // wrong: no physics — floats up, gains energy
+    ctx.strokeStyle=hexA(C.coral,0.85);ctx.lineWidth=1.6;ctx.setLineDash([5,4]);ctx.beginPath();
+    ctx.moveTo(x0,y0);ctx.bezierCurveTo(w*0.35,y0-30,w*0.6,h*0.2,w*0.85,h*0.15);ctx.stroke();ctx.setLineDash([]);
+    lab(ctx,'no physics → drifts (energy from nowhere)',w*0.5,h*0.2,C.coral,10);
+    // right: physics-guided parabola
+    ctx.strokeStyle=C.green;ctx.lineWidth=2;ctx.beginPath();
+    for(let i=0;i<=40;i++){const u=i/40,x=x0+(w*0.78)*u,y=y0-Math.sin(u*Math.PI)*h*0.4;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+    lab(ctx,'physics-guided → a real arc (gravity, momentum)',w*0.42,h*0.5,C.green,10);
+    // constraint tag
+    box(ctx,w*0.4,h*0.82,w*0.24,24,'constraint: conserve energy',C.violet);
+    lab(ctx,'a physics law in the loss, or a real simulator step mid-generation, keeps the rollout honest',14,h-10,C.mut);
+  };
+
+  // F10 LONG-VIDEO MEMORY — without memory the future drifts/collapses; a memory bank keeps it consistent.
+  A.wmf_memory=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Roll far and it forgets — a memory keeps the room the same room',14,16,C.dim);
+    const fw=Math.min(58,w*0.11),fh=fw*0.62,n=6;
+    // top: no memory -> degrades
+    const ty=h*0.34;lab(ctx,'no memory:',14,ty-fh/2-8,C.coral,10);
+    for(let k=0;k<n;k++){const x=w*0.16+k*(w*0.13);const bad=k/(n-1);
+      const g=ctx.createLinearGradient(x,ty,x+fw,ty+fh);g.addColorStop(0,hexA(C.cyan,0.5*(1-bad)));g.addColorStop(1,hexA(C.coral,0.2+0.5*bad));
+      rrect(ctx,x,ty-fh/2,fw,fh,4,hexA(C.line,1),g);
+      if(bad>0.3){ctx.fillStyle=hexA(C.ink,bad*0.5);for(let m=0;m<20;m++)ctx.fillRect(x+((m*29)%fw),ty-fh/2+((m*41)%fh),2,2);}
+      if(k<n-1)arrow(ctx,x+fw+2,ty,x+w*0.13-2,ty,hexA(C.mut,0.5),1);}
+    lab(ctx,'drifts & flickers',w*0.16+ (n-1)*(w*0.13),ty+fh/2+12,C.coral,10);
+    // bottom: with memory -> consistent
+    const by=h*0.72;lab(ctx,'with memory:',14,by-fh/2-8,C.green,10);
+    for(let k=0;k<n;k++){const x=w*0.16+k*(w*0.13);
+      const g=ctx.createLinearGradient(x,by,x+fw,by+fh);g.addColorStop(0,hexA(C.cyan,0.5));g.addColorStop(1,hexA(C.violet,0.4));
+      rrect(ctx,x,by-fh/2,fw,fh,4,hexA(C.green,0.6),g);
+      if(k<n-1)arrow(ctx,x+fw+2,by,x+w*0.13-2,by,hexA(C.green,0.6),1);}
+    box(ctx,w*0.16,by+fh/2+10,w*0.3,20,'memory bank (objects · layout · style)',C.green);
+    lab(ctx,'consistent for seconds → hours',w*0.62,by+fh/2+20,C.mut,10);
+  };
+
+  // F11 OBJECT-CENTRIC GRAPH — objects are nodes, interactions are edges; predict each from its neighbors.
+  A.wmf_graph=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Factor the scene into objects + relations → predict each from its neighbors',14,16,C.dim);
+    const nodes=[[w*0.2,h*0.4,'A'],[w*0.38,h*0.66,'B'],[w*0.55,h*0.38,'C'],[w*0.3,h*0.78,'D']];
+    const edges=[[0,1],[1,2],[1,3],[0,2]];
+    ctx.strokeStyle=hexA(C.mut,0.5);ctx.lineWidth=1.2;
+    edges.forEach(e=>{ctx.beginPath();ctx.moveTo(nodes[e[0]][0],nodes[e[0]][1]);ctx.lineTo(nodes[e[1]][0],nodes[e[1]][1]);ctx.stroke();});
+    // message passing into node B (index1), pulsing
+    const tgt=nodes[1];const p=saw(t,2);
+    [0,2,3].forEach(i=>{const s=nodes[i];const mx=s[0]+(tgt[0]-s[0])*p,my=s[1]+(tgt[1]-s[1])*p;dot(ctx,mx,my,3,C.amber);});
+    nodes.forEach((nd,i)=>{const on=i===1;dot(ctx,nd[0],nd[1],on?11:9,on?C.cyan:C.violet);lab(ctx,nd[2],nd[0],nd[1],C.ink,10,'center');});
+    lab(ctx,'messages from neighbors → B’s next state',tgt[0]+16,tgt[1]-14,C.amber,10);
+    // generalization panel
+    box(ctx,w*0.72,h*0.34,w*0.24,h*0.34,'',C.line);lab(ctx,'new arrangement',w*0.73,h*0.3,C.dim,10);
+    [[w*0.78,h*0.44],[w*0.88,h*0.5],[w*0.8,h*0.6]].forEach((c,i)=>dot(ctx,c[0],c[1],7,C.violet));
+    ctx.strokeStyle=hexA(C.mut,0.5);ctx.beginPath();ctx.moveTo(w*0.78,h*0.44);ctx.lineTo(w*0.88,h*0.5);ctx.lineTo(w*0.8,h*0.6);ctx.stroke();
+    lab(ctx,'same rules → still works',w*0.72,h*0.72,C.green,10);
+    lab(ctx,'shared interaction rules generalize to arrangements never seen in training',14,h-10,C.mut);
+  };
+
+  // F12 WORLD MODEL FOR VLA — train/reward a policy inside the imagined simulator; few or no real demos.
+  A.wmf_vla=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Use the world model to TRAIN a vision-language-action policy — cheaply, safely',14,16,C.dim);
+    const cx=w*0.5,cy=h*0.52,r=Math.min(w,h)*0.3,p=saw(t,3);
+    const pts=[[cx-r,cy,'VLA policy',C.cyan],[cx,cy-r*0.8,'world-model sim',C.violet],[cx+r,cy,'imagined outcome',C.amber],[cx,cy+r*0.8,'reward: did it succeed?',C.green]];
+    // loop arrows
+    for(let i=0;i<4;i++){const a=pts[i],b=pts[(i+1)%4];arrow(ctx,a[0]+(b[0]-a[0])*0.18,a[1]+(b[1]-a[1])*0.18,a[0]+(b[0]-a[0])*0.82,a[1]+(b[1]-a[1])*0.82,hexA(C.mut,0.6),1.3);}
+    // moving token around loop
+    const seg=Math.floor(p*4)%4,fp=(p*4)%1;const a=pts[seg],b=pts[(seg+1)%4];dot(ctx,a[0]+(b[0]-a[0])*fp,a[1]+(b[1]-a[1])*fp,4,C.ink);
+    pts.forEach(pt=>{box(ctx,pt[0]-w*0.09,pt[1]-14,w*0.18,28,pt[2],pt[3]);});
+    lab(ctx,'≤5 real demos (or none) just to ground the simulator; the rest is imagined practice',14,h-10,C.mut);
+  };
+
+  // F13 SAFETY / ANOMALY — compare predicted vs observed; divergence → stop or fall back.
+  A.wmf_safety=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Know when you are out of your depth: predicted vs observed, and flag the gap',14,16,C.dim);
+    const x0=w*0.08,x1=w*0.92,yy=h*0.5,p=saw(t,4);
+    // predicted (cyan) straight; observed (amber) diverges after 60%
+    ctx.strokeStyle=C.cyan;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);ctx.stroke();
+    lab(ctx,'predicted',x0,yy-14,C.cyan,10);
+    ctx.strokeStyle=C.amber;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,yy);
+    const dv=x0+(x1-x0)*0.6;ctx.lineTo(dv,yy);ctx.lineTo(x1,yy+h*0.22);ctx.stroke();
+    lab(ctx,'observed (reality diverges)',dv,yy+h*0.16,C.amber,10);
+    // threshold band
+    ctx.strokeStyle=hexA(C.mut,0.4);ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x0,yy+h*0.09);ctx.lineTo(x1,yy+h*0.09);ctx.stroke();ctx.setLineDash([]);
+    lab(ctx,'anomaly threshold',x0,yy+h*0.09-8,C.dim,9);
+    // burst at crossing
+    if(p>0.6){const bx=x0+(x1-x0)*0.78,byy=yy+h*0.13;ctx.fillStyle=C.coral;for(let k=0;k<8;k++){const a=k/8*TAU;ctx.fillRect(bx+Math.cos(a)*8-1,byy+Math.sin(a)*8-1,2,2);}
+      lab(ctx,'ANOMALY → stop / fall back',bx-20,byy+18,C.coral,10);}
+    lab(ctx,'or, ahead of time: rehearse a virtual adversary and only act if the plan survives',14,h-10,C.mut);
+  };
+
+  // F14 SIM-TO-REAL LEARNED SIM — learn a simulator from a little real data, train in it, deploy real.
+  A.wmf_sim2real=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Don’t trust a hand-built sim — LEARN one from a little real data',14,16,C.dim);
+    const yy=h*0.5;
+    box(ctx,w*0.04,yy-20,w*0.2,40,'3 min real data',C.amber);
+    arrow(ctx,w*0.245,yy,w*0.32,yy,C.cyan,1.6);lab(ctx,'fit',w*0.25,yy-12,C.dim,9);
+    box(ctx,w*0.33,yy-24,w*0.22,48,'learned simulator',C.violet,hexA(C.violet,0.06));
+    // train-a-lot loop on the sim
+    const cx=w*0.44,cy=yy+52,rr=16,a=saw(t,2)*TAU;ctx.strokeStyle=hexA(C.violet,0.7);ctx.beginPath();ctx.arc(cx,cy,rr,0,TAU);ctx.stroke();dot(ctx,cx+Math.cos(a)*rr,cy+Math.sin(a)*rr,3,C.ink);
+    lab(ctx,'train the policy a lot',cx+24,cy,C.violet,10);
+    arrow(ctx,w*0.56,yy,w*0.64,yy,C.cyan,1.6);lab(ctx,'deploy',w*0.565,yy-12,C.dim,9);
+    box(ctx,w*0.65,yy-20,w*0.2,40,'real robot ✓',C.green,hexA(C.green,0.06));
+    lab(ctx,'small gap',w*0.585,yy+16,C.mut,9);
+    lab(ctx,'the learned sim captures the messy real dynamics a physics engine misses → the sim-to-real gap shrinks',14,h-10,C.mut);
+  };
+
+  // F15 EVALUATION — change the action; does the predicted future change CORRECTLY?
+  A.wmf_eval=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'The real test: change the action — does the future change correctly, or is it just a pretty video?',14,16,C.dim);
+    const p=Math.floor(saw(t,3))%2; // toggle action A/B
+    // action toggles
+    box(ctx,w*0.06,h*0.3,w*0.12,26,'action A',p===0?C.amber:C.mut);
+    box(ctx,w*0.06,h*0.62,w*0.12,26,'action B',p===1?C.amber:C.mut);
+    // good model: different futures
+    lab(ctx,'good world model',w*0.24,h*0.24,C.green,10);
+    const gx=w*0.24;dot(ctx,gx,h*0.43,6,C.green);
+    ctx.strokeStyle=C.green;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(gx,h*0.43);ctx.lineTo(w*0.44, p===0?h*0.34:h*0.54);ctx.stroke();
+    lab(ctx,p===0?'A → future ↗ (correct)':'B → future ↘ (correct)',w*0.28,p===0?h*0.32:h*0.56,C.green,10);
+    // bad model: same future regardless
+    lab(ctx,'pixel-painter (bad)',w*0.62,h*0.24,C.coral,10);
+    const bx=w*0.62;dot(ctx,bx,h*0.43,6,C.coral);
+    ctx.strokeStyle=C.coral;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(bx,h*0.43);ctx.lineTo(w*0.84,h*0.43);ctx.stroke();
+    lab(ctx,'A or B → same future (fails causality)',w*0.6,h*0.5,C.coral,10);
+    lab(ctx,'also perturb the camera and check geometry holds; score across many such probes',14,h-10,C.mut);
+  };
+
   // ---- boot ----
   const running=new Map();
   function start(cv){ if(running.has(cv))return; const anim=A[cv.dataset.wmanim]; if(!anim)return;
