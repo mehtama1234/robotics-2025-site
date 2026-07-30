@@ -117,6 +117,140 @@
     lab(ctx,'jump almost straight to the answer → fast enough to run on a real robot',x0,gy+22,C.mut);lab(ctx,'≈ 100s of Hz',w*0.84,gy,C.green,12);
   };
 
+  // ===== per-family diagrams (wave A: families 1-8) =====
+
+  // F1 MULTIMODAL BC — varied demos in -> a policy that reproduces the variety, not the average.
+  A.dpf_bc=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'A few dozen demos, several valid ways each → learn the variety, not the average',14,16,C.dim);
+    // stack of demo trajectories (varied)
+    const cols=[C.cyan,C.violet,C.amber,C.green];
+    for(let d=0;d<4;d++){ctx.strokeStyle=hexA(cols[d],0.8);ctx.lineWidth=1.4;ctx.beginPath();
+      for(let i=0;i<=20;i++){const u=i/20,x=w*0.08+w*0.24*u,y=h*0.42+(d-1.5)*10+Math.sin(u*3+d)*10;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();}
+    lab(ctx,'~40 demos (varied)',w*0.08,h*0.66,C.mut,10);
+    arrow(ctx,w*0.34,h*0.44,w*0.44,h*0.44,C.ink,1.6);
+    box(ctx,w*0.45,h*0.34,w*0.18,h*0.2,'diffusion policy',C.accent||C.cyan);
+    arrow(ctx,w*0.64,h*0.44,w*0.72,h*0.44,C.ink,1.6);
+    // samples: two distinct actions
+    const pk=Math.floor(saw(t,3)*2)%2;
+    dot(ctx,w*0.8,h*0.34,7,pk?hexA(C.green,0.4):C.green);dot(ctx,w*0.8,h*0.54,7,pk?C.green:hexA(C.green,0.4));
+    lab(ctx,'sample → one real way',w*0.74,h*0.66,C.green,10);
+    lab(ctx,'the denoiser keeps every demonstrated mode alive and commits to one on each run',14,h-12,C.mut);
+  };
+
+  // F2 STREAMING CHUNKS — receding-horizon window slides; warm-start reuses the last denoise.
+  A.dpf_chunk=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Keep a chunk always ready: slide the horizon, warm-start the next denoise',14,16,C.dim);
+    const x0=w*0.08,x1=w*0.92,yy=h*0.5,H=w*0.32,p=saw(t,4);
+    ctx.strokeStyle=hexA(C.mut,0.4);ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);ctx.stroke();lab(ctx,'task time →',x0,yy+24,C.dim,10);
+    const start=x0+(x1-x0-H)*p;
+    // executed (solid) up to start
+    ctx.strokeStyle=C.green;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(start,yy);ctx.stroke();
+    // current chunk (solid cyan) then predicted tail (dashed)
+    rrect(ctx,start,yy-26,H,52,6,hexA(C.cyan,0.6),hexA(C.cyan,0.05));
+    for(let i=0;i<=6;i++){const x=start+H*i/6;dot(ctx,x,yy,i<2?3.5:2.5,i<2?C.green:C.cyan);}
+    lab(ctx,'chunk: execute first few (green), rest predicted',start,yy-34,C.cyan,10);
+    // warm-start arrow from previous chunk position (ghost)
+    rrect(ctx,start-H*0.5,yy-20,H,40,6,hexA(C.mut,0.3),null);
+    arrow(ctx,start-H*0.5+H*0.5,yy+30,start+6,yy+22,hexA(C.amber,0.8),1.4);lab(ctx,'warm-start from last solution',start-H*0.5,yy+44,C.amber,10);
+    lab(ctx,'the next chunk is denoised before the current one runs out → smooth motion, no stalls',14,h-12,C.mut);
+  };
+
+  // F3 3D-CONDITIONED — point cloud in, 3D pose trajectory out; robust where pixels fail.
+  A.dpf_3d=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Condition on 3D geometry, not flat pixels → robust to viewpoint & lighting',14,16,C.dim);
+    // point cloud
+    const cx=w*0.2,cy=h*0.5;for(let i=0;i<60;i++){const a=jit(i)*TAU,r=jit(i+9)*44;dot(ctx,cx+Math.cos(a)*r,cy+Math.sin(a)*r*0.8,1.6,hexA(C.cyan,0.7));}
+    lab(ctx,'point cloud',cx-24,cy+58,C.mut,10);
+    // faded 2D note
+    lab(ctx,'(2D pixels: fragile when the camera moves ✗)',w*0.06,h*0.86,hexA(C.coral,0.8),10);
+    arrow(ctx,w*0.34,cy,w*0.44,cy,C.cyan,1.6);
+    box(ctx,w*0.45,cy-16,w*0.18,32,'3D denoiser',C.cyan);
+    arrow(ctx,w*0.64,cy,w*0.72,cy,C.cyan,1.6);
+    // 3D pose trajectory (a gripper path)
+    ctx.strokeStyle=C.green;ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=16;i++){const u=i/16,x=w*0.74+w*0.16*u,y=cy-20+Math.sin(u*4)*16;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+    for(let i=0;i<=4;i++){const u=i/4,x=w*0.74+w*0.16*u,y=cy-20+Math.sin(u*4)*16;dot(ctx,x,y,2.5,C.green);}
+    lab(ctx,'3D pose trajectory',w*0.72,cy+40,C.green,10);
+    lab(ctx,'the denoiser predicts poses in 3D space → same demos generalize across views',14,h-12,C.mut);
+  };
+
+  // F4 EQUIVARIANT — rotate the scene, the action rotates with it; one demo covers many poses.
+  A.dpf_equi=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Build in symmetry: rotate the input → the action rotates the same way (for free)',14,16,C.dim);
+    function scene(cx,cy,rot,lbl){ctx.save();ctx.translate(cx,cy);ctx.rotate(rot);
+      rrect(ctx,-22,-18,44,36,5,C.mut,hexA(C.mut,0.12));arrow(ctx,0,0,44,-30,C.green,2);ctx.restore();
+      lab(ctx,lbl,cx-24,cy+40,C.mut,10);}
+    scene(w*0.26,h*0.5,0,'a demo at one pose');
+    const rot=0.5+0.4*Math.sin(t*0.8);
+    scene(w*0.68,h*0.5,rot,'any rotation → correct action');
+    arrow(ctx,w*0.42,h*0.5,w*0.52,h*0.5,C.ink,1.4);lab(ctx,'rotate',w*0.42,h*0.42,C.dim,9);
+    lab(ctx,'one demonstration automatically teaches every rotated version → far fewer demos needed',14,h-12,C.mut);
+  };
+
+  // F5 FLOW MATCHING — a straight velocity field from noise to action in 1-2 steps vs the long diffusion path.
+  A.dpf_flow=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Flow matching: learn a straight velocity from noise to action → 1–2 steps',14,16,C.dim);
+    const nx=w*0.12,ny=h*0.5,ax=w*0.8,ay=h*0.5;
+    dot(ctx,nx,ny,6,hexA(C.dim,0.8));lab(ctx,'noise',nx-6,ny+18,C.mut,10);
+    // curved multi-step diffusion path (faded)
+    ctx.strokeStyle=hexA(C.coral,0.6);ctx.lineWidth=1.4;ctx.setLineDash([4,3]);ctx.beginPath();
+    ctx.moveTo(nx,ny);ctx.bezierCurveTo(w*0.35,ny-60,w*0.6,ny+60,ax,ay);ctx.stroke();ctx.setLineDash([]);
+    for(let i=1;i<10;i++){const u=i/10;const x=nx+(ax-nx)*u;const y=ny+Math.sin(u*Math.PI*2)*40*(1-u);dot(ctx,x,y,2,hexA(C.coral,0.6));}
+    lab(ctx,'diffusion: curved, ~50 steps',w*0.32,ny-60,C.coral,10);
+    // straight flow arrow with a couple of nodes
+    const p=saw(t,2);arrow(ctx,nx+8,ny,ax-8,ay,C.green,2.4);dot(ctx,nx+(ax-nx)*Math.min(1,p),ny,4,C.ink);
+    lab(ctx,'flow: straight, 1–2 steps',w*0.36,ny+34,C.green,10);
+    dot(ctx,ax,ay,7,C.green);lab(ctx,'action',ax-6,ay-16,C.green,10);
+    lab(ctx,'same multimodal quality, fast enough to run on a real robot — why flow is taking over',14,h-12,C.mut);
+  };
+
+  // F6 VLA — instruction + image -> reasoning (waypoints) -> denoised action.
+  A.dpf_vla=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Command in words: reason first (waypoints), then denoise the action',14,16,C.dim);
+    box(ctx,w*0.05,h*0.28,w*0.24,26,'“put mug on shelf”',C.amber);
+    box(ctx,w*0.05,h*0.5,w*0.24,26,'camera image',C.cyan);
+    arrow(ctx,w*0.3,h*0.4,w*0.38,h*0.4,C.ink,1.4);
+    // reasoning trace: waypoints
+    box(ctx,w*0.39,h*0.3,w*0.24,h*0.24,'',C.violet,hexA(C.violet,0.05));lab(ctx,'reasoning',w*0.4,h*0.27,C.violet,10);
+    ['pick','lift','place'].forEach((s,i)=>{dot(ctx,w*0.43+i*w*0.07,h*0.42,4,C.violet);lab(ctx,s,w*0.43+i*w*0.07,h*0.48,C.violet,8.5,'center');});
+    arrow(ctx,w*0.64,h*0.42,w*0.72,h*0.42,C.ink,1.4);
+    box(ctx,w*0.73,h*0.34,w*0.2,h*0.16,'denoise → action',C.green);
+    lab(ctx,'one model, many instructions; explicit reasoning makes it robust to rephrasing',14,h-12,C.mut);
+  };
+
+  // F7 HIERARCHICAL — high-level subgoals, each a low-level diffusion trajectory.
+  A.dpf_hier=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Split the long task: high-level subgoals, low-level diffusion trajectories',14,16,C.dim);
+    // high-level chain
+    const hy=h*0.32;box(ctx,w*0.05,hy-14,w*0.2,28,'high-level plan',C.violet);
+    const gs=[w*0.42,w*0.62,w*0.82];
+    arrow(ctx,w*0.26,hy,w*0.36,hy,C.ink,1.4);
+    gs.forEach((gx,i)=>{dot(ctx,gx,hy,7,C.amber);lab(ctx,'g'+(i+1),gx,hy-16,C.amber,10,'center');if(i<2)arrow(ctx,gx+9,hy,gs[i+1]-9,hy,hexA(C.mut,0.6),1.2);});
+    lab(ctx,'subgoals',w*0.42,hy+16,C.amber,9);
+    // low-level trajectories under each subgoal
+    const ly=h*0.72;
+    gs.forEach((gx)=>{arrow(ctx,gx,hy+10,gx,ly-24,hexA(C.mut,0.5),1);
+      ctx.strokeStyle=C.green;ctx.lineWidth=1.6;ctx.beginPath();for(let i=0;i<=12;i++){const u=i/12,x=gx-24+48*u,y=ly+Math.sin(u*5)*10;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();});
+    lab(ctx,'diffusion trajectory to reach each subgoal',w*0.34,ly+30,C.green,10);
+    lab(ctx,'reusable subgoals compose into new long-horizon tasks without one giant rollout',14,h-12,C.mut);
+  };
+
+  // F8 CROSS-EMBODIMENT — one denoiser, many robot bodies.
+  A.dpf_cross=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'One policy, many bodies: share the skill across arms, legs, and rotors',14,16,C.dim);
+    const cx=w*0.5,cy=h*0.5;box(ctx,cx-w*0.11,cy-18,w*0.22,36,'one diffusion policy',C.accent||C.cyan);
+    const bodies=[[w*0.12,h*0.28,'arm'],[w*0.12,h*0.72,'quadruped'],[w*0.88,h*0.28,'humanoid'],[w*0.88,h*0.72,'drone']];
+    const hi=Math.floor(saw(t,4)*4)%4;
+    bodies.forEach((b,i)=>{const on=i===hi;arrow(ctx,cx+(b[0]<cx?-w*0.11:w*0.11),cy,b[0]+(b[0]<cx?30:-30),b[1],on?C.green:hexA(C.mut,0.5),on?1.8:1);
+      // simple glyph
+      ctx.strokeStyle=on?C.green:C.mut;ctx.lineWidth=2;
+      if(b[2]==='arm'){ctx.beginPath();ctx.moveTo(b[0]-14,b[1]+8);ctx.lineTo(b[0],b[1]-6);ctx.lineTo(b[0]+14,b[1]+2);ctx.stroke();}
+      else if(b[2]==='quadruped'){ctx.strokeRect(b[0]-14,b[1]-6,28,10);[-10,-4,4,10].forEach(dx=>{ctx.beginPath();ctx.moveTo(b[0]+dx,b[1]+4);ctx.lineTo(b[0]+dx,b[1]+14);ctx.stroke();});}
+      else if(b[2]==='humanoid'){ctx.beginPath();ctx.arc(b[0],b[1]-10,4,0,TAU);ctx.moveTo(b[0],b[1]-6);ctx.lineTo(b[0],b[1]+8);ctx.moveTo(b[0]-8,b[1]);ctx.lineTo(b[0]+8,b[1]);ctx.moveTo(b[0],b[1]+8);ctx.lineTo(b[0]-6,b[1]+18);ctx.moveTo(b[0],b[1]+8);ctx.lineTo(b[0]+6,b[1]+18);ctx.stroke();}
+      else {ctx.beginPath();ctx.moveTo(b[0]-14,b[1]-8);ctx.lineTo(b[0]+14,b[1]+8);ctx.moveTo(b[0]+14,b[1]-8);ctx.lineTo(b[0]-14,b[1]+8);ctx.stroke();}
+      lab(ctx,b[2],b[0]-14,b[1]+26,on?C.green:C.mut,9.5);});
+    lab(ctx,'shared encoders map each body to one space → the single policy matches specialists',14,h-12,C.mut);
+  };
+
   // ---- boot ----
   const running=new Map();
   function start(cv){if(running.has(cv))return;const anim=A[cv.dataset.dpanim];if(!anim)return;
