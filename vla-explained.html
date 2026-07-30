@@ -1,0 +1,337 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VLA — Vision-Language-Action models, from first principles</title>
+<style>
+:root{--ink:#191206;--paper:#F5F1E8;--panel:#FCFAF4;--tint:#EEE6D3;--line:#DFD4BC;
+ --graphite:#5E5540;--g2:#8E8264;--accent:#B5751A;--accent-deep:#8A560F;--accent-lite:#E0A94E;
+ --robo:#B4531F;--cvpr:#2F6F8B;--both:#B5751A;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#17120A;color:#F3ECDD;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#FBF5E9}
+header p{color:#C3B694;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#A79A78}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#39301C;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#14100A;border:1px solid #37301F;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#AE9F7C;margin-top:8px}
+.essay p{font-size:15.5px;color:#2A2312;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#14100A}
+.ranfig figcaption{font-size:13px;color:#39301C;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#33291a;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#39301C;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#33291a}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:700px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#33291a}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#F1E6CE}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#2A2312;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#F6E9E1;color:#9A4419;border:1px solid #E6CDBE}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#F1E6CE;color:var(--accent-deep);border:1px solid #E4D3AC}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#2A2312}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#33291a;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#221b0d}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#33291a}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Vision-Language-Action &middot; first principles &middot; robotics + vision</div>
+  <h1>VLA: turning pixels and words into actions</h1>
+  <p>A single model that takes what a robot sees and a plain-language instruction, and outputs what to do &mdash; by standing on a vision-language model that already learned the world from the web. What it is, why it generalizes, and every way robotics and vision build it, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the goal</a> &middot; <a href="#fp2">the backbone</a> &middot; <a href="#fp3">the output</a> &middot; <a href="#fp4">the data</a> &middot; <a href="#fp5">reason first</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; one model commanded in language, the pretrained backbone it stands on, how it outputs an action, why it must co-train on web data, and reason-then-act. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">2022</span><b>SayCan</b><p>an LLM picks which learned skill to run next &mdash; language enters robot decision-making, skills stay separate.</p></div><div class="ln"><span class="lyr">2023</span><b>RT-2</b><p>the first big VLA: co-train a vision-language model on robot data and read actions out as <em>tokens</em>.</p></div><div class="ln"><span class="lyr">2024</span><b>OpenVLA · Octo</b><p>open generalist VLAs trained on the Open X-Embodiment data &mdash; one policy across many robots.</p></div><div class="ln"><span class="lyr">2024&ndash;25</span><b>&pi;&#8320; &amp; flow VLAs</b><p>flow-matching action heads make VLAs fast and dexterous enough for real control.</p></div><div class="ln"><span class="lyr">2025&ndash;</span><b>reasoning VLAs</b><p>embodied chain-of-thought, spatial grounding, self-correction &mdash; the families below.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the goal</div>
+  <h2>One model, commanded in words</h2>
+  <figure class="instrument"><canvas data-vaanim="va_generalist" height="300"></canvas>
+    <figcaption>The old way built one policy per task and retrained for each. A VLA is a single model you command in plain language — the instruction selects the behavior, so a new task doesn't need a new model.</figcaption></figure>
+  <div class="essay"><p>For years a robot skill meant a bespoke policy: collect data for <em>this</em> task, train a model for <em>this</em> task, repeat. It doesn&rsquo;t scale &mdash; the world has more tasks than you can ever script.</p>
+<p>A vision-language-action model flips that. It is <b>one</b> model that takes what the robot sees and an instruction in ordinary words, and outputs an action. The language <em>is</em> the task selector: &lsquo;fold the towel&rsquo;, &lsquo;pour the cup&rsquo;, &lsquo;open the drawer&rsquo; all go to the same network. New tasks become new sentences, not new models.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>A VLA is a policy &pi;(a | o, &ell;) &mdash; action a given observation o and a language instruction &ell;.</p>
+<p>One set of weights covers every task; the instruction &ell; conditions the behavior, replacing a separate &pi;&#7511;&#8348;&#8347;&#8342; per task.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; the backbone</div>
+  <h2>Stand on a model that already knows the world</h2>
+  <figure class="instrument"><canvas data-vaanim="va_backbone" height="300"></canvas>
+    <figcaption>Robot data is tiny; the internet is vast. So a VLA starts from a vision-language model already pretrained on oceans of images and text — it knows objects, words, and common sense — and teaches that model to act.</figcaption></figure>
+  <div class="essay"><p>Where does the intelligence come from? Not from robot demonstrations &mdash; there are far too few of those. It comes from the internet. A vision-language model (a VLM) pretrained on billions of image-text pairs already recognizes a mug, knows what &lsquo;sink&rsquo; means, and has a rough grasp of how the world works.</p>
+<p>A VLA <b>adapts that pretrained VLM into an actor:</b> keep its perception and language understanding, bolt on a way to output actions, and fine-tune. The payoff is generalization &mdash; because the backbone learned the world from the web, the robot can handle objects and phrasings it never saw in any robot dataset.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Initialize from a pretrained VLM &theta;&#7515;&#8343;&#8344; (image+text &rarr; text), trained on billions of web image-text pairs.</p>
+<p>Attach an action decoder and fine-tune on robot data: the perception/language weights start from &theta;&#7515;&#8343;&#8344;, not from scratch.</p>
+<p>Generalization comes from that prior &mdash; representations for objects and words the robot data never contained.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; the output</div>
+  <h2>How a language model outputs an action</h2>
+  <figure class="instrument"><canvas data-vaanim="va_action" height="300"></canvas>
+    <figcaption>A VLM emits text — so how do you get a continuous robot action out? Two ways: chop each action into discrete tokens the model predicts like words, or attach a continuous head (a diffusion or flow model) that samples a smooth action.</figcaption></figure>
+  <div class="essay"><p>A language model produces tokens, but a robot needs continuous motor commands. Bridging that gap is the defining design choice of a VLA.</p>
+<p>The first way is <b>action tokenization:</b> quantize each dimension of the action into a small vocabulary, and let the model predict those tokens exactly as it predicts words &mdash; simple, and it reuses the language machinery. The second is a <b>continuous head:</b> hang a diffusion or flow model off the backbone that denoises a smooth action (this is the seam with diffusion policies). Tokens are simple and cheap; continuous heads are smoother and naturally multimodal &mdash; and flow-matching heads are what make the newest VLAs fast.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p><b>Discrete:</b> bin each action dimension into K tokens; model p(a&#8348; | o, &ell;, a&#8323;&#8348;) autoregressively, like text.</p>
+<p><b>Continuous:</b> a diffusion/flow head samples a ~ p(a | o, &ell;) by denoising &mdash; smoother, multimodal (see the diffusion-policies explainer).</p>
+<p>Tokenizing reuses the LM&rsquo;s softmax; continuous heads add expressiveness at some inference cost (flow matching cuts it back).</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; the data</div>
+  <h2>Keep the web, add the robot</h2>
+  <figure class="instrument"><canvas data-vaanim="va_cotrain" height="300"></canvas>
+    <figcaption>Fine-tune only on robot data and the model forgets how to understand language. So VLAs co-train: mix the huge web image-text corpus with the scarce robot demos, so the model learns to act without losing what it knew.</figcaption></figure>
+  <div class="essay"><p>There is a trap. Fine-tune the pretrained VLM only on the small pile of robot demonstrations and it <em>forgets</em> &mdash; the very language and world knowledge you wanted bleeds away, a problem called catastrophic forgetting.</p>
+<p>The fix is <b>co-training:</b> during fine-tuning, keep feeding the model web data (visual question answering, captioning) mixed in with the robot demos. The web stream &mdash; billions of examples &mdash; holds the language grounding steady while the thin robot stream teaches it to act. The mix is what lets a VLA both understand &lsquo;the striped mug&rsquo; and reach for it.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Co-training loss: L = &lambda;&middot;L_web(VQA / caption) + (1&minus;&lambda;)&middot;L_robot(action).</p>
+<p>The web term regularizes the backbone against catastrophic forgetting of language while the robot term teaches control.</p>
+<p>Ratios like ~90% web / ~10% robot are common; some methods learn a latent action space from unlabeled video to stretch the robot data further.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; reason first</div>
+  <h2>Think, then move</h2>
+  <figure class="instrument"><canvas data-vaanim="va_reason" height="300"></canvas>
+    <figcaption>Words are loose and robots are precise. The strongest VLAs reason before acting — laying out steps or spatial waypoints in language first — which grounds a vague instruction in geometry and makes the whole thing far more robust and debuggable.</figcaption></figure>
+  <div class="essay"><p>A VLM is brilliant at semantics (&lsquo;that&rsquo;s the mug&rsquo;) and weak at geometry (&lsquo;it&rsquo;s 12&nbsp;cm to your left, tilt 20&deg;&rsquo;). Ask it to jump straight from a loose instruction to a precise action and it stumbles on exactly the spatial part a body needs.</p>
+<p>So the frontier is <b>reason-then-act:</b> have the model first think out loud &mdash; find the object, lay out sub-steps, place waypoints in 3D &mdash; and only then emit the action, conditioned on that reasoning. Decoupling the &lsquo;what&rsquo; from the &lsquo;how&rsquo; makes VLAs markedly more robust on long tasks, and the reasoning trace is readable, so you can see <em>why</em> the robot did what it did.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Reason-then-act factorizes the policy: p(z | o, &ell;) &middot; p(a | o, &ell;, z), where z is a reasoning trace (text CoT, sub-goals, or 3D waypoints).</p>
+<p>z can be explicit text (readable, auditable) or a compact latent (faster). Tree-of-thought evaluates several z before committing.</p>
+<p>Decoupling &lsquo;what&rsquo; (z) from &lsquo;how&rsquo; (a) improves long-horizon success and interpretability.</p></div></details>
+</section>
+<section class="fp">
+  <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
+  <img src="assets/vlm/qwenvl_living_room.png" alt="Qwen2-VL reasoning about a real living-room scene">
+  <figcaption>We ran <b>Qwen2-VL</b> &mdash; an open vision-language model, the kind of backbone a VLA is built on &mdash; on a real photo and asked it to reason about the scene. It names objects and relationships fluently: that is the web-scale common sense a VLA <em>inherits</em> for free (Part&nbsp;I&mdash;2). It also shows the gap &mdash; ask for precise distances or 3D layout and it hedges, which is exactly why spatial grounding (family&nbsp;06) exists. Our own run, on a laptop.</figcaption></figure>
+</section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>VLA vs the alternatives</h2>
+  <p class="intro">Three ways to turn perception into action. The VLA bet: pay in latency to <b>reason in language</b> on top of a web-pretrained backbone &mdash; buying open-ended generalization and an explanation you can read.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it decides</th><th>Generalizes?</th><th>Interpretable?</th><th>Speed</th><th>Best at</th></tr></thead><tbody><tr><th class="rn">Modular pipeline</th><td>hand-built stages: detect &rarr; track &rarr; plan &rarr; control</td><td>poorly — brittle to the unexpected</td><td>yes, per stage</td><td>fast</td><td>known, structured settings</td></tr><tr><th class="rn">End-to-end net</th><td>pixels &rarr; action, one black box</td><td>some, with lots of data</td><td>no</td><td>fast</td><td>narrow tasks with heavy data</td></tr><tr class="hi"><th class="rn">VLA</th><td>adapt a VLM; reason in language, then act</td><td>strongly — web knowledge, open-vocab</td><td>yes — the reasoning is readable</td><td>slow, but improving</td><td>open-ended, language-commanded tasks</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons the field bet on vision-language-action models, in the words the papers keep using.</p>
+  <div class="bens"><div class="ben"><h4>Generalizes via web knowledge</h4><p>Because the backbone learned the world from the internet, a VLA handles objects, words, and situations that never appear in any robot dataset &mdash; zero-shot to the unfamiliar.</p></div>
+<div class="ben"><h4>One model, many tasks &amp; bodies</h4><p>A single policy, commanded in language, spans manipulation, navigation, locomotion, even flight, and transfers across robot embodiments &mdash; no per-task retraining.</p></div>
+<div class="ben"><h4>Open-vocabulary</h4><p>Ask for &lsquo;the striped mug&rsquo; or &lsquo;the thing you drink from&rsquo; and it grounds the words &mdash; no fixed list of object classes.</p></div>
+<div class="ben"><h4>Common-sense reasoning</h4><p>It reasons about affordances, task order, and physical constraints it was never explicitly taught &mdash; and can explain that reasoning in words.</p></div>
+<div class="ben"><h4>Corrects from language</h4><p>Say &lsquo;no, the other one&rsquo; or &lsquo;a bit higher&rsquo; and the policy adapts on the fly &mdash; language is a live correction channel, not just an instruction.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way the field builds them</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip rb" href="#va1"><span class="cn">01</span>Generalist VLA policies</a><a class="fchip bb" href="#va2"><span class="cn">02</span>Action representation: tokens vs continuous heads</a><a class="fchip rb" href="#va3"><span class="cn">03</span>LLM task planning</a><a class="fchip rb" href="#va4"><span class="cn">04</span>Open-vocabulary manipulation</a><a class="fchip bb" href="#va5"><span class="cn">05</span>Embodied reasoning</a><a class="fchip bb" href="#va6"><span class="cn">06</span>Spatial</a><a class="fchip bb" href="#va7"><span class="cn">07</span>Language-conditioned navigation (VLN)</a><a class="fchip vb" href="#va8"><span class="cn">08</span>Driving VLAs</a><a class="fchip rb" href="#va9"><span class="cn">09</span>Affordance</a><a class="fchip rb" href="#va10"><span class="cn">10</span>Failure detection, recovery</a><a class="fchip bb" href="#va11"><span class="cn">11</span>Cross-embodiment</a><a class="fchip vb" href="#va12"><span class="cn">12</span>Efficient</a><a class="fchip vb" href="#va13"><span class="cn">13</span>Force-aware</a><a class="fchip vb" href="#va14"><span class="cn">14</span>Active perception</a><a class="fchip vb" href="#va15"><span class="cn">15</span>Robustness, safety</a></div>
+  <div class="famgrid">
+<div class="fam" id="va1">
+  <div class="famhd"><span class="famn">01</span><h3>Generalist VLA policies</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The core recipe: adapt a pretrained VLM so one network maps image + instruction to action, across many tasks and even many robot bodies. Trained on giant cross-embodiment demonstration mixes, a single policy replaces a zoo of specialists.</p>
+<p>These are the open backbones the rest of the field builds on.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>OpenVLA</b> &mdash; open-source 7B VLA on 970k demos with efficient adapter fine-tuning</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Octo</b> &mdash; transformer policy pretrained on 800k Open X-Embodiment trajectories; language or goal-image conditioned (the one we run in the diffusion explainer)</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Scaling Cross-Embodied Learning</b> &mdash; one network drives arms, quadrupeds, wheeled and aerial robots from 900k trajectories</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A3VLM</b> &mdash; an articulation-aware VLM predicts affordances, cutting the robot data needed</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Harmon</b> &mdash; a VLM refines human-motion priors into text-aligned humanoid whole-body motion</span></li></ul>
+</div>
+
+<div class="fam" id="va2">
+  <div class="famhd"><span class="famn">02</span><h3>Action representation: tokens vs continuous heads</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>A VLM emits text, so how do you get a continuous action out? Discretize it into tokens the model predicts like words, or attach a diffusion/flow head that denoises a smooth action. The choice sets a VLA&rsquo;s smoothness, expressiveness, and speed.</p>
+<p>Flow-matching heads are the current sweet spot &mdash; multimodal and fast enough for real control.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>MM-ACT</b> &mdash; a unified discrete-token VLA with parallel decoding for text/image/action at 40Hz</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus</b> &mdash; learns a latent action space from video via optical flow to bridge web and robot data</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WAM-Flow</b> &mdash; discrete flow matching generates trajectories in parallel, 3&times; faster than autoregressive</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Equivariant Diffusion Policy</b> &mdash; a continuous (diffusion) action head with built-in symmetry (see the diffusion-policies explainer)</span></li></ul>
+</div>
+
+<div class="fam" id="va3">
+  <div class="famhd"><span class="famn">03</span><h3>LLM task planning &amp; decomposition</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Use a language model as the high-level planner: decompose a long instruction into steps, each calling a low-level skill, with the LLM reasoning over constraints and feasibility.</p>
+<p>This is the &lsquo;brain on top of skills&rsquo; pattern &mdash; language for the plan, learned or scripted controllers for the execution.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Trust the PRoC3S</b> &mdash; the LLM emits parameterized skill code; a constraint solver makes it kinematically feasible</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>AutoGPT+P</b> &mdash; LLM affordance mapping + a symbolic planner handles missing objects and incomplete info</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Language-Augmented Symbolic Planner</b> &mdash; LLM error diagnosis feeds a symbolic planner that grows its domain knowledge</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>INTERPRET</b> &mdash; learns PDDL predicates from language feedback to generalize task planning</span></li></ul>
+</div>
+
+<div class="fam" id="va4">
+  <div class="famhd"><span class="famn">04</span><h3>Open-vocabulary manipulation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Grasp and manipulate objects the robot was never trained on, named in open language, by having a VLM reason about parts, affordances, and how to point at them.</p>
+<p>The trick is turning &lsquo;pick up the striped mug&rsquo; into a spatial target without any task-specific training.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>MOKA</b> &mdash; mark-based visual prompting turns instructions into VQA affordance reasoning for zero-shot tool use</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Manipulate-Anything</b> &mdash; a VLM generates trajectories with no privileged state; cloning from them beats human data</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Open-World Grasping with Large VLMs</b> &mdash; part-level VLM reasoning selects grasps under occlusion, no task data</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RAM</b> &mdash; a retrieval affordance bank transfers zero-shot to unseen object categories</span></li></ul>
+</div>
+
+<div class="fam" id="va5">
+  <div class="famhd"><span class="famn">05</span><h3>Embodied reasoning &amp; chain-of-thought</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Make the VLA think before it moves: emit an explicit chain (or tree) of thought &mdash; steps, predicted future frames, candidate trajectories &mdash; and only then act. Reasoning in language or latent space beats jumping straight to control.</p>
+<p>It improves long-horizon success and, crucially, makes the decision auditable.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>TRM-VLA</b> &mdash; keyframe-triggered hierarchical CoT + memory: &minus;77.6% tokens, +28.6% success on LIBERO-90</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OctoNav</b> &mdash; Think-Before-Action navigation trained Action-SFT &rarr; TBA-SFT &rarr; nav-GRPO &rarr; online RL</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>HybridDriveVLA</b> &mdash; visual chain-of-thought predicts future frames; tree-of-thought scores trajectories &mdash; 0.17% collisions</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ACoT-VLA</b> &mdash; action chain-of-thought reasons through task steps before predicting the action</span></li></ul>
+</div>
+
+<div class="fam" id="va6">
+  <div class="famhd"><span class="famn">06</span><h3>Spatial &amp; 3D grounding</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Fix the VLM&rsquo;s biggest weakness &mdash; geometry. Augment the backbone with explicit 3D (BEV, occupancy, point clouds, scene graphs) so a loose instruction is anchored to real metric space and precise manipulation becomes possible.</p>
+<p>Without this, VLAs name the mug correctly but reach a few centimeters wrong.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SpatialBot</b> &mdash; gives VLMs precise spatial understanding via 3D scene graphs, fixing 3D localization</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>VLM-Grounder</b> &mdash; a VLM agent does zero-shot 3D visual grounding, coarse-to-fine</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ActiveVLA</b> &mdash; coarse-to-fine active perception + multi-view projection &mdash; 91.8% RLBench</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReKep</b> &mdash; auto-generates relational keypoint constraints from language + RGB-D for real-time optimization</span></li></ul>
+</div>
+
+<div class="fam" id="va7">
+  <div class="famhd"><span class="famn">07</span><h3>Language-conditioned navigation (VLN)</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Follow &lsquo;go to the kitchen and find a mug&rsquo; through an unseen building: ground the instruction, build semantic memory, and replan as the world reveals itself.</p>
+<p>Long-context VLMs over topological maps, and policies auto-labeled from in-the-wild video, are pushing open-world navigation.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>LeLaN</b> &mdash; auto-labels 50+ hours of in-the-wild video with VLMs for zero-shot object navigation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>GOAT: Go To Any Thing</b> &mdash; a continually-augmented semantic memory hits 83% over 675 goals across 9 homes</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Mobility VLA</b> &mdash; long-context VLM planning over topological graphs for open-vocabulary navigation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OctoNav</b> &mdash; one generalist policy for ObjNav, PointNav, ImgNav and VLN at once</span></li></ul>
+</div>
+
+<div class="fam" id="va8">
+  <div class="famhd"><span class="famn">08</span><h3>Driving VLAs</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Bring VLA reasoning to autonomous driving: the model reasons in language about the scene, the risks, and the plan, then outputs a trajectory &mdash; trading the brittle detect-track-plan cascade for grounded, explainable decisions.</p>
+<p>Spatial grounding and future-frame reasoning are what make it safe enough to consider.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DrivePI</b> &mdash; a 0.5B 4D spatial MLLM with LiDAR beats 7B VLAs on nuScenes-QA and occupancy</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Percept-WAM</b> &mdash; unifies 2D and 3D (BEV) world tokens in the VLM backbone for robust end-to-end driving</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>HybridDriveVLA</b> &mdash; visual-CoT + tree-of-thought trajectory evaluation for safe planning</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SpaceDrive</b> &mdash; a geometric spatial encoder grounds the VLM&rsquo;s language in 3D for trajectory planning</span></li></ul>
+</div>
+
+<div class="fam" id="va9">
+  <div class="famhd"><span class="famn">09</span><h3>Affordance &amp; manipulation grounding</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Ground language not just to <em>objects</em> but to <em>how you interact with them</em> &mdash; where to grasp, which part moves, what constraint to respect. A VLM predicts affordances and interaction primitives from the instruction.</p>
+<p>This is the layer that turns &lsquo;open it&rsquo; into a hinge, an axis, and a pull.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>A3VLM</b> &mdash; an articulation-structure VLM predicts affordances that transfer across embodiments</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoboEXP</b> &mdash; an LMM builds action-conditioned scene graphs through interactive exploration</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReKep</b> &mdash; spatio-temporal relational keypoint constraints from language, optimized in real time</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reasoning Grasping via MLLM</b> &mdash; the LLM reasons implicit intent into object/part-level grasp poses</span></li></ul>
+</div>
+
+<div class="fam" id="va10">
+  <div class="famhd"><span class="famn">10</span><h3>Failure detection, recovery &amp; self-correction</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>A VLM can watch execution, notice when it&rsquo;s going wrong, and take a correction &mdash; from its own progress estimate or from a human&rsquo;s spoken feedback. Language becomes a live repair channel.</p>
+<p>This is what makes a deployed VLA recoverable rather than silently failing.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Yell At Your Robot</b> &mdash; hierarchical policies learn fine-grained corrections from spoken feedback mid-task</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACER</b> &mdash; learns recovery behaviors from rich language explanations of failure states</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sentinel</b> &mdash; consistency + VLM progress detection catches 18% more failures than single detectors</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Vocal Sandbox</b> &mdash; dialogue + keypoints + demos teach recoverable behaviors with 22% less supervision</span></li></ul>
+</div>
+
+<div class="fam" id="va11">
+  <div class="famhd"><span class="famn">11</span><h3>Cross-embodiment &amp; transfer</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Share one policy across different robot bodies, or transfer a policy to a new robot with little data, by learning robot-agnostic representations or masking away the robot&rsquo;s appearance.</p>
+<p>The dream is a policy that treats a new arm the way an LLM treats a new topic &mdash; mostly already known.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>MIRAGE</b> &mdash; &lsquo;cross-painting&rsquo; inpaints the source robot over the target for zero-shot visual transfer</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoVi-Aug</b> &mdash; generative augmentation of robot identity + viewpoint &mdash; +30% on novel embodiments</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Universal Manipulation Interface (UMI)</b> &mdash; hand-held-gripper demos teach policies with no robot in the loop</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learning a Unified Latent Action Space</b> &mdash; action-centric cycle consistency transfers across bodies, +20.1% over OpenVLA</span></li></ul>
+</div>
+
+<div class="fam" id="va12">
+  <div class="famhd"><span class="famn">12</span><h3>Efficient &amp; fast VLA inference</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Big VLMs are slow &mdash; seconds per action &mdash; and a control loop needs milliseconds. This family distills, prunes, and re-architects VLAs to run on the robot in real time.</p>
+<p>Latency, not accuracy, is what keeps most VLAs off real hardware; this is the fix.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SwiftVLA</b> &mdash; mask-and-reconstruct distillation &mdash; 18&times; faster, 12&times; less memory than a &pi;&#8320; baseline</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Evo-1</b> &mdash; a lightweight VLA that preserves semantic alignment for edge deployment</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Fast-ThinkAct</b> &mdash; encodes reasoning as compact latent vectors instead of verbose text for low latency</span></li></ul>
+</div>
+
+<div class="fam" id="va13">
+  <div class="famhd"><span class="famn">13</span><h3>Force-aware &amp; contact-rich VLAs</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Vision and language alone miss the moment of contact; folding force and touch into the VLA gives it the closed-loop feel needed for assembly, pressing, and wiping.</p>
+<p>It closes the VLM&rsquo;s blind spot on friction, compliance, and force.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ForceVLA2</b> &mdash; force-aware prompts + a cross-scale mixture-of-experts fuse force with vision &mdash; +48% over &pi;&#8320;</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AT-VLA</b> &mdash; adaptive tactile injection modulates feedback reaction during manipulation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D-ViTac</b> &mdash; a unified 3D visuo-tactile representation beats vision-only on fragile items</span></li></ul>
+</div>
+
+<div class="fam" id="va14">
+  <div class="famhd"><span class="famn">14</span><h3>Active perception &amp; dynamic viewpoint</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Drop the passive fixed-camera assumption: let the VLA decide where to look, zoom, or move the camera to resolve ambiguity, tracking history like a POMDP rather than a single snapshot.</p>
+<p>Seeing better on purpose beats reasoning harder over a bad view.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>AVA-VLA</b> &mdash; POMDP-style recurrent state + dynamic visual-token reweighting by task history</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ActiveVLA</b> &mdash; multi-view projection + active view selection for precise 3D manipulation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>EgoRoC</b> &mdash; task-agnostic diffusion hand-eye calibration aligns egocentric video to actions</span></li></ul>
+</div>
+
+<div class="fam" id="va15">
+  <div class="famhd"><span class="famn">15</span><h3>Robustness, safety &amp; evaluation</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>VLAs that score 95% on clean benchmarks collapse below 30% under mild perturbations &mdash; so this family measures that honestly and hardens the models with RL post-training and diverse data.</p>
+<p>Knowing where a VLA breaks is now as active as building one.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>LIBERO-Plus</b> &mdash; a 7-dimension perturbation benchmark; performance drops 95% &rarr; <30% under modest shifts</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SRPO</b> &mdash; dense rewards from a latent world model &mdash; 48.9% &rarr; 99.2% LIBERO in 200 RL steps</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FlowHijack</b> &mdash; the first backdoor attack on flow-matching VLAs &mdash; a safety wake-up call</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Test-Time Perturbation Tuning</b> &mdash; uncertainty-guided augmentation adapts a VLA at test time, no retraining</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">VLAs are the fastest-moving idea in robot learning &mdash; and the most over-hyped. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>Inference latency.</b> Big VLM backbones cost seconds per action; getting real-time control on modest onboard hardware is the central bottleneck.</div>
+<div class="op"><b>Weak 3D grounding.</b> VLMs name objects well but misjudge depth, occlusion, and metric distance &mdash; the exact spatial precision a body needs.</div>
+<div class="op"><b>Hallucination.</b> They produce confident, plausible-sounding, wrong predictions, and catching those failures at runtime is hard.</div>
+<div class="op"><b>Data for new bodies.</b> A generic VLA still needs hundreds-to-thousands of demos to adapt to a specific robot&rsquo;s morphology and sensors.</div>
+<div class="op"><b>Touch &amp; force.</b> Contact dynamics &mdash; friction, compliance, force &mdash; remain a blind spot for vision-language backbones.</div>
+<div class="op"><b>Robustness.</b> Small perturbations (viewpoint, lighting, phrasing) still crater performance; grounding + diverse data + RL only partly close it.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">VLA explainer &middot; mechanism diagrams are live JavaScript (assets/va-anim.js), not video &middot; the Qwen-VL run is ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; completes the arc with the <a href="gaussian-splatting-explained.html">Gaussian Splatting</a> (perceive), <a href="world-models-explained.html">World Models</a> (imagine), and <a href="diffusion-policies-explained.html">Diffusion Policies</a> (act) explainers &middot; <a href="index.html">Robotics 2025</a> home.</div></footer>
+<script src="assets/va-anim.js"></script>
+</body></html>
