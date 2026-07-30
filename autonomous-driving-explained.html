@@ -1,0 +1,332 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Autonomous Driving, from first principles</title>
+<style>
+:root{--ink:#0F141A;--paper:#EDF1F5;--panel:#FAFBFD;--tint:#DEE6EF;--line:#CDD8E3;
+ --graphite:#4C5866;--g2:#7A8695;--accent:#3E6699;--accent-deep:#294B78;--accent-lite:#7FA9D8;
+ --robo:#B4531F;--cvpr:#2F6F8B;--both:#3E6699;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#0A0F16;color:#E6ECF3;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#F1F6FB}
+header p{color:#AEBCCB;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#8B99A9}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#2A333D;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#0A0F16;border:1px solid #1F2A38;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#8FA0B2;margin-top:8px}
+.essay p{font-size:15.5px;color:#1D262F;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#0A0F16}
+.ranfig figcaption{font-size:13px;color:#2A333D;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:620px){.ba{grid-template-columns:1fr}}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#24303B;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#2A333D;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#24303B}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:700px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#24303B}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#DCE7F3}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#1D262F;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#F6E9E1;color:#9A4419;border:1px solid #E6CDBE}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#DCE7F3;color:var(--accent-deep);border:1px solid #C0D3EA}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#1D262F}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#24303B;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#141a20}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#24303B}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Autonomous Driving &middot; first principles &middot; robotics + vision</div>
+  <h1>Autonomous Driving, end to end</h1>
+  <p>Given a scene, what is safe to do next? A self-driving car must see, predict, and decide &mdash; on a small onboard computer, many times a second, where a mistake can kill. What that takes, from bird&rsquo;s-eye view to the long tail, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the loop</a> &middot; <a href="#fp2">BEV</a> &middot; <a href="#fp3">fusion</a> &middot; <a href="#fp4">end-to-end</a> &middot; <a href="#fp5">the long tail</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; the loop on a hard clock, the bird&rsquo;s-eye view, sensor fusion, modular-vs-end-to-end-vs-VLA, and the long tail. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">~2020</span><b>BEV perception</b><p>lift multi-camera images into a shared bird&rsquo;s-eye grid &mdash; the representation that reorganized the field.</p></div><div class="ln"><span class="lyr">2021&ndash;22</span><b>occupancy &amp; forecasting</b><p>dense 3D occupancy + motion prediction: model not just what is, but what will be.</p></div><div class="ln"><span class="lyr">2022&ndash;23</span><b>end-to-end</b><p>perception&rarr;prediction&rarr;planning fused into one differentiable network trained on the driving objective.</p></div><div class="ln"><span class="lyr">2024</span><b>driving world models</b><p>generate future frames/occupancy as a mental simulation the planner reacts to.</p></div><div class="ln"><span class="lyr">2025&ndash;</span><b>driving VLAs</b><p>reason in language about the scene and risks, then plan &mdash; grounded, explainable driving; the families below.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the loop</div>
+  <h2>The self-driving loop, on a hard clock</h2>
+  <figure class="instrument"><canvas data-dranim="dr_stack" height="300"></canvas>
+    <figcaption>A car must sense, work out what & where things are, predict how they'll move, plan a safe path, and act — over and over, on a small onboard computer, many times a second. Accuracy that misses the deadline is useless.</figcaption></figure>
+  <div class="essay"><p>Autonomous driving is the same sense-decide-act loop as any robot, but under brutal constraints: it runs on a computer bolted in the trunk, it must react before the world moves on, and a mistake can kill.</p>
+<p>The loop has five beats &mdash; <b>sense</b> (cameras, LiDAR, radar), <b>perceive</b> (what and where), <b>predict</b> (where everything goes next), <b>plan</b> (a safe trajectory), <b>act</b> (steer and brake) &mdash; then look again. Every stage lives inside a real-time budget, which is why so much of the field is about doing more with less compute.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>The loop: o&#8348; (sensors) &rarr; perception &rarr; prediction of other agents &rarr; plan &tau; &rarr; control u&#8348; &rarr; the world advances &rarr; repeat.</p>
+<p>Each stage has a latency budget; total loop time must stay under the reaction deadline (often ~100&thinsp;ms) or the plan is stale on arrival.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; BEV</div>
+  <h2>Bird’s-eye view: the invented map</h2>
+  <figure class="instrument"><canvas data-dranim="dr_bev" height="300"></canvas>
+    <figcaption>Cameras see the world in perspective; planning wants it from above. So the field lifts multi-camera 2D features into one top-down bird's-eye-view grid — an invented representation where detection, prediction, and planning all live in the same frame.</figcaption></figure>
+  <div class="essay"><p>Here is the field&rsquo;s signature move. A planner reasons about a top-down world &mdash; lanes, gaps, distances &mdash; but cameras deliver perspective images from all around the car. So you <b>lift</b> those multi-camera features into a single bird&rsquo;s-eye-view grid: the scene as seen from above.</p>
+<p>The key insight is that BEV is not something a camera outputs; it is an <em>invented intermediate representation</em>, chosen because it makes everything downstream easier. Detection, tracking, prediction, and planning can all share one common top-down frame.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Lift multi-camera image features to a shared top-down grid: for each BEV cell, gather the image features along its projection ray (depth-splat or attention).</p>
+<p>BEV(x,y) = &Sigma;_cameras attend( image-features, ray(x,y) ). Detection, forecasting, and planning then operate on this common grid.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; fusion</div>
+  <h2>Fuse sensors, each blind differently</h2>
+  <figure class="instrument"><canvas data-dranim="dr_fusion" height="300"></canvas>
+    <figcaption>A camera has rich color but no true depth; LiDAR has precise 3D but no color and thins out far away; radar sees velocity and cuts through weather but is low-resolution. Fuse them and the blind spots cancel.</figcaption></figure>
+  <div class="essay"><p>No single sensor is enough, and each fails in its own way. A camera is rich in color and meaning but guesses depth. LiDAR measures exact 3D distance but is colorless and sparse far off. Radar sees velocity directly and pierces rain and fog, but is coarse.</p>
+<p>So you <b>fuse</b> them, and the weaknesses cancel: color from the camera, depth from LiDAR, motion-through-weather from radar. Redundancy and diversity are what make perception reliable enough to trust with a life.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Fuse modalities by projecting each into the shared BEV/3D frame and combining features: f = fuse( &phi;_cam, &phi;_lidar, &phi;_radar ).</p>
+<p>Redundancy means no single sensor failure (glare, rain, sparsity) collapses perception; alignment across modalities is the hard part.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; end-to-end</div>
+  <h2>Modular cascade vs end-to-end (vs VLA)</h2>
+  <figure class="instrument"><canvas data-dranim="dr_modular" height="300"></canvas>
+    <figcaption>The classic stack chains detect→track→predict→plan — interpretable, but errors compound at every handoff. End-to-end learns pixels→plan in one net: higher performance, but a black box. VLAs add readable reasoning back in.</figcaption></figure>
+  <div class="essay"><p>How you wire the loop is the field&rsquo;s central debate. The <b>modular</b> way builds separate blocks &mdash; detect, track, predict, plan &mdash; each interpretable, but each handoff throws information away and small errors compound down the chain.</p>
+<p>The <b>end-to-end</b> way trains one network from sensors straight to a trajectory: it keeps all the information and often performs better, but it&rsquo;s a black box you can&rsquo;t interrogate after a crash. The current frontier &mdash; <b>driving VLAs</b> &mdash; tries to get both: reason about the scene in language (what&rsquo;s happening, what&rsquo;s risky) and act on that reasoning, so the decision is grounded and readable.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p><b>Modular:</b> p(plan) = plan &compfn; predict &compfn; track &compfn; detect &mdash; each block trained separately; errors compound multiplicatively down the chain.</p>
+<p><b>End-to-end:</b> one network &pi;&#952;(sensors) &rarr; trajectory, trained on the final objective &mdash; no information lost between stages, but no interpretable intermediates.</p>
+<p><b>VLA:</b> emit a reasoning trace z, then the trajectory: p(z|o)&middot;p(&tau;|o,z) &mdash; readable middle ground.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; the long tail</div>
+  <h2>The long tail, and closed-loop truth</h2>
+  <figure class="instrument"><canvas data-dranim="dr_longtail" height="300"></canvas>
+    <figcaption>99% of driving is easy highway cruising; the danger lives in the rare 1% — a cut-in, a jaywalker, debris, a kid chasing a ball. And a high score on logged data flatters you: the real test is closed-loop, on those rare events.</figcaption></figure>
+  <div class="essay"><p>The last problem is the hardest. Almost all driving is trivially easy &mdash; empty highway, clear lanes &mdash; and the risk concentrates in a thin, endless tail of rare events: a sudden cut-in, a jaywalker, road debris, a child chasing a ball. You can never collect enough of them.</p>
+<p>Worse, the metric lies. Score a model on logged data (open-loop) and it looks great, because it&rsquo;s graded on frames where nothing went wrong. The honest test is <b>closed-loop</b> &mdash; let the policy actually drive, especially through the tail &mdash; which is why simulation, rare-event generation, and closed-loop benchmarks matter so much.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Event frequency follows a heavy-tailed distribution: common scenes dominate the data, rare-but-dangerous events populate the tail.</p>
+<p>Open-loop metrics average over logged frames (mostly easy) and hide tail failures; closed-loop evaluation compounds errors over time and exposes them.</p>
+<p>Coverage of the tail &mdash; via simulation, generative rare-event synthesis, and targeted collection &mdash; is the binding constraint on safety.</p></div></details>
+</section>
+<section class="fp">
+  <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
+  <img src="assets/sparsedrive/0040.jpg" alt="SparseDrive end-to-end driving: 6 cameras + BEV with detections, tracks, motion and plan">
+  <figcaption>We ran <b>SparseDrive</b> &mdash; a real end-to-end driving stack &mdash; on nuScenes: six surround cameras across the top, the fused BEV below with detections, tracked identities, predicted motion, and the planned trajectory, all from one network. This is Part&nbsp;I made concrete: sense &rarr; BEV &rarr; predict &rarr; plan, end to end. Our own run.</figcaption></figure>
+  <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
+  <img src="assets/lightstereo/kitti_depth_beforeafter.png" alt="LightStereo stereo depth on a KITTI driving frame">
+  <figcaption>And the perception front-end alone: <b>LightStereo</b> turning a stereo camera pair from a KITTI driving scene into per-pixel depth &mdash; the raw 3D a BEV grid and a planner are built on. Also our own run.</figcaption></figure>
+</section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three ways to wire a driver</h2>
+  <p class="intro">The field&rsquo;s central debate, in one table &mdash; the trade the whole discipline is negotiating between interpretability, performance, and the long tail.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it decides</th><th>Interpretable?</th><th>Handles the tail?</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Modular cascade</th><td>detect &rarr; track &rarr; predict &rarr; plan, as separate blocks</td><td>yes, per stage</td><td>brittle — errors compound</td><td>information lost at every handoff</td></tr><tr><th class="rn">End-to-end</th><td>one net, sensors &rarr; trajectory</td><td>no — a black box</td><td>better, with enough data</td><td>hard to debug or certify</td></tr><tr class="hi"><th class="rn">Driving VLA</th><td>reason in language about the scene, then plan</td><td>yes — readable reasoning</td><td>promising, still early</td><td>slow; grounding language in geometry is hard</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring wins the field keeps returning to.</p>
+  <div class="bens"><div class="ben"><h4>One shared frame (BEV)</h4><p>Lifting everything into a top-down grid lets detection, prediction, and planning speak the same language &mdash; the representation that unlocked modern driving stacks.</p></div>
+<div class="ben"><h4>Robustness through fusion</h4><p>Camera + LiDAR + radar cover each other&rsquo;s blind spots, so glare, darkness, or weather degrade rather than break perception.</p></div>
+<div class="ben"><h4>End-to-end keeps information</h4><p>Training sensors&rarr;plan in one net stops the modular cascade from discarding signal at every handoff &mdash; usually higher closed-loop performance.</p></div>
+<div class="ben"><h4>Reasoning you can audit</h4><p>Driving VLAs put the &lsquo;why&rsquo; back in words &mdash; what the model saw, what it judged risky &mdash; which matters for safety, debugging, and liability.</p></div>
+<div class="ben"><h4>Foresight for safety</h4><p>Forecasting and world models let the car act on what <em>will</em> happen, not just what is &mdash; anticipating the cut-in before it becomes a collision.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every part of the stack</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip bb" href="#dr1"><span class="cn">01</span>BEV perception</a><a class="fchip bb" href="#dr2"><span class="cn">02</span>3D occupancy</a><a class="fchip rb" href="#dr3"><span class="cn">03</span>3D detection</a><a class="fchip bb" href="#dr4"><span class="cn">04</span>Motion</a><a class="fchip bb" href="#dr5"><span class="cn">05</span>End-to-end planning</a><a class="fchip bb" href="#dr6"><span class="cn">06</span>Driving VLAs: reason, then drive</a><a class="fchip bb" href="#dr7"><span class="cn">07</span>Driving world models</a><a class="fchip bb" href="#dr8"><span class="cn">08</span>Sensor fusion (camera + LiDAR + radar)</a><a class="fchip bb" href="#dr9"><span class="cn">09</span>Adverse weather</a><a class="fchip rb" href="#dr10"><span class="cn">10</span>Online mapping, lanes</a><a class="fchip rb" href="#dr11"><span class="cn">11</span>Planning, MPC</a><a class="fchip bb" href="#dr12"><span class="cn">12</span>Closed-loop simulation</a><a class="fchip rb" href="#dr13"><span class="cn">13</span>Safety monitoring, failure</a><a class="fchip rb" href="#dr14"><span class="cn">14</span>Efficient onboard perception</a></div>
+  <div class="famgrid">
+<div class="fam" id="dr1">
+  <div class="famhd"><span class="famn">01</span><h3>BEV perception &amp; detection</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Lift multi-camera (and LiDAR) features into a shared top-down bird&rsquo;s-eye grid where objects, lanes, and free space all live in one frame the planner can use directly.</p>
+<p>The recurring work is doing it from cheap cameras, under bad light, and generalizing across camera rigs.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>BEV-CAR</b> &mdash; context-aware ray rasterization improves monocular BEV segmentation + occlusion handling</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Retinex-BEVFormer</b> &mdash; Retinex enhancement makes multi-view BEV detection robust in low light</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CoIn3D</b> &mdash; configuration-invariant multi-camera 3D detection generalizes across camera setups</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dur360BEV</b> &mdash; single-camera 360° BEV, dropping the complex multi-camera rig</span></li></ul>
+</div>
+
+<div class="fam" id="dr2">
+  <div class="famhd"><span class="famn">02</span><h3>3D occupancy &amp; 4D forecasting</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Instead of boxes, predict a dense grid of which 3D cells are filled &mdash; and forecast that grid into the future, separating static structure from moving agents.</p>
+<p>Occupancy captures odd shapes and unknown objects that box detectors miss, and forecasting it gives the planner foresight.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ShelfOcc</b> &mdash; foundation-model 3D supervision for camera-only occupancy, no LiDAR needed</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Gau-Occ</b> &mdash; geometry-completed Gaussians for smooth multi-modal 3D occupancy</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GenieDrive</b> &mdash; 4D-occupancy-guided video generation; models how actions change occupancy</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>QueryOcc</b> &mdash; continuous 4D query-based self-supervision for semantic occupancy</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>OCCUQ</b> &mdash; efficient uncertainty on occupancy so planning can be risk-aware</span></li></ul>
+</div>
+
+<div class="fam" id="dr3">
+  <div class="famhd"><span class="famn">03</span><h3>3D detection &amp; multi-object tracking</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Find every vehicle, pedestrian, and cyclist and keep a consistent identity for each across time, through clutter, occlusion, and irregular motion.</p>
+<p>The hard parts are long-range detection, cross-modal resolution gaps, and association when motion breaks the usual assumptions.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ConTrack3D</b> &mdash; contrastive association stays robust when constant-velocity assumptions break</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stands on Shoulders of Giants</b> &mdash; lifts abundant 2D detections to 3D to cut expensive LiDAR labeling</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SaViD</b> &mdash; adaptive camera-LiDAR fusion bridges the resolution gap at long range</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LGDD</b> &mdash; native 4D-radar detection with noise-robust proposal filtering</span></li></ul>
+</div>
+
+<div class="fam" id="dr4">
+  <div class="famhd"><span class="famn">04</span><h3>Motion &amp; trajectory forecasting</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Predict where each agent will go &mdash; a genuinely multimodal question (left, straight, right) &mdash; capturing interactions and uncertainty so the planner can react to the whole distribution of futures.</p>
+<p>Regression to one averaged path is dangerous; the field models the modes and their probabilities.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Curb Your Attention</b> &mdash; causal attention gating filters non-causal agents → +54% robustness</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Categorical Traffic Transformer</b> &mdash; tokenized latent space for interpretable, diverse multimodal prediction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FoSS</b> &mdash; Fourier + state-space models capture long-range multimodal uncertainty efficiently</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SHARP</b> &mdash; short-window streaming prediction robust to variable observation lengths</span></li></ul>
+</div>
+
+<div class="fam" id="dr5">
+  <div class="famhd"><span class="famn">05</span><h3>End-to-end planning</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Train one network from sensors (or BEV) straight to a trajectory, optimizing the final driving objective instead of stitching separate modules &mdash; and increasingly generate that trajectory with flow matching for speed + multimodality.</p>
+<p>Keeps information the cascade would drop; the challenge is safety and interpretability.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>WAM-Flow</b> &mdash; discrete flow matching plans trajectories in parallel, 3× faster, 89.1 PDMS</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GuideFlow</b> &mdash; embeds hard constraints (lane, collision) into flow-matching planning</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Percept-WAM</b> &mdash; unifies 2D/3D perception inside the planner so geometry informs the plan</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizing E2E Driving with Zero-Shot LLMs</b> &mdash; closed-loop LLM guidance cuts data needs, improves unseen-obstacle generalization</span></li></ul>
+</div>
+
+<div class="fam" id="dr6">
+  <div class="famhd"><span class="famn">06</span><h3>Driving VLAs: reason, then drive</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Bring language reasoning into the loop: the model describes the scene and its risks, thinks through options, and then outputs a trajectory &mdash; grounded and explainable, unlike a black-box net.</p>
+<p>Chain- and tree-of-thought, plus spatial grounding, are what make the reasoning trustworthy.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HybridDriveVLA</b> &mdash; visual chain-of-thought + tree-of-thought trajectory scoring → 0.17% collisions</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SpaceDrive</b> &mdash; a geometric spatial encoder grounds the VLM&rsquo;s language in 3D for planning</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DrivePI</b> &mdash; a 0.5B 4D spatial MLLM with LiDAR beats 7B VLAs on nuScenes-QA</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>E3AD</b> &mdash; an emotion-aware VLA balances passenger comfort with safety</span></li></ul>
+</div>
+
+<div class="fam" id="dr7">
+  <div class="famhd"><span class="famn">07</span><h3>Driving world models &amp; video generation</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Learn to generate the future &mdash; frames or occupancy &mdash; so the planner reacts to a mental simulation of what its actions will cause, grounding decisions in predicted dynamics.</p>
+<p>A world model turns out to be a richer teacher than sparse reward.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianDWM</b> &mdash; a 3D-Gaussian driving world model unifies scene understanding + generation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DriveLaW</b> &mdash; chains video generation into a latent planner so visuals and decisions stay consistent</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GEM</b> &mdash; a LiDAR world model with explicit dynamic/static disentanglement</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldLens</b> &mdash; full-spectrum benchmark exposing texture-vs-geometry-vs-behavior trade-offs</span></li></ul>
+</div>
+
+<div class="fam" id="dr8">
+  <div class="famhd"><span class="famn">08</span><h3>Sensor fusion (camera + LiDAR + radar)</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Combine complementary sensors in a shared frame so color, depth, and velocity-through-weather reinforce each other &mdash; the backbone of reliable all-conditions perception.</p>
+<p>Spatial-temporal alignment across heterogeneous, differently-sampled sensors is the core difficulty.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>CRAB</b> &mdash; camera-radar fusion resolves radar&rsquo;s depth ambiguity via camera keypoints</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RPGFusion</b> &mdash; 4D-radar priors guide image BEV sampling for robust 3D detection</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DSERT-RoLL</b> &mdash; first benchmark fusing event+thermal+RGB+4D-radar+dual-LiDAR in rain/snow/fog</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Talk2Radar</b> &mdash; grounds language reasoning on the underused 4D-radar modality</span></li></ul>
+</div>
+
+<div class="fam" id="dr9">
+  <div class="famhd"><span class="famn">09</span><h3>Adverse weather &amp; robustness</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Rain, snow, glare, fog, and night break camera-first perception; this family hardens the stack with test-time adaptation, weather decomposition, and cross-modal redundancy.</p>
+<p>The aim is graceful degradation, not silent failure, when conditions leave the training distribution.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>CD-Buffer</b> &mdash; a dual-buffer scheme adapts detection to adverse weather at test time</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RMSeg-UDA</b> &mdash; unsupervised adaptation carries road-marking segmentation from clear to rainy/night</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>The Blind Spot of Adaptation</b> &mdash; benchmarks catastrophic forgetting in driving domain adaptation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MARSS</b> &mdash; a radar-specific architecture for semantic segmentation in bad conditions</span></li></ul>
+</div>
+
+<div class="fam" id="dr10">
+  <div class="famhd"><span class="famn">10</span><h3>Online mapping, lanes &amp; HD-map-free</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Detect lanes, drivable area, and road structure on the fly so the car needn&rsquo;t depend on a pre-built HD map &mdash; essential to scale beyond mapped regions.</p>
+<p>3D lane geometry and robust segmentation under domain shift are the recurring problems.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D Lane Detection with Projection-Consistent Reference Points</b> &mdash; adaptive 3D references aligned to image appearance</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SCAM-P</b> &mdash; one real-time backbone for detection + drivable-area + lane segmentation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Incremental Mapping for Multi-Floor Parking</b> &mdash; degeneration-aware mapping in featureless, repetitive spaces</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Spatial Retrieval Augmented Autonomous Driving</b> &mdash; augments perception with offline geographic context</span></li></ul>
+</div>
+
+<div class="fam" id="dr11">
+  <div class="famhd"><span class="famn">11</span><h3>Planning, MPC &amp; safety-critical control</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Turn perception and prediction into a safe, feasible trajectory under vehicle dynamics and hard constraints &mdash; with risk budgets and provable guarantees where possible.</p>
+<p>The tension is between provable safety and the agility real traffic demands.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Risk-Bounded Graph-Based Local Planning</b> &mdash; distributes a mission-level risk budget per decision, with guarantees</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ME-PATS</b> &mdash; fuses a search-based planner with a learned heuristic agent</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Guaranteed Reach-Avoid through Narrow Gaps</b> &mdash; neural reachability gives provable safety for black-box dynamics</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Reliable Policy Transfer for Safety-Aware E2E Driving</b> &mdash; uncertainty-gated control-layer reliability for RL driving</span></li></ul>
+</div>
+
+<div class="fam" id="dr12">
+  <div class="famhd"><span class="famn">12</span><h3>Closed-loop simulation &amp; benchmarks</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Because open-loop scores on logged data flatter models, the field builds closed-loop simulators and benchmarks (NAVSIM, nuPlan) where the policy actually drives and its errors compound.</p>
+<p>Realistic reactive traffic and honest metrics are what separate a demo from a driver.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>IGDrivSim</b> &mdash; a benchmark quantifying the imitation gap under closed-loop evaluation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Promptable Closed-loop Traffic Simulation</b> &mdash; LLM-instantiated, interactively-refined traffic scenarios</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldLens</b> &mdash; human-aligned full-spectrum evaluation of driving world models</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SafeDrive</b> &mdash; fine-grained safety reasoning with per-instance collision risk in a sparse world</span></li></ul>
+</div>
+
+<div class="fam" id="dr13">
+  <div class="famhd"><span class="famn">13</span><h3>Safety monitoring, failure &amp; OOD</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Catch perception failures and out-of-distribution situations at run time, and synthesize the rare edge cases needed to test coverage &mdash; the difference between a system that fails loudly and one that fails silently.</p>
+<p>Foundation models are increasingly used both to monitor and to generate the hard cases.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>System-Level Safety Monitoring and Recovery (SPARQ)</b> &mdash; a Q-network jointly reasons over perception failures + plan safety, 90% recall</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generating OOD Scenarios Using LLMs</b> &mdash; LLM branching-tree synthesis of out-of-distribution test scenarios</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Validity Learning on Failures</b> &mdash; an annotation-free failure objective mitigates planning distribution shift</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Foundation Models for Rapid Autonomy Validation</b> &mdash; generative coverage cuts the sim-miles to find rare events</span></li></ul>
+</div>
+
+<div class="fam" id="dr14">
+  <div class="famhd"><span class="famn">14</span><h3>Efficient onboard perception &amp; data</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Squeeze perception into the car&rsquo;s real-time, power-limited computer &mdash; via compression, distillation, and label-efficient learning &mdash; and curate which data is even worth training on.</p>
+<p>Accuracy that misses the latency budget or the annotation budget doesn&rsquo;t ship.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time LiDAR Point Cloud Compression</b> &mdash; 40&ndash;80× compression on resource-constrained robots, task accuracy kept</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>KDMOS</b> &mdash; knowledge distillation for motion segmentation, 7.69× fewer parameters</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Label-Efficient LiDAR Panoptic Segmentation</b> &mdash; lifts sparse 2D pseudo-labels to 3D, +10.6 PQ with minimal annotation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Scaling-Aware Data Selection for E2E Driving</b> &mdash; selects high-utility samples balancing scale and quality</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Driving is the highest-stakes application of the whole loop. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>The long tail.</b> Rare, high-stakes events are endless and under-represented; collecting or even simulating enough of them is unsolved.</div>
+<div class="op"><b>Open-loop metrics lie.</b> A model can top logged-data leaderboards and still drive badly; closed-loop, reactive evaluation is essential and still maturing.</div>
+<div class="op"><b>Accuracy vs the clock.</b> The best perception often can&rsquo;t fit the onboard real-time budget; efficiency is a first-class constraint, not an afterthought.</div>
+<div class="op"><b>Interpretability vs performance.</b> End-to-end wins on performance but resists the explanations safety and liability demand; VLAs help but are slow.</div>
+<div class="op"><b>Sim-to-real &amp; weather.</b> Simulators miss friction, tire slip, and sensor noise; rain/snow/glare still degrade perception sharply.</div>
+<div class="op"><b>Certifying safety.</b> Provable guarantees exist for narrow cases; certifying a learned, end-to-end driver at scale remains open.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Autonomous Driving explainer &middot; mechanism diagrams are live JavaScript (assets/dr-anim.js) &middot; SparseDrive + LightStereo runs are ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the loop at highway speed &mdash; see the <a href="the-machine.html">four-stage machine</a>, and <a href="driving-deepdive.html">the driving code deep-dive</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/dr-anim.js"></script>
+</body></html>
