@@ -71,6 +71,17 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#102422}.op b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0C1218;border:1px solid #22323F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;color:#102422;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
 </style></head><body>
 <header><div class="wrap">
   <div class="bug">Medical &amp; Surgical Robotics &middot; endoscopy · teleoperation · soft robots &middot; robotics + vision</div>
@@ -163,150 +174,255 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip rb" href="#md1"><span class="cn">01</span>Surgical teleoperation</a><a class="fchip rb" href="#md2"><span class="cn">02</span>Endoscopy</a><a class="fchip rb" href="#md3"><span class="cn">03</span>Steerable needles</a><a class="fchip rb" href="#md4"><span class="cn">04</span>Continuum</a><a class="fchip rb" href="#md5"><span class="cn">05</span>Endovascular</a><a class="fchip bb" href="#md6"><span class="cn">06</span>Surgical phase</a><a class="fchip rb" href="#md7"><span class="cn">07</span>Surgical autonomy</a><a class="fchip rb" href="#md8"><span class="cn">08</span>Imaging-guided robotics</a><a class="fchip rb" href="#md9"><span class="cn">09</span>Robotic ultrasound</a><a class="fchip rb" href="#md10"><span class="cn">10</span>Rehabilitation</a><a class="fchip rb" href="#md11"><span class="cn">11</span>Capsule</a><a class="fchip vb" href="#md12"><span class="cn">12</span>Medical image segmentation</a><a class="fchip vb" href="#md13"><span class="cn">13</span>Pathology</a><a class="fchip vb" href="#md14"><span class="cn">14</span>Radiology reports</a><a class="fchip vb" href="#md15"><span class="cn">15</span>Medical image generation</a></div>
   <div class="famgrid">
-<div class="fam" id="md1">
+<div class="fam rich" id="md1">
   <div class="famhd"><span class="famn">01</span><h3>Surgical teleoperation &amp; interfaces</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>The surgeon's console must translate intent into instrument motion &mdash; scaling, filtering, and adding haptic or visual feedback without introducing dangerous latency.</p>
-<p>Sensory gloves, augmented-reality overlays, and learned user models extend the interface beyond a joystick toward something closer to direct touch.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Mapping a surgeon's gross hand motion—tremor and all—to sub-millimetre instrument displacement through a fixed port, while preserving force feedback, within 5 ms round-trip latency.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The surgeon's console must translate intent into instrument motion &mdash; scaling, filtering, and adding haptic or visual feedback without introducing dangerous latency.</p>
+<p>Sensory gloves, augmented-reality overlays, and learned user models extend the interface beyond a joystick toward something closer to direct touch.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_teleop_scale" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Scale factor set to <b>5:1</b>; hand moves 20 mm, tip moves 4 mm</li>
+<li>Tremor filter: bandpass blocks >6 Hz (involuntary) passes <3 Hz (intentional)</li>
+<li>RCM constraint: Jacobian null-space projection keeps port displacement < <b>0.2 mm</b></li>
+<li>Latency budget: sense→compute→actuate must fit in <b>5 ms</b> or surgeon perceives lag</li>
+<li>Force feedback scaled same ratio: 0.1 N at tip → <b>0.5 N</b> felt at console</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sensory Glove-Based Surgical Robot User Interface</b> &mdash; glove captures finger intent; mapped to instrument motion with haptic feedback</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>AR-Based Endoscope Control for Laparoscopic Surgery</b> &mdash; augmented-reality overlay guides the scope toward a target region</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>MEDiC: Autonomous Exposure for Robotic Dissection</b> &mdash; learned policy autonomously positions tissue for the next dissection step</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>DRL Semi-Autonomous Magnetic Micro-Robot Navigation</b> &mdash; deep RL shares control with the surgeon for micro-robot steering</span></li></ul>
 </div>
 
-<div class="fam" id="md2">
+<div class="fam rich" id="md2">
   <div class="famhd"><span class="famn">02</span><h3>Endoscopy &amp; laparoscopy navigation</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Building a stable 3D reconstruction of the lumen from a monocular endoscope &mdash; specular, wet, deforming &mdash; requires SLAM tuned for this setting, not ported from an outdoor camera.</p>
-<p>Gaussian splatting and dense depth networks have recently brought reconstruction quality close to what surgical planning needs.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Building a metrically consistent 3D map of a deforming, specular lumen from a monocular endoscope camera, with no static background and only 1–2 ms per frame to spare.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Building a stable 3D reconstruction of the lumen from a monocular endoscope &mdash; specular, wet, deforming &mdash; requires SLAM tuned for this setting, not ported from an outdoor camera.</p>
+<p>Gaussian splatting and dense depth networks have recently brought reconstruction quality close to what surgical planning needs.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_endo_slam" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Specular mask: pixels with L > <b>240/255</b> excluded before feature matching</li>
+<li>Feature points: <b>SIFT/ORB</b> keypoints tracked across 5 frames using Lucas-Kanade</li>
+<li>Deformation prior: as-rigid-as-possible energy with λ = <b>0.8</b> keeps local rigidity</li>
+<li>Depth scale recovered from known instrument diameter: <b>8 mm</b> trocar shaft</li>
+<li>Map: <b>2D Gaussians</b> splat; per-frame refit in ~<b>12 ms</b> on RTX 3090</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Advancing Dense Endoscopic Reconstruction with Gaussian Splatting (Endo-2DTAM)</b> &mdash; 2D-Gaussian-SLAM reconstructs a deformable colon lumen from monocular endoscopic video</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bilateral Structural Intensity-Depth Registration for Flexible Endoscope</b> &mdash; coupled RGB and depth alignment compensates endoscope flex</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Remote: Real-Time Endoscope Ego-Motion Estimation</b> &mdash; fast monocular ego-motion for tool-in-lumen localization</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>SLAM Assisted 3D Tracking for Laparoscopic Surgery</b> &mdash; SLAM-derived map priors stabilize instrument tracking under deformation</span></li></ul>
 </div>
 
-<div class="fam" id="md3">
+<div class="fam rich" id="md3">
   <div class="famhd"><span class="famn">03</span><h3>Steerable needles</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>A bevel-tip needle bends as it advances through tissue; control that bending and you can steer around obstacles to reach deep targets without open surgery.</p>
-<p>Resolution-optimal planning and MPC make the path precise enough for lung biopsy and vascular access.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Guiding a bevel-tip needle along a curved path through heterogeneous tissue to a point-target ≤2 mm in diameter, with no visual feedback beyond ultrasound slices.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A bevel-tip needle bends as it advances through tissue; control that bending and you can steer around obstacles to reach deep targets without open surgery.</p>
+<p>Resolution-optimal planning and MPC make the path precise enough for lung biopsy and vascular access.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_needle_steer" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Bevel offset: 1 mm bevel generates curvature radius of <b>50 mm</b> in liver tissue</li>
+<li>Duty-cycle spinning: spin at <b>30 RPM</b> during insertion straightens the path, stop to bend</li>
+<li>Obstacle: vessel at <b>18 mm</b> depth; planned path arcs 8° to clear by 3 mm margin</li>
+<li>MPC horizon: <b>10 steps</b>, 1 mm per step; replan every 2 mm of insertion</li>
+<li>Final error: tip lands within <b>1.4 mm</b> of target in phantom study (n=20)</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Steerable Tape-Spring Needle for Autonomous Sharp Turns</b> &mdash; tape-spring mechanism enables tight-radius turns unreachable by bevel-tip designs</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Resolution-Optimal Motion Planning for Needle Steering in Lung</b> &mdash; plans a path through lung that meets accuracy requirements with fewest control steps</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Model Predictive Control for 3D Steerable Needles</b> &mdash; MPC tracks planned paths in real tissue using online model updates</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ultrasound-Guided Robotic Blood Drawing</b> &mdash; image-guided autonomy localizes and punctures a vein without operator input</span></li></ul>
 </div>
 
-<div class="fam" id="md4">
+<div class="fam rich" id="md4">
   <div class="famhd"><span class="famn">04</span><h3>Continuum &amp; soft medical robots</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>A flexible backbone bends continuously rather than at discrete joints, letting the robot follow winding anatomy. Tendon tension, pneumatics, or magnetic fields steer the shape.</p>
-<p>Hysteresis in tendon drives and nonlinear stiffness in soft bodies are the control challenges the field keeps returning to.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Computing the cable tensions needed to steer a tendon-driven flexible backbone to a desired tip pose, when stiffness varies with temperature and hysteresis makes the tension–shape map irreversible.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A flexible backbone bends continuously rather than at discrete joints, letting the robot follow winding anatomy. Tendon tension, pneumatics, or magnetic fields steer the shape.</p>
+<p>Hysteresis in tendon drives and nonlinear stiffness in soft bodies are the control challenges the field keeps returning to.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_continuum_shape" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Cosserat rod: arc length s ∈ [0, <b>150 mm</b>]; 3 cables, 120° apart</li>
+<li>Stiffness k varies ±<b>18%</b> with hydration; identified online every 50 mm insertion</li>
+<li>Hysteresis model: Prandtl-Ishlinskii with <b>12 play operators</b> reduces error by 60%</li>
+<li>Tip position error: <b>1.8 mm</b> RMS after learned correction vs 5.1 mm open-loop</li>
+<li>FEM timestep: <b>4 ms</b> (quasi-static, 3 Newton iterations per step)</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Accelerated Quasi-Static FEM for Continuum Robots</b> &mdash; fast FEM simulation enables real-time model-based control of soft bodies</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</b> &mdash; characterizes how hysteresis helps or hurts position tracking; design implications</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Variable-Stiffness Nasotracheal Intubation Robot</b> &mdash; stiffness tuning navigates the nasal passage without tissue trauma</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning-Based Tip Contact Force for FBG-Embedded Continuum Robots</b> &mdash; fiber-Bragg gratings sense shape; learned model recovers contact force at the tip</span></li></ul>
 </div>
 
-<div class="fam" id="md5">
+<div class="fam rich" id="md5">
   <div class="famhd"><span class="famn">05</span><h3>Endovascular &amp; catheter navigation</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Steering a catheter through branching vessels to a target in the heart or brain requires perception of vessel geometry from fluoroscopy and a controller that handles the catheter's compliance and the pulsatile flow.</p>
-<p>Simulation environments and RL have recently enabled closed-loop navigation in realistic vascular phantoms.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Steering a compliant catheter through branching vessels whose geometry is known only from low-resolution fluoroscopy, under pulsatile blood flow that deflects the tip at every heartbeat.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Steering a catheter through branching vessels to a target in the heart or brain requires perception of vessel geometry from fluoroscopy and a controller that handles the catheter's compliance and the pulsatile flow.</p>
+<p>Simulation environments and RL have recently enabled closed-loop navigation in realistic vascular phantoms.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_catheter_nav" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Vessel map: segmented from <b>2D fluoroscopy</b> at 15 fps; 3D shape via biplane</li>
+<li>Flow: pulsatile with peak velocity <b>0.4 m/s</b>; tip deflects ~<b>2.3 mm</b> per cycle</li>
+<li>RL policy: trained in sim on <b>1,000</b> procedurally generated vascular phantoms</li>
+<li>Sim-to-real gap: domain randomization on vessel diameter ±<b>20%</b>, friction ±<b>30%</b></li>
+<li>Navigation success: <b>91%</b> to target within 3 mm in silicone phantom (n=50)</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>VascularPilot3D: Autonomous Endovascular Navigation</b> &mdash; 3D vessel map + learned policy navigates to a target without manual steering</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sim4EndoR: Simulation for Endovascular Robotics with RL</b> &mdash; physics-accurate vascular simulator trains RL policies that transfer to real catheters</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Image-Based Compliance Control for Ferromagnetic Guidewire</b> &mdash; visual servoing compensates guidewire flex under magnetic steering</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Robust DRL Framework for Guidewire Navigation</b> &mdash; deep RL steers guidewire in branching phantoms; trained entirely in simulation</span></li></ul>
 </div>
 
-<div class="fam" id="md6">
+<div class="fam rich" id="md6">
   <div class="famhd"><span class="famn">06</span><h3>Surgical phase &amp; workflow perception</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Knowing what step of the operation is happening &mdash; the surgical phase &mdash; is the prerequisite for any context-sensitive autonomy: the right tool, the right alert, the right autonomous mode.</p>
-<p>Large-scale surgical video datasets and self-supervised pretraining have made phase recognition reliable enough to gate assistance systems.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Classifying which of 8–12 discrete surgical phases is currently executing, in real time, from a video stream where phase transitions are gradual and often invisible to the eye.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Knowing what step of the operation is happening &mdash; the surgical phase &mdash; is the prerequisite for any context-sensitive autonomy: the right tool, the right alert, the right autonomous mode.</p>
+<p>Large-scale surgical video datasets and self-supervised pretraining have made phase recognition reliable enough to gate assistance systems.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_phase_recog" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Dataset: <b>80 cholecystectomy videos</b>, 7 phases, avg 42 min each</li>
+<li>Encoder: ResNet-50 pretrained on ImageNet, fine-tuned on <b>5,000 labeled frames</b></li>
+<li>Temporal model: TCN with receptive field of <b>60 s</b> at 1 fps sampling</li>
+<li>Accuracy: <b>89.3%</b> frame-level on held-out 10 videos</li>
+<li>Phase anticipation: predicts next phase <b>45 s</b> ahead at 78% accuracy</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SurgPLAN++: Surgical Phase Localization and Anticipation</b> &mdash; localizes the current phase and predicts the next step from video + kinematics</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>LEMON: Large Endoscopic Dataset and Foundation Model</b> &mdash; a large-scale benchmark and pretrained encoder for endoscopic understanding</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Stitch in Time: Self-Supervised Surgical Workflow Recognition</b> &mdash; self-supervised pretraining on surgical video without phase-label annotation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>TRCoRSurg: Surgical Triplet Recognition for Workflow</b> &mdash; recognizes (instrument, verb, target) triplets in real time from laparoscopic video</span></li></ul>
 </div>
 
-<div class="fam" id="md7">
+<div class="fam rich" id="md7">
   <div class="famhd"><span class="famn">07</span><h3>Surgical autonomy &amp; skill learning</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Closing a suture, completing a capsulorhexis, or repositioning tissue are tasks with clear start and end conditions, making them candidates for learned autonomous execution under supervision.</p>
-<p>Control barrier functions and force-vision integration are the safety tools that keep these policies inside acceptable bounds.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Executing autonomous suturing — driving a curved needle through tissue at the correct angle and depth, then pulling the thread without cutting — with only vision and force as feedback.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Closing a suture, completing a capsulorhexis, or repositioning tissue are tasks with clear start and end conditions, making them candidates for learned autonomous execution under supervision.</p>
+<p>Control barrier functions and force-vision integration are the safety tools that keep these policies inside acceptable bounds.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_suture_policy" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Needle diameter: <b>3/8 circle, 17 mm</b> radius; insertion angle 90° to tissue surface</li>
+<li>Vision: end-effector and needle tip tracked at <b>30 fps</b> with ±0.3 mm precision</li>
+<li>CBF: barrier h(x) = distance to nerve > <b>2 mm</b>; QP filter on policy output</li>
+<li>Thread tension limit: <b>0.15 N</b>; force sensor triggers re-grip if exceeded</li>
+<li>Success rate: <b>78%</b> full-suture completion in ex vivo porcine tissue (n=40)</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Suture Thread Modeling Using Control Barrier Functions</b> &mdash; CBF constraints on a learned suturing policy prevent unsafe thread tension</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Continuous Capsulorhexis via Force-Vision Control</b> &mdash; force-vision loop closes the capsular tear without surgeon guidance</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Bimanual Manipulation of Deformable Objects</b> &mdash; learned bimanual policy repositions soft tissue under visual feedback</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Suturing Method for Minimally Invasive Surgery</b> &mdash; end-to-end learned policy drives needle in, pulls thread through, and ties</span></li></ul>
 </div>
 
-<div class="fam" id="md8">
+<div class="fam rich" id="md8">
   <div class="famhd"><span class="famn">08</span><h3>Imaging-guided robotics</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Intraoperative imaging &mdash; ultrasound, fluoroscopy, OCT, or MRI &mdash; gives the robot a live picture of tissue position that no preoperative plan can substitute for once the body is open and breathing.</p>
-<p>Differentiable rendering and deformation-aware registration close the gap between the image and what the instrument actually meets.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Registering live intraoperative imaging (OCT, ultrasound, or X-ray) to a 3D preoperative plan, while the organ shifts 2–5 mm per breath and the imaging is 2D or low-resolution.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Intraoperative imaging &mdash; ultrasound, fluoroscopy, OCT, or MRI &mdash; gives the robot a live picture of tissue position that no preoperative plan can substitute for once the body is open and breathing.</p>
+<p>Differentiable rendering and deformation-aware registration close the gap between the image and what the instrument actually meets.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_imaging_guided" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Breathing motion: diaphragm moves <b>15–25 mm</b>; organ surface shifts ~<b>5 mm</b></li>
+<li>Deformable registration: B-spline grid with <b>8 mm</b> control-point spacing</li>
+<li>iOCT scan rate: <b>100,000 A-scans/s</b>; depth resolution 4 μm in tissue</li>
+<li>Differentiable DRR: renders X-ray from CT in <b>30 ms</b> for gradient-based alignment</li>
+<li>Registration error: <b>1.2 mm</b> mean surface distance after convergence (10 iterations)</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Deformation-Aware Subretinal Injection Under iOCT</b> &mdash; OCT tracks retinal deformation in real time; adapts injection depth on the fly</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-View 2D/3D Registration with Differentiable X-Ray Rendering</b> &mdash; differentiable DRR aligns intraoperative X-ray to the 3D plan without fiducials</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>UltraDP: Force-Aware Ultrasound Diffusion Policy</b> &mdash; diffusion policy integrates force and ultrasound for contact-rich scanning</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Series-Parallel Hybrid Robot for Prostate Transperineal Puncture</b> &mdash; hybrid kinematic structure keeps the needle on the US-guided target under prostate motion</span></li></ul>
 </div>
 
-<div class="fam" id="md9">
+<div class="fam rich" id="md9">
   <div class="famhd"><span class="famn">09</span><h3>Robotic ultrasound &amp; palpation</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Ultrasound scanning requires maintaining probe contact, angle, and pressure against a moving body surface &mdash; a contact control problem, not just an imaging one.</p>
-<p>Adaptive controllers that read image quality as their feedback signal outperform fixed-trajectory scans.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Maintaining stable ultrasound image quality — defined by probe contact force, tilt angle, and acoustic coupling — on a moving, curved body surface without pre-planned scan trajectories.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Ultrasound scanning requires maintaining probe contact, angle, and pressure against a moving body surface &mdash; a contact control problem, not just an imaging one.</p>
+<p>Adaptive controllers that read image quality as their feedback signal outperform fixed-trajectory scans.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_us_palpation" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Contact force target: <b>3 N</b>; image quality degrades below 1.5 N or above 6 N</li>
+<li>Tilt angle tolerance: ±<b>12°</b> from normal before acoustic window is lost</li>
+<li>Image quality metric: <b>CNR</b> (contrast-to-noise ratio); logged at 30 Hz</li>
+<li>Controller: admittance control with stiffness <b>500 N/m</b> normal, 50 N/m lateral</li>
+<li>Scan coverage: <b>94%</b> of breast surface at acceptable quality vs 71% fixed-trajectory</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robust Robotic Breast Ultrasound Scanning</b> &mdash; force-controlled scanning maintains contact and image quality across breast geometry</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Quality-Driven Adaptive Control for Robotic Ultrasound</b> &mdash; uses image quality metrics to adaptively adjust probe pose during the scan</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tactile-Guided Robotic Ultrasound for Intercostal Imaging</b> &mdash; tactile sensing finds rib gaps; positions probe without pre-planned trajectories</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shape Completion in Robotic Ultrasound Spine Imaging</b> &mdash; point-cloud shape completion fills in occluded vertebrae from partial US views</span></li></ul>
 </div>
 
-<div class="fam" id="md10">
+<div class="fam rich" id="md10">
   <div class="famhd"><span class="famn">10</span><h3>Rehabilitation &amp; prosthetics</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>A prosthetic hand or exoskeleton must interpret the user's intent from residual signals &mdash; EMG, IMU, pressure &mdash; and translate them into motion that feels natural and does not fatigue.</p>
-<p>Multi-stage neural decoders and tactile feedback loops have improved intent-to-motion latency and grip accuracy.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Decoding the user's intended finger positions from surface EMG — noisy, electrode-placement-sensitive, session-variant signals — with latency under 100 ms.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A prosthetic hand or exoskeleton must interpret the user's intent from residual signals &mdash; EMG, IMU, pressure &mdash; and translate them into motion that feels natural and does not fatigue.</p>
+<p>Multi-stage neural decoders and tactile feedback loops have improved intent-to-motion latency and grip accuracy.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_emg_decode" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Electrodes: <b>8-channel</b> surface array on forearm, 250 Hz sampling</li>
+<li>Features: RMS + mean absolute value over <b>200 ms</b> sliding window</li>
+<li>Model: CNN-LSTM; input shape <b>[8, 50]</b> per window (8 ch, 50 samples)</li>
+<li>DOF: predicts <b>5 finger angles</b> independently; RMSE 8.2° on test set</li>
+<li>Latency: <b>72 ms</b> end-to-end (feature extraction + inference + actuator command)</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Grasp Forces from EMG for Prosthetic Control</b> &mdash; CNN maps surface EMG to grip-force commands for a prosthetic hand</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-BAR: Elderly Assistance Robot</b> &mdash; mobile robot detects fall risk and assists walking without requiring a wearable</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Stage CNN-LSTM for Finger Angle Estimation from EMG</b> &mdash; cascaded network decodes individual finger angles from forearm EMG</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Walker with Tactile and IMU Sensing</b> &mdash; walker adjusts support in real time from gait phase estimated by IMU + tactile foot sensors</span></li></ul>
 </div>
 
-<div class="fam" id="md11">
+<div class="fam rich" id="md11">
   <div class="famhd"><span class="famn">11</span><h3>Capsule &amp; micro-robots for medicine</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>A wireless capsule or magnetically steered micro-robot can reach sites no catheter or endoscope can access, but it gives up the mechanical connection that makes force control straightforward.</p>
-<p>External magnetic fields, acoustic streaming, and swarm coordination are the actuation options; PINN-based flow models help predict where the robot goes.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Actuating an untethered magnetic robot or capsule through a fluid-filled cavity using only an external rotating magnetic field, with no direct force sensing or proprioception.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A wireless capsule or magnetically steered micro-robot can reach sites no catheter or endoscope can access, but it gives up the mechanical connection that makes force control straightforward.</p>
+<p>External magnetic fields, acoustic streaming, and swarm coordination are the actuation options; PINN-based flow models help predict where the robot goes.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_microrobot_mag" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>External field: <b>8 mT</b> rotating at 2 Hz drives the capsule at ~<b>3 mm/s</b></li>
+<li>PINN: trained on <b>50,000</b> CFD flow-field samples; infers drift in 2 ms</li>
+<li>Swarm: <b>4 micro-robots</b>, 200 μm each; magnetic interaction ≤0.5 mT at 500 μm separation</li>
+<li>Position tracking: overhead camera + <b>Kalman filter</b>; RMS error 0.3 mm</li>
+<li>Navigation: capsule reaches target in <b>28 s</b> avg (n=15 phantom trials)</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ensemble Control of a Capsule Robot Arm via External Fields</b> &mdash; external coil array steers an untethered capsule arm through a lumen</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Magnetic Microswarms in Liquid and Air</b> &mdash; coordinated swarms navigate both liquid and air-filled chambers under magnetic actuation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Flow-Aware Navigation of Magnetic Micro-Robots via PINN</b> &mdash; a physics-informed network predicts flow field; controller compensates for drift</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>DNA Origami-Engineered Tetrahedral Nanorobots</b> &mdash; nanoscale origami structures navigate and release payload at a target site</span></li></ul>
 </div>
 
-<div class="fam" id="md12">
+<div class="fam rich" id="md12">
   <div class="famhd"><span class="famn">12</span><h3>Medical image segmentation &amp; registration</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Segmenting anatomy in intraoperative images is the backbone of image-guided robotics: no accurate safety envelope without accurate masks, and no accurate masks without models that handle the domain.</p>
-<p>Foundation model adaptation and deformable registration address the data-scarce, rapidly shifting intraoperative setting.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Segmenting anatomy reliably from intraoperative images where training data is scarce, domain shift is severe, and the label budget is <50 annotated volumes.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Segmenting anatomy in intraoperative images is the backbone of image-guided robotics: no accurate safety envelope without accurate masks, and no accurate masks without models that handle the domain.</p>
+<p>Foundation model adaptation and deformable registration address the data-scarce, rapidly shifting intraoperative setting.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_seg_register" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Foundation model: SAM ViT-H with <b>636 M</b> parameters; frozen encoder</li>
+<li>Few-shot: <b>10 support images</b> per organ class (liver, gallbladder, bile duct)</li>
+<li>Deformation field: B-spline with <b>16×16×16</b> control points; optimized with NCC + BEnd</li>
+<li>Dice score: <b>0.83</b> on liver, 0.71 on gallbladder with 10-shot SAM adaptation</li>
+<li>Registration time: <b>2.1 s</b> per volume pair on RTX 3090 (vs 45 min for ANTs CPU)</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Focus on Background: Few-Shot Medical Segmentation with SAM</b> &mdash; adapts SAM to medical imaging by re-weighting background context in few-shot settings</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Dynamic Stream Network for Deformable Medical Image Registration</b> &mdash; dual-stream network captures large and fine-scale deformations jointly</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Multi-View 2D/3D Registration with Differentiable X-Ray Rendering</b> &mdash; differentiable DRR enables gradient-based alignment of intraoperative X-ray to CT plan</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>INSID3: Training-Free In-Context 3D Medical Segmentation</b> &mdash; in-context prompting with a pretrained model segments 3D volumes without task-specific training</span></li></ul>
 </div>
 
-<div class="fam" id="md13">
+<div class="fam rich" id="md13">
   <div class="famhd"><span class="famn">13</span><h3>Pathology &amp; medical foundation models</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Whole-slide pathology images are gigapixel; a model that reads them must aggregate evidence across scales, from cell-level morphology to tissue-level architecture.</p>
-<p>Self-supervised pretraining on large pathology corpora and topological priors are moving diagnostic accuracy toward and past human expert level.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Aggregating diagnostic evidence from a gigapixel whole-slide image — spanning 100,000 × 100,000 pixels — where the diagnostic signal may occupy only 0.1% of the area.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Whole-slide pathology images are gigapixel; a model that reads them must aggregate evidence across scales, from cell-level morphology to tissue-level architecture.</p>
+<p>Self-supervised pretraining on large pathology corpora and topological priors are moving diagnostic accuracy toward and past human expert level.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_pathology_wsi" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Slide size: <b>1 gigapixel</b> at 40× magnification = 100k × 100k pixels</li>
+<li>Patch extraction: <b>256×256</b> tiles at 20×; ~<b>10,000 patches</b> per slide after tissue masking</li>
+<li>Topology: persistent homology at <b>H0 and H1</b>; Betti numbers summarize tissue connectivity</li>
+<li>MIL pooling: attention-weighted mean of <b>768-dim</b> patch embeddings (CONCH encoder)</li>
+<li>AUC: <b>0.94</b> for TCGA-NSCLC subtype classification (LUAD vs LUSC)</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>TopoSlide: Topological Whole-Slide Pathology Learning</b> &mdash; persistent homology captures tissue-level structure beyond bag-of-patches models</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MLLM-HWSI: Hierarchical Whole-Slide Image Interpretation</b> &mdash; multi-level language model reads WSIs from patch to slide with clinical language</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MASS: Mask-Guided Self-Supervision for 3D Medical Images</b> &mdash; self-supervised 3D pretraining via masked patches improves downstream segmentation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPECTRE: Volumetric CT Transformers for Diagnostic Prediction</b> &mdash; Transformer over 3D CT volumes for screening and staging tasks</span></li></ul>
 </div>
 
-<div class="fam" id="md14">
+<div class="fam rich" id="md14">
   <div class="famhd"><span class="famn">14</span><h3>Radiology reports &amp; medical VLMs</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>A model that reads a scan and writes the report must be factually accurate: a hallucinated finding is a diagnostic error. RL and evidence grounding are the current tools for pushing accuracy past what supervised training alone achieves.</p>
-<p>Benchmarks that test complex multi-step reasoning expose how far the best models still are from a reliable second-reader.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Generating factually correct radiology reports — where a hallucinated finding triggers unnecessary treatment — while covering all clinically relevant findings in a single pass.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A model that reads a scan and writes the report must be factually accurate: a hallucinated finding is a diagnostic error. RL and evidence grounding are the current tools for pushing accuracy past what supervised training alone achieves.</p>
+<p>Benchmarks that test complex multi-step reasoning expose how far the best models still are from a reliable second-reader.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_radiology_rl" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Base model: LLaVA-Med-7B fine-tuned on <b>27,000</b> chest X-ray/report pairs</li>
+<li>RL: GRPO with oracle reward; <b>4 reference reports</b> per image as oracle signal</li>
+<li>Hallucination rate: drops from <b>18%</b> to 6% after GRPO fine-tuning (CheXbert eval)</li>
+<li>Evidence grounding: bounding box IoU > <b>0.5</b> required before a finding is stated</li>
+<li>F1 on CheXpert-14: <b>0.71</b> vs 0.58 baseline supervised fine-tuning</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>OraPO: Oracle-Educated RL for Factual Radiology Reports</b> &mdash; GRPO with oracle-supervised reward suppresses hallucinated findings in radiology reports</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>EMAD: Evidence-Grounded Medical AI Diagnosis</b> &mdash; model localizes image evidence before stating a diagnosis, making errors traceable</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>LLaDA-MedV: Biomedical Diffusion VLM</b> &mdash; masked diffusion language model adapted for biomedical vision-language tasks</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Med-CMR: Complex Medical Reasoning Benchmark</b> &mdash; benchmark requiring multi-hop evidence integration across image, text, and clinical context</span></li></ul>
 </div>
 
-<div class="fam" id="md15">
+<div class="fam rich" id="md15">
   <div class="famhd"><span class="famn">15</span><h3>Medical image generation &amp; synthesis</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Rare conditions have too few real images to train a diagnostic model. Generative models can fill that gap &mdash; but only if the generated images are anatomically correct: no spurious structures, no topological errors.</p>
-<p>Structure-aware diffusion and topology controls are the answers the field has found.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Generating anatomically valid 3D medical volumes for rare conditions where fewer than 200 real training cases exist, without producing topologically impossible structures.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Rare conditions have too few real images to train a diagnostic model. Generative models can fill that gap &mdash; but only if the generated images are anatomically correct: no spurious structures, no topological errors.</p>
+<p>Structure-aware diffusion and topology controls are the answers the field has found.</p></div></div>
+  <figure class="fdiag"><canvas data-mdanim="mdf_med_diffusion" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Conditioning: <b>2D sketch</b> (10 strokes) → 3D CT volume at 256×256×128 resolution</li>
+<li>Topology check: connected components of generated mask must equal <b>1</b> (one liver)</li>
+<li>Diffusion: <b>1,000 denoising steps</b> during training; <b>50 DDIM steps</b> at inference</li>
+<li>FID on held-out pathology: <b>18.4</b> vs 31.2 for unconstrained diffusion baseline</li>
+<li>Downstream: classifier trained on <b>200 synthetic + 50 real</b> matches one on 250 real (Dice 0.79 vs 0.81)</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Sketch2CT: Structure-Aware 3D CT Volume Generation</b> &mdash; generates a full CT volume conditioned on a user-drawn anatomical sketch</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Anatomica: Topology-Controlled Anatomical Diffusion</b> &mdash; enforces anatomical topology (connectivity, nesting) during diffusion sampling</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Beyond Pixel Simulation: Pathology Image Generation</b> &mdash; diffusion model for histopathology trained on staining and diagnostic diversity</span></li>

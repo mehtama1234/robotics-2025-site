@@ -71,6 +71,17 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#1A2233}.op b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0C1218;border:1px solid #22323F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
 </style></head><body>
 <header><div class="wrap">
   <div class="bug">Video &amp; Temporal &middot; motion · tracking · long-form · prediction &middot; robotics + vision</div>
@@ -163,150 +174,255 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip vb" href="#vt1"><span class="cn">01</span>Long-form video understanding</a><a class="fchip vb" href="#vt2"><span class="cn">02</span>Video object segmentation</a><a class="fchip bb" href="#vt3"><span class="cn">03</span>Temporal action recognition</a><a class="fchip vb" href="#vt4"><span class="cn">04</span>Video question answering</a><a class="fchip vb" href="#vt5"><span class="cn">05</span>Temporal grounding</a><a class="fchip bb" href="#vt6"><span class="cn">06</span>Multi-object tracking</a><a class="fchip bb" href="#vt7"><span class="cn">07</span>Motion</a><a class="fchip rb" href="#vt8"><span class="cn">08</span>Learning robot policies from video</a><a class="fchip vb" href="#vt9"><span class="cn">09</span>Video representation</a><a class="fchip bb" href="#vt10"><span class="cn">10</span>Motion</a><a class="fchip rb" href="#vt11"><span class="cn">11</span>Event-based</a><a class="fchip vb" href="#vt12"><span class="cn">12</span>Streaming</a><a class="fchip vb" href="#vt13"><span class="cn">13</span>Video-language models</a><a class="fchip bb" href="#vt14"><span class="cn">14</span>Video anomaly</a><a class="fchip bb" href="#vt15"><span class="cn">15</span>Video prediction</a></div>
   <div class="famgrid">
-<div class="fam" id="vt1">
+<div class="fam rich" id="vt1">
   <div class="famhd"><span class="famn">01</span><h3>Long-form video understanding</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Hour-long videos &mdash; lectures, procedures, sports matches &mdash; demand models that select which moments to attend to and compress the rest into a compact memory the system can query later.</p>
-<p>The binding constraint is attention cost: storing and attending to every token in an hour of 30-fps video is not feasible, so learned selection and memory are the problem.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Hour-long videos produce ~108,000 frames at 30 fps &mdash; no attention mechanism can hold all of them at once, so the model must decide what to discard before answering a question.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Hour-long videos &mdash; lectures, procedures, sports matches &mdash; demand models that select which moments to attend to and compress the rest into a compact memory the system can query later.</p>
+<p>The binding constraint is attention cost: storing and attending to every token in an hour of 30-fps video is not feasible, so learned selection and memory are the problem.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_longform" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>30 fps &times; 3600 s = <b>108,000 frames</b>; even at 1 token/frame that&rsquo;s 108K tokens &mdash; far past any transformer window.</li>
+<li>Score each frame with a <b>saliency function</b> s_i = f(frame_i, query); rank and keep top <b>K=64</b>.</li>
+<li>Compress the 64 selected frames into a <b>memory bank M &isin; &Ropf;<sup>64&times;768</sup></b> via mean-pooled visual tokens.</li>
+<li>A question &ldquo;what happened after they shook hands?&rdquo; cross-attends to M; retrieval score = softmax(q&middot;M<sup>T</sup> / &radic;768).</li>
+<li>Without selection: full-video QA accuracy ~41%; with learned selection: <b>+18 pp</b> on EgoSchema.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Visual Memory Mechanism for Multimodal Large Language Models (VMem)</b> &mdash; compressed key-frame memory bank; selective retrieval for long-form QA</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Wavelet-Based Frame Selection for Long Video Understanding</b> &mdash; frequency-domain saliency scores pick informative frames before the LLM</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldMM — Multimodal Memory Agent for Long Video</b> &mdash; agentic memory agent with retrieval for open-domain long video</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>HieraMamba — Anchor-Mamba Hierarchical Pooling for Long-Range Video</b> &mdash; anchor tokens + Mamba SSM give sub-quadratic long-range context</span></li></ul>
 </div>
 
-<div class="fam" id="vt2">
+<div class="fam rich" id="vt2">
   <div class="famhd"><span class="famn">02</span><h3>Video object segmentation &amp; tracking</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Pixel-level segmentation must propagate a mask across frames, keeping the same identity through motion blur, occlusion, and scale change &mdash; harder than detection and harder than single-frame segmentation.</p>
-<p>Referring expressions and language ground the segment to &lsquo;the red car on the left&rsquo; rather than every car in the frame.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Propagating a pixel-level mask across frames means every pixel must carry the same identity through motion blur, occlusion, and scale change &mdash; a constraint that per-frame segmentation completely ignores.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Pixel-level segmentation must propagate a mask across frames, keeping the same identity through motion blur, occlusion, and scale change &mdash; harder than detection and harder than single-frame segmentation.</p>
+<p>Referring expressions and language ground the segment to &lsquo;the red car on the left&rsquo; rather than every car in the frame.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_vos" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Frame 1: annotate the target region with a binary mask M<sub>1</sub> &isin; {0,1}<sup>H&times;W</sup>.</li>
+<li>Extract a <b>reference feature</b> e_ref = Encoder(f<sub>1</sub> &odot; M<sub>1</sub>) &isin; &Ropf;<sup>256</sup>.</li>
+<li>At frame t: compute pixel affinity A<sub>t</sub> = softmax(e<sub>t</sub> &middot; e_ref<sup>T</sup> / &radic;256); warp M<sub>1</sub> to get M&#771;<sub>t</sub>.</li>
+<li>Predicted mask: M<sub>t</sub> = threshold(A<sub>t</sub>, 0.5); IoU with ground truth on DAVIS-2017 &asymp; <b>0.87</b>.</li>
+<li>At occlusion: affinity drops &mdash; set M<sub>t</sub> = last valid M<sub>t-k</sub>; re-id when affinity recovers above threshold.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DeRVOS — Decoupled Referring Video Object Segmentation</b> &mdash; decouples segmentation from grounding for better referring VOS</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPARROW — Pixel-Grounded Video MLLM</b> &mdash; pixel-grounded multimodal LLM answers questions about specific video regions</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DTPTrack — Drift-Resilient Temporal Prior for Video Object Tracking</b> &mdash; temporal prior from prior frames corrects drift through occlusion</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ADTrack — RGB-T Tracking with Auxiliary Depth</b> &mdash; depth-modal auxiliary features for reliable thermal-RGB multi-modal tracking</span></li></ul>
 </div>
 
-<div class="fam" id="vt3">
+<div class="fam rich" id="vt3">
   <div class="famhd"><span class="famn">03</span><h3>Temporal action recognition &amp; detection</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Action recognition classifies a clip; temporal action detection must also find when each action starts and ends in a long video &mdash; a temporal segmentation problem on top of the recognition problem.</p>
-<p>Self-supervised ranking and tokenization compress the motion signal without requiring per-frame action labels.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Localizing an action means finding both what happened and when it started and ended &mdash; a two-dimensional search that detection-only systems completely miss.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Action recognition classifies a clip; temporal action detection must also find when each action starts and ends in a long video &mdash; a temporal segmentation problem on top of the recognition problem.</p>
+<p>Self-supervised ranking and tokenization compress the motion signal without requiring per-frame action labels.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_action" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Input: 30-fps video; target: &ldquo;shot&rdquo; action lasting ~60 frames at t=240.</li>
+<li>Extract 3D-conv features at <b>4 fps</b> &rarr; 8 feature vectors per 2 seconds.</li>
+<li>Temporal proposal network generates ~200 anchor spans; score each with P(action|span).</li>
+<li>NMS with IoU threshold 0.4 &rarr; keep top-5; best span: <b>t=[238, 301]</b>, tIoU=0.88.</li>
+<li>Without temporal modeling (per-frame only): tIoU=0.31 &mdash; misses start/end entirely.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Stitch in Time — Self-Supervised Temporal Action Localization via Plackett-Luce Ranking</b> &mdash; ranking-based self-supervised TAL without action labels</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learnable Motion-Focused Tokenization for Video Understanding</b> &mdash; motion-aware tokenizer reduces redundant static tokens</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>TRCoRSurg — Triplet Recognition for Surgical Action Detection</b> &mdash; instrument-verb-target triplet recognition in surgical video</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Action Recognition from First-Person and Third-Person Video</b> &mdash; cross-view action recognition for robot and human video</span></li></ul>
 </div>
 
-<div class="fam" id="vt4">
+<div class="fam rich" id="vt4">
   <div class="famhd"><span class="famn">04</span><h3>Video question answering &amp; reasoning</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Video QA asks a model to answer a natural-language question grounded in video evidence, requiring temporal grounding, multi-step reasoning, and the ability to say which frames support the answer.</p>
-<p>Evidence purity &mdash; selecting only the frames that actually bear on the question &mdash; is the recurring bottleneck.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Answering a question about a video requires selecting the frames that contain the evidence and ignoring the (often majority) frames that do not &mdash; the distractor-frame problem.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Video QA asks a model to answer a natural-language question grounded in video evidence, requiring temporal grounding, multi-step reasoning, and the ability to say which frames support the answer.</p>
+<p>Evidence purity &mdash; selecting only the frames that actually bear on the question &mdash; is the recurring bottleneck.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_videoqa" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>10-minute video, 18,000 frames; question: &ldquo;what color was the car that turned left?&rdquo;</li>
+<li>Embed question q &isin; &Ropf;<sup>512</sup>; embed each frame f<sub>i</sub> &isin; &Ropf;<sup>512</sup>; score s<sub>i</sub> = q &middot; f<sub>i</sub> / &Vert;q&Vert;&Vert;f<sub>i</sub>&Vert;.</li>
+<li>Select top-8 frames (score &gt; 0.72); pass to VLM for answer generation.</li>
+<li>VLM sees 8 frames &times; ~256 tokens = <b>2048 tokens</b> vs 18K raw frames &times; 256 = 4.6M tokens.</li>
+<li>Answer accuracy on NExT-QA: full-video 54% &rarr; evidence-filtered <b>69%</b>; 3.5&times; faster inference.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HERBench — Multi-Evidence Video QA Benchmark</b> &mdash; benchmark requiring evidence from multiple video segments per question</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Chain-of-Frames — Frame-Aware Chain-of-Thought for Video Reasoning</b> &mdash; generates frame-level reasoning chains before answering</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Select Less, Reason More — Evidence Purity for Video QA</b> &mdash; filters distractor frames before reasoning to improve answer quality</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MAD — Modality-Adaptive Decoding for Video LLMs</b> &mdash; adapts decoding to which modality (audio/visual/text) is most relevant</span></li></ul>
 </div>
 
-<div class="fam" id="vt5">
+<div class="fam rich" id="vt5">
   <div class="famhd"><span class="famn">05</span><h3>Temporal grounding &amp; moment retrieval</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Given a natural-language query and a video, find the exact moment (start and end time) the query describes &mdash; a retrieval problem where the index is time rather than space.</p>
-<p>Streaming geometry and referring-based grounding push temporal grounding into real-time and open-vocabulary settings.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Given a natural-language query, find the exact start and end second in a video &mdash; a retrieval problem where the index is continuous time, not discrete tokens.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Given a natural-language query and a video, find the exact moment (start and end time) the query describes &mdash; a retrieval problem where the index is time rather than space.</p>
+<p>Streaming geometry and referring-based grounding push temporal grounding into real-time and open-vocabulary settings.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_tground" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Input: 5-minute video + query &ldquo;when does the chef add salt?&rdquo;</li>
+<li>Encode query &rarr; q &isin; &Ropf;<sup>256</sup>; encode frame features at 1 fps &rarr; F &isin; &Ropf;<sup>300&times;256</sup>.</li>
+<li>Compute temporal attention: a = softmax(F q / &radic;256) &isin; &Ropf;<sup>300</sup>; peak at t=87 s.</li>
+<li>Predict span [t<sub>s</sub>, t<sub>e</sub>] = argmax boundary scores; result: <b>[85 s, 91 s]</b>.</li>
+<li>R@1 (IoU&ge;0.5) on Charades-STA: regression-only 42% &rarr; span-attention model <b>63%</b>.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HieraMamba — Anchor-Mamba for Long-Range Temporal Grounding</b> &mdash; anchor-pooled Mamba handles multi-minute videos for moment retrieval</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPARROW — Pixel-Grounded Video MLLM for Temporal Referring</b> &mdash; pixel-level grounding supports both spatial and temporal referring queries</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>LongStream — Streaming Visual Geometry for Long Temporal Reasoning</b> &mdash; online geometry model infers temporal correspondences from streaming video</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>RECS4R — Referring Grounding via Contrastive Spatio-Temporal Reasoning</b> &mdash; contrastive cross-modal alignment for language-guided temporal grounding</span></li></ul>
 </div>
 
-<div class="fam" id="vt6">
+<div class="fam rich" id="vt6">
   <div class="famhd"><span class="famn">06</span><h3>Multi-object tracking &amp; re-ID</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Multi-object tracking (MOT) assigns and maintains consistent identities for every object in every frame, even as objects enter, leave, cross paths, or vanish behind occluders.</p>
-<p>Event cameras fire per-pixel on luminance change rather than at a fixed rate, giving microsecond-precision detections between frames and attacking the occlusion window at its root.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Multi-object tracking must solve three simultaneous problems: detect every object, predict its future position, and re-attach the correct identity when it reappears after occlusion &mdash; each failure is independent but the errors compound.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Multi-object tracking (MOT) assigns and maintains consistent identities for every object in every frame, even as objects enter, leave, cross paths, or vanish behind occluders.</p>
+<p>Event cameras fire per-pixel on luminance change rather than at a fixed rate, giving microsecond-precision detections between frames and attacking the occlusion window at its root.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_mot" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Frame 47: 3 vehicles detected, assigned IDs {A, B, C}; Kalman state x = [cx, cy, s, r, &xcup;, &ycirc;, &scirc;].</li>
+<li>Predict frame 48 positions via constant-velocity model: x&#770; = F x, P&#770; = F P F<sup>T</sup> + Q.</li>
+<li>New detections at frame 48; Hungarian matching with cost C<sub>ij</sub> = 1 &minus; IoU(b<sub>i</sub>, b<sub>j</sub>).</li>
+<li>ID B passes behind pillar for 12 frames; re-ID via appearance embedding d(e<sub>B</sub>, e<sub>new</sub>) &lt; 0.35 &rarr; match.</li>
+<li>MOTA on MOT17: detection-only 42% &rarr; Kalman + re-ID <b>76%</b>; ID switches drop 8&times;.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Asynchronous Multi-Object Tracking with an Event Camera</b> &mdash; event-driven tracker propagates IDs at microsecond resolution, bypassing frame-rate occlusion windows</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MER-Tracker — Event-RGB 3D Multi-Object Tracking</b> &mdash; fuses event and RGB streams for 3D MOT in driving scenes</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>FlexHook — Referring MOT with Flexible Query Hooks</b> &mdash; language-conditioned query hooks for open-vocabulary referring MOT</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>BarbieGait — Cloth-Changing Person Re-ID Dataset and Baseline</b> &mdash; large cloth-change re-ID dataset; appearance-invariant gait features</span></li></ul>
 </div>
 
-<div class="fam" id="vt7">
+<div class="fam rich" id="vt7">
   <div class="famhd"><span class="famn">07</span><h3>Motion &amp; trajectory prediction</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Predicting where agents &mdash; pedestrians, vehicles, robots &mdash; will be in the next few seconds requires modeling intent, social interaction, and the physical constraints of the scene.</p>
-<p>Flow-matching and causal attention give sharper, more diverse trajectory samples than earlier regression-based methods.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Predicting where an agent will be in the next 5 seconds requires modeling the intent of every other agent simultaneously &mdash; a joint distribution over all futures, not 15 independent single-agent predictions.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Predicting where agents &mdash; pedestrians, vehicles, robots &mdash; will be in the next few seconds requires modeling intent, social interaction, and the physical constraints of the scene.</p>
+<p>Flow-matching and causal attention give sharper, more diverse trajectory samples than earlier regression-based methods.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_traj" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>6 pedestrians observed for 8 frames (3.2 s at 2.5 fps); predict 12 frames (4.8 s).</li>
+<li>Encode each agent&rsquo;s history h<sub>i</sub> &isin; &Ropf;<sup>64</sup>; build interaction graph with edge e<sub>ij</sub> = MLP([h<sub>i</sub>; h<sub>j</sub>]).</li>
+<li>Sample 20 trajectory candidates per agent via flow matching; ADE = 0.36 m (vs regression: 0.61 m).</li>
+<li>Joint collision check: if any sampled pair violates 0.5 m clearance, resample &mdash; social constraint.</li>
+<li>FDE at 4.8 s: <b>0.58 m</b> mean across ETH/UCY datasets; best-of-20 FDE = <b>0.21 m</b>.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>TrajFlow — Flow-Matching Trajectory Prediction for Autonomous Agents</b> &mdash; normalizing-flow multi-modal trajectory generation in real time</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Curb Your Attention — Causal Attention Gating for Trajectory Prediction</b> &mdash; masks non-causal context to reduce spurious correlations in prediction</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Categorical Traffic Transformer — Discrete-Token Trajectory Prediction</b> &mdash; discrete token vocabulary for joint agent-scene prediction</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ARMFlow — Online 3D Reaction Motion Prediction via Action-Conditioned Flow</b> &mdash; action-conditioned flow predicts full-body 3D reactions in real time</span></li></ul>
 </div>
 
-<div class="fam" id="vt8">
+<div class="fam rich" id="vt8">
   <div class="famhd"><span class="famn">08</span><h3>Learning robot policies from video</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Teleoperation is expensive; ordinary human video is abundant. Learning manipulation and locomotion policies directly from uncurated video requires inferring missing action labels from visual change alone.</p>
-<p>The gaps are viewpoint mismatch, missing proprioception, and the distributional distance between human and robot kinematics.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Human video contains no action labels &mdash; only pixels &mdash; yet a robot must infer which muscle-equivalent commands produced each observed motion, across kinematics that differ from its own.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Teleoperation is expensive; ordinary human video is abundant. Learning manipulation and locomotion policies directly from uncurated video requires inferring missing action labels from visual change alone.</p>
+<p>The gaps are viewpoint mismatch, missing proprioception, and the distributional distance between human and robot kinematics.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_policy" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Observe 10 s of human grasping video (300 frames at 30 fps); no wrist sensor, no force data.</li>
+<li>Extract visual flow field between frames; map hand velocity v<sub>h</sub> to robot joint velocity v<sub>r</sub> via a <b>retargeting MLP</b>.</li>
+<li>Compute reward r<sub>t</sub> = sim(robot_frame<sub>t</sub>, human_frame<sub>t</sub>) via VGG perceptual distance.</li>
+<li>Run RL with this visual reward for 500 episodes; success rate rises from 12% &rarr; <b>71%</b>.</li>
+<li>Gap: robot gripper &ne; human hand &mdash; retargeting MLP reduces KL(v<sub>r</sub> &Vert; v<sub>h</sub>) from 1.8 &rarr; 0.4 nats.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ViViDex — Dexterous Manipulation from Human Video</b> &mdash; trajectory-guided rewards extracted from human video enable vision-only dexterous rollouts</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RTAGrasp — Task-Oriented Grasping from Human Video Memory</b> &mdash; retrieve, transfer, and align task-relevant grasps from a video memory bank</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEMMo-Plan — Multimodal Demonstration Planning from Video</b> &mdash; multimodal planning from language + video demonstrations</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizable Imitation Learning Through Pre-Trained Representations</b> &mdash; pretrained vision encoders make imitation from video data-efficient</span></li></ul>
 </div>
 
-<div class="fam" id="vt9">
+<div class="fam rich" id="vt9">
   <div class="famhd"><span class="famn">09</span><h3>Video representation &amp; self-supervised learning</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Self-supervised pretraining on unlabeled video &mdash; predicting masked patches, future frames, or 3D Gaussian motion &mdash; learns temporal structure without a single human label.</p>
-<p>The resulting representations transfer to downstream recognition, retrieval, and prediction tasks with far fewer labeled examples.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Self-supervised video pretraining works because a model that can predict masked or future patches has implicitly learned what objects are, how they move, and what is physically plausible &mdash; without a single human label.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Self-supervised pretraining on unlabeled video &mdash; predicting masked patches, future frames, or 3D Gaussian motion &mdash; learns temporal structure without a single human label.</p>
+<p>The resulting representations transfer to downstream recognition, retrieval, and prediction tasks with far fewer labeled examples.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_ssl" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Mask 75% of video patches at random; train encoder to reconstruct masked patches from visible 25%.</li>
+<li>Input: 16 frames &times; 14&times;14 tokens = 3136 tokens; mask 2352; reconstruct with L2 loss.</li>
+<li>Pretrain on 2M unlabeled YouTube clips (~800 GPU-hours on A100); downstream fine-tune with 1% of Kinetics labels.</li>
+<li>Top-1 accuracy: supervised from scratch 54% &rarr; masked pretrained <b>72%</b> with 1% labels.</li>
+<li>Temporal-aware masking (mask entire tubes) outperforms random by <b>+4 pp</b> &mdash; forces temporal reasoning.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Tracking by Predicting 3D Gaussians Over Time (Video-GMAE)</b> &mdash; masked autoencoder predicts 3D Gaussian motion for geometry-aware temporal pretraining</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Stitch in Time — Self-Supervised Temporal Ordering via Ranking</b> &mdash; Plackett-Luce ranking of shuffled clips as a self-supervised temporal signal</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motion 3-to-4 — 3D Motion as a Bridge to 4D Video Pretraining</b> &mdash; uses estimated 3D motion as a pseudo-label to pretrain 4D video models</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learning to See Through a Baby's Eyes — Egocentric Developmental Pretraining</b> &mdash; pretrains on head-camera infant video to study the curriculum nature provides</span></li></ul>
 </div>
 
-<div class="fam" id="vt10">
+<div class="fam rich" id="vt10">
   <div class="famhd"><span class="famn">10</span><h3>Motion &amp; optical flow</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Optical flow &mdash; the dense per-pixel motion field between frames &mdash; is the most direct measurement of what changed and where. Estimating it accurately, fast, and from event cameras is still an active problem.</p>
-<p>Factored and unified flow models separate geometry from appearance motion, letting them generalize across domains.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Estimating the dense motion field between two frames means solving a massive underdetermined system &mdash; one constraint per pixel (brightness constancy) but two unknowns per pixel (u, v) &mdash; so regularization decides the answer.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Optical flow &mdash; the dense per-pixel motion field between frames &mdash; is the most direct measurement of what changed and where. Estimating it accurately, fast, and from event cameras is still an active problem.</p>
+<p>Factored and unified flow models separate geometry from appearance motion, letting them generalize across domains.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_flow" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Two frames f<sub>t</sub>, f<sub>t+1</sub> &isin; &Ropf;<sup>H&times;W</sup>; brightness constancy: I(x,y,t) = I(x+u, y+v, t+1).</li>
+<li>Underdetermined: 1 equation, 2 unknowns (u,v) per pixel &rarr; aperture problem.</li>
+<li>Horn-Schunck adds smoothness: minimize &int;&int; (I<sub>x</sub>u + I<sub>y</sub>v + I<sub>t</sub>)<sup>2</sup> + &lambda;(|&nabla;u|<sup>2</sup> + |&nabla;v|<sup>2</sup>) dx dy.</li>
+<li>Modern RAFT: iterative refinement with 4D cost volume C(u,v) = &langle;f<sub>t</sub>, f<sub>t+1</sub>&rangle;; 12 GRU update steps.</li>
+<li>EPE on Sintel Clean: Horn-Schunck 4.8 px &rarr; RAFT <b>1.43 px</b>; 3.4&times; more accurate.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Flow3r — Factored Optical Flow for Geometry-Aware Motion Estimation</b> &mdash; separates scene-flow and camera-motion factors for cleaner generalization</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus — Unified Latent Action World Model from Video</b> &mdash; learns latent actions as compact optical-flow surrogates to bridge video and robot data</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>NeuFlow-V2 — Lightweight Real-Time Optical Flow</b> &mdash; global-to-local flow at 30+ FPS on embedded hardware for real-time robot perception</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-NMSTFlow — Event-Based Non-Monotone Spatio-Temporal Flow</b> &mdash; non-monotone event integration for accurate flow from asynchronous event cameras</span></li></ul>
 </div>
 
-<div class="fam" id="vt11">
+<div class="fam rich" id="vt11">
   <div class="famhd"><span class="famn">11</span><h3>Event-based &amp; asynchronous vision</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Event cameras fire per-pixel when luminance changes, not at a fixed frame rate. The output is a stream of microsecond-precision events &mdash; no motion blur, high dynamic range, and a data rate proportional to scene activity.</p>
-<p>The challenge is that standard vision algorithms assume frames; adapting them to asynchronous, irregular event streams requires new architectures and representations.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>An event camera fires an asynchronous spike at each pixel the moment its log-luminance changes &mdash; producing microsecond timestamps with no motion blur, but no frames &mdash; forcing completely new representations.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Event cameras fire per-pixel when luminance changes, not at a fixed frame rate. The output is a stream of microsecond-precision events &mdash; no motion blur, high dynamic range, and a data rate proportional to scene activity.</p>
+<p>The challenge is that standard vision algorithms assume frames; adapting them to asynchronous, irregular event streams requires new architectures and representations.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_event" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Each event e<sub>k</sub> = (x<sub>k</sub>, y<sub>k</sub>, t<sub>k</sub>, p<sub>k</sub>): pixel, microsecond timestamp, polarity &plusmn;1.</li>
+<li>At 1000 lux with a moving edge: pixel fires at &Delta; log L &asymp; 0.07 &mdash; ~70 &mu;s latency vs 33 ms for a 30 fps camera.</li>
+<li>Represent as <b>event voxel grid</b>: bin events into B=5 time bins, accumulate polarity &rarr; V &isin; &Ropf;<sup>B&times;H&times;W</sup>.</li>
+<li>Feed V to a standard conv net; optical flow EPE on MVSEC: 0.54 px vs frame-based 1.8 px in the dark.</li>
+<li>No motion blur: a 120 km/h vehicle at 10 m has ~3 m/s apparent motion &rarr; 3 px/ms; frames blur, events stay sharp.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Asynchronous Multi-Object Tracking with an Event Camera</b> &mdash; asynchronous event tracker maintains IDs at sub-millisecond resolution</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>EvMAPPER — Event-Camera Orthophoto Mapping</b> &mdash; event streams from a UAV build high-dynamic-range orthographic maps</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>A New Stereo Fisheye Event Camera — Design and Calibration</b> &mdash; wide-angle stereo event camera design + calibration procedure</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Event-Based Sensing for High-Speed Robotic Tasks</b> &mdash; active illumination + event camera closes the loop for fast pick-and-place</span></li></ul>
 </div>
 
-<div class="fam" id="vt12">
+<div class="fam rich" id="vt12">
   <div class="famhd"><span class="famn">12</span><h3>Streaming &amp; online video</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Real-time applications &mdash; autonomous vehicles, live sports analytics, video conferencing &mdash; cannot wait for the full video before acting. Streaming models must process each frame causally, maintaining a fixed-size state.</p>
-<p>Token compression and learned dropping discard spatial redundancy to keep the state small without sacrificing temporal coherence.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A streaming model must give an answer after each frame without ever seeing the future &mdash; which means it must compress all past context into a fixed-size state, discarding irrelevant history before it overflows.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Real-time applications &mdash; autonomous vehicles, live sports analytics, video conferencing &mdash; cannot wait for the full video before acting. Streaming models must process each frame causally, maintaining a fixed-size state.</p>
+<p>Token compression and learned dropping discard spatial redundancy to keep the state small without sacrificing temporal coherence.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_stream" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Frame arrives at t=k; model state S<sub>k-1</sub> &isin; &Ropf;<sup>M&times;D</sup> where M=64 memory slots, D=256.</li>
+<li>Extract frame tokens f<sub>k</sub> &isin; &Ropf;<sup>196&times;256</sup>; compute relevance r<sub>i</sub> = f<sub>k</sub> &middot; S<sub>k-1,i</sub> / &Vert;&middot;&Vert;.</li>
+<li>Update: replace the lowest-relevance slot with the mean of f<sub>k</sub> &rarr; S<sub>k</sub>; total state cost is constant O(M&middot;D).</li>
+<li>Latency: 8 ms/frame at 1080p on a single A100 &rarr; real-time at 30 fps with 6 ms headroom.</li>
+<li>Accuracy drop from offline (full video) to streaming: <b>&minus;3.1 pp</b> on Kinetics-400; memory size M=128 closes gap to &minus;1.4 pp.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>StreamingTOM — Streaming Token Compression for Online Video</b> &mdash; online token merging keeps streaming video transformer latency constant</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>LongStream — Online Streaming Visual Geometry from Video</b> &mdash; causal geometry model processes streaming video without future lookahead</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>InstantViR — Real-Time Video Restoration via Streaming Diffusion</b> &mdash; frame-by-frame diffusion restoration with propagated latent state for real-time quality</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>FloodDiffusion — Streaming Motion Generation for Dynamic Scenes</b> &mdash; streaming denoising generates coherent long motion sequences without a fixed horizon</span></li></ul>
 </div>
 
-<div class="fam" id="vt13">
+<div class="fam rich" id="vt13">
   <div class="famhd"><span class="famn">13</span><h3>Video-language models</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Video-language models align visual tokens from video with language tokens from captions, questions, or instructions &mdash; enabling open-vocabulary recognition, captioning, and instruction following.</p>
-<p>The bottleneck is token count: a few seconds of video already produces thousands of visual tokens, overwhelming the language model's context window.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A video has thousands of visual tokens per second; a language model has a fixed context window &mdash; the VLM&rsquo;s core engineering problem is aggressive compression that keeps what the text query cares about and drops everything else.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Video-language models align visual tokens from video with language tokens from captions, questions, or instructions &mdash; enabling open-vocabulary recognition, captioning, and instruction following.</p>
+<p>The bottleneck is token count: a few seconds of video already produces thousands of visual tokens, overwhelming the language model's context window.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_vlm" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>3 s video at 8 fps = 24 frames &times; 196 tokens/frame = <b>4704 visual tokens</b> before any compression.</li>
+<li>LLaVA-style VLM context: 4096 tokens; text question &asymp; 50 tokens &rarr; budget 4046 for video.</li>
+<li>Token merging: cluster 4704 tokens by cosine similarity, merge adjacent clusters &rarr; <b>256 tokens</b>.</li>
+<li>Compression ratio: 18.4&times;; VQA accuracy on MVBench: 54% (no compression) &rarr; <b>61%</b> (smart merge) vs 46% (random drop).</li>
+<li>Key insight: spatially-redundant (static background) tokens can be merged without temporal loss; motion tokens must be kept.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>OSMO — Open-Vocabulary Spatial-Motion Emotion Tracking from Video</b> &mdash; open-vocabulary emotion trajectory tracking across video with language grounding</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Variation-Aware Vision Token Dropping for Video LLMs</b> &mdash; drops spatially redundant tokens while preserving temporal variation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Unified Spatiotemporal Token Compression for Video LLMs</b> &mdash; joint spatial + temporal compression reduces video LLM FLOPs 3-5x</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>InstAP — Instance-Aware Video Pretraining for Fine-Grained VLMs</b> &mdash; instance-level contrastive pretraining for object-centric video-language alignment</span></li></ul>
 </div>
 
-<div class="fam" id="vt14">
+<div class="fam rich" id="vt14">
   <div class="famhd"><span class="famn">14</span><h3>Video anomaly &amp; change detection</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Anomaly detection in video must flag rare, ill-defined events &mdash; a fall, a fight, an unexpected stop &mdash; without having seen most anomaly types at training time. The core tension is between sensitivity and false-alarm rate.</p>
-<p>MLLMs serve as zero-shot anomaly detectors because they carry common-sense about what is normal, reducing the need for annotated anomaly footage.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Anomaly detection in video must flag events it has never seen at training time &mdash; which means learning a model of normality tightly enough that a fall, a fight, or an unexpected stop stands out by how much it violates that model.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Anomaly detection in video must flag rare, ill-defined events &mdash; a fall, a fight, an unexpected stop &mdash; without having seen most anomaly types at training time. The core tension is between sensitivity and false-alarm rate.</p>
+<p>MLLMs serve as zero-shot anomaly detectors because they carry common-sense about what is normal, reducing the need for annotated anomaly footage.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_anomaly" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Train on 10,000 normal clips; no anomaly examples seen during training.</li>
+<li>Build normality model: encode each clip c<sub>i</sub> &rarr; e<sub>i</sub> &isin; &Ropf;<sup>128</sup>; store as a <b>memory bank N</b> of 1024 prototypes.</li>
+<li>At test time: query bank with e<sub>test</sub>; anomaly score = 1 &minus; max<sub>j</sub> cos(e<sub>test</sub>, n<sub>j</sub>).</li>
+<li>Threshold at 0.42: true-positive rate 81%, false-positive rate 7% on UCSD Ped2.</li>
+<li>MLLM zero-shot baseline: describe scene in text &rarr; &ldquo;man running at unusual speed&rdquo; &rarr; flag; achieves AUC=0.81 without any video training.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>The Road Less Seen — Weakly-Supervised Video Anomaly Detection</b> &mdash; multiple-instance learning from coarse clip-level labels for anomaly localization</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>No Need for Real Anomaly — MLLM Zero-Shot Video Anomaly Detection</b> &mdash; an MLLM judges normality from scene description without anomaly training data</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>CC-STAR — Contact-State Anomaly Detection for Robot Assembly</b> &mdash; contact-state sequence model detects assembly anomalies from force/tactile signals</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>RAID — Retrieval-Augmented Anomaly Detection for Video Surveillance</b> &mdash; retrieves normal prototypes at test time to measure deviation without retraining</span></li></ul>
 </div>
 
-<div class="fam" id="vt15">
+<div class="fam rich" id="vt15">
   <div class="famhd"><span class="famn">15</span><h3>Video prediction &amp; world models</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Predicting future frames or states forces a model to learn how the world works &mdash; physics, agent intent, scene dynamics &mdash; making prediction a general pretraining objective for world models used in planning.</p>
-<p>LiDAR-based and vision-language world models extend future prediction beyond RGB to 3D structure and language-specified goals.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A video prediction model must choose one sharp future from a distribution of plausible futures &mdash; averaging them produces a blurry mean that is wrong about everything, right about nothing.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Predicting future frames or states forces a model to learn how the world works &mdash; physics, agent intent, scene dynamics &mdash; making prediction a general pretraining objective for world models used in planning.</p>
+<p>LiDAR-based and vision-language world models extend future prediction beyond RGB to 3D structure and language-specified goals.</p></div></div>
+  <figure class="fdiag"><canvas data-vtanim="vtf_worldmodel" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Observe 8 frames of a bouncing ball; predict the next 8.</li>
+<li>MSE baseline: L = &Vert;f&#770;<sub>t+1</sub> &minus; f<sub>t+1</sub>&Vert;<sup>2</sup> &rarr; optimizes conditional mean E[f<sub>t+1</sub> | f<sub>1:t</sub>]; produces blurry output at the branch point.</li>
+<li>Diffusion approach: sample f&#770;<sub>t+1</sub> ~ p<sub>&theta;</sub>(f<sub>t+1</sub> | f<sub>1:t</sub>) via 50-step DDPM reverse; SSIM = <b>0.84</b> vs MSE 0.61.</li>
+<li>Autoregressive rollout: 8 steps &rarr; FID of generated 16-frame clips: <b>18.4</b> (diffusion) vs 47.2 (MSE).</li>
+<li>World-model use: sample 200 future rollouts, score each with a reward model &rarr; pick the action that leads to the best predicted future.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GEM — Generative Environment Model from LiDAR for Autonomous Driving</b> &mdash; LiDAR-conditioned world model predicts future 3D point clouds for planning</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>NavForesee — Vision-Language World Model for Navigation Planning</b> &mdash; language-goal-conditioned future-frame prediction guides robot navigation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamics Modeling for High-Speed Off-Road Driving via Video Prediction</b> &mdash; video-prediction world model learns terrain dynamics for agile off-road driving</span></li>

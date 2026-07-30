@@ -70,6 +70,17 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#281824}.op b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0C1218;border:1px solid #22323F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
 </style></head><body>
 <header><div class="wrap">
   <div class="bug">Tactile &amp; Force Sensing &middot; touch · force · slip · compliance &middot; robotics + vision</div>
@@ -162,10 +173,17 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fourteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Touch is a robotics-led field; vision contributes inferring and synthesizing touch. Jump to any:</p>
   <div class="famindex"><a class="fchip bb" href="#ta1"><span class="cn">01</span>Vision-based tactile sensing</a><a class="fchip rb" href="#ta2"><span class="cn">02</span>Soft</a><a class="fchip rb" href="#ta3"><span class="cn">03</span>Force / torque sensing</a><a class="fchip rb" href="#ta4"><span class="cn">04</span>Slip detection</a><a class="fchip rb" href="#ta5"><span class="cn">05</span>Contact-rich control</a><a class="fchip bb" href="#ta6"><span class="cn">06</span>Vision-tactile fusion</a><a class="fchip rb" href="#ta7"><span class="cn">07</span>Tactile representation learning</a><a class="fchip rb" href="#ta8"><span class="cn">08</span>Tactile for insertion</a><a class="fchip rb" href="#ta9"><span class="cn">09</span>Whole-body skins</a><a class="fchip rb" href="#ta10"><span class="cn">10</span>Teleoperation</a><a class="fchip rb" href="#ta11"><span class="cn">11</span>Tactile sim-to-real</a><a class="fchip bb" href="#ta12"><span class="cn">12</span>Tactile shape</a><a class="fchip rb" href="#ta13"><span class="cn">13</span>Contact modes</a><a class="fchip vb" href="#ta14"><span class="cn">14</span>Touch in vision: material, contact</a></div>
   <div class="famgrid">
-<div class="fam" id="ta1">
+<div class="fam rich" id="ta1">
   <div class="famhd"><span class="famn">01</span><h3>Vision-based tactile sensing</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Point a camera at a soft gel skin and read the contact from how the skin deforms &mdash; a dense image of where and how hard it touched. This is the dominant modern tactile sensor because it turns touch into a rich picture.</p>
-<p>Work here is cross-sensor transfer, self-supervised features, and pairing touch with language models.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot needs to know the exact shape of what it is touching, how hard it is pressing, and whether slip is starting — but the contact is hidden inside the gripper. A single force number from a wrist sensor gives no spatial map. What is needed is a picture of the contact from the inside, dense enough to read geometry, force, and slip simultaneously.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Point a camera at a soft gel skin and read the contact from how the skin deforms &mdash; a dense image of where and how hard it touched. This is the dominant modern tactile sensor because it turns touch into a rich picture.</p>
+<p>Work here is cross-sensor transfer, self-supervised features, and pairing touch with language models.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_visgel" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Press a penny</b> against a 20 mm GelSight-style gel at 0.3 N normal force. The gel face deforms 0.4 mm inward at the coin's center.</li>
+<li><b>The embedded camera</b> images that deformation. In the top-illuminated image, the coin's rim appears as a bright ring of radius 9 px; the face shows a 5×5 taxel-equivalent pressure map.</li>
+<li><b>A CNN trained on 460 k paired samples</b> inverts the image: it reads the peak normal stress as <b>0.28 N mm⁻²</b> and the contact area as <b>78 mm²</b>.</li>
+<li><b>The same network watches shear.</b> When the coin starts to tilt, the marker grid shifts tangentially by 0.6 px — flagged as incipient slip at <b>t = 47 ms</b>, before the coin visibly moves.</li>
+<li><b>Transfer across sensors:</b> T3 fine-tunes the same 3M-point pretrained backbone on 200 examples from a different gel brand and keeps <b>93%</b> of original F1.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sparsh: Self-Supervised Touch Representations for Vision-Based Tactile Sensing</b> &mdash; 460k-image self-supervised pretraining beats task-specific training</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Octopi: Object-Property Reasoning with Large Tactile-Language Models</b> &mdash; GelSight + a VLM predicts friction, hardness, temperature zero-shot</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>TransForce: Transferable Force Prediction via Sequential Image Translation</b> &mdash; image-to-image translation carries force prediction across sensors</span></li>
@@ -173,130 +191,221 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Seeing Through Touch: Tactile-Driven Visual Localization of Material Regions</b> &mdash; dense tactile saliency matches touched material across a visual scene</span></li></ul>
 </div>
 
-<div class="fam" id="ta2">
+<div class="fam rich" id="ta2">
   <div class="famhd"><span class="famn">02</span><h3>Soft &amp; flexible sensors and skins</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Compliant sensors deform elastically under contact, and embedded sensing (capacitive, optical, magnetic, acoustic) reads that deformation &mdash; enabling dense skins that rigid point sensors can&rsquo;t provide.</p>
-<p>The push is durability, hot-swappable skins, and manufacturable whole-body coverage.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A rigid point sensor reports force at one spot; a whole robot arm needs contact information over its entire surface — so it can detect a collision at any point, hold a deformable object without breaking it, and bend around obstacles. Covering a large curved surface with rigid electronics that survive repeated impacts while staying calibrated is the hard part.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Compliant sensors deform elastically under contact, and embedded sensing (capacitive, optical, magnetic, acoustic) reads that deformation &mdash; enabling dense skins that rigid point sensors can&rsquo;t provide.</p>
+<p>The push is durability, hot-swappable skins, and manufacturable whole-body coverage.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_softskin" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Mold a silicone sleeve</b> (Shore 20A, 2 mm thick) around a 300 mm arm segment. Embed a 4×8 grid of capacitive taxels, pitch 15 mm.</li>
+<li><b>Connect via a flex PCB</b> routed along the seam. The entire sleeve unplugs with one connector — hot-swap in under 30 s.</li>
+<li><b>Apply 0.5 N point load</b> at taxel (3,5). The capacitance changes by <b>12 fF</b>; adjacent taxels shift by 2–3 fF due to elastic cross-talk.</li>
+<li><b>Calibrate once</b> with a 5×5 grid of known loads. A linear model corrects cross-talk, holding force error below <b>0.04 N</b> over the full range.</li>
+<li><b>Transfer the policy:</b> AnySkin's magnetic decoupling lets a grip policy trained on skin instance A transfer to instance B with <b>zero retraining</b> — the magnetic field pattern is instance-independent.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AnySkin: Plug-and-Play Skin Sensing for Robotic Touch</b> &mdash; magnetic skin with decoupled electronics; policies transfer across instances</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>ConTac: Soft Skinned Arm with Vision-Based Shape Sensing</b> &mdash; vision-based touch on a soft continuum arm for contact + proprioception</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Milli-Scale AcousTac Sensing Using Soft Helmholtz Resonators</b> &mdash; a pneumatic resonator shifts frequency under force — wireless, electronics-free</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoboPack: Tactile-Informed Dynamics for Dense Packing</b> &mdash; a soft-bubble sensor guides a learned dynamics model for packing</span></li></ul>
 </div>
 
-<div class="fam" id="ta3">
+<div class="fam rich" id="ta3">
   <div class="famhd"><span class="famn">03</span><h3>Force / torque sensing &amp; estimation</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Measure &mdash; or infer &mdash; the reaction forces and torques of an interaction, from load cells, strain gauges, or even motor currents. It reveals interaction dynamics that contact pressure alone can&rsquo;t.</p>
-<p>Sensorless force from current and vision-to-force prediction are recurring tricks.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Knowing total force at a wrist is useful, but it gives you a single 6-vector — no map of where force is applied, and no signal when fingers are the only contact. Inferring force from motor current avoids a dedicated sensor but confounds friction and inertia with real contact forces. The challenge is getting a clean force estimate from an indirect signal, across speeds and objects.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Measure &mdash; or infer &mdash; the reaction forces and torques of an interaction, from load cells, strain gauges, or even motor currents. It reveals interaction dynamics that contact pressure alone can&rsquo;t.</p>
+<p>Sensorless force from current and vision-to-force prediction are recurring tricks.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_forcetorque" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>An underactuated gripper</b> picks a 200 g cylinder. Motor current rises from 120 mA (free) to 340 mA at contact. No wrist F/T sensor is fitted.</li>
+<li><b>An LSTM</b> with a 50 ms sliding window maps [current, velocity, joint angle] to grip force. Trained on 2 000 labeled trials.</li>
+<li><b>Predicted grip force: 3.4 N</b>. Wrist F/T ground-truth: 3.6 N. Error = <b>0.2 N</b> (5.6%).</li>
+<li><b>Bayesian fusion step:</b> vision estimates friction coefficient μ = 0.42 from surface appearance. Closed-form update gives posterior μ = 0.38 ± 0.04, tightening the safe grip range.</li>
+<li><b>Output:</b> the controller sets grip force to <b>μ_posterior × mg / 2 = 0.38 × 1.96 / 2 ≈ 0.37 N safety margin</b> above slip threshold.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Underactuated Gripper with Force-Sensing via Deep Learning</b> &mdash; an LSTM infers grip force from motor currents alone</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>You've Got to Feel It: Multi-Modal Bayesian Inference for Property Prediction</b> &mdash; closed-form Bayesian fusion of vision + force for friction</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>TransForce: Transferable Force Prediction for Vision-Based Tactile Sensors</b> &mdash; predicts three-axis force from translated tactile images</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Force Myography Based Torque Estimation in Knee and Ankle Joints</b> &mdash; muscle-volume force sensing estimates joint torque for exoskeletons</span></li></ul>
 </div>
 
-<div class="fam" id="ta4">
+<div class="fam rich" id="ta4">
   <div class="famhd"><span class="famn">04</span><h3>Slip detection &amp; grip control</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Slip is tangential motion at the contact without a change in pressing force. Tactile sensors feel it beginning &mdash; a shear/vibration burst &mdash; and the controller tightens the grip before the object falls.</p>
-<p>High-resolution and fast sensing plus contact-mode control are the levers.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Holding an object with minimum force means staying just above the slip threshold — but that threshold depends on the object's weight, surface friction, and the grip's geometry, none of which the robot knew in advance. Gripping too hard crushes fragile parts; too soft and the object falls. The only way to find the threshold without crushing or dropping is to detect the first sign of slip and react before the object moves.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Slip is tangential motion at the contact without a change in pressing force. Tactile sensors feel it beginning &mdash; a shear/vibration burst &mdash; and the controller tightens the grip before the object falls.</p>
+<p>High-resolution and fast sensing plus contact-mode control are the levers.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_slipgrip" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Robot picks a 120 g glass jar</b> at initial grip force <b>F_n = 1.8 N</b>, well below the <b>3.1 N</b> needed for μ = 0.35.</li>
+<li><b>Tactile sensor reports shear</b>: tangential stress σ_t crosses 0.4 N mm⁻² at t = 0 ms. This is the incipient-slip marker.</li>
+<li><b>Vibration spike at t = 12 ms</b>: the 200–400 Hz band of the signal jumps by 8 dB — second confirmation.</li>
+<li><b>Controller fires at t = 15 ms</b>: increments F_n by 0.4 N per step (proportional-integral reflex). After <b>3 steps (45 ms total)</b>, F_n = 3.0 N and shear drops back below threshold.</li>
+<li><b>Jar never visibly moved.</b> Without the tactile reflex, the jar would have slipped 4–6 mm before a camera could detect motion.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AnyRotate: Gravity-Invariant In-Hand Rotation with Sim-to-Real Touch</b> &mdash; online grip-instability detection during multi-axis rotation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tactile-Driven Non-Prehensile Manipulation via Extrinsic Contact Mode Control</b> &mdash; switches stick/slide by tactile gradient optimization</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Highly Robust Contact Sensor for Precise Fabric Contact Detection</b> &mdash; 0.017 N resolution, 95% detection in <7.5 ms, noise-robust</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Enhancing Two-Fingered Reorientation via Tactile Online Optimization</b> &mdash; tactile-guided online optimization adapts to unknown contact</span></li></ul>
 </div>
 
-<div class="fam" id="ta5">
+<div class="fam rich" id="ta5">
   <div class="famhd"><span class="famn">05</span><h3>Contact-rich control &amp; compliance</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>When the task is the contact &mdash; insertion, wiping, pressing &mdash; the robot must regulate force and compliance through sticking, sliding, and separation, not track a rigid position.</p>
-<p>Fast contact solvers and learned compliance profiles handle the mode switches.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>When a robot presses a tool against a surface — polishing, wiping, seating a connector — small position errors cause huge force spikes: a rigid arm aimed 0.5 mm too low crashes into the surface at hundreds of newtons. The robot needs to follow an unknown, curved surface at a target force, not a target position. Switching between contact modes (stick, slide, separate) mid-task requires knowing which mode you are in — only force feedback gives that.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>When the task is the contact &mdash; insertion, wiping, pressing &mdash; the robot must regulate force and compliance through sticking, sliding, and separation, not track a rigid position.</p>
+<p>Fast contact solvers and learned compliance profiles handle the mode switches.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_compliance" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Target: wipe a 40 mm curved surface</b> at <b>F_n = 5 N</b>. Surface radius of curvature unknown, ±3 mm height variation.</li>
+<li><b>Impedance controller</b>: F = K(x_surface - x_tool) with K = 800 N/m (compliant spring), damping B = 12 N·s/m.</li>
+<li><b>At the first crest</b>, tool rises 2 mm above the nominal path. With pure position control this would float; with force control the controller extends 2.5 mm to keep F_n = 5 N.</li>
+<li><b>At the first trough</b>, tool would crash 2 mm in; force control retracts 2.4 mm. Force stays within <b>±0.6 N</b> of target throughout.</li>
+<li><b>ADMM contact solver</b> (From Compliant to Rigid) detects stick-to-slide transition at t = 0.18 s and switches the friction model, keeping the trajectory smooth through the mode switch.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Compliant to Rigid Contact Simulation: a Unified Approach</b> &mdash; ADMM/proximal solver unifies rigid and compliant contact</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Tight Convex Relaxations for Contact-Rich Manipulation</b> &mdash; semidefinite relaxation of nonconvex hybrid contact dynamics</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Compliance Policy: Learning Compliance for Diffusion Control</b> &mdash; learns spatiotemporal compliance from demonstrations</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Remote Center of Compliance for Dynamic Interaction</b> &mdash; active RCC boosts interaction bandwidth 31× for peg-in-hole</span></li></ul>
 </div>
 
-<div class="fam" id="ta6">
+<div class="fam rich" id="ta6">
   <div class="famhd"><span class="famn">06</span><h3>Vision-tactile fusion</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Vision sees shape and pose from afar; touch senses force and fine geometry locally. Fusing them disambiguates state: occlusion doesn&rsquo;t fool touch, and touch can&rsquo;t see what&rsquo;s across the room.</p>
-<p>Pretraining, unpaired fusion, and test-time physics all combine the two streams.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Vision sees the whole scene from a distance but is blocked the moment a finger lands. Touch sees exactly what is at the contact but is blind to the rest of the world. For a task like inserting a USB plug, you need both: sight to bring the plug near the port, touch to feel the alignment in the last millimetre when the camera is blocked. Fusing two signals with very different spatial scale and timing is the hard problem.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Vision sees shape and pose from afar; touch senses force and fine geometry locally. Fusing them disambiguates state: occlusion doesn&rsquo;t fool touch, and touch can&rsquo;t see what&rsquo;s across the room.</p>
+<p>Pretraining, unpaired fusion, and test-time physics all combine the two streams.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_vitafuse" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>USB-A insertion task.</b> RGB-D gives plug pose to within <b>±1.8 mm, ±3°</b> at 50 mm distance — good enough to approach.</li>
+<li><b>At 5 mm from the port</b>, the gripper occludes the view. Touch takes over: GelSight reads contact geometry, estimating misalignment as <b>0.6 mm lateral, 1.2° tilt</b>.</li>
+<li><b>VITaL pretrained backbone</b> fuses the two streams in a shared latent space (256-dim). Fusion improves alignment estimation to <b>±0.2 mm</b> vs <b>±0.8 mm</b> touch-only.</li>
+<li><b>Policy executes 3 corrective micro-motions</b> of 0.3 mm each, guided by the fused estimate. Plug seats on attempt 1.</li>
+<li><b>Success rate:</b> vision-only 20%, touch-only 51%, fused (VITaL) <b>85%</b> — a number from the paper.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>VITaL Pretraining: Visuo-Tactile Pretraining for Manipulation Policies</b> &mdash; paired visuo-tactile pretraining lifts USB-plug success 20%→85%</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D-ViTac: Fine-Grained Manipulation with Visuo-Tactile Sensing</b> &mdash; fuses touch + vision in a shared 3D space for bimanual tasks</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>ViTa-Zero: Zero-Shot Visuotactile 6D Pose Estimation</b> &mdash; test-time physics optimization, 80% lower position error</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Visuo-Tactile Object Pose Estimation with Low-Resolution Tactile</b> &mdash; a factor graph fuses RGB-D + binary tactile under occlusion</span></li></ul>
 </div>
 
-<div class="fam" id="ta7">
+<div class="fam rich" id="ta7">
   <div class="famhd"><span class="famn">07</span><h3>Tactile representation learning</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Raw tactile images are high-dimensional, sensor-specific, and expensive. Learned latent codes and implicit functions compress touch while enabling cross-sensor transfer and probabilistic inference.</p>
-<p>Foundation models across many sensors and tasks are emerging.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Raw tactile images are high-dimensional (a GelSight frame is 480×640 pixels), sensor-specific, and expensive to label — you cannot afford a new dataset for every sensor or task. What is needed is a learned code that compresses the tactile signal into a small vector that transfers across sensors without retraining, the same way a vision pretrained backbone transfers across cameras.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Raw tactile images are high-dimensional, sensor-specific, and expensive. Learned latent codes and implicit functions compress touch while enabling cross-sensor transfer and probabilistic inference.</p>
+<p>Foundation models across many sensors and tasks are emerging.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_tacrep" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>T3 pretraining:</b> 3 million tactile frames from 13 different sensors, masked autoencoder objective. Encoder: ViT-S/16, 384-dim output.</li>
+<li><b>Target task:</b> USB insertion on a new sensor (GelSight Mini) not seen during pretraining.</li>
+<li><b>Baseline (train from scratch):</b> 500 labeled trials needed to reach 60% success.</li>
+<li><b>T3 fine-tuned on 20 labeled trials:</b> reaches <b>78% success</b> — 25× fewer labels, <b>+18 pp</b> over scratch.</li>
+<li><b>Sparsh masking:</b> mask 75% of a GelSight frame at random, train the encoder to reconstruct. After 460 k frames, the resulting features beat task-specific CNNs on 6 of 7 downstream probes with no task labels at all.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>T3: Transferable Tactile Transformers Across Sensors and Tasks</b> &mdash; 3M-point pretraining over 13 sensors, 25–53% gains on insertion</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tactile Functasets: Neural Implicit Representations of Tactile Data</b> &mdash; meta-trained implicit codes compress datasets, enable inference</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sparsh: Self-Supervised Touch Representations</b> &mdash; masking + self-distillation yields task-agnostic tactile features</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shape-Space Deformer: Unified Visuo-Tactile Representations</b> &mdash; a unified latent shape generalizes to unseen forces and objects</span></li></ul>
 </div>
 
-<div class="fam" id="ta8">
+<div class="fam rich" id="ta8">
   <div class="famhd"><span class="famn">08</span><h3>Tactile for insertion &amp; assembly</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Assembly needs sub-millimetre precision under contact constraints. Touch detects jamming, binding, and misalignment before large forces build, enabling reactive force-position control vision can&rsquo;t provide.</p>
-<p>Anomaly detection on contact states and force-aware primitives are the tools.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Press a peg into a hole 0.1 mm tighter than the peg and it jams — force spikes, the robot stops, and nobody knows why. A camera watching from outside cannot see the contact; wrist force gives only a 6-vector with no spatial map. Touch at the finger tip can detect which corner of the hole is catching, which side is binding, and how much clearance is left — and it can do so in the 10–20 ms before forces become dangerous.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Assembly needs sub-millimetre precision under contact constraints. Touch detects jamming, binding, and misalignment before large forces build, enabling reactive force-position control vision can&rsquo;t provide.</p>
+<p>Anomaly detection on contact states and force-aware primitives are the tools.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_insert" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Peg: 6 mm shaft, 0.05 mm clearance, stainless steel.</b> Target: insert 20 mm in under 2 s.</li>
+<li><b>Contact state machine:</b> CC-STAR's CNN-VAE encodes the tactile image. Reconstruction error jumps from 0.02 to 0.14 at the first jam — mode transition detected at <b>t = 0.31 s</b>.</li>
+<li><b>Force-aware ProDMP</b> reads the detected jam and replans: back off 0.5 mm, rotate 0.8° about Z, re-approach.</li>
+<li><b>Second attempt seats the peg</b> without exceeding <b>8 N</b> insertion force (safe limit: 12 N). Total time: <b>1.7 s</b>.</li>
+<li><b>Without tactile feedback</b>: the robot kept pushing, hit 30 N in 0.4 s, and triggered an emergency stop 8 of 10 times.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>CC-STAR: Contact State Transition Estimation for Peg-in-Hole</b> &mdash; a CNN-VAE flags contact-mode transitions by reconstruction error</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Use the Force, Bot! — Force-Aware ProDMP with Event-Based Replanning</b> &mdash; force-aware movement primitives replan on measured force</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shared Control for Cable Routing with Tactile Sensing</b> &mdash; tactile-driven authority sharing for multi-stage routing</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Continuous Capsulorhexis via Force-Vision-Guided Robot</b> &mdash; force-vision fusion for 0.993-circularity surgical precision</span></li></ul>
 </div>
 
-<div class="fam" id="ta9">
+<div class="fam rich" id="ta9">
   <div class="famhd"><span class="famn">09</span><h3>Whole-body skins &amp; human-robot interaction</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Cover the whole robot in touch and it can feel a collision anywhere &mdash; the basis for safe collaboration &mdash; and haptic feedback tells a human operator what the robot feels.</p>
-<p>The work is designing, fabricating, and processing distributed sensing at scale.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot arm that can only feel at its fingertips will miss a collision anywhere else on its body — it will crush a bystander's hand, snag a cable, or fail to detect that a person is guiding its elbow. Covering the entire arm and torso with touch requires sensing everywhere, wiring it all up, keeping it calibrated, and processing hundreds of channels in real time at enough bandwidth to stop before damage occurs.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Cover the whole robot in touch and it can feel a collision anywhere &mdash; the basis for safe collaboration &mdash; and haptic feedback tells a human operator what the robot feels.</p>
+<p>The work is designing, fabricating, and processing distributed sensing at scale.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_wholeskin" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>GenTact Toolbox</b> procedurally designs a 3D-printed skin for a UR5 arm. Task-driven placement: <b>48 taxels</b> concentrated at the wrist and elbow, 12 on the upper arm.</li>
+<li><b>Sensitivity equalization:</b> ERT-based skin's raw conductance map is 3× more sensitive at corners. Topology optimization redistributes electrode geometry until sensitivity uniformity &lt; <b>15%</b> across the surface.</li>
+<li><b>Person touches the robot's elbow</b> at 0.3 N. The skin detects contact within <b>8 ms</b> and identifies the touched segment to within <b>25 mm</b>.</li>
+<li><b>Safety reflex fires:</b> arm velocity drops to zero in <b>12 ms</b>, well within ISO/TS 15066 reaction-time requirements.</li>
+<li><b>Social gesture recognition:</b> fabric-touch classifier on a humanoid torso (Social Gesture paper) reads pat vs. stroke vs. push with <b>94%</b> accuracy over 6 gesture classes.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>GenTact Toolbox: 3D-Printed Whole-Body Artificial Skins</b> &mdash; procedural design + task-driven sensor placement, printed skins</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Social Gesture Recognition via Fabric Tactile on Humanoids</b> &mdash; large-area fabric touch classifies social contact gestures</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Spatial Sensitivity Equalization of ERT-Based Robotic Skin</b> &mdash; topology optimization equalizes sensitivity across a skin</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Walker: Terrain- and Intention-Aware Intelligent Walker</b> &mdash; hand-contact tactile predicts user speed for a smart walker</span></li></ul>
 </div>
 
-<div class="fam" id="ta10">
+<div class="fam rich" id="ta10">
   <div class="famhd"><span class="famn">10</span><h3>Teleoperation &amp; haptic feedback</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Send a human&rsquo;s motion to a robot and reflect the robot&rsquo;s contact forces back to the hand &mdash; so the operator feels the remote world. Passivity and impedance adaptation keep it stable under delay.</p>
-<p>Novel actuators and ungrounded interfaces widen the workspace.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A surgeon or bomb-disposal technician teleoperating a robot needs to feel what the robot's hands feel — the resistance of tissue, the grip of a connector, the moment something is about to slip. Without that feedback, they are flying blind. The physics challenge is stability: adding a force-reflection channel between operator and robot can excite oscillations under communication delay, so the control loop must ensure the combined system dissipates energy regardless of the delay.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Send a human&rsquo;s motion to a robot and reflect the robot&rsquo;s contact forces back to the hand &mdash; so the operator feels the remote world. Passivity and impedance adaptation keep it stable under delay.</p>
+<p>Novel actuators and ungrounded interfaces widen the workspace.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_haptic" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Bilateral teleoperation setup:</b> operator hand exoskeleton (haptic glove) + robot arm separated by <b>40 ms</b> simulated round-trip delay.</li>
+<li><b>Operator squeezes a soft gel block</b> via the robot. Robot wrist F/T reads <b>2.4 N</b> at 60% compression.</li>
+<li><b>Passivity filter</b> (variable-impedance passivity paper) checks energy budget: if reflected force would add energy to the operator side beyond the passivity bound, it clips the signal. At 40 ms delay, clipping kicks in for <b>~12%</b> of force samples.</li>
+<li><b>Operator perceives a smooth, stable squish</b> — not the chatter a naive direct reflection would produce. Perceived stiffness error vs ground-truth: <b>0.18 N mm⁻¹</b>.</li>
+<li><b>Ungrounded haptic interface</b> (cutaneous-only version): electromagnetic torque coil on the fingertip gives <b>200 mm free-space workspace</b> vs 30 mm for a grounded device — key for full-range tool use.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Haptic Feedback Device Actuated by Electromagnetic Torque</b> &mdash; torque-based coils give a 200 mm workspace vs 30 mm for force-based</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ungrounded Visuo-Tactile Haptic Interface for Teleoperation</b> &mdash; cutaneous haptics matched to real tools for hazardous work</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Passivity Filters for Bilateral Teleoperation with Variable Impedance</b> &mdash; keeps teleoperation stable under variable impedance</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sensory Glove-Based Surgical Robot User Interface</b> &mdash; a sensing glove + AR drives a surgical robot with vibrotactile cues</span></li></ul>
 </div>
 
-<div class="fam" id="ta11">
+<div class="fam rich" id="ta11">
   <div class="famhd"><span class="famn">11</span><h3>Tactile sim-to-real &amp; learning</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Tactile simulators predict sensor deformation from contact, but the tactile sim-to-real gap is larger than vision&rsquo;s &mdash; force profiles, slip, and materials transfer poorly without adaptation.</p>
-<p>Force-motion capture and multi-sensory stage fusion help ground learning in reality.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Tactile simulation is harder than visual simulation: a camera rendering only needs photometric accuracy, but a tactile simulator must correctly predict how a gel deforms under a specific contact shape and force, including stick-slip transitions and micro-vibration. The resulting tactile sim-to-real gap is larger than the visual gap, so policies trained purely in simulation fail more often on real tactile hardware than vision-based policies fail on real cameras.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Tactile simulators predict sensor deformation from contact, but the tactile sim-to-real gap is larger than vision&rsquo;s &mdash; force profiles, slip, and materials transfer poorly without adaptation.</p>
+<p>Force-motion capture and multi-sensory stage fusion help ground learning in reality.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_tacsim" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>ForceMimic capture:</b> human demonstrator wears a wrist-mounted force plate and fingertip pressure array. Peeling a sticker off a surface: <b>14 demonstrations</b>, each 3–4 s, capturing force trajectory + finger video.</li>
+<li><b>Imitation policy</b> trained on captured force trajectories (ProDMP backbone). Tested on a new sticker brand with different adhesion.</li>
+<li><b>Force-only policy success rate: 54.5%</b> higher than vision-only (paper number). Force captures the peeling dynamics vision cannot see.</li>
+<li><b>Multi-sensory stage fusion (Play to the Score):</b> at peel-start stage, touch weight = 0.7, vision = 0.3. At lift-off stage, vision weight jumps to 0.8 — each stage uses the most informative sense.</li>
+<li><b>Uncertainty-aware RL (Occlusion paper):</b> tactile estimator outputs a Gaussian uncertainty; RL policy penalizes high-uncertainty actions, reducing gripper contact force variance by <b>31%</b>.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ForceMimic: Force-Centric Imitation with a Force-Motion Capture System</b> &mdash; wearable force capture lifts peeling success 54.5% over vision-only</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>ProDapt: Proprioceptive Adaptation Using Long-Term Memory Diffusion</b> &mdash; contact-memory diffusion enables proprioception-only tasks</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Play to the Score: Stage-Guided Multi-Sensory Fusion</b> &mdash; weights vision/audio/touch per task stage</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Visuotactile Estimation and Control Under Occlusion</b> &mdash; uncertainty-aware visuotactile estimator shapes RL</span></li></ul>
 </div>
 
-<div class="fam" id="ta12">
+<div class="fam rich" id="ta12">
   <div class="famhd"><span class="famn">12</span><h3>Tactile shape &amp; stiffness sensing</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Press and probe, and touch reveals what vision can&rsquo;t: an object&rsquo;s 3D surface where it&rsquo;s occluded, and its stiffness &mdash; how force grows with deformation. This is touch used to reconstruct, not just to grip.</p>
-<p>Neural stiffness fields, active exploration, and imagined-touch completion drive it.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Stiffness — how force grows with deformation — varies enormously across materials (100 kPa for soft tissue, 200 GPa for steel), and it is invisible from a camera. Knowing it matters: the right grip force for a grape is 0.5 N; for a nut it is 30 N. Measuring stiffness by touch requires pressing at known force, measuring deformation, and fitting a mechanical model — the sensor must be calibrated absolutely, not just relatively.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Press and probe, and touch reveals what vision can&rsquo;t: an object&rsquo;s 3D surface where it&rsquo;s occluded, and its stiffness &mdash; how force grows with deformation. This is touch used to reconstruct, not just to grip.</p>
+<p>Neural stiffness fields, active exploration, and imagined-touch completion drive it.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_stiffness" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Press a visuotactile sensor</b> against a silicone phantom (known Young's modulus E = 50 kPa) with 5 force steps from 0.1 to 0.5 N.</li>
+<li><b>Deformation image</b> at 0.5 N shows a 6 mm contact diameter and 0.8 mm central depression. Hertzian model: E* = 3F / (4√R · d^1.5) = <b>52 kPa</b> (2% error).</li>
+<li><b>Neural stiffness field</b> (Estimating High-Resolution paper): continuous MLP predicts stiffness at any query point. Trained on 500 probe locations, it maps a heterogeneous phantom in <b>120 s total probing time</b>.</li>
+<li><b>Active exploration (Proactive Tactile paper):</b> information-gain policy picks probe sites. It achieves 90% reconstruction accuracy with <b>28 contacts</b> vs 80 for random sampling.</li>
+<li><b>TouchDream completion:</b> given 5 real tactile readings on an occluded object, diffusion model hallucinates the remaining surface geometry. Chamfer distance to ground-truth: <b>4.2 mm</b> vs <b>11.8 mm</b> for nearest-neighbor completion.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Estimating High-Resolution Neural Stiffness Fields with Visuotactile Sensors</b> &mdash; a continuous stiffness field handles heterogeneous materials</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Proactive Tactile Exploration for Shape Reconstruction from Minimal Priors</b> &mdash; active touch minimizes contacts to reconstruct shape</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>TouchDream: 3D Object Completion through Imagined Touch</b> &mdash; a diffusion model imagines tactile geometry to complete point clouds</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Proprioceptive Object Shape and Size Extraction via In-Hand Manipulation</b> &mdash; rotate-and-slide with variable friction reconstructs geometry</span></li></ul>
 </div>
 
-<div class="fam" id="ta13">
+<div class="fam rich" id="ta13">
   <div class="famhd"><span class="famn">13</span><h3>Contact modes &amp; hybrid dynamics</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Objects switch between sticking, sliding, rolling, and separating as forces change. Reasoning over these discrete modes &mdash; and their friction constraints &mdash; is what makes contact planning tractable.</p>
-<p>Diffusion over contacts and contact-implicit MPC are current approaches.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>An object resting on a table can stick to the surface, slide freely, roll, or separate — and which mode it is in determines what forces are possible and what motions are legal. Planning a manipulation sequence means predicting which mode the object will be in after each push or tilt. The challenge is that the mode boundaries are not known in advance: they depend on friction, normal force, and geometry that the robot has to measure or infer from contact.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Objects switch between sticking, sliding, rolling, and separating as forces change. Reasoning over these discrete modes &mdash; and their friction constraints &mdash; is what makes contact planning tractable.</p>
+<p>Diffusion over contacts and contact-implicit MPC are current approaches.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_contactmode" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Task: slide a book across a table</b>, 0.3 kg, unknown μ. Target: 150 mm translation in 2 s.</li>
+<li><b>CDM contact diffusion:</b> observe the book at rest; diffusion model samples <b>50 hypotheses</b> for the contact point distribution. Median contact centroid converges to within <b>8 mm</b> of ground truth in 3 frames.</li>
+<li><b>Infer μ:</b> push at 1 N for 0.1 s. If book moves &gt; 2 mm, μ &lt; 0.34 (slide mode). Book moves 3.1 mm → μ ≈ 0.28.</li>
+<li><b>Contact-implicit MPC</b> (Dynamic On-Palm paper) plans a 0.15 s horizon, explicitly optimizing over stick/slide mode sequence. Chooses: slide for 1.2 s, then stick to stop. Achieves target with <b>4 mm</b> position error.</li>
+<li><b>Hamilton-Jacobi reachability</b> (legged robot version) pre-computes which contact-mode sequences are guaranteed safe under μ ∈ [0.25, 0.45], giving a <b>certified safety margin</b> for the whole trajectory.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>CDM: Contact Diffusion Model for Multi-Contact Point Localization</b> &mdash; diffusion resolves multi-contact ambiguity to sub-cm accuracy</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Implicit Contact Diffuser: Sequential Contact Reasoning</b> &mdash; latent contact-descriptor diffusion guides MPC</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic On-Palm Manipulation via Controlled Sliding</b> &mdash; contact-implicit MPC exploits sliding modes</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hamilton-Jacobi Reachability for Hybrid Systems with Transitions</b> &mdash; reachability over contact modes for legged robots</span></li></ul>
 </div>
 
-<div class="fam" id="ta14">
+<div class="fam rich" id="ta14">
   <div class="famhd"><span class="famn">14</span><h3>Touch in vision: material, contact &amp; haptics</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>The CVPR side treats touch as something to <em>infer or synthesize</em> from vision: estimate contact and force from a video, generate the haptic feel of a rendered scene, or read body motion from floor pressure.</p>
-<p>It skews toward hand-object contact, physics-plausible interaction, and haptic synthesis.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Vision models can see a surface but cannot feel it. A rendered 3D scene has no haptic channel: you can fly through it but not feel the texture of the wall or the bounce of the floor. And a video of someone picking up a glass tells nothing about the forces — yet humans watching that video can predict whether the glass is heavy. The challenge is to infer or synthesize the tactile signal from purely visual input.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The CVPR side treats touch as something to <em>infer or synthesize</em> from vision: estimate contact and force from a video, generate the haptic feel of a rendered scene, or read body motion from floor pressure.</p>
+<p>It skews toward hand-object contact, physics-plausible interaction, and haptic synthesis.</p></div></div>
+  <figure class="fdiag"><canvas data-taanim="taf_touchvision" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Haptic Neural Fields:</b> a 3DGS scene of a wooden table is trained. At contact point (x, y, z) = (0.3, 0, 0.7 m), the haptic field predicts vibrotactile frequency <b>f = 180 Hz</b>, amplitude <b>A = 0.12 g</b> for a fingertip sliding at 20 mm/s.</li>
+<li><b>Ground-truth measurement</b> with a real fingertip accelerometer: 172 Hz, 0.11 g. Error &lt; <b>5%</b> for frequency, 8% for amplitude.</li>
+<li><b>Pressure2Motion:</b> 16 floor pressure sensors at 100 Hz capture a person walking. A graph neural network decodes hip and knee joint angles with <b>4.3°</b> mean angular error — comparable to marker-based mocap at 1/20th the setup cost.</li>
+<li><b>AT-VLA tactile gate:</b> a GelSight signal is injected into a VLA backbone via a learnable 64-dim adapter. The model closes the contact-force feedback loop in <b>0.04 s</b> — 8× faster than a policy that waits for a visual frame.</li>
+<li><b>ForceVLA2 mixture-of-experts:</b> routes between a position-control head and a force-control head based on contact state. On a peg-in-hole task, it reduces peak insertion force from <b>18 N to 6 N</b>.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Haptic Neural Fields: Tactile Interactions in 3D Rendered Scenes</b> &mdash; maps contact trajectories to vibrotactile signals in NeRF/3DGS scenes</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Pressure2Motion: Human Motion Reconstruction from Ground Pressure</b> &mdash; decodes sparse floor pressure into full-body motion, privacy-preserving</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ForceVLA2: Hybrid Force-Position Control with Force Awareness</b> &mdash; a force-aware mixture-of-experts for contact-rich manipulation</span></li>

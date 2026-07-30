@@ -70,6 +70,17 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#18252D}.op b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0C1218;border:1px solid #22323F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
 </style></head><body>
 <header><div class="wrap">
   <div class="bug">Hardware &amp; Actuation &middot; actuators · compliance · morphology &middot; robotics + vision</div>
@@ -162,150 +173,255 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip rb" href="#hw1"><span class="cn">01</span>Electric</a><a class="fchip rb" href="#hw2"><span class="cn">02</span>Soft robotics</a><a class="fchip rb" href="#hw3"><span class="cn">03</span>Series-elastic</a><a class="fchip rb" href="#hw4"><span class="cn">04</span>Grippers, hands</a><a class="fchip rb" href="#hw5"><span class="cn">05</span>Underactuated</a><a class="fchip rb" href="#hw6"><span class="cn">06</span>Mechanism design</a><a class="fchip rb" href="#hw7"><span class="cn">07</span>Origami, foldable</a><a class="fchip rb" href="#hw8"><span class="cn">08</span>Exoskeletons</a><a class="fchip rb" href="#hw9"><span class="cn">09</span>Tendon-driven</a><a class="fchip rb" href="#hw10"><span class="cn">10</span>Tactile sensors</a><a class="fchip rb" href="#hw11"><span class="cn">11</span>Bio-inspired</a><a class="fchip rb" href="#hw12"><span class="cn">12</span>Design optimization</a><a class="fchip vb" href="#hw13"><span class="cn">13</span>Simulation-ready asset generation</a><a class="fchip vb" href="#hw14"><span class="cn">14</span>Physics-aware modeling</a><a class="fchip vb" href="#hw15"><span class="cn">15</span>Structure</a></div>
   <div class="famgrid">
-<div class="fam" id="hw1">
+<div class="fam rich" id="hw1">
   <div class="famhd"><span class="famn">01</span><h3>Electric & servo actuators</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Electric motors are the dominant prime mover in robotics &mdash; fast, precise, and easy to drive from electronics &mdash; but their friction, inertia, and compliance matter enormously in practice.</p>
-<p>Getting real physical behavior right in simulation is the core challenge that the papers below attack from several angles.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A DC brushless motor spins fast and weak; a gearbox trades speed for torque but adds friction &mdash; the sim-to-real gap lives in that friction curve, not in the ideal torque equation.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Electric motors are the dominant prime mover in robotics &mdash; fast, precise, and easy to drive from electronics &mdash; but their friction, inertia, and compliance matter enormously in practice.</p>
+<p>Getting real physical behavior right in simulation is the core challenge that the papers below attack from several angles.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_electric" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Select a <b>BLDC motor</b>: 1000 rpm, 0.05 N&middot;m stall torque, 100 g.</li>
+<li>Add a <b>50:1 planetary gearbox</b>: output torque = 0.05 &times; 50 = <b>2.5 N&middot;m</b>, output speed = 20 rpm.</li>
+<li>Fit a <b>Stribeck curve</b> to the joint: static friction 0.3 N&middot;m, viscous coefficient 0.004 N&middot;m&middot;s.</li>
+<li>Simulate the joint with a <b>Coulomb + viscous</b> friction model; position error drops from 8&deg; to 1.2&deg;.</li>
+<li>Deploy on hardware: the encoder reads <b>0.088&deg; resolution</b> at 4096 counts/rev.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Self-Sensing Odometry of a Pipeline Robot Driven by Dielectric Elastomer Actuators</b> &mdash; uses the actuator's own capacitance as a position sensor — no separate encoder needed</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Extended Friction Models for Physics Simulation of Servo Actuators</b> &mdash; Stribeck + hysteresis models that close the sim-to-real gap for actuator friction</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stretchable Electrohydraulic Artificial Muscle for Antagonistic Joints</b> &mdash; high-energy-density electric actuator that mimics biological antagonist pairs</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>CASARO — Compliant Actuated Single-Actuator Soft Rotorcraft</b> &mdash; one actuator drives a full soft rotorcraft through a compliant mechanical transmission</span></li></ul>
 </div>
 
-<div class="fam" id="hw2">
+<div class="fam rich" id="hw2">
   <div class="famhd"><span class="famn">02</span><h3>Soft robotics & pneumatic actuators</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Soft bodies get compliance from material rather than mechanism &mdash; silicone, fabric, and auxetic structures that deform safely on contact.</p>
-<p>The design challenge is controlling behavior that emerges from geometry and pressure rather than from discrete joints.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A silicone pneumatic gripper must pick a ripe tomato at 0.8 N peak force without bruising it &mdash; the pressure-to-force map is nonlinear and depends on chamber geometry, not on a simple spring constant.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Soft bodies get compliance from material rather than mechanism &mdash; silicone, fabric, and auxetic structures that deform safely on contact.</p>
+<p>The design challenge is controlling behavior that emerges from geometry and pressure rather than from discrete joints.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_pneumatic" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Cast an <b>auxetic chamber</b> from Ecoflex-30 silicone; wall thickness <b>1.5 mm</b>.</li>
+<li>Inflate to <b>20 kPa</b>: FEM predicts 0.78 N fingertip force; measured 0.82 N.</li>
+<li>Map pressure &rarr; curvature with a <b>piecewise-linear lookup</b> (3 breakpoints, fit from 10 inflations).</li>
+<li>Close loop on <b>chamber pressure</b> via a solenoid valve at 100 Hz; force ripple &lt; 0.05 N.</li>
+<li>Grasp 200 g tomato: contact patch spreads across <b>14 mm</b> of fruit surface, peak stress 4.2 kPa &mdash; well below bruise threshold of 25 kPa.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>eViper-2D — Thin Large-Area Soft Robotic Platform</b> &mdash; flat pneumatic network that produces crawling and steering from a single layer</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Large-Expansion Bi-Layer Auxetics for Soft Robotic Actuators</b> &mdash; auxetic geometry gives large, controlled shape change from modest pressure</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Soft Robot Worms Inspired by Living Worm Blobs</b> &mdash; peristaltic locomotion in a soft body — mechanics emergent from material coupling</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bio-Inspired Soft Magnetic Swimming Robot</b> &mdash; magnetically driven soft swimmer that navigates constrained fluidic channels</span></li></ul>
 </div>
 
-<div class="fam" id="hw3">
+<div class="fam rich" id="hw3">
   <div class="famhd"><span class="famn">03</span><h3>Series-elastic & compliant joints</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Putting a spring between motor and load separates force control from position control, absorbs impact, and makes the joint safe to touch.</p>
-<p>This one mechanical insight underlies most modern legged robots and co-robot arms.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A stiff motor driving a legged foot receives a ground-reaction impulse of 3&times; body weight at landing &mdash; rigid transmission spikes motor current to saturation; a spring in series absorbs the impulse and lets the motor respond at its comfortable bandwidth.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Putting a spring between motor and load separates force control from position control, absorbs impact, and makes the joint safe to touch.</p>
+<p>This one mechanical insight underlies most modern legged robots and co-robot arms.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_sea" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Choose spring stiffness <b>k = 800 N/m</b>: natural frequency &radic;(k/m<sub>leg</sub>) = <b>28 Hz</b>, above gait (2 Hz), below motor bandwidth (80 Hz).</li>
+<li>At heel-strike: 80 N impulse, spring compresses <b>10 cm</b> &rarr; stores 4 J.</li>
+<li>Force = k &times; deflection = 800 &times; 0.10 = <b>80 N</b> read from spring encoder; no wrist F/T sensor needed.</li>
+<li>Motor sees a smoothed 80 N ramp over <b>35 ms</b> instead of a 2 ms spike &mdash; stays within current limit.</li>
+<li>Energy return on push-off: spring releases 4 J &rarr; <b>reduces hip motor demand by 18%</b> per stride.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bipedal Walking with Continuously Compliant Robotic Legs</b> &mdash; spring legs tuned to natural gait frequency cut motor demand across walking speeds</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Ankle-Foot Prosthesis with Passive Agonist-Antagonist Design</b> &mdash; two springs in opposition give energy return and push-off without active sensing</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Remote Center of Compliance for Peg-in-Hole Assembly</b> &mdash; mechanically passive compliance at the tool tip simplifies high-precision insertion</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stretchable Electrohydraulic Artificial Muscle for Antagonistic Joints</b> &mdash; soft antagonist pair that mimics the compliance profile of biological tendons</span></li></ul>
 </div>
 
-<div class="fam" id="hw4">
+<div class="fam rich" id="hw4">
   <div class="famhd"><span class="famn">04</span><h3>Grippers, hands & end-effectors</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>The end-effector is where the robot touches the world, and its design almost entirely determines what tasks are reachable.</p>
-<p>Underactuation and passive compliance let a small number of motors grasp a large variety of object shapes.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A three-fingered hand must grasp objects from a 6 cm cylinder to a 2 cm sphere without re-grasping &mdash; a fully actuated hand needs 9 motors; underactuation with passive routing achieves this with one.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The end-effector is where the robot touches the world, and its design almost entirely determines what tasks are reachable.</p>
+<p>Underactuation and passive compliance let a small number of motors grasp a large variety of object shapes.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_gripper" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Route a single <b>tendon</b> through a distal-first differential: finger closes proximal joint first, then distal automatically.</li>
+<li>Set tendon pretension at <b>0.8 N</b>: fingers conform to object geometry without active sensing.</li>
+<li>Grasp a <b>60 mm cylinder</b>: all three fingers wrap; contact at 6 points.</li>
+<li>Grasp a <b>20 mm sphere</b>: distal phalanges curl inward; 3-point contact, 1.2 N grasp force.</li>
+<li>Cycle 500 times: tendon elongation &lt; <b>0.3 mm</b> (nylon-coated stainless steel, E = 200 GPa).</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Model Q-II — Underactuated Hand with Enhanced Grasping Modes</b> &mdash; single-tendon hand that switches between power and pinch grasp via passive routing</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Chain-Driven Adaptive Underactuated Fingers for Prosthetic Hands</b> &mdash; chain transmission gives adaptive finger closure without independent finger motors</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Precision Harvesting End Effector with Dual Camera Perception</b> &mdash; soft-rigid hybrid gripper tuned for delicate fruit without bruising</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tendon-Driven Three-Fingered Aerial Hand Using a Single Actuator</b> &mdash; one motor drives three compliant fingers for a drone-mounted grasper</span></li></ul>
 </div>
 
-<div class="fam" id="hw5">
+<div class="fam rich" id="hw5">
   <div class="famhd"><span class="famn">05</span><h3>Underactuated & passive mechanisms</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Fewer actuators than degrees of freedom forces compliance and passive dynamics to carry the difference &mdash; which can be a feature, not a bug.</p>
-<p>Passive mechanisms store and release energy in patterns that match the task, cutting both mass and power draw.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A biped walking on flat ground needs to regulate step timing &mdash; a fully actuated model burns energy keeping the torso upright between steps; passive dynamics of a pendulum on a slope does it for free.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Fewer actuators than degrees of freedom forces compliance and passive dynamics to carry the difference &mdash; which can be a feature, not a bug.</p>
+<p>Passive mechanisms store and release energy in patterns that match the task, cutting both mass and power draw.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_underact" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Set leg length <b>L = 0.8 m</b>: passive step period T = &pi;&radic;(L/g) = <b>0.9 s</b> per half-step (natural frequency).</li>
+<li>On a <b>3&deg; slope</b>: gravity input = m&middot;g&middot;sin(3&deg;) &asymp; 5.1 N per step; covers viscous losses.</li>
+<li>Add a single ankle actuator (25 W peak); reduces metabolic cost by <b>21%</b> vs full active control.</li>
+<li>Virtual gravity controller shifts the zero-moment point <b>18 mm</b> forward &rarr; step starts without a control pulse.</li>
+<li>On flat ground: add 6 W average hip torque &rarr; robot walks at <b>0.8 m/s</b> with 60% passive fraction.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Model Q-II — Underactuated Hand with Enhanced Grasping Modes</b> &mdash; passive tendon routing adapts finger posture to object geometry without control</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dexterous Assembly Using a Planar Hand with Programmable Passive Compliance</b> &mdash; spring stiffness tuned at design time replaces active sensing for peg insertion</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Virtual Gravity Controller for Underactuated Biped Robots</b> &mdash; virtual gravity shapes passive dynamics so the robot walks on flat ground</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Peristaltic Wave for Multi-Legged Locomotion</b> &mdash; wave timing exploits passive leg compliance to coordinate locomotion cheaply</span></li></ul>
 </div>
 
-<div class="fam" id="hw6">
+<div class="fam rich" id="hw6">
   <div class="famhd"><span class="famn">06</span><h3>Mechanism design & morphology</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>The shape of linkages, the choice of joint types, and the distribution of mass determine what motions are mechanically easy and which require high torque.</p>
-<p>Morphology is not just aesthetics &mdash; it is a design variable that changes what the controller needs to provide.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A jumping robot must store energy quickly and release it in under 10 ms &mdash; a direct-drive motor has the wrong bandwidth; a spring-latch mechanism decouples energy storage speed from release speed.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The shape of linkages, the choice of joint types, and the distribution of mass determine what motions are mechanically easy and which require high torque.</p>
+<p>Morphology is not just aesthetics &mdash; it is a design variable that changes what the controller needs to provide.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_morpho" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Size spring: 2 J target, k = 4000 N/m &rarr; compress <b>&Delta;X = 31.6 mm</b>.</li>
+<li>Latch catch force = 8 N; motor charges spring in <b>0.4 s</b> (within motor bandwidth).</li>
+<li>Latch release: 10 N cam trigger releases in <b>4 ms</b> &rarr; leg velocity 3.2 m/s.</li>
+<li>Body lifts <b>52 cm</b> (theoretical 51.6 cm from &frac12;mv&sup2; = k&Delta;X&sup2;/2).</li>
+<li>Diffusion model proposes a <b>4-bar leg linkage</b> that reduces latch force to 5 N via mechanical advantage 1.6&times;.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEVA — High-Mobility Legged Suspension Vehicle</b> &mdash; leg-suspension hybrid morphology that traverses rubble without active shock absorption</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Text2Robot — Evolutionary Robot Design from Text Descriptions</b> &mdash; natural-language specification drives evolutionary search over morphology space</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generative-AI-Driven Jumping Robot Design Using Diffusion Models</b> &mdash; diffusion model proposes body geometry optimized for jumping height and stability</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Implicit Articulated Robot Morphology with Configuration-Space Neural SDFs</b> &mdash; neural signed distance fields represent morphology for differentiable design optimization</span></li></ul>
 </div>
 
-<div class="fam" id="hw7">
+<div class="fam rich" id="hw7">
   <div class="famhd"><span class="famn">07</span><h3>Origami, foldable & deployable robots</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Folding turns flat sheets into three-dimensional mechanisms &mdash; deployable, reconfigurable, and manufacturable from cheap materials.</p>
-<p>Crease patterns encode the kinematics; the challenge is making them stiff enough to carry load once deployed.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot must fit through a 12 cm gap and then deploy to a 40 cm span rigid enough to carry 500 g &mdash; the folded-to-deployed ratio must exceed 3:1 without an additional actuator.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Folding turns flat sheets into three-dimensional mechanisms &mdash; deployable, reconfigurable, and manufacturable from cheap materials.</p>
+<p>Crease patterns encode the kinematics; the challenge is making them stiff enough to carry load once deployed.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_origami" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Design a <b>Miura-Ori crease pattern</b>: 12 &times; 6 panel array, 30&deg; crease angle.</li>
+<li>Folded state: <b>12 cm &times; 8 cm &times; 3 cm</b>; deployed: 42 cm &times; 28 cm &times; 1 cm.</li>
+<li>Fold ratio = <b>3.5:1</b> in each planar dimension.</li>
+<li>Sheet material: 0.5 mm fiberglass + 0.1 mm Kapton hinge; stiffness 18 N/mm in-plane when deployed.</li>
+<li>Single spring-loaded hinge unfolds in <b>0.8 s</b> under 0.3 N release force &mdash; no extra motor needed.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Quarry-Bot — Reconfigurable Cable-Suspended Inspection Robot</b> &mdash; flat-folded frame deploys to a cable-suspended platform for confined-space inspection</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sea-U-Whale — Reconfigurable Marine Robot</b> &mdash; origami hull reconfigures between surface and underwater profiles without actuator change</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>TrofyBot — Transformable Rolling and Flying Robot</b> &mdash; fold sequence converts between ground and aerial morphology in the field</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stair Climbing of a Transformable Wheeled Robot</b> &mdash; body fold changes wheel geometry to step over risers without a leg mechanism</span></li></ul>
 </div>
 
-<div class="fam" id="hw8">
+<div class="fam rich" id="hw8">
   <div class="famhd"><span class="famn">08</span><h3>Exoskeletons & wearable hardware</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Wearable robots must conform to a body that moves in ways the device cannot fully predict &mdash; compliance and fit are load-bearing design requirements, not comfort features.</p>
-<p>Misalignment between the device joint axis and the biological joint causes forces that injure; the best designs accommodate or correct for it.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A knee exoskeleton must follow the user's knee joint axis, which shifts by up to 20 mm during flexion &mdash; a rigid alignment causes shear forces that bruise and fatigue the user within 30 min of wear.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Wearable robots must conform to a body that moves in ways the device cannot fully predict &mdash; compliance and fit are load-bearing design requirements, not comfort features.</p>
+<p>Misalignment between the device joint axis and the biological joint causes forces that injure; the best designs accommodate or correct for it.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_exo" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Measure knee instant center of rotation at <b>15&deg;, 30&deg;, 60&deg;, 90&deg;</b> flexion: shifts 18 mm anteriorly.</li>
+<li>Design a <b>4-bar polycentric hinge</b>: coupler length 42 mm, crank 28 mm &rarr; instant center matches biology within <b>3 mm</b>.</li>
+<li>Measure residual shear force with a strain-gauge insert: drops from <b>24 N to 4 N</b> at 60&deg; flex.</li>
+<li>Spring stiffness tuned via Bayesian optimization over 10 min walk: final k = <b>340 N/m</b> reduces peak hip torque 19%.</li>
+<li>User trial: comfort rating improves from 3/10 to 8/10 after polycentric swap; wear time extends to <b>4 hours</b>.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>In-Vivo Cable-Driven Rodent Ankle Exoskeleton for Gait Studies</b> &mdash; subcutaneous anchor points eliminate alignment error for precise torque delivery</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Wearable Soft Sensing Band for Wrist Torque and Gesture</b> &mdash; textile strain sensors that survive washing and conform to wrist anatomy</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Design Optimization of Passive Exoskeletons via Co-Design</b> &mdash; personalizes spring stiffness to each user's gait online without lab instrumentation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-BAR — Harness-Free Elderly Assistance Robot</b> &mdash; follows the user and applies assistive force without a body-attached harness</span></li></ul>
 </div>
 
-<div class="fam" id="hw9">
+<div class="fam rich" id="hw9">
   <div class="famhd"><span class="famn">09</span><h3>Tendon-driven & cable mechanisms</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Routing the motor away from the moving tip cuts the inertia that must be accelerated &mdash; essential for fast hands and lightweight arms &mdash; but cables stretch, wrap, and slip in ways that complicate control.</p>
-<p>Hysteresis from cable compliance is not always a nuisance; in continuum robots it can be a source of passive stiffness.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Moving a motor to the proximal arm reduces fingertip inertia from 85 g to 12 g, but the cable now has 400 mm of elastic path &mdash; hysteresis means the commanded joint angle lags the actual by up to 7&deg; under load.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Routing the motor away from the moving tip cuts the inertia that must be accelerated &mdash; essential for fast hands and lightweight arms &mdash; but cables stretch, wrap, and slip in ways that complicate control.</p>
+<p>Hysteresis from cable compliance is not always a nuisance; in continuum robots it can be a source of passive stiffness.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_tendon" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Cable: nylon-coated 1.2 mm stainless, E = 190 GPa, A = 1.13 mm&sup2; &rarr; stiffness = EA/L = <b>538 N/mm</b>.</li>
+<li>At 5 N load: stretch &Delta;L = 5 / 538 = <b>9.3 &mu;m/mm &times; 400 mm = 3.7 mm</b> &rarr; 6.8&deg; lag at the joint.</li>
+<li>Fit hysteresis with a <b>Bouc-Wen model</b>: &alpha; = 0.8, &beta; = 0.15, &gamma; = 0.15, n = 2.</li>
+<li>Add a distal encoder on the fingertip joint: closes the loop directly; lag drops to <b>&lt; 0.5&deg;</b>.</li>
+<li>Damping effect: hysteresis dissipates 12 mJ/cycle &rarr; tip vibration amplitude drops <b>3&times;</b> without a dashpot.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</b> &mdash; shows hysteresis acts as a damper that improves tip stability without extra sensors</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>CAFEs — Cable-Driven Collaborative Floating End-Effectors</b> &mdash; two cable-driven arms cooperate to position a shared floating tool precisely</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Accelerated Quasi-Static FEM for Real-Time Continuum Robot Control</b> &mdash; GPU-accelerated finite element model runs fast enough to close the control loop</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shared Control for Cable Routing with Tactile Sensing</b> &mdash; tactile feedback guides cable routing through narrow passages in constrained surgery</span></li></ul>
 </div>
 
-<div class="fam" id="hw10">
+<div class="fam rich" id="hw10">
   <div class="famhd"><span class="famn">10</span><h3>Tactile sensors & sensorized skin</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Contact is where the robot and the world exchange information and force. Without sensing at the contact surface, the controller is blind to slip, texture, and the difference between a gentle touch and a damaging push.</p>
-<p>The engineering challenge is packing dense, waterproof, durable sensing into a form that survives repeated impact.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A gripper must detect incipient slip before a 200 g object drops &mdash; the slip event starts at the contact surface 80 ms before any wrist force-torque sensor can detect it.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Contact is where the robot and the world exchange information and force. Without sensing at the contact surface, the controller is blind to slip, texture, and the difference between a gentle touch and a damaging push.</p>
+<p>The engineering challenge is packing dense, waterproof, durable sensing into a form that survives repeated impact.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_tactile" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Mount a <b>4&times;4 taxel array</b> (AnySkin-style magnetic) at each fingertip; resolution 2.5 mm spacing.</li>
+<li>Sample at <b>500 Hz</b>; latency &lt; 2 ms per frame.</li>
+<li>Compute lateral shear gradient across taxels: slip onset = gradient &gt; <b>0.08 N/taxel</b> threshold.</li>
+<li>Issue &lsquo;tighten grip&rsquo; command at <b>80 ms</b> before drop; wrist F/T sensor detects drop onset only at t = 0 ms.</li>
+<li>After <b>500 grasp-and-slip trials</b>: 94% slip caught before drop vs 61% without tactile feedback.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AnySkin — Plug-and-Play Replaceable Magnetic Tactile Skin</b> &mdash; replaceable magnetic skin that transfers grasp policies across sensor instances</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>ACROSS — Cross-Modal Tactile Representation Learning</b> &mdash; shared embedding of vision and tactile signals for manipulation without retraining</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Spatial Sensitivity Equalization of ERT-Based Robotic Skin</b> &mdash; electrical resistance tomography skin with compensated spatial sensitivity</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Magnetic-Actuated Vision-Based Whisker Array for Flow Sensing</b> &mdash; camera-behind-whisker design turns optical flow into tactile contact estimation</span></li></ul>
 </div>
 
-<div class="fam" id="hw11">
+<div class="fam rich" id="hw11">
   <div class="famhd"><span class="famn">11</span><h3>Bio-inspired & biomimetic mechanisms</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Animals solve locomotion, manipulation, and sensing problems with mechanisms that evolution refined over millions of years &mdash; studying them reveals design principles that transfer to hardware.</p>
-<p>The key is extracting the principle, not copying the anatomy; the engineering material and the biological material are never the same.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A flapping-wing robot weighing 28 g must take off vertically &mdash; a direct-drive motor at 30 Hz generates only 60% of the lift needed; storing and releasing energy through a resonant spring mechanism brings lift to 110%.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Animals solve locomotion, manipulation, and sensing problems with mechanisms that evolution refined over millions of years &mdash; studying them reveals design principles that transfer to hardware.</p>
+<p>The key is extracting the principle, not copying the anatomy; the engineering material and the biological material are never the same.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_bioinspire" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Wing natural resonance at <b>f<sub>n</sub> = 28 Hz</b>: set motor drive to match.</li>
+<li>Spring constant k = (2&pi;f<sub>n</sub>)&sup2; &times; m<sub>wing</sub> = (176)&sup2; &times; 0.004 = <b>124 N/m</b>.</li>
+<li>At resonance: motor input 0.8 W; mechanical output 1.4 W &mdash; <b>Q-factor &asymp; 1.75</b> from stored spring energy.</li>
+<li>Lift generated at 30 Hz: <b>31 mN</b> (direct) vs <b>34 mN</b> (resonant) &mdash; 13% increase from spring.</li>
+<li>Spring-latch variant: charge in 0.4 s, release in <b>&lt; 5 ms</b> &rarr; jump-and-fly transition at 1.2 m/s takeoff.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Bioinspired Jumping Mechanism for Self-Takeoff of a Flapping-Wing Robot</b> &mdash; spring-latch energy storage mimics insect jump-and-fly transition</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tensiworm — Tensegrity Robot with Peristaltic Locomotion</b> &mdash; cable-tension network inspired by annelid muscle geometry for soft crawling</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ambient Flow Perception Using an Artificial Lateral Line Sensor</b> &mdash; pressure-sensor array that mimics fish lateral line for underwater obstacle detection</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Added Mass and Accuracy of the FF-SLIP Model for Legged Swimming</b> &mdash; spring-loaded inverted pendulum extended with fluid added mass for swimming gaits</span></li></ul>
 </div>
 
-<div class="fam" id="hw12">
+<div class="fam rich" id="hw12">
   <div class="famhd"><span class="famn">12</span><h3>Design optimization & co-design</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Optimizing body and control together finds configurations that neither discipline finds alone &mdash; a joint optimal that a sequential approach misses.</p>
-<p>The bottleneck is that evaluating a design requires running a simulation and sometimes a real-hardware trial; the search space is vast and expensive to query.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Optimizing an underwater glider hull shape separately from buoyancy engine placement misses joint optima &mdash; sequential design finds a drag coefficient of 0.031 while co-optimization finds 0.022 with the same mass budget.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Optimizing body and control together finds configurations that neither discipline finds alone &mdash; a joint optimal that a sequential approach misses.</p>
+<p>The bottleneck is that evaluating a design requires running a simulation and sometimes a real-hardware trial; the search space is vast and expensive to query.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_codesign" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Parameterize hull: <b>6 shape variables</b> (length, fineness ratio, nose radius, tail taper, fin area, fin sweep).</li>
+<li>Parameterize engine: <b>3 placement variables</b> (longitudinal center, vertical offset, piston stroke).</li>
+<li>Run <b>Bayesian optimization</b> over the joint 9D space, 200 evaluations, each a CFD solve (45 s on 8 cores).</li>
+<li>Sequential best: C<sub>D</sub> = 0.031, glide ratio 12.4. Joint best: C<sub>D</sub> = <b>0.022</b>, glide ratio <b>17.1</b>.</li>
+<li>Real hardware: fabricate winning hull at CNC tolerance 0.2 mm; pool drag test matches simulation within <b>4%</b>.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AI-Enhanced Automatic Design of Efficient Underwater Gliders</b> &mdash; multi-objective search over hull shape and buoyancy engine placement jointly</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Text2Robot — Evolutionary Robot Design from Text Descriptions</b> &mdash; evolutionary co-design driven by language specification of the task</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Efficient and Diverse Generative Robot Designs Using Evolution and Diffusion</b> &mdash; combines evolutionary selection with diffusion-based morphology generation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Design Optimization of Passive Exoskeletons</b> &mdash; Bayesian optimization personalizes spring parameters during a real walking session</span></li></ul>
 </div>
 
-<div class="fam" id="hw13">
+<div class="fam rich" id="hw13">
   <div class="famhd"><span class="famn">13</span><h3>Simulation-ready asset generation</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>A physics simulator is only as good as the object models inside it &mdash; mass, inertia, geometry, and contact properties must all be accurate for sim-to-real transfer to work.</p>
-<p>Building those assets by hand is slow; the papers here generate them automatically from images or videos.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Building a URDF for a new kitchen appliance by hand takes a trained engineer 4 hours; a vision model must infer the same joint type, mass, and friction parameters from a single RGB photo in under 10 seconds.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A physics simulator is only as good as the object models inside it &mdash; mass, inertia, geometry, and contact properties must all be accurate for sim-to-real transfer to work.</p>
+<p>Building those assets by hand is slow; the papers here generate them automatically from images or videos.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_simgen" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Input: one <b>640&times;480 RGB</b> photo of a blender.</li>
+<li>Vision backbone extracts <b>depth + surface normals</b> from a DPT-Large monocular depth model.</li>
+<li>Object graph: 3 parts detected (base, jar, lid); joint type predicted as <b>revolute</b> (lid) + <b>fixed</b> (jar-to-base).</li>
+<li>Mass estimated from volume &times; material class (&lsquo;plastic&rsquo;): <b>m = 0.8 kg</b>; friction &mu; = 0.35 (from material lookup).</li>
+<li>Export <b>URDF + collision mesh</b> in 6.2 s; drop into MuJoCo: lid opens correctly, jar does not slide.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysX-Anything — Simulation-Ready 3D Assets from a Single Image</b> &mdash; infers mass, friction, and joint type from a photo and exports a URDF</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Unposed-to-3D — Simulation-Ready Vehicle Models from Unposed Images</b> &mdash; no camera pose needed; reconstructs full vehicle geometry for physics engines</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ReWeaver — Topology-Accurate Garment Reconstruction for Simulation</b> &mdash; preserves cloth topology so collision and drape simulate correctly</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>RealAppliance — Workable Appliance Assets for Manipulation Benchmarks</b> &mdash; extracts kinematic structure of everyday appliances from RGB video</span></li></ul>
 </div>
 
-<div class="fam" id="hw14">
+<div class="fam rich" id="hw14">
   <div class="famhd"><span class="famn">14</span><h3>Physics-aware modeling & material estimation</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Knowing the shape of an object is not enough; the controller also needs to know how it will deform, slide, or break when touched.</p>
-<p>These papers embed physical material properties into neural representations so that simulation and prediction stay grounded in real physics.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot touching an unknown deformable object must predict how much it will deform under 2 N &mdash; a purely geometric model gives zero deformation, but the Young's modulus is not written anywhere on the object's surface.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Knowing the shape of an object is not enough; the controller also needs to know how it will deform, slide, or break when touched.</p>
+<p>These papers embed physical material properties into neural representations so that simulation and prediction stay grounded in real physics.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_physmat" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Apply a <b>0.5 N probe force</b> at the surface while recording depth from a wrist camera.</li>
+<li>Fit a <b>Hertzian contact model</b>: &delta; = (3F/(4E*&radic;R))<sup>2/3</sup>; measured &delta; = 1.2 mm &rarr; E* = <b>28 kPa</b>.</li>
+<li>Map E* across the surface with <b>9 probe points</b> (3&times;3 grid, 8 mm spacing) &mdash; builds a stiffness field.</li>
+<li>Feed stiffness field into NeuROK-style network: predict deformation under 2 N at untouched location.</li>
+<li>Prediction error: <b>0.9 mm RMS</b> vs 8.4 mm RMS from a uniform-E baseline.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>NeuROK — Generative 4D Neural Object Kinematics</b> &mdash; predicts per-point motion under force from a single static observation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysSkin — Physics-Based Neural Skinning with Material Estimation</b> &mdash; estimates skin elasticity from video so that deformation stays physically plausible</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>UniPixie — Probabilistic 3D Physics via Normalizing Flow Matching</b> &mdash; samples a distribution over physical parameters from visual observations</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Haptic Neural Fields — Tactile Properties Embedded in 3D Scene Representations</b> &mdash; extends NeRF-style fields with stiffness and friction so a hand can feel before it touches</span></li></ul>
 </div>
 
-<div class="fam" id="hw15">
+<div class="fam rich" id="hw15">
   <div class="famhd"><span class="famn">15</span><h3>Structure & physical reconstruction from interaction</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Static geometry is not enough for a robot that will interact with a scene &mdash; it also needs to know which parts move, how they connect, and what happens when they are pushed.</p>
-<p>Interaction video reveals physical structure that passive observation misses.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot must know which cabinet door swings open before it tries to open it &mdash; passive visual observation sees the door closed, but only watching a human interact with it reveals the hinge axis and range of motion.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Static geometry is not enough for a robot that will interact with a scene &mdash; it also needs to know which parts move, how they connect, and what happens when they are pushed.</p>
+<p>Interaction video reveals physical structure that passive observation misses.</p></div></div>
+  <figure class="fdiag"><canvas data-hwanim="hwf_interact" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Collect a <b>30-second video</b> of a person opening and closing a cabinet door 5 times.</li>
+<li>Run a <b>human pose tracker</b> (ViTPose) + <b>DOPE object detector</b> to segment the hand-object contact frames.</li>
+<li>Fit an articulation model: hinge axis direction recovered within <b>4&deg; error</b>, range of motion <b>92&deg; &plusmn; 3&deg;</b>.</li>
+<li>Assign joint type &lsquo;revolute&rsquo;; build a <b>URDF sub-tree</b> for the door from the estimated geometry.</li>
+<li>Robot opens door on first attempt without collision; without interaction priors, it fails <b>7/10</b> times.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>FUN REC — Functional 3D Scene Reconstruction from Interaction Video</b> &mdash; articulation and affordance from watching a person use the objects</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysGaia — Physics-Aware Dynamic Scene Generation Benchmark</b> &mdash; benchmark for scene models that obey conservation laws under interaction</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianFluent — Fracture Physics with Gaussian Splatting</b> &mdash; embeds fracture mechanics into 3D Gaussian representations for breakable objects</span></li>

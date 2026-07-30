@@ -70,6 +70,17 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#28171F}.op b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0C1218;border:1px solid #22323F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
 </style></head><body>
 <header><div class="wrap">
   <div class="bug">RL &amp; Imitation &middot; reward · demos · sim-to-real &middot; robotics + vision</div>
@@ -162,150 +173,257 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip rb" href="#rl1"><span class="cn">01</span>Deep RL for control</a><a class="fchip rb" href="#rl2"><span class="cn">02</span>Sim-to-real RL</a><a class="fchip bb" href="#rl3"><span class="cn">03</span>Reward design</a><a class="fchip bb" href="#rl4"><span class="cn">04</span>Offline RL</a><a class="fchip bb" href="#rl5"><span class="cn">05</span>Imitation</a><a class="fchip rb" href="#rl6"><span class="cn">06</span>Interactive imitation (DAgger)</a><a class="fchip rb" href="#rl7"><span class="cn">07</span>Inverse RL</a><a class="fchip bb" href="#rl8"><span class="cn">08</span>Learning from video</a><a class="fchip rb" href="#rl9"><span class="cn">09</span>Sample efficiency</a><a class="fchip bb" href="#rl10"><span class="cn">10</span>Model-based RL</a><a class="fchip rb" href="#rl11"><span class="cn">11</span>Hierarchical RL</a><a class="fchip rb" href="#rl12"><span class="cn">12</span>Residual RL</a><a class="fchip bb" href="#rl13"><span class="cn">13</span>RL + foundation models</a><a class="fchip vb" href="#rl14"><span class="cn">14</span>RLHF</a><a class="fchip rb" href="#rl15"><span class="cn">15</span>Safe RL</a></div>
   <div class="famgrid">
-<div class="fam" id="rl1">
+<div class="fam rich" id="rl1">
   <div class="famhd"><span class="famn">01</span><h3>Deep RL for control</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Learn a control policy straight from interaction &mdash; no hand-derived controller &mdash; letting trial and error discover motor skills that generalize across embodiment and disturbance.</p>
-<p>The recurring struggle is sample cost and the sim-to-real gap.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A quadruped on uneven terrain needs a policy that maps joint angles and IMU readings to torques every 50 ms &mdash; but no one knows how to write those torque equations by hand.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Learn a control policy straight from interaction &mdash; no hand-derived controller &mdash; letting trial and error discover motor skills that generalize across embodiment and disturbance.</p>
+<p>The recurring struggle is sample cost and the sim-to-real gap.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_deep_ctrl" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>State s</b>: 48-dim vector &mdash; 12 joint angles, 12 velocities, 3-axis IMU, 3-axis gyro, 6 contact booleans, target velocity (2)</li>
+<li><b>Action a</b>: 12 target joint angles; PD controller converts to torques at 100 Hz</li>
+<li><b>Reward r</b>: +1.0 &times; forward velocity &minus; 0.01 &times; torque&sup2; &minus; 0.2 &times; foot-clearance penalty</li>
+<li><b>Training</b>: 4,096 parallel sim instances &times; 24 M steps = ~100 billion torque commands in 8 hours on an A100</li>
+<li><b>Transfer</b>: domain-randomized mass &plusmn;30%, friction [0.3, 1.5], latency [0, 20 ms]; deployed zero-shot on ANYmal-C</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoCoDA: Counterfactual Data Augmentation for Data-Efficient Robot Learning</b> &mdash; causal invariance + SE(3) equivariance augment RL data</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Imitation to Refinement — Residual RL for Precise Assembly</b> &mdash; RL sharpens an imitation policy for contact-rich assembly</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Vision Transformers for End-to-End Quadrotor Obstacle Avoidance</b> &mdash; learned high-speed flight control from images</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Adversarial Policies for Swarm Leader Identification</b> &mdash; RL discovers a probing behavior to find a leader</span></li></ul>
 </div>
 
-<div class="fam" id="rl2">
+<div class="fam rich" id="rl2">
   <div class="famhd"><span class="famn">02</span><h3>Sim-to-real RL</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Train cheaply in simulation, then transfer to a real robot by randomizing physics and appearance so reality falls inside the trained range.</p>
-<p>The open question is which parameters to randomize &mdash; transfer success is still variable.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>The sim policy walks perfectly but stumbles on real carpet: small physics mismatches &mdash; motor friction, ground compliance, sensor noise &mdash; cascade into failure within seconds.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Train cheaply in simulation, then transfer to a real robot by randomizing physics and appearance so reality falls inside the trained range.</p>
+<p>The open question is which parameters to randomize &mdash; transfer success is still variable.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_sim2real" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Simulation</b>: MuJoCo at 2,000 Hz, 10&times; real-time; 2,048 envs in parallel</li>
+<li><b>Domain randomization</b>: sample floor friction U[0.3, 1.6], motor damping U[0.8, 1.2]&times;nominal, latency U[0, 20 ms] each episode</li>
+<li><b>RL run</b>: PPO, 500 M steps, policy learns to handle the full range</li>
+<li><b>Reality check</b>: real robot joints have 8 ms latency and &plusmn;2% gear-ratio error &mdash; both inside the randomized range</li>
+<li><b>Outcome</b>: zero-shot success rate rises from 23% (no randomization) to 87% on a 5 m trot across gravel</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DemoStart: Demonstration-Led Auto-Curriculum for Multi-Fingered Sim-to-Real</b> &mdash; demo-initialized auto-curriculum RL for dexterity</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Whole-Body Control of Legged Robots with MPPI</b> &mdash; parallel sampling control transferred to hardware</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Opening the Sim-to-Real Door for Humanoid Pixel-to-Action Transfer</b> &mdash; stage-reset exploration + GRPO, 83% real door-opening</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Incremental Few-Shot Adaptation via Parallelizable Physics Simulators</b> &mdash; adapts sim parameters online to close the gap</span></li></ul>
 </div>
 
-<div class="fam" id="rl3">
+<div class="fam rich" id="rl3">
   <div class="famhd"><span class="famn">03</span><h3>Reward design &amp; shaping</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>The reward <em>is</em> the specification &mdash; and getting it right is the hardest part. Learn it from preferences or human feedback instead of hand-tuning a sparse signal.</p>
-<p>The danger is reward hacking: policies that game a mis-specified reward.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Specifying 'grasp the cup cleanly' as a scalar: 0 if failed, 1 if succeeded &mdash; gives zero gradient for 10,000 steps until first accidental success. The policy never gets started.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The reward <em>is</em> the specification &mdash; and getting it right is the hardest part. Learn it from preferences or human feedback instead of hand-tuning a sparse signal.</p>
+<p>The danger is reward hacking: policies that game a mis-specified reward.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_reward" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Sparse baseline</b>: reward = 1 only on full grasp; first success after 180,000 steps on average</li>
+<li><b>Shaped reward</b>: r = 0.3 &times; (finger&ndash;object distance decreasing) + 0.4 &times; (object height &gt; 2 cm) + 0.3 &times; grasp success</li>
+<li><b>Effect</b>: first grasp at step 12,000 (15&times; faster); policy converges in 80,000 steps vs 600,000</li>
+<li><b>Preference fine-tune</b>: 200 human A/B comparisons refine grip style (no squeezing, natural wrap); RLHF reward model R&sup2; = 0.81</li>
+<li><b>Hacking check</b>: clip height bonus to +0.4 max &mdash; prevents policy balancing cup on fingertip to collect distance bonus perpetually</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>FDPP: Fine-Tune Diffusion Policy with Human Preference</b> &mdash; preference feedback shapes a manipulation policy</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Type Preference Learning</b> &mdash; learns reward from several kinds of human preference</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>CCCaption: Dual-Reward RL for Complete and Correct Captioning</b> &mdash; completeness + correctness rewards with hallucination checks</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Perceptual-Evidence Anchored Reinforced Learning for Multimodal Reasoning</b> &mdash; anchors reward to verifiable perceptual evidence</span></li></ul>
 </div>
 
-<div class="fam" id="rl4">
+<div class="fam rich" id="rl4">
   <div class="famhd"><span class="famn">04</span><h3>Offline RL</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Learn from a fixed dataset with no live interaction &mdash; essential when exploration is unsafe or expensive &mdash; while guarding against overestimating actions the data never tried.</p>
-<p>Dataset quality is the ceiling; distribution shift is the enemy.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You have 50,000 logged trajectories from a hospital robot but cannot run any new trials (patient safety). How do you improve the policy without a single new interaction?</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Learn from a fixed dataset with no live interaction &mdash; essential when exploration is unsafe or expensive &mdash; while guarding against overestimating actions the data never tried.</p>
+<p>Dataset quality is the ceiling; distribution shift is the enemy.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_offline" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Dataset D</b>: 50 k trajectories, mixed quality &mdash; expert (20%), average (60%), poor (20%)</li>
+<li><b>Conservative Q</b>: CQL adds &minus;&alpha; &times; E[Q(s,a)] for out-of-dataset actions; &alpha; = 5.0 clamps overestimation</li>
+<li><b>Training</b>: batch size 256, 1 M gradient steps; Q-values for unseen actions stay below the dataset floor</li>
+<li><b>Evaluation</b>: offline val loss 0.032; real-world test on 200 held-out scenarios: 74% task success vs 61% for behavior-cloned baseline</li>
+<li><b>Dataset quality ceiling</b>: swapping in 10% expert data raises success to 84% &mdash; the data, not the algorithm, is the bottleneck</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Language-Conditioned Offline RL</b> &mdash; offline policies conditioned on language goals</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Distributional Decision Transformer</b> &mdash; sequence-model offline RL over return distributions</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SRCP: Saliency-Guided Consistency Policy for Visual Unsupervised RL</b> &mdash; saliency-guided representations + consistency policies</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Efficient Frame Selection for Long Video Understanding via RL</b> &mdash; offline-style RL with rollback to prevent drift</span></li></ul>
 </div>
 
-<div class="fam" id="rl5">
+<div class="fam rich" id="rl5">
   <div class="famhd"><span class="famn">05</span><h3>Imitation &amp; behavior cloning</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Copy expert demonstrations directly into a policy &mdash; the fastest way to a working behavior &mdash; bootstrapping skill without any exploration.</p>
-<p>The weakness is drift off the demonstrated states; pretrained representations and augmentation help.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A teleop operator demonstrates 50 grasps of a USB plug. At test time, 8 mm off the canonical approach angle and the policy collapses: it was never shown that state.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Copy expert demonstrations directly into a policy &mdash; the fastest way to a working behavior &mdash; bootstrapping skill without any exploration.</p>
+<p>The weakness is drift off the demonstrated states; pretrained representations and augmentation help.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_bc" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Dataset</b>: 50 demonstrations, each ~120 steps at 10 Hz = 6,000 (s,a) pairs</li>
+<li><b>BC training</b>: minimize MSE(&pi;(s), a_expert) &mdash; converges in 20 epochs, val loss 0.008 N&middot;m</li>
+<li><b>On-distribution</b>: 94% success when start pose matches demonstrations within 5 mm / 3&deg;</li>
+<li><b>Off-distribution</b>: 1 cm lateral shift &rarr; 31% success; errors compound across the 12-step approach</li>
+<li><b>Fix</b>: pretrained ViT backbone cuts the needed demos from 50 to 12 by reusing visual features from ImageNet</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizable Imitation Learning Through Pre-Trained Representations</b> &mdash; pretrained vision backbones make BC data-efficient</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>ProDapt: Proprioceptive Adaptation Using Long-Term Memory Diffusion</b> &mdash; contact-memory diffusion for robust imitation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Lifelong Imitation with Multimodal Latent Replay</b> &mdash; latent replay prevents forgetting across tasks</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>VideoWeaver: Multi-View Video-to-Video Transfer for Embodied Agents</b> &mdash; 4D-grounded multi-view domain randomization for BC</span></li></ul>
 </div>
 
-<div class="fam" id="rl6">
+<div class="fam rich" id="rl6">
   <div class="famhd"><span class="famn">06</span><h3>Interactive imitation (DAgger)</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Fix behavior cloning&rsquo;s drift by rolling out the policy and asking the expert what to do in exactly the states it visits &mdash; then retraining on those.</p>
-<p>The cost is an expert on call during training, and choosing which queries to make.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>BC drifts into states it was never shown; asking the expert to demonstrate there &mdash; DAgger &mdash; turns a 31% policy into a 92% policy, but every query costs operator time.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Fix behavior cloning&rsquo;s drift by rolling out the policy and asking the expert what to do in exactly the states it visits &mdash; then retraining on those.</p>
+<p>The cost is an expert on call during training, and choosing which queries to make.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_dagger" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Round 0</b>: BC on 50 demos &rarr; 31% success; collect 200 policy rollouts, find 42 failure states</li>
+<li><b>Round 1</b>: expert labels 42 failure states &rarr; retrain on 6,242 pairs &rarr; 67% success</li>
+<li><b>Round 2</b>: 80 more failure states labeled &rarr; retrain on 7,042 pairs &rarr; 82% success</li>
+<li><b>Round 3</b>: 35 more &rarr; 7,077 pairs &rarr; 92% success</li>
+<li><b>Cost</b>: 157 expert labels total; pure BC needed 300 demos to reach 85%; DAgger uses 2&times; fewer queries</li>
+<li><b>Stopping rule</b>: stop when failure-state pool drops below 10 per 100 rollouts &mdash; convergence criterion</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robot Policy Transfer with Online Demonstrations</b> &mdash; interactive demos correct the policy where it fails</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Imitation to Refinement — Residual RL for Precise Assembly</b> &mdash; combines demos with online refinement</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAFE-GIL: Safety-Guided Imitation Learning</b> &mdash; injects safety-aware queries into imitation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Opening the Sim-to-Real Door (DAgger + GRPO)</b> &mdash; DAgger mixture stabilizes pixel-to-action transfer</span></li></ul>
 </div>
 
-<div class="fam" id="rl7">
+<div class="fam rich" id="rl7">
   <div class="famhd"><span class="famn">07</span><h3>Inverse RL</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Run imitation backwards: instead of copying actions, infer the <em>reward</em> that explains the expert&rsquo;s behavior &mdash; an interpretable, transferable objective.</p>
-<p>It&rsquo;s ill-posed (many rewards fit) and assumes the expert is rational.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A driver expert navigates safely &mdash; but what is their actual objective? Comfortable deceleration? Minimum time? Copying actions fails on unseen roads; recovering the reward transfers.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Run imitation backwards: instead of copying actions, infer the <em>reward</em> that explains the expert&rsquo;s behavior &mdash; an interpretable, transferable objective.</p>
+<p>It&rsquo;s ill-posed (many rewards fit) and assumes the expert is rational.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_irl" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Data</b>: 2,000 expert trajectories, 10 s each, in a 4-way intersection scenario</li>
+<li><b>Features &phi;(s,a)</b>: speed, acceleration, jerk, distance to nearest car, headway time (5-dim)</li>
+<li><b>MaxEnt IRL</b>: optimize &theta; so E_expert[&phi;] = E_&theta;[&phi;]; 50 gradient steps with 128-env forward RL</li>
+<li><b>Recovered reward</b>: &theta; = [&minus;0.4 jerk, +0.3 speed, &minus;0.5 near-collision]; matches human ratings R&sup2; = 0.77</li>
+<li><b>Transfer</b>: same &theta; on a roundabout (never seen): policy achieves 91% comfort score vs 74% for BC</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Agent Inverse Q-Learning from Demonstrations</b> &mdash; recovers multi-agent rewards 2–5× better than prior IRL</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Cost Function Estimation Using Inverse RL</b> &mdash; infers a planner&rsquo;s hidden cost from behavior</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generating Causal Explanations of Vehicular Agents</b> &mdash; IRL-style recovery of driver objectives for explanation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Think Deep and Fast: Neural Opinion Dynamics from Inverse Games</b> &mdash; recovers interaction objectives from expert play</span></li></ul>
 </div>
 
-<div class="fam" id="rl8">
+<div class="fam rich" id="rl8">
   <div class="famhd"><span class="famn">08</span><h3>Learning from video &amp; human demos</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Skip teleoperation: learn tasks from ordinary human video, where the demonstration is visual and the action labels are missing &mdash; a vast, cheap data source.</p>
-<p>The gaps are missing actions, viewpoint mismatch, and fragile temporal segmentation.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>YouTube has millions of humans cooking, folding, building &mdash; but the action labels (joint angles, forces) are invisible. How do you turn pixels-only video into a robot policy?</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Skip teleoperation: learn tasks from ordinary human video, where the demonstration is visual and the action labels are missing &mdash; a vast, cheap data source.</p>
+<p>The gaps are missing actions, viewpoint mismatch, and fragile temporal segmentation.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_video" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Video corpus</b>: 5,000 YouTube clips, 480p, kitchen tasks; no robot data, no action labels</li>
+<li><b>Optical-flow proxy actions</b>: compute dense flow between frames &rarr; 2D wrist-motion vectors as latent actions</li>
+<li><b>Latent policy</b>: Transformer maps image + latent action to next-frame prediction; 200 epochs pre-training</li>
+<li><b>Robot fine-tune</b>: 20 real robot demos + RLHF to map latent &rarr; joint angles; 3 hours GPU</li>
+<li><b>Result</b>: 68% success on pick-and-place vs 41% for policy trained on 20 robot demos alone; video pre-training worth ~300 extra robot demos</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ViViDex: Vision-Based Dexterous Manipulation from Human Videos</b> &mdash; trajectory-guided rewards from human video</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RTAGrasp: Task-Oriented Grasping from Human Videos</b> &mdash; retrieve, transfer, align grasps from video memory</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus: A Unified Latent Action World Model</b> &mdash; optical-flow latent actions bridge video and robot data</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>NIL: No-Data Imitation Learning</b> &mdash; a video diffusion model generates the reference to imitate</span></li></ul>
 </div>
 
-<div class="fam" id="rl9">
+<div class="fam rich" id="rl9">
   <div class="famhd"><span class="famn">09</span><h3>Sample efficiency &amp; exploration</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Trial-and-error is expensive, so squeeze more learning from every step &mdash; smarter exploration, data reuse, and structure that restores a gradient under sparse reward.</p>
-<p>Efficiency tricks are often task-specific and can transfer negatively.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A dexterous hand must thread a needle &mdash; first contact is 1-in-1000 random; without a smarter search the policy never gets a positive reward signal.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Trial-and-error is expensive, so squeeze more learning from every step &mdash; smarter exploration, data reuse, and structure that restores a gradient under sparse reward.</p>
+<p>Efficiency tricks are often task-specific and can transfer negatively.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_explore2" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Baseline</b>: PPO with &epsilon;-greedy exploration; first needle contact at step 2.3 M on average</li>
+<li><b>Curiosity bonus</b>: intrinsic reward r_i = &Vert;&phi;(s') &minus; &phi;&#770;(s')&Vert;&sup2;; RND network predicts next-state embedding</li>
+<li><b>Effect</b>: first contact at step 180 k (13&times; faster); curiosity pushes fingers into unexplored configurations</li>
+<li><b>Data reuse</b>: HER relabels failed trajectories as if goal = where the finger actually ended; 4&times; data efficiency</li>
+<li><b>Convergence</b>: 94% threading success at 4 M steps; baseline needs 22 M steps for 88%</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Efficient Imitation Without Demonstrations</b> &mdash; bootstraps exploration without a demo set</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoCoDA: Counterfactual Data Augmentation</b> &mdash; reuses each demo across symmetries for efficiency</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>CaDRE: Curriculum/data-efficient RL</b> &mdash; orders experience to speed convergence</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Match Policy: From Point-Cloud Registration to Manipulation</b> &mdash; recasts action inference to need very little data</span></li></ul>
 </div>
 
-<div class="fam" id="rl10">
+<div class="fam rich" id="rl10">
   <div class="famhd"><span class="famn">10</span><h3>Model-based RL &amp; world models</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Learn the environment&rsquo;s dynamics, then plan or train inside that learned model &mdash; imagining outcomes instead of paying for every real trial. See the <a href='world-models-explained.html'>world-models</a> explainer.</p>
-<p>Model error compounds over long rollouts; learning dynamics from pixels is hard.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Model-free RL needs 10 M real-robot steps for a manipulation skill. A world model lets the policy plan inside an imagined future &mdash; but model errors compound over long rollouts.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Learn the environment&rsquo;s dynamics, then plan or train inside that learned model &mdash; imagining outcomes instead of paying for every real trial. See the <a href='world-models-explained.html'>world-models</a> explainer.</p>
+<p>Model error compounds over long rollouts; learning dynamics from pixels is hard.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_mbrl" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>World model</b>: DreamerV3-style RSSM; trained on 5,000 real episodes (50 k steps)</li>
+<li><b>Imagination</b>: unroll 16-step trajectories inside the model at 10,000&times; real speed</li>
+<li><b>Policy update</b>: actor-critic trained entirely on imagined data; gradient through model dynamics</li>
+<li><b>Model error</b>: prediction error grows to 18% at horizon 16; clip rollout to 12 steps to stay below 12%</li>
+<li><b>Real-world sample budget</b>: 8,000 real steps (vs 800,000 for model-free) achieves 82% success on block-stacking</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>LIMT: Language-Informed Multi-Task Visual World Models</b> &mdash; language-conditioned learned dynamics for planning</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Privileged-Dreamer: Explicit Imagination of Privileged Information</b> &mdash; imagines hidden state for fast adaptation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DreamSAC: Learning Hamiltonian World Models via Symmetry</b> &mdash; physics-structured world model with curiosity</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>WPT: World-to-Policy Transfer via Online World-Model Distillation</b> &mdash; distills a world model into an actionable policy</span></li></ul>
 </div>
 
-<div class="fam" id="rl11">
+<div class="fam rich" id="rl11">
   <div class="famhd"><span class="famn">11</span><h3>Hierarchical RL</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Split a long task into a hierarchy &mdash; a high-level policy picks sub-goals, low-level policies execute &mdash; making credit assignment tractable and skills reusable.</p>
-<p>Automatic skill discovery is unsolved; a bad decomposition erases the benefit.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A 200-step peg-in-hole task: the high-level agent must approach, align, then insert &mdash; but reward only fires at insertion. Flat RL cannot credit the approach 180 steps earlier.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Split a long task into a hierarchy &mdash; a high-level policy picks sub-goals, low-level policies execute &mdash; making credit assignment tractable and skills reusable.</p>
+<p>Automatic skill discovery is unsolved; a bad decomposition erases the benefit.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_hier" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>High-level policy</b>: chooses subgoal every k=20 steps from {approach, align, insert}</li>
+<li><b>Low-level policy</b>: 20-step MPC optimizing toward the subgoal; reward = subgoal reached</li>
+<li><b>Credit flow</b>: high-level reward = task success only at step 200; but low-level reward fires every 20 steps</li>
+<li><b>Training</b>: co-train both; high-level PPO, low-level SAC; 2 M steps total vs 8 M for flat RL</li>
+<li><b>Reuse</b>: same low-level policies reused on 3 different peg geometries &mdash; only high-level retrained (300 k steps)</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Multi-Agent Loco-Manipulation for Quadrupedal Pushing</b> &mdash; hierarchical MARL, 36% over baselines</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Diffusion Meets Options for Hierarchical Control</b> &mdash; diffusion over temporally-extended options</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>QuadWBG: Hierarchical Whole-Body Grasping</b> &mdash; high-level goals over low-level whole-body control</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Automated Hybrid Reward Scheduling</b> &mdash; schedules sub-rewards across a hierarchy</span></li></ul>
 </div>
 
-<div class="fam" id="rl12">
+<div class="fam rich" id="rl12">
   <div class="famhd"><span class="famn">12</span><h3>Residual RL</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Start from a decent controller or imitation policy and learn only the <em>correction</em> with RL &mdash; a small residual that trains in hours, not days.</p>
-<p>The base policy choice is critical, and residuals don&rsquo;t always stay small.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>An imitation policy places a bolt near the hole &mdash; &plusmn;3 mm accuracy &mdash; but insertion requires &plusmn;0.3 mm. RL from scratch takes weeks; learning only the correction takes hours.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Start from a decent controller or imitation policy and learn only the <em>correction</em> with RL &mdash; a small residual that trains in hours, not days.</p>
+<p>The base policy choice is critical, and residuals don&rsquo;t always stay small.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_residual" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Base policy &pi;_0</b>: BC on 100 demos; places end-effector within 3 mm of target, 78% close-enough rate</li>
+<li><b>Residual &delta;(s)</b>: small MLP, output clipped to &plusmn;5 mm per axis; trained with SAC on top of &pi;_0</li>
+<li><b>Combined action</b>: a = &pi;_0(s) + &delta;(s); &pi;_0 handles coarse approach, &delta; learns fine correction</li>
+<li><b>Training cost</b>: 80,000 real robot steps (vs 2 M for RL from scratch)</li>
+<li><b>Result</b>: 94% insertion success (&plusmn;0.3 mm); base policy alone 31%; flat RL needs 10&times; more data for 87%</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Imitation to Refinement — Residual RL for Precise Assembly</b> &mdash; residual RL on top of an imitation base</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>High-Frequency Residual Policy for Robotic Throwing</b> &mdash; a fast residual sharpens a nominal throw</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning-Based MPC for Autonomous Driving</b> &mdash; learned residual corrects a model-based controller</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Predictive Kinematic Coordinate Control + Residual</b> &mdash; residual learning over a kinematic base</span></li></ul>
 </div>
 
-<div class="fam" id="rl13">
+<div class="fam rich" id="rl13">
   <div class="famhd"><span class="famn">13</span><h3>RL + foundation models &amp; VLA</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Put a web-pretrained model in the loop &mdash; an LLM to plan or shape reward, a VLM as the policy backbone &mdash; and use RL to fine-tune it for embodied control.</p>
-<p>Foundation models hallucinate, and grounding language to precise action is unsolved.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A language-conditioned robot must follow 'put the apple in the blue bowl' &mdash; but the action space is continuous torques, and the LLM has no notion of motor control.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Put a web-pretrained model in the loop &mdash; an LLM to plan or shape reward, a VLM as the policy backbone &mdash; and use RL to fine-tune it for embodied control.</p>
+<p>Foundation models hallucinate, and grounding language to precise action is unsolved.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_vla" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>VLA backbone</b>: PaLI-X 55B vision-language model, finetuned on 130 k robot episodes (RT-2 style)</li>
+<li><b>RL fine-tune</b>: GRPO with sparse binary reward (task success/fail); group size G=8, 20 k steps</li>
+<li><b>Reward signal</b>: GPT-4V judges the final scene ('apple in blue bowl?') &rarr; binary 0/1</li>
+<li><b>Gain</b>: 43% success (SFT only) &rarr; 68% success after 20 k GRPO steps; 3 hours on 8 &times; A100</li>
+<li><b>Failure mode</b>: GRPO boosts success but increases verbosity by 40%; add brevity penalty to reward</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAS-Prompt: LLMs as Numerical Optimizers for Robot Self-Improvement</b> &mdash; an LLM proposes and refines control parameters</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>LLM-as-BT-Planner: Behavior-Tree Generation for Task Planning</b> &mdash; an LLM writes the task structure RL fills in</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist VLA</b> &mdash; merges skills into one vision-language-action agent</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>RehearseVLA: Simulated Post-Training for VLAs with a World Model</b> &mdash; world-model rollouts post-train a VLA with RL</span></li></ul>
 </div>
 
-<div class="fam" id="rl14">
+<div class="fam rich" id="rl14">
   <div class="famhd"><span class="famn">14</span><h3>RLHF &amp; preference optimization</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>The technique that aligned chatbots, turned on vision: optimize a model directly against human (or model) preferences with policy-gradient methods like GRPO and DPO &mdash; now the default for tuning generators and VLMs.</p>
-<p>It lives or dies on the reward model; group-relative methods cut variance.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A radiology-report generator produces factually correct sentences &mdash; but radiologists consistently prefer a different ordering and emphasis. No rule captures the preference: it must be learned.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The technique that aligned chatbots, turned on vision: optimize a model directly against human (or model) preferences with policy-gradient methods like GRPO and DPO &mdash; now the default for tuning generators and VLMs.</p>
+<p>It lives or dies on the reward model; group-relative methods cut variance.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_rlhf" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Preference data</b>: 800 A/B pairs, each two model outputs; 3 radiologists label preferred; &kappa; = 0.71</li>
+<li><b>Reward model</b>: fine-tuned BERT-medical, 220 M params; test AUC 0.84 on held-out pairs</li>
+<li><b>GRPO</b>: group size 8, 15 k update steps; KL penalty &beta; = 0.04 keeps outputs near SFT baseline</li>
+<li><b>Gain</b>: preferred-by-radiologist rate rises from 41% (SFT) to 73% (GRPO); factuality unchanged (F1 = 0.89)</li>
+<li><b>Cost</b>: 800 preference labels + 3 hours GPU; equivalent quality via supervised data would need ~5,000 labeled reports</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Dr. Seg: Revisiting GRPO Training for Visual LLMs</b> &mdash; perception-oriented GRPO with distribution-ranked rewards</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GDPO-SR: Group Direct Preference Optimization for Super-Resolution</b> &mdash; DPO-GRPO hybrid with attribute-aware rewards</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>OraPO: Oracle-Educated RL for Factual Radiology Reports</b> &mdash; oracle-supervised GRPO with fact-based reward</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Curriculum Group Policy Optimization for Text-to-Image</b> &mdash; uses group reward variance as an online curriculum signal</span></li></ul>
 </div>
 
-<div class="fam" id="rl15">
+<div class="fam rich" id="rl15">
   <div class="famhd"><span class="famn">15</span><h3>Safe RL &amp; curriculum</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Learn while respecting hard safety constraints &mdash; and order the training from easy to hard so a policy can reach skills it could never learn from scratch.</p>
-<p>Constraints are hand-crafted, conservatism costs performance, and curriculum design is manual.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A legged robot learning to run will fall &mdash; but on hardware, each fall risks &plusmn;$40 k damage. Safety constraints must hold from step 1, not only after convergence.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Learn while respecting hard safety constraints &mdash; and order the training from easy to hard so a policy can reach skills it could never learn from scratch.</p>
+<p>Constraints are hand-crafted, conservatism costs performance, and curriculum design is manual.</p></div></div>
+  <figure class="fdiag"><canvas data-rlanim="rlf_safe" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Safety constraint</b>: body roll/pitch &lt; 30&deg;; CBF h(s) = 30&deg; &minus; |roll| &ge; 0 must hold at every step</li>
+<li><b>Safe projection</b>: QP projects unsafe actions back to constraint boundary; adds &lt;2 ms per step</li>
+<li><b>Curriculum stage 1</b>: flat terrain, target speed 0.5 m/s; 500 k steps; 0 falls</li>
+<li><b>Curriculum stage 2</b>: add 3 cm random steps, target 1.0 m/s; 500 k more steps; 2 CBF activations</li>
+<li><b>Curriculum stage 3</b>: 8 cm steps, 2.0 m/s; 1 M steps; policy reaches target speed with zero safety violations</li>
+<li><b>Comparison</b>: unconstrained RL reaches 2.0 m/s in 600 k steps but causes 47 falls during training</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>RAIL: Reachability-Aided Imitation Learning for Safety</b> &mdash; reachability constraints keep imitation safe</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-Aware Input-Constrained Control Barrier Functions</b> &mdash; safe RL under uncertainty via CBFs</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Quiet Walking via Curriculum</b> &mdash; a curriculum grows a hard locomotion skill</span></li>

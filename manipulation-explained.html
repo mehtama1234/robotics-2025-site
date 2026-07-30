@@ -66,6 +66,17 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#2A1A13;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0C1218;border:1px solid #22323F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
 .pt b{color:#1A0C08}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
@@ -163,10 +174,18 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip bb" href="#gr1"><span class="cn">01</span>Grasp synthesis</a><a class="fchip bb" href="#gr2"><span class="cn">02</span>Grasp detection</a><a class="fchip bb" href="#gr3"><span class="cn">03</span>Dexterous</a><a class="fchip rb" href="#gr4"><span class="cn">04</span>Bimanual</a><a class="fchip bb" href="#gr5"><span class="cn">05</span>Contact-rich</a><a class="fchip rb" href="#gr6"><span class="cn">06</span>Deformable-object manipulation</a><a class="fchip rb" href="#gr7"><span class="cn">07</span>Non-prehensile manipulation</a><a class="fchip rb" href="#gr8"><span class="cn">08</span>Tool use</a><a class="fchip rb" href="#gr9"><span class="cn">09</span>Pick-and-place</a><a class="fchip bb" href="#gr10"><span class="cn">10</span>Affordance</a><a class="fchip rb" href="#gr11"><span class="cn">11</span>Cluttered-scene</a><a class="fchip bb" href="#gr12"><span class="cn">12</span>Manipulation policies</a><a class="fchip vb" href="#gr13"><span class="cn">13</span>Articulated-object manipulation</a><a class="fchip vb" href="#gr14"><span class="cn">14</span>Hand-object interaction: reconstruction</a><a class="fchip bb" href="#gr15"><span class="cn">15</span>Sim-to-real for manipulation</a></div>
   <div class="famgrid">
-<div class="fam" id="gr1">
+<div class="fam rich" id="gr1">
   <div class="famhd"><span class="famn">01</span><h3>Grasp synthesis &amp; generation</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>The core question: given an object, where should the fingers go? Synthesis computes contact placements that achieve force closure, scaling from single objects to huge generated datasets, and now to full dexterous-hand configurations.</p>
-<p>Recent work makes generation geometry-aware, physically plausible, and diverse.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>An object has infinitely many contact-point pairs, but only a small fraction achieve force closure — the property that the grip can resist a push from any direction. Finding those contact configurations on an arbitrary shape, especially a dexterous hand with many joints, is a high-dimensional nonlinear search over geometry and friction.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The core question: given an object, where should the fingers go? Synthesis computes contact placements that achieve force closure, scaling from single objects to huge generated datasets, and now to full dexterous-hand configurations.</p>
+<p>Recent work makes generation geometry-aware, physically plausible, and diverse.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_synth" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> a 3D mesh of a coffee mug (2,840 triangles); target is a 16-DOF Shadow Hand.</li>
+<li><b>Sample candidates:</b> draw 512 contact pairs uniformly from the surface; compute the 6×N grasp matrix G for each pair.</li>
+<li><b>Force-closure test:</b> check if the convex hull of G·f spans zero; 47 of 512 pass the test.</li>
+<li><b>Quality-diversity filter:</b> keep the 8 most diverse passing grasps (BODex style); discard near-duplicates by joint-config distance &lt; 0.15 rad.</li>
+<li><b>Physics refinement:</b> run 200 ms contact simulation per grasp; 5 survive with max wrench resistance &gt; 3 N·m.</li>
+<li><b>Output:</b> 5 stable dexterous grasps, diverse in palm orientation, usable for downstream task-oriented selection.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>BODex: Scalable Dexterous Grasp Synthesis Using Bilevel Optimization</b> &mdash; a QP enforces force closure while the outer level scales dataset generation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoDexGrasp: Geometry-aware, Physics-plausible Dexterous Grasping</b> &mdash; SIM(3)-equivariant pose/shape split + physics refinement cuts penetration 40%</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MaskDexGrasp: Generative Masked Modeling for Part-Aware Grasp Synthesis</b> &mdash; anatomical part codebooks + masked transformer, editable per finger</span></li>
@@ -174,10 +193,18 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DextER: Language-driven Dexterous Grasp Generation with Embodied Reasoning</b> &mdash; contact-token autoregression for interpretable, language-driven grasps</span></li></ul>
 </div>
 
-<div class="fam" id="gr2">
+<div class="fam rich" id="gr2">
   <div class="famhd"><span class="famn">02</span><h3>Grasp detection &amp; 6-DoF pose</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Skip the model: predict grasps &mdash; and object poses &mdash; straight from vision, handling material, occlusion, and uncertainty. This is the workhorse that turns a depth image into something to grab.</p>
-<p>The edges are transparent/specular objects, multi-view fusion, and honest uncertainty.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot looking at a bin of objects must decide, in under 100 ms, exactly where and how to place its gripper — a 6-degree-of-freedom prediction (3 position + 3 orientation) from a single depth image. The hard cases are transparent glass, mirror-like metal, and partially hidden objects where the depth sensor gives garbage or nothing.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Skip the model: predict grasps &mdash; and object poses &mdash; straight from vision, handling material, occlusion, and uncertainty. This is the workhorse that turns a depth image into something to grab.</p>
+<p>The edges are transparent/specular objects, multi-view fusion, and honest uncertainty.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_detect" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> one 640×480 RGB-D frame; a wine glass (transparent) sits in a cluttered bin.</li>
+<li><b>Surface reconstruction:</b> NeuGrasp trains a neural signed-distance function on multi-view observations; fills the transparent surface with plausible geometry.</li>
+<li><b>Grasp candidate generation:</b> sample 1,024 grasp poses from the completed surface (GraspSAM variant); each pose is (x,y,z, roll, pitch, yaw).</li>
+<li><b>Scoring:</b> a small MLP scores each by predicted antipodal quality and collision clearance; top-32 kept.</li>
+<li><b>Refinement:</b> gradient-descent on the score field for 20 steps (step size 1 mm / 0.5°) moves each toward a local maximum.</li>
+<li><b>Output:</b> best pose with predicted success probability 0.87; gripper opens 68 mm, approaches from 120° above horizontal.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>GraspSAM: When Segment Anything Meets Grasp Detection</b> &mdash; adapts SAM with light adapters for promptable grasp detection</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>NeuGrasp: Material-Agnostic Grasp Detection via Neural Surface Reconstruction</b> &mdash; neural surfaces recover transparent/specular geometry for grasping</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Cross-view Fusion Framework for Robust 6-DoF Grasp Pose Estimation</b> &mdash; cross-view attention fuses multi-view RGB-D with adaptive weighting</span></li>
@@ -185,10 +212,18 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ComPose: Unified Completion-Pose for Category-Level Object Pose</b> &mdash; joint shape completion + 6-DoF pose under occlusion</span></li></ul>
 </div>
 
-<div class="fam" id="gr3">
+<div class="fam rich" id="gr3">
   <div class="famhd"><span class="famn">03</span><h3>Dexterous &amp; in-hand manipulation</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Multi-finger hands reorient objects in-hand by coordinating many joints through making and breaking contact &mdash; finger gaiting, regrasp, sliding. Tactile feedback disambiguates which finger touches where.</p>
-<p>RL in simulation plus sim-to-real touch has driven the biggest gains here.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A parallel gripper can clamp; a multi-fingered hand must re-orient an object already held — turning a screwdriver 180° without dropping it. This requires a planned sequence of finger lifts and re-placements (finger gaiting) while the remaining contacts keep the object stable, all coordinated across 20+ joints with tactile feedback.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Multi-finger hands reorient objects in-hand by coordinating many joints through making and breaking contact &mdash; finger gaiting, regrasp, sliding. Tactile feedback disambiguates which finger touches where.</p>
+<p>RL in simulation plus sim-to-real touch has driven the biggest gains here.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_dext" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Task:</b> rotate a cylinder 180° in-hand using a 4-finger, 16-DOF hand; initial grip is side-on, target is end-on.</li>
+<li><b>Simulation training (RL):</b> 500 M steps in Isaac Gym; reward = negative angular error to target; AnyRotate-style dense tactile sim at 256 sensor points per finger.</li>
+<li><b>Gait schedule found by RL:</b> finger 0 lifts → rotates 45° → re-plants; repeat for fingers 1, 2, 3 in sequence; full 180° in 4 gaits.</li>
+<li><b>Sim-to-real transfer:</b> tactile randomisation (noise ±8 mN) + domain randomisation (friction 0.6–1.2); policy runs at 50 Hz on real hand.</li>
+<li><b>Real result:</b> 78% success on cylinder, 61% on screwdriver; failure mode is slip during the third gait when mass &gt; 200 g.</li>
+<li><b>Fix:</b> hierarchical policy sequences a 'rotate-30°' primitive 6× rather than tracking continuous angle; raises success to 83%.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ViViDex: Vision-Based Dexterous Manipulation from Human Videos</b> &mdash; trajectory-guided rewards from human video, vision-only rollouts</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>AnyRotate: Gravity-Invariant In-Hand Rotation with Sim-to-Real Touch</b> &mdash; dense tactile sim-to-real for multi-axis in-hand rotation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Simple to Complex Skills: In-Hand Object Reorientation</b> &mdash; hierarchical policy sequences low-level rotation skills</span></li>
@@ -196,120 +231,216 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Composing Dexterous Grasping and In-Hand Manipulation via an RL Critic</b> &mdash; reuses an RL critic to score grasps for downstream reorientation</span></li></ul>
 </div>
 
-<div class="fam" id="gr4">
+<div class="fam rich" id="gr4">
   <div class="famhd"><span class="famn">04</span><h3>Bimanual &amp; dual-arm coordination</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Two arms handle what one can&rsquo;t &mdash; folding cloth, carrying a beam, catching &mdash; but coupling through the shared object means each arm must account for what the other does.</p>
-<p>State-diffusion, keypoints, and active vision coordinate the pair.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>When two arms share an object — lifting a beam, folding a shirt — each arm's forces act on the same thing. If the arms are controlled independently, small mismatches in velocity build up internal stress in the shared object, which can tear fabric or bend the beam. Coordinating the pair so they move as one coherent system, not two independent machines, is the core difficulty.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Two arms handle what one can&rsquo;t &mdash; folding cloth, carrying a beam, catching &mdash; but coupling through the shared object means each arm must account for what the other does.</p>
+<p>State-diffusion, keypoints, and active vision coordinate the pair.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_bimanual" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Task:</b> fold a 60×60 cm shirt in half; one arm grabs the left hem, the other the right.</li>
+<li><b>State diffusion (BiFold approach):</b> diffuse a joint 12-D future state (left+right EE positions) from the current cloth point cloud (4,096 points).</li>
+<li><b>Denoising steps:</b> 50 DDPM steps at 20 Hz; each step conditions on the VLM language token 'fold in half toward you'.</li>
+<li><b>Action from state:</b> inverse dynamics (two 6-DOF arm Jacobians) converts the next joint state into torques; both arms receive torques simultaneously.</li>
+<li><b>Result:</b> fold within 3 cm of target crease in 4.2 s; single-arm baseline achieves 38% success vs 79% bimanual.</li>
+<li><b>Failure mode:</b> when the shirt is bunched, the point cloud is too sparse; adding a top-down camera (Active Vision) raises success to 86%.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>BiFold: Bimanual Cloth Folding with Language Guidance</b> &mdash; a VLM predicts bimanual fold actions from language</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Coordinated Bimanual Policies with State Diffusion</b> &mdash; diffuses future scene states, then inverse-dynamics to actions</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Vision for Bimanual Robotic Manipulation</b> &mdash; a separate arm carries a camera to beat occlusion</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Dexterous Bimanual Catch Skills via Adversarial-Cooperative RL</b> &mdash; 2× over single-agent RL on bimanual catching</span></li></ul>
 </div>
 
-<div class="fam" id="gr5">
+<div class="fam rich" id="gr5">
   <div class="famhd"><span class="famn">05</span><h3>Contact-rich &amp; force-controlled manipulation</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>When the task <em>is</em> the contact &mdash; insertion, wiping, pressing &mdash; the robot must sense and regulate force through sticking, sliding, and jamming, not just track a position.</p>
-<p>Force and tactile feedback plus fast contact-mode solvers are the tools.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Inserting a USB plug or wiping a table are not position-tracking tasks — they require the robot to regulate the force it presses with, detect when the plug jams, and adjust. Pure position control overshoots into a hard stop and either breaks the part or triggers a safety stop. The robot needs to feel the contact mode (free / stick / slip) and respond in milliseconds.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>When the task <em>is</em> the contact &mdash; insertion, wiping, pressing &mdash; the robot must sense and regulate force through sticking, sliding, and jamming, not just track a position.</p>
+<p>Force and tactile feedback plus fast contact-mode solvers are the tools.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_force" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Task:</b> insert a USB-A plug (tolerance ±0.3 mm) into a moving port (10 mm/s lateral drift).</li>
+<li><b>Contact mode detection:</b> 6-axis F/T sensor at 1 kHz; mode = free (|F| &lt; 0.5 N), jammed (Fz &gt; 8 N and δz &lt; 0.1 mm/s), sliding (stick: Fxy &lt; μFz).</li>
+<li><b>Compliance controller (Adaptive Compliance Policy):</b> diffusion policy outputs a 6D stiffness profile; jammed → drop Kz from 800 to 200 N/m, raise Kxy.</li>
+<li><b>Force-aware correction:</b> ForceVLA2 mixture-of-experts adds a Δpose residual when |Fxy| &gt; 2 N; steers plug back to axis.</li>
+<li><b>Outcome:</b> insertion in 1.8 s average; without force control, 12% success; with it, 91% success; max force peaks at 6 N.</li>
+<li><b>Key number:</b> compliance profile must switch within 20 ms of jam detection — beyond 50 ms the plug bends the port tab.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ForceVLA2: Hybrid Force-Position Control with Force Awareness</b> &mdash; a force-aware mixture-of-experts for contact-rich assembly</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Compliance Policy: Learning Compliance for Diffusion Control</b> &mdash; learns spatiotemporal compliance profiles from demos</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tactile-Driven Non-Prehensile Manipulation via Extrinsic Contact Mode Control</b> &mdash; switches stick/slide via gradient optimization on tactile</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Contact-Aware Neural Dynamics</b> &mdash; tactile co-training implicitly aligns sim and real contact</span></li></ul>
 </div>
 
-<div class="fam" id="gr6">
+<div class="fam rich" id="gr6">
   <div class="famhd"><span class="famn">06</span><h3>Deformable-object manipulation</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Cloth, rope, cables, and dough have effectively infinite degrees of freedom and change shape as you act &mdash; so the robot must predict how the object deforms under its moves.</p>
-<p>Point-cloud dynamics, keypoints, and differentiable simulation model the state.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A rigid object has 6 degrees of freedom; a shirt has effectively infinite. When a robot grabs a corner and pulls, the rest of the cloth moves in ways that depend on weave density, moisture, and folding history — none of which a camera can directly see. Predicting the shape of the cloth after an action, well enough to plan the next action, requires either a very good physical model or a lot of data.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Cloth, rope, cables, and dough have effectively infinite degrees of freedom and change shape as you act &mdash; so the robot must predict how the object deforms under its moves.</p>
+<p>Point-cloud dynamics, keypoints, and differentiable simulation model the state.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_deform" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Task:</b> flatten a bunched shirt on a table from a random crumpled start; 3 actions allowed.</li>
+<li><b>State representation:</b> point cloud of 2,048 points from an RGBD overhead camera; projected to a 64×64 height map.</li>
+<li><b>Dynamics model (DeformPAM):</b> a graph neural network predicts the next height map given a pick–place action (pick_x, pick_y, place_x, place_y); trained on 40,000 random-action rollouts.</li>
+<li><b>Action selection:</b> CEM (cross-entropy method) optimises over 256 action candidates for 5 iterations; cost = area of height > 5 mm (bumpiness).</li>
+<li><b>Result after 3 actions:</b> 74% of shirt area within 5 mm of flat; human baseline 91%; naive random policy 22%.</li>
+<li><b>Why 3 not converge to human:</b> the GNN accumulates prediction error; by action 3, predicted vs real height map differs by 8 mm RMS.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DeformPAM: Data-Efficient Long-Horizon Deformable Manipulation via Preference Alignment</b> &mdash; diffusion over 3D point clouds + preference-based training</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>General-Purpose Clothes Manipulation with Semantic Keypoints</b> &mdash; sparse semantic keypoints unify fold/flatten/hang</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Object Properties via Differentiable Robot-Object Interaction</b> &mdash; differentiable sim identifies elasticity/mass from proprioception</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shared Control for Cable Routing with Tactile Sensing</b> &mdash; tactile-driven authority sharing for contact-rich cable routing</span></li></ul>
 </div>
 
-<div class="fam" id="gr7">
+<div class="fam rich" id="gr7">
   <div class="famhd"><span class="famn">07</span><h3>Non-prehensile manipulation</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>You don&rsquo;t always grasp &mdash; sometimes you push, pivot, topple, or slide. Non-prehensile manipulation rearranges objects through external contact, planning contact sequences that respect friction.</p>
-<p>MPPI and contact-mode control handle the uncertainty and mode switches.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Sometimes the fastest path to moving an object is to push it rather than grasp it — slide a book across a table, topple a block, pivot a box around a corner. But a pushed object can slip sideways, rotate unexpectedly, or jam against a wall. Planning a push sequence that reliably lands the object in the target pose requires modelling friction, the pusher's contact geometry, and often the obstacle layout.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>You don&rsquo;t always grasp &mdash; sometimes you push, pivot, topple, or slide. Non-prehensile manipulation rearranges objects through external contact, planning contact sequences that respect friction.</p>
+<p>MPPI and contact-mode control handle the uncertainty and mode switches.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_nonpreh" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Task:</b> move a 0.4 kg box from pose A to pose B 40 cm away, around a wall obstacle; only a flat pusher arm is available (no grasp).</li>
+<li><b>Contact model:</b> quasi-static limit surface (ellipsoidal approximation); friction μ=0.35 between box and table.</li>
+<li><b>Push graph (ReloPush style):</b> discretise the table into 4 cm cells; build a traversability graph where each edge is a feasible straight push; A* on this graph finds a 3-push path.</li>
+<li><b>Push 1:</b> push 18 cm north; predicted final pose error ±1.2 cm (model uncertainty).</li>
+<li><b>MPPI correction (Goal-Driven Pushing):</b> 512-sample MPPI with the limit-surface model optimises push direction online; corrects 0.8 cm lateral drift after push 1.</li>
+<li><b>Result:</b> box lands within 2.1 cm of target in 3 pushes; grasping the same box from the start position takes 4.7 s more due to approach planning.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReloPush: Multi-Object Rearrangement with a Nonholonomic Pusher</b> &mdash; a push-traversability graph plans confined-space rearrangement</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic Object-Goal Pushing with Mobile Manipulators via Constrained RL</b> &mdash; constrained RL discovers push contacts reactively</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Goal-Driven Robotic Pushing Under Uncertain Object Properties</b> &mdash; MPPI handles uncertain mass/friction without preset trajectories</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic On-Palm Manipulation via Controlled Sliding</b> &mdash; contact-implicit MPC slides objects on the palm</span></li></ul>
 </div>
 
-<div class="fam" id="gr8">
+<div class="fam rich" id="gr8">
   <div class="famhd"><span class="famn">08</span><h3>Tool use</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Grasp a tool, then apply forces <em>through</em> it &mdash; a peeler, a spatula, a rope &mdash; adapting to the tool&rsquo;s geometry and the contact it makes with the world.</p>
-<p>Contact-based demos, hierarchical RL, and visual prompting teach tool skills.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Grasping a tool is not enough — the robot must understand that the tool is an intermediary: the force the tool applies to the world depends on how the robot holds it, how the tool flexes, and how the tool contacts the work surface. A spatula that is gripped too hard bends; a peeler that is too fast tears the vegetable. The robot must perceive and control forces through the tool, not at its own fingers.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Grasp a tool, then apply forces <em>through</em> it &mdash; a peeler, a spatula, a rope &mdash; adapting to the tool&rsquo;s geometry and the contact it makes with the world.</p>
+<p>Contact-based demos, hierarchical RL, and visual prompting teach tool skills.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_tool" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Task:</b> peel a cucumber with a Y-peeler (Robotic Hand Tool Use paper).</li>
+<li><b>Demonstration capture:</b> a human peels 5 cucumbers; an optical tactile sensor (GelSight-style) on the tool tip records 3D contact map + normal force at 30 Hz.</li>
+<li><b>What gets copied:</b> NOT the trajectory, but the contact sequence — approach angle 35°, contact force 1.2 N ± 0.3 N, stroke length 80 mm, peel-lift at end.</li>
+<li><b>Stiffness identification:</b> a quick 3-push calibration estimates the peeler's effective stiffness at the tip (1,400 N/m); the controller uses this to convert Δforce to Δangle.</li>
+<li><b>Execution:</b> a 6-DOF arm with force-torque wrist maintains 1.2 N contact force via admittance control; 12 strokes complete the peel in 28 s.</li>
+<li><b>Failure mode:</b> if the cucumber is bumpy, the contact force spikes to 3.5 N and the peeler skips; fix is to slow to 30 mm/s when Fz variance &gt; 0.4 N².</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robotic Hand Tool Use with Contact-Based Demonstration: Cucumber Peeling</b> &mdash; optical tactile captures tool stiffness, reproduces contact not trajectory</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hierarchical RL for Articulated Tool Manipulation with a Multifingered Hand</b> &mdash; a tool-affordance encoder conditions a hierarchical policy</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Implicit Physics-aware Policy for Dynamic Manipulation via Soft Body Tools</b> &mdash; online system-ID for manipulating with rope-like tools</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>MOKA: Open-World Manipulation through Mark-Based Visual Prompting</b> &mdash; turns affordance reasoning into VLM question-answering for tool use</span></li></ul>
 </div>
 
-<div class="fam" id="gr9">
+<div class="fam rich" id="gr9">
   <div class="famhd"><span class="famn">09</span><h3>Pick-and-place &amp; rearrangement</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>The bread and butter: grasp, move, place &mdash; sequenced over many objects to minimize travel and avoid collisions. Simple to state, subtle to optimize at scale.</p>
-<p>Lazy search, registration-as-policy, and 3D language policies push generalization.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Pick-and-place sounds simple, but when there are 20 objects to move to specific goal poses, the order matters enormously. Picking the wrong object first can block the goal pose of a later one, forcing backtracking or re-grasps. Planning an efficient sequence — minimising travel, avoiding collisions, and unblocking the right objects first — is an NP-hard combinatorial problem that gets harder as the scene grows.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The bread and butter: grasp, move, place &mdash; sequenced over many objects to minimize travel and avoid collisions. Simple to state, subtle to optimize at scale.</p>
+<p>Lazy search, registration-as-policy, and 3D language policies push generalization.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_pickplace" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Scene:</b> 12 objects in a bin; 6 have assigned target poses on a shelf; 6 are blockers with no assigned goal.</li>
+<li><b>Obstruction graph:</b> compute which objects physically block which target poses (ray-cast from each target); build a directed dependency graph.</li>
+<li><b>ORLA* planning:</b> lazy A* on the rearrangement graph with a learned heuristic (MLP trained on 50 k random scenes); open only the most promising nodes.</li>
+<li><b>Sequence found:</b> move 3 blockers first (no assigned targets), then place the 6 goal objects in dependency order; 15 picks total.</li>
+<li><b>Execution time:</b> 4.8 min for 15 picks; naive nearest-neighbour baseline needs 18 picks (3 backtrack re-grasps); ORLA* is 25% faster.</li>
+<li><b>Registration policy (Match Policy):</b> rather than re-planning, cast action inference as aligning the current point cloud to a stored demo; runs in 80 ms per pick.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ORLA*: Mobile-Manipulator Rearrangement with Lazy A*</b> &mdash; lazy A* + learned heuristics for time-optimal rearrangement</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Match Policy: From Point-Cloud Registration to Manipulation</b> &mdash; recasts action inference as registering target poses to demos</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Generalizable Vision-Language Manipulation: GemBench + 3D-LOTUS</b> &mdash; scene-conditioned 3D policy generalizes across objects/poses</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hook-Based Aerial Payload Grasping from a Moving Platform</b> &mdash; trajectory optimization times an aerial pick-up</span></li></ul>
 </div>
 
-<div class="fam" id="gr10">
+<div class="fam rich" id="gr10">
   <div class="famhd"><span class="famn">10</span><h3>Affordance &amp; task-oriented grasping</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>The right grasp depends on the goal: hold a knife by the handle to cut, by the blade to hand over. Affordance grasping reasons about object parts and task to pick where and how to grip.</p>
-<p>VLM in-context reasoning and part segmentation ground affordances by language.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A knife affords two grasps: blade for handing to someone safely, handle for cutting. A force-closure-optimal grasp on the blade is mechanically good but task-wrong. The robot must reason from the task goal to the part of the object to grab, and from that part to the actual contact points — a chain from language semantics to geometry to contact physics that classical grasp planners skip entirely.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The right grasp depends on the goal: hold a knife by the handle to cut, by the blade to hand over. Affordance grasping reasons about object parts and task to pick where and how to grip.</p>
+<p>VLM in-context reasoning and part segmentation ground affordances by language.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_afford" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Instruction:</b> 'hand the scissors to the person' (implies: grasp the blade half, not the handle).</li>
+<li><b>VLM affordance reasoning (AffordGrasp):</b> GPT-4V in-context prompt: 'Which part of scissors should I grip to hand safely?' → 'the blade, away from the cutting edge'.</li>
+<li><b>Part grounding:</b> OWL-ViT open-vocabulary segmentation finds the blade region in the current RGB frame; outputs a 2D mask (84% IoU with human label).</li>
+<li><b>Grasp selection:</b> GraspNet samples 256 grasps; filter to those whose contact points fall 90% within the blade mask; 18 pass.</li>
+<li><b>Final pick:</b> highest-quality remaining grasp; gripper opens 52 mm, approaches from 70° to avoid the cutting edge.</li>
+<li><b>Task-aware result:</b> 88% of grasps land on the correct part; without affordance reasoning, 43% grab the handle (wrong for safe handover).</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AffordGrasp: In-Context Affordance Reasoning for Open-Vocabulary Grasping</b> &mdash; a VLM infers the task and grounds part-level affordances</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RT-Affordance: Affordances as Intermediate Representations</b> &mdash; predicts affordance keypoint plans from language, web-scale</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>AffordGen: Diverse Demonstrations via Affordance Correspondence</b> &mdash; DINOv2 correspondences transfer grasps across novel objects</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>SemSegGrasp: Task-Oriented Grasping via Semantic Segmentation</b> &mdash; decouples semantic part analysis from grasp detection</span></li></ul>
 </div>
 
-<div class="fam" id="gr11">
+<div class="fam rich" id="gr11">
   <div class="famhd"><span class="famn">11</span><h3>Cluttered-scene &amp; amodal manipulation</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Real bins are messy: objects occlude each other and only part of each is visible. The robot must segment instances, complete hidden shape, and reason about what blocks what.</p>
-<p>Boundary-refined segmentation, shape-completion confidence, and obstruction graphs help.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>In a real bin, objects stack on top of each other: you can see the top of a cup but its base is hidden behind a bottle. A robot that plans to grasp the cup may collide with the bottle it cannot see. Amodal reasoning — estimating the complete shape of an object from a partial view — and reasoning about which objects physically block which grasps are both required before the first pick.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Real bins are messy: objects occlude each other and only part of each is visible. The robot must segment instances, complete hidden shape, and reason about what blocks what.</p>
+<p>Boundary-refined segmentation, shape-completion confidence, and obstruction graphs help.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_clutter" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Scene:</b> a bin with 8 objects; camera sees 3 fully, 5 partially; target is a small spray bottle at the bottom.</li>
+<li><b>Segmentation (Boundary Refinement paper):</b> Mask R-CNN with boundary-error refinement produces per-instance masks; estimates 4 boundary-error types (false-positive/negative on each side).</li>
+<li><b>Shape completion:</b> a point-cloud completion network (ShapeFormer) completes each partial object; outputs per-point uncertainty (std of 10 samples) → high uncertainty → avoid those grasps.</li>
+<li><b>Obstruction graph:</b> for each object, ray-cast the completed shape to identify which other objects it rests on; spray bottle is blocked by 2 objects.</li>
+<li><b>Clear-first sequence:</b> remove the 2 blocking objects (easier grasps) first; then grasp spray bottle.</li>
+<li><b>Result:</b> 82% task-success vs 54% without amodal reasoning; the 18% failures come from under-segmented instances where two objects are merged.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>High-Quality Unknown Object Instance Segmentation via Boundary Refinement</b> &mdash; estimates four boundary error types for robust clutter segmentation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Measuring Uncertainty in Shape Completion to Improve Grasp Quality</b> &mdash; per-point completion confidence steers grasp choice</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Obstruction Reasoning for Robotic Grasping</b> &mdash; a graph identifies obstructing objects to clear first</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Grasping of Moving Objects in Dense Clutter</b> &mdash; global-to-local detection + static-to-dynamic planning</span></li></ul>
 </div>
 
-<div class="fam" id="gr12">
+<div class="fam rich" id="gr12">
   <div class="famhd"><span class="famn">12</span><h3>Manipulation policies &amp; imitation learning</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Learn the whole visuomotor policy from demonstrations &mdash; observations to continuous actions &mdash; handling the multimodality of valid actions and generalizing across tasks and embodiments.</p>
-<p>Diffusion transformers, recovery behaviors, and model merging are the current tools.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Learning the whole pick-to-place skill from 50 human demonstrations sounds like enough, but the actions at each timestep are not unimodal: there are five equally good ways to approach a mug, and a network that averages them outputs a path down the middle that grabs nothing. Capturing the full distribution of valid actions and committing to one clean choice — without collapsing the modes — is the central statistical problem of imitation learning for manipulation.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Learn the whole visuomotor policy from demonstrations &mdash; observations to continuous actions &mdash; handling the multimodality of valid actions and generalizing across tasks and embodiments.</p>
+<p>Diffusion transformers, recovery behaviors, and model merging are the current tools.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_policy" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Dataset:</b> 50 human tele-operation demos of picking a mug and placing it on a coaster; 30 Hz, 7-DOF arm, wrist RGB.</li>
+<li><b>Architecture (Diffusion Transformer, DiT-B):</b> action chunk length = 16 steps; diffusion with 100 DDPM noise levels; conditioning = last 2 RGB frames + robot proprioception.</li>
+<li><b>Training:</b> 200 k gradient steps, batch 256, lr 1e-4; loss = MSE on the denoised action chunk.</li>
+<li><b>Inference:</b> 100-step DDPM denoising at 10 Hz (real-time at 16-step chunk); picks one of 3 approach modes deterministically from the noise seed.</li>
+<li><b>Result:</b> 84% success on seen mugs, 61% on novel objects; REACH recovery policy kicks in on OOD detections (cosine distance &gt; 0.7 from training distribution).</li>
+<li><b>Model merging (MergeVLA):</b> merge this mug policy with a trained 'pour water' policy via task-mask LoRA; combined policy handles both tasks without catastrophic forgetting.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>The Ingredients for Robotic Diffusion Transformers</b> &mdash; ablates DiT design choices for manipulation policies</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>REACH: Explicit Recovery Behavior for Diffusion Policies</b> &mdash; OOD detection + retreat for robust action selection</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist VLA</b> &mdash; task-mask LoRA merges skills without forgetting</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoCoDA: Counterfactual Data Augmentation for Robot Learning</b> &mdash; causal invariance + SE(3) equivariance augments demos</span></li></ul>
 </div>
 
-<div class="fam" id="gr13">
+<div class="fam rich" id="gr13">
   <div class="famhd"><span class="famn">13</span><h3>Articulated-object manipulation</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Doors, drawers, laptops, scissors &mdash; objects with moving parts. The robot must infer the joint (hinge or slider) and manipulate the part along it, ideally from a single view.</p>
-<p>VLM knowledge, analytic part concepts, and Gaussian part models reconstruct the kinematics.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A door, a drawer, and scissors all have moving parts, but the motion is constrained — a hinge, a prismatic joint, a pivot. A robot that does not know the joint type and axis will try to pull the door straight out and strip the hinge. Inferring the articulation model (joint type + axis + range of motion) from a single RGB image, then planning motion along that inferred joint, is the core problem.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Doors, drawers, laptops, scissors &mdash; objects with moving parts. The robot must infer the joint (hinge or slider) and manipulate the part along it, ideally from a single view.</p>
+<p>VLM knowledge, analytic part concepts, and Gaussian part models reconstruct the kinematics.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_articulated" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> one RGB frame of a closed laptop; no depth, no CAD model.</li>
+<li><b>VLM knowledge (SPARK):</b> GPT-4V asked 'what is the joint type of a laptop lid?' → 'revolute, axis along the hinge, range 0°–135°'.</li>
+<li><b>Part segmentation:</b> Grounded-SAM segments 'screen' and 'base' masks; 2D correspondence lifted to 3D via a monocular depth estimate.</li>
+<li><b>Articulation fitting:</b> differentiable forward kinematics fits a revolute joint (axis + pivot) to the 3D part masks; 50-step Adam optimisation, final axis error 3.2°.</li>
+<li><b>URDF generation (SPARK output):</b> a minimal URDF with two links and the fitted joint; used directly in MuJoCo for motion planning.</li>
+<li><b>Execution:</b> a 6-DOF arm follows a screw-motion path along the inferred axis; opens the laptop to 90° in 2.1 s; success rate 74% (failure: depth error &gt; 15 mm on glossy surfaces).</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Physically Grounded Commonsense for Articulated Manipulation with Analytic Concepts</b> &mdash; maps MLLM semantics to cuboid/cylinder control concepts</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPARK: Sim-ready Part-level Articulated Reconstruction with VLM Knowledge</b> &mdash; differentiable forward kinematics + URDF refinement from one image</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Part2GS: Part-aware Modeling of Articulated Objects with 3D Gaussians</b> &mdash; part-level Gaussian decomposition for articulation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hoi!: A Multimodal Dataset for Force-Grounded Articulated Manipulation</b> &mdash; 3048 sequences with synced RGB-D, pose, force, haptic</span></li></ul>
 </div>
 
-<div class="fam" id="gr14">
+<div class="fam rich" id="gr14">
   <div class="famhd"><span class="famn">14</span><h3>Hand-object interaction: reconstruction &amp; synthesis</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Recover, or generate, how a hand grips and moves an object &mdash; from monocular video, under occlusion, obeying physics (no floating, no penetration). This is the perception side that teaches robots how humans manipulate.</p>
-<p>Foundation models, discrete hand tokens, and physics-aware diffusion drive it.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>To teach a robot from video, you need to recover how the human hand was gripping the object — its 3D pose and all 21 joint angles — from a monocular camera that sees only a 2D projection, with the hand frequently hidden behind the object. The reconstruction must also be physically plausible: fingers must not float in the air or penetrate the object surface.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Recover, or generate, how a hand grips and moves an object &mdash; from monocular video, under occlusion, obeying physics (no floating, no penetration). This is the perception side that teaches robots how humans manipulate.</p>
+<p>Foundation models, discrete hand tokens, and physics-aware diffusion drive it.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_hoi" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> 30-second monocular video of a person picking up and turning a mug; hand occluded ~40% of frames.</li>
+<li><b>Stage 1 — initial estimates:</b> HaMeR hand-pose model + FoundationPose object-pose model run per-frame; gives noisy (x,y,z, 21 joints) estimates with floating fingers in 30% of frames.</li>
+<li><b>Stage 2 — contact reasoning (ArtHOI):</b> MLLM prompted with rendered hand+object image: 'Is the index fingertip in contact with the mug handle?' → binary contact labels per finger per frame.</li>
+<li><b>Stage 3 — physics refinement:</b> RL agent (PAD-Hand style) minimises: penetration depth + contact gap + joint-velocity smoothness, 200 optimisation steps per second of video.</li>
+<li><b>Stage 4 — mesh output:</b> TokenHand VQ-VAE decodes the refined joint angles to a smooth mesh at 65 FPS; outputs MANO parameters for downstream retargeting.</li>
+<li><b>Result:</b> mean per-joint error 8.3 mm (vs 14.1 mm baseline); zero frames with finger penetration &gt; 2 mm after refinement.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ArtHOI: Monocular 4D Reconstruction of Hand-Articulated-Object Interaction</b> &mdash; multi-foundation-model + MLLM contact reasoning for 4D HOI</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>TokenHand: Discrete Tokens for Efficient Hand Mesh Reconstruction</b> &mdash; VQ-VAE hand codebook, 65 FPS at SOTA accuracy</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAD-Hand: Physics-Aware Diffusion for Hand Motion Recovery</b> &mdash; probabilistic Euler-Lagrange dynamics with variance maps</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Recovering Physically Plausible Human-Object Interactions from Video</b> &mdash; RL frame selection + physics simulation refine noisy HOI</span></li></ul>
 </div>
 
-<div class="fam" id="gr15">
+<div class="fam rich" id="gr15">
   <div class="famhd"><span class="famn">15</span><h3>Sim-to-real for manipulation</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Manipulation policies are mostly trained in simulation, where data is cheap and failures are free &mdash; then they must survive real friction, sensor noise, and delay. Closing that last gap is its own discipline.</p>
-<p>Teacher-student distillation, delta actions, and tactile co-training bridge it.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A policy trained in simulation for 10 billion steps can fail immediately on the real robot — not because the task is too hard, but because the real table has slightly different friction, the camera has a 5 ms delay, and the joint encoders add 0.5° noise. These small mismatches compound across a manipulation sequence and cause the policy to drift off course within the first 3 seconds. Closing this gap without per-task real-world fine-tuning is the open problem.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Manipulation policies are mostly trained in simulation, where data is cheap and failures are free &mdash; then they must survive real friction, sensor noise, and delay. Closing that last gap is its own discipline.</p>
+<p>Teacher-student distillation, delta actions, and tactile co-training bridge it.</p></div></div>
+  <figure class="fdiag"><canvas data-granim="grf_sim2real" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Policy:</b> a pixel-to-action diffusion policy for door-opening, trained 100 M steps in IsaacGym.</li>
+<li><b>Sim domain randomisation:</b> friction μ ∈ [0.3, 1.2], door-handle diameter ±2 mm, lighting ±40% intensity, camera pose ±1 cm / ±2°, sensor delay ∈ [0, 20 ms].</li>
+<li><b>Teacher-student transfer (VIRAL style):</b> teacher has privileged state access (perfect pose); student sees only pixel observations; student learns delta-action residuals on top of teacher's actions.</li>
+<li><b>Stage-reset exploration:</b> initialise rollouts from 10 stages of door-opening (GRPO method); each stage trains the policy on the hardest 20% of resets.</li>
+<li><b>Real evaluation:</b> 83% success on the real door after zero real-robot fine-tuning (vs 41% without domain randomisation); mean episode time 4.6 s.</li>
+<li><b>Remaining gap:</b> success drops to 61% on a door with a lever handle (never seen in sim); few-shot real adaptation (5 demos) recovers to 79%.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Opening the Sim-to-Real Door for Humanoid Pixel-to-Action Transfer</b> &mdash; stage-reset exploration + GRPO, 83% real door-opening</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>VIRAL: Visual Sim-to-Real at Scale for Humanoid Loco-Manipulation</b> &mdash; teacher-student with delta actions, 91.5% real cycles</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>DemoStart: Auto-Curriculum for Sim-to-Real with Multi-Fingered Robots</b> &mdash; demo-initialized auto-curriculum RL for dexterous sim-to-real</span></li>
