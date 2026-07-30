@@ -1,0 +1,342 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D Perception, from first principles</title>
+<style>
+:root{--ink:#0D141B;--paper:#ECF1F6;--panel:#FAFCFE;--tint:#DCE7F2;--line:#CAD8E6;
+ --graphite:#4B5563;--g2:#7A8698;--accent:#1C7ED6;--accent-deep:#155BA8;--accent-lite:#74B4EE;
+ --robo:#B4531F;--cvpr:#2F6F8B;--both:#1C7ED6;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#08101A;color:#E6EEF6;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#F0F6FC}
+header p{color:#AABAC c;font-size:15px;margin:0 0 14px;max-width:70ch}
+header p{color:#AAB9CC}
+header nav{font-family:var(--mono);font-size:12px;color:#8998AC}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#293341;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#08101A;border:1px solid #1B2A3A;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#8E9DB0;margin-top:8px}
+.essay p{font-size:15.5px;color:#1B242E;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#08101A}
+.ranfig figcaption{font-size:13px;color:#293341;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#212A34;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#293341;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#212A34}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#212A34}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#D8E7F6}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#1B242E;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#F6E9E1;color:#9A4419;border:1px solid #E6CDBE}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#D8E7F6;color:var(--accent-deep);border:1px solid #BAD2ED}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#1B242E}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#212A34;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#12181f}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#212A34}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">3D Perception &middot; depth · flow · SLAM &middot; robotics + vision</div>
+  <h1>3D Perception: getting the third dimension back</h1>
+  <p>A camera flattens the world; recovering the depth, motion, and map it threw away is the foundation everything else stands on. Stereo, monocular depth, optical flow, and SLAM &mdash; from first principles, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">two eyes</a> &middot; <a href="#fp3">one eye</a> &middot; <a href="#fp4">motion</a> &middot; <a href="#fp5">map it</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why depth is lost, stereo triangulation, monocular guessing, optical flow, and SLAM. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">classical</span><b>geometry</b><p>epipolar geometry, structure-from-motion, and bundle adjustment triangulate 3D from calibrated multi-view images.</p></div><div class="ln"><span class="lyr">2015&ndash;20</span><b>learned matching</b><p>CNNs learn stereo cost volumes and optical flow (RAFT), beating hand-built matching on hard scenes.</p></div><div class="ln"><span class="lyr">2022&ndash;24</span><b>depth foundation models</b><p>train once on huge data → metric monocular depth from a single image, anywhere.</p></div><div class="ln"><span class="lyr">2023</span><b>neural SLAM</b><p>NeRF and Gaussian-splat SLAM make dense, photoreal reconstruction differentiable and real-time.</p></div><div class="ln"><span class="lyr">2024&ndash;</span><b>feed-forward 3D</b><p>DUSt3R / VGGT-style transformers predict geometry + pose from unposed images in one pass &mdash; the families below.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>A camera throws depth away</h2>
+  <figure class="instrument"><canvas data-peanim="pe_depth" height="300"></canvas>
+    <figcaption>Photography collapses a 3D world onto a 2D sensor: every point along a viewing ray lands on the same pixel, so distance is lost. The same flat image could come from infinitely many scenes. Recovering that lost depth is the whole field.</figcaption></figure>
+  <div class="essay"><p>The instant a camera takes a picture, it destroys information. A 3D scene is projected onto a flat sensor, and everything along a single viewing ray &mdash; near or far &mdash; maps to exactly the same pixel. The distance is simply gone.</p>
+<p>That&rsquo;s why the same flat image could have come from infinitely many different 3D scenes: a shadow or a crease, a small nearby object or a large distant one. 3D perception is the inverse problem of undoing that projection &mdash; putting the third dimension back.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Projection &pi;: R&sup3; &rarr; R&sup2; is many-to-one: a pixel p corresponds to a whole ray { X : &pi;(X)=p }.</p>
+<p>Recovering the depth Z along each ray is the inverse problem &mdash; underdetermined from one image, which is why extra views, motion, or learned priors are needed.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; two eyes</div>
+  <h2>Stereo: the shift is the depth</h2>
+  <figure class="instrument"><canvas data-peanim="pe_stereo" height="300"></canvas>
+    <figcaption>Two cameras a known distance apart see the same point at slightly different positions. That shift — the disparity — is large for near things and small for far ones. Match the pixel in both images, measure the shift, and triangulate the depth.</figcaption></figure>
+  <div class="essay"><p>The clean, geometric answer is to use two eyes. Put two cameras a known distance apart (the baseline) and the same scene point projects to a slightly different spot in each image. That difference in position is the <b>disparity</b>.</p>
+<p>Disparity is inversely proportional to depth &mdash; near things shift a lot between the two views, far things barely move &mdash; so <span class="eq">depth = focal &times; baseline / disparity</span>. The hard part is <em>matching</em>: finding which pixel in the right image corresponds to each pixel in the left, which is what learned cost-volume networks do well.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>With rectified cameras: Z = f&thinsp;B / d, where f = focal length, B = baseline, d = disparity = x_L &minus; x_R.</p>
+<p>Matching builds a cost volume over candidate disparities per pixel; the network (or WTA + refinement) picks the best, then sub-pixel refines.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; one eye</div>
+  <h2>Monocular: guess depth from priors</h2>
+  <figure class="instrument"><canvas data-peanim="pe_mono" height="300"></canvas>
+    <figcaption>With a single image there's no triangulation, so a network must guess depth from learned cues — perspective, familiar object sizes, texture gradients. It works surprisingly well, but the scale is ambiguous: a toy car and a real one can look identical.</figcaption></figure>
+  <div class="essay"><p>Often you only have one image, and one image can&rsquo;t triangulate anything. Instead a network learns to <em>guess</em> depth from the same cues people use: lines that converge with perspective, the familiar size of known objects, how texture gets finer with distance.</p>
+<p>Modern monocular depth foundation models do this astonishingly well. But there&rsquo;s a catch geometry can&rsquo;t remove: <b>scale is ambiguous</b>. Nothing in a single picture says whether you&rsquo;re looking at a toy car up close or a real car far away, so metric depth needs an anchor &mdash; a second view, an IMU, or a known size.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Learn f&#952;: image &rarr; depth from data (supervised, or self-supervised via reprojection between video frames).</p>
+<p>The prediction is only defined up to an unknown scale s (and sometimes shift): d&#770; = s&middot;d + t. Metric depth needs an anchor &mdash; stereo, IMU scale, or a known object size.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; motion</div>
+  <h2>Optical flow: where every pixel went</h2>
+  <figure class="instrument"><canvas data-peanim="pe_flow" height="300"></canvas>
+    <figcaption>Between two frames, match every pixel to where it moved — a dense field of motion vectors. Static scenery shifts a little as the camera moves; a moving object shifts a lot. That field reveals motion, and combined with geometry, structure.</figcaption></figure>
+  <div class="essay"><p>Add time and you get another handle on 3D. <b>Optical flow</b> is the per-pixel motion between two consecutive frames: for every pixel, where did it go? The result is a dense field of little vectors.</p>
+<p>Static scenery flows gently as the camera moves (and how gently encodes its depth); a moving object flows against that background. Flow is computed by matching pixels across frames under brightness-constancy, and it underpins motion estimation, tracking, and structure-from-motion &mdash; time doing the job the second camera did in stereo.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Find (u,v) per pixel so I&#8348;(x) &asymp; I&#8348;&#8330;&#8321;(x + (u,v)) &mdash; brightness constancy &mdash; regularized by smoothness.</p>
+<p>Modern methods (RAFT-style) build an all-pairs correlation volume and iteratively refine the flow field; scene flow lifts this to 3D motion.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; map it</div>
+  <h2>SLAM: map and localize at once</h2>
+  <figure class="instrument"><canvas data-peanim="pe_slam" height="300"></canvas>
+    <figcaption>A moving robot must build a map and figure out where it is inside that map — each needing the other. Small errors accumulate into drift; returning to a place you've seen (loop closure) snaps the whole map back into consistency.</figcaption></figure>
+  <div class="essay"><p>Put a camera on a moving robot and you face a chicken-and-egg problem: to build a map you need to know where you are, but to know where you are you need a map. <b>SLAM</b> &mdash; simultaneous localization and mapping &mdash; solves both together, refining the map and the trajectory with every new frame.</p>
+<p>The enemy is drift: tiny per-frame errors accumulate until the map bends away from reality. The fix is <b>loop closure</b> &mdash; recognizing a place you&rsquo;ve visited before adds a constraint that redistributes the accumulated error and snaps the whole map back into a consistent whole.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Jointly estimate camera poses {T&#7522;} and map points {X&#7521;} minimizing reprojection error &Sigma; &Vert; &pi;(T&#7522;, X&#7521;) &minus; observation &Vert;&sup2; (bundle adjustment).</p>
+<p>Drift grows along the trajectory; a loop-closure constraint (this frame = an earlier one) is added to the pose graph and the error is redistributed globally.</p></div></details>
+</section>
+<section class="fp">
+  <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
+  <img src="assets/lightstereo/kitti_depth_beforeafter.png" alt="LightStereo stereo depth on a KITTI driving frame">
+  <figcaption>Stereo, for real: we ran <b>LightStereo</b> on a KITTI stereo pair &mdash; left, the input frame; right, the per-pixel depth it triangulates from the disparity between the two cameras. Near is bright, far is dark. This is Part&nbsp;I&rsquo;s &lsquo;the shift is the depth&rsquo; made concrete. Our own run.</figcaption></figure>
+  <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
+  <img src="assets/neuflow/neuflow_flow.gif" alt="NeuFlow optical flow field between two frames">
+  <figcaption>And motion: <b>NeuFlow</b> computing dense optical flow between consecutive frames &mdash; every pixel colored by the direction and speed it moved. That flow field is Part&nbsp;I&rsquo;s &lsquo;where every pixel went&rsquo;. Also our own run.</figcaption></figure>
+</section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three ways to recover 3D</h2>
+  <p class="intro">The field&rsquo;s arc, in one table &mdash; from hand-built geometry, to learned matching, to feed-forward models that predict the whole 3D scene (and the camera) in a single pass.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it recovers 3D</th><th>Needs calibration / poses?</th><th>Speed</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Classical geometry (SfM/MVS/BA)</th><td>triangulate matched points across calibrated views</td><td>yes — known intrinsics & poses</td><td>slow (per-scene optimization)</td><td>breaks on texture-less, specular, dynamic scenes</td></tr><tr><th class="rn">Learned stereo / mono / flow</th><td>a network predicts depth or flow</td><td>stereo needs a rig; mono needs none</td><td>fast, real-time</td><td>monocular scale is ambiguous</td></tr><tr class="hi"><th class="rn">Feed-forward 3D (DUSt3R/VGGT)</th><td>predict pointmaps from unposed images in one pass</td><td>no — it infers the geometry too</td><td>real-time</td><td>amortized; weaker on out-of-distribution geometry</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons cameras became 3D sensors.</p>
+  <div class="bens"><div class="ben"><h4>Dense 3D from cheap cameras</h4><p>Stereo, mono, and flow turn ordinary image sensors into depth and motion &mdash; no LiDAR required &mdash; which is what makes 3D perception deployable at scale.</p></div>
+<div class="ben"><h4>Metric depth, when anchored</h4><p>Monocular foundation models predict depth from a single image; add a baseline, IMU, or size prior and it becomes metric &mdash; distance you can act on.</p></div>
+<div class="ben"><h4>Motion for free from time</h4><p>Optical and scene flow extract dense motion between frames, giving tracking, ego-motion, and dynamic structure without extra sensors.</p></div>
+<div class="ben"><h4>A map you can localize in</h4><p>SLAM builds a reusable map and keeps the robot located in it in real time &mdash; the substrate for navigation, and for the perceive stage of the whole loop.</p></div>
+<div class="ben"><h4>Feed-forward, no per-scene fitting</h4><p>New DUSt3R/VGGT-style models predict 3D from unposed images in a single pass &mdash; real-time, and no slow per-scene optimization.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way the field recovers 3D</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip bb" href="#pe1"><span class="cn">01</span>Stereo</a><a class="fchip bb" href="#pe2"><span class="cn">02</span>Monocular</a><a class="fchip bb" href="#pe3"><span class="cn">03</span>Optical</a><a class="fchip rb" href="#pe4"><span class="cn">04</span>Visual(-inertial) odometry</a><a class="fchip bb" href="#pe5"><span class="cn">05</span>SLAM</a><a class="fchip vb" href="#pe6"><span class="cn">06</span>Feed-forward 3D</a><a class="fchip rb" href="#pe7"><span class="cn">07</span>LiDAR odometry</a><a class="fchip bb" href="#pe8"><span class="cn">08</span>Loop closure, place recognition</a><a class="fchip bb" href="#pe9"><span class="cn">09</span>Dense reconstruction</a><a class="fchip bb" href="#pe10"><span class="cn">10</span>Event-camera 3D</a><a class="fchip rb" href="#pe11"><span class="cn">11</span>Point-cloud registration</a><a class="fchip rb" href="#pe12"><span class="cn">12</span>Depth completion</a><a class="fchip rb" href="#pe13"><span class="cn">13</span>6D pose estimation</a><a class="fchip vb" href="#pe14"><span class="cn">14</span>Dynamic-scene</a><a class="fchip vb" href="#pe15"><span class="cn">15</span>Depth from generative</a></div>
+  <div class="famgrid">
+<div class="fam" id="pe1">
+  <div class="famhd"><span class="famn">01</span><h3>Stereo &amp; multi-view depth</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>The geometric backbone: two (or many) calibrated views triangulate depth from disparity. The engineering is all in <em>matching</em> &mdash; building and refining a cost volume over candidate disparities, fast and under occlusion.</p>
+<p>Recent work accelerates the iterative solvers and pushes stereo into events, fisheye, and adverse weather.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Iterative Volume Fusion for Asymmetric Stereo Matching</b> &mdash; two-phase network fuses correlation volumes for high-accuracy disparity</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Pip-Stereo</b> &mdash; prunes hypotheses across iterations to speed up iterative stereo matching</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>EventHub</b> &mdash; a data factory for generalizable event-based stereo, no active-depth supervision</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SpiderCam</b> &mdash; snapshot depth from differential defocus via a beam splitter, low power</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A New Stereo Fisheye Event Camera</b> &mdash; back-to-back fisheye event cameras give full spherical stereo</span></li></ul>
+</div>
+
+<div class="fam" id="pe2">
+  <div class="famhd"><span class="famn">02</span><h3>Monocular &amp; metric depth</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>One image, no triangulation &mdash; a network guesses depth from perspective, size, and texture cues, with foundation models now generalizing across scenes. The stubborn issue is turning that relative depth into <em>metric</em> distance.</p>
+<p>Approaches inject real-world priors, edges, or events to pin down scale and detail.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Iris: Real-World Priors into Diffusion for Monocular Depth</b> &mdash; progressive generative distillation grounds depth in metric scale</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InfiniDepth</b> &mdash; neural implicit fields give arbitrary-resolution fine-grained depth</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MD2E</b> &mdash; depth-to-edge cues supervise metric depth without ground-truth depth</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AIMDepth</b> &mdash; asymmetric image-event Mamba fuses events + RGB for extreme lighting</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Single-Shot Metric Depth from Focused Plenoptic Cameras</b> &mdash; a net makes a sparse metric point cloud from one plenoptic image</span></li></ul>
+</div>
+
+<div class="fam" id="pe3">
+  <div class="famhd"><span class="famn">03</span><h3>Optical &amp; scene flow</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Match every pixel across frames to get a dense 2D motion field (optical flow), or lift it to 3D displacement (scene flow) &mdash; the raw material for ego-motion, tracking, and dynamic structure.</p>
+<p>The work is efficiency (all-pairs correlation is heavy) and robustness at motion boundaries and in events.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Efficient All-Pairs Correlation Volume Sampling</b> &mdash; adaptive correlation sampling cuts optical-flow compute</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SSF: Sparse Long-Range Scene Flow</b> &mdash; sparse convolutions extend scene flow to long range for driving</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ARES</b> &mdash; asymmetric RGB-event fusion for probabilistic scene flow</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-NMSTFlow</b> &mdash; spatio-temporal motion features for unsupervised event-based optical flow</span></li></ul>
+</div>
+
+<div class="fam" id="pe4">
+  <div class="famhd"><span class="famn">04</span><h3>Visual(-inertial) odometry</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Track the camera&rsquo;s own motion frame-to-frame from features or photometry &mdash; and fuse an IMU to recover metric scale and survive fast motion and blur.</p>
+<p>The recurring themes are calibration, robustness in the dark or underwater, and when iteration is worth its cost.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ORB-SfMLearner</b> &mdash; ORB-feature guidance + selective online adaptation for self-supervised VO</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Illumination for Visual Ego-Motion in the Dark</b> &mdash; a steered light finds texture for VO in darkness</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Universal Online Temporal Calibration for VINS</b> &mdash; treats the camera-IMU time offset as a state variable</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>UR-MVO</b> &mdash; SuperPoint features fine-tuned for robust underwater monocular VO</span></li></ul>
+</div>
+
+<div class="fam" id="pe5">
+  <div class="famhd"><span class="famn">05</span><h3>SLAM &amp; real-time mapping</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>The core loop: build a map while localizing in it, in real time, on the robot. Learned depth/flow/Gaussian priors increasingly replace hand-built feature matching for denser, more robust maps.</p>
+<p>The tension is always dense-and-accurate versus fast-and-onboard.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>KISS-SLAM</b> &mdash; a minimalist, robust graph-based LiDAR SLAM via scan-to-scan registration</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SGAD-SLAM</b> &mdash; dual-branch Gaussian SLAM: pixel-aligned Gaussians map, keyframes track</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ODGS-SLAM</b> &mdash; first omnidirectional (360°) Gaussian-splatting SLAM</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SCE-SLAM</b> &mdash; scene-coordinate embeddings give scale-consistent monocular SLAM</span></li></ul>
+</div>
+
+<div class="fam" id="pe6">
+  <div class="famhd"><span class="famn">06</span><h3>Feed-forward 3D &amp; pointmap reconstruction</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>The paradigm shift: instead of optimizing a fresh model per scene, train one transformer that predicts 3D geometry &mdash; and the camera poses &mdash; directly from unposed images in a single forward pass.</p>
+<p>It trades per-scene optimization for amortized training: real-time, calibration-free, at some cost to out-of-distribution generalization.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Any4D</b> &mdash; one feed-forward pass predicts metric depth, flow, and pose for N frames</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MoRE</b> &mdash; a VGGT backbone with mixture-of-experts routing for scalable 3D reconstruction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TokenSplat</b> &mdash; token-aligned Gaussians for pose-free feed-forward reconstruction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AREA3D</b> &mdash; feed-forward 3D + VLM reasoning guides active viewpoint selection</span></li></ul>
+</div>
+
+<div class="fam" id="pe7">
+  <div class="famhd"><span class="famn">07</span><h3>LiDAR odometry &amp; mapping</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>When a camera isn&rsquo;t enough, LiDAR gives direct, lighting-invariant 3D; the work is fast scan registration, mapping, and removing dynamic objects for a clean static map.</p>
+<p>Minimalist, robust registration is having a moment against heavier learned pipelines.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>KISS-SLAM</b> &mdash; simple scan-to-scan registration, robust and accurate</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SOLO-SMap</b> &mdash; semantic-aided online LiDAR odometry + static mapping in dynamic scenes</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SANDRO</b> &mdash; a splitting-strategy IRLS solver robust to high point-cloud outliers</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Intensity-Augmented LiDAR-Visual-Inertial Odometry</b> &mdash; LiDAR intensity refines camera pose for real-time meshing</span></li></ul>
+</div>
+
+<div class="fam" id="pe8">
+  <div class="famhd"><span class="famn">08</span><h3>Loop closure, place recognition &amp; relocalization</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Recognize a place you&rsquo;ve seen to close SLAM loops and kill drift &mdash; or localize a fresh query image in a prior map without GPS.</p>
+<p>The push is robustness across viewpoint, modality, and long-term appearance change.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Visual Loop Closure through Deep Graph Consensus</b> &mdash; LoopGNN builds a graph of similar keyframe cliques</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Diffusion-Based Robust LiDAR Place Recognition</b> &mdash; a diffusion model + PointNet++ trained on synthetic LiDAR</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoFlow</b> &mdash; iterative flow-based cross-view geolocalization in continuous pose space</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hierarchical Relocalization with Feature Gaussian Splatting</b> &mdash; synthesizes nearest views from feature Gaussians for pose refinement</span></li></ul>
+</div>
+
+<div class="fam" id="pe9">
+  <div class="famhd"><span class="famn">09</span><h3>Dense reconstruction &amp; neural/implicit 3D</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Go beyond sparse points to a full dense model &mdash; voxels, meshes, NeRFs, or Gaussian splats &mdash; that supports manipulation, obstacle avoidance, and photoreal rendering, increasingly inside the SLAM loop.</p>
+<p>This is where 3D perception meets the <a href='gaussian-splatting-explained.html'>splatting</a> stack.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DGS-SLAM</b> &mdash; semantic 3D Gaussians identify + remove dynamic objects for dense SLAM</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>VSS-SLAM</b> &mdash; voxelized surfels from per-voxel features for geometrically accurate SLAM</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-Aware VI-SLAM with Volumetric Occupancy</b> &mdash; fuses reprojection + IMU + pose factors into an occupancy map</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fusionsense</b> &mdash; 3DGS + foundation-model priors + touch for sparse-view reconstruction</span></li></ul>
+</div>
+
+<div class="fam" id="pe10">
+  <div class="famhd"><span class="famn">10</span><h3>Event-camera 3D</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Event cameras report per-pixel brightness changes with microsecond latency and huge dynamic range &mdash; so they see depth and flow through fast motion and extreme light where ordinary frames smear or blow out.</p>
+<p>The work rewrites depth, flow, and reconstruction for asynchronous event streams.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>AIMDepth</b> &mdash; image-event Mamba fusion for monocular depth under extreme lighting</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ARES</b> &mdash; RGB texture + event dynamics fused for robust scene flow</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>EVLoc</b> &mdash; event-to-depth registration localizes events inside LiDAR maps</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>EvMAPPER</b> &mdash; an event camera replaces CMOS for high-altitude orthomapping</span></li></ul>
+</div>
+
+<div class="fam" id="pe11">
+  <div class="famhd"><span class="famn">11</span><h3>Point-cloud registration &amp; ICP</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Align two 3D point clouds by finding the rigid transform between them &mdash; the workhorse of LiDAR mapping, relocalization, and object pose &mdash; made robust to outliers and partial overlap.</p>
+<p>Robust estimators (IRLS, graduated non-convexity, Lie-algebra formulations) are the recurring tools.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SANDRO</b> &mdash; IRLS + graduated non-convexity for registration under heavy outliers</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fast(er) Robust Point Cloud Alignment Using Lie Algebra</b> &mdash; IRLS on the Lie algebra for efficient robust alignment</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Match Policy</b> &mdash; recasts action inference itself as point-cloud registration</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Effective Heterogeneous Point-Cloud Place Recognition</b> &mdash; BEV density images register aerial-to-ground clouds</span></li></ul>
+</div>
+
+<div class="fam" id="pe12">
+  <div class="famhd"><span class="famn">12</span><h3>Depth completion &amp; sensor fusion</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Turn sparse depth (a few LiDAR returns) plus an RGB image into a dense depth map &mdash; and fuse camera with LiDAR/radar/ultrasound so each sensor covers the others&rsquo; blind spots.</p>
+<p>Transparent and specular surfaces, which defeat single sensors, are a recurring target.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DA-Fusion</b> &mdash; deformable-attention transformer fuses RGB + depth for unseen-object segmentation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>TransDiff</b> &mdash; diffusion conditioned on RGB completes depth for transparent objects</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DCT-Diffusion</b> &mdash; transformer + diffusion completes depth on transparent objects</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bat-VUFN</b> &mdash; bio-inspired camera + ultrasound fusion, input-quality weighted</span></li></ul>
+</div>
+
+<div class="fam" id="pe13">
+  <div class="famhd"><span class="famn">13</span><h3>6D pose estimation &amp; localization</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Pin down the full 6-DoF pose of a camera or an object from RGB(-D) &mdash; the bridge from perception to grasping and to localizing in a known scene.</p>
+<p>Zero-shot (CAD-model) pose and splat-map localization are the fast-moving edges.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ZeroBP</b> &mdash; position-aware correspondence for zero-shot 6D pose from a CAD model</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>You Only Estimate Once</b> &mdash; one-stage real-time 6D pose: labels, centroid offset, rotation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LoGS</b> &mdash; SfM + Gaussian-splat map + retrieval for visual localization with fewer images</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEADER</b> &mdash; reliable local-to-global correspondences for LiDAR relocalization</span></li></ul>
+</div>
+
+<div class="fam" id="pe14">
+  <div class="famhd"><span class="famn">14</span><h3>Dynamic-scene &amp; 4D depth</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Recover geometry <em>and</em> motion together from video with moving, deforming objects &mdash; a 4D reconstruction &mdash; where the same frame could arise from different motion+shape combinations.</p>
+<p>Feed-forward 4D and dynamic point maps are collapsing this into a single pass.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Any4D</b> &mdash; unified feed-forward metric 4D (geometry + motion) for N frames</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>V-DPM</b> &mdash; extends dynamic point maps to video for feed-forward 4D + scene flow</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Mesh4D</b> &mdash; a VAE encodes deformation for topology-consistent 4D meshes from one camera</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DetAny4D</b> &mdash; streaming 4D detection with a 280k-sequence 4D-annotated dataset</span></li></ul>
+</div>
+
+<div class="fam" id="pe15">
+  <div class="famhd"><span class="famn">15</span><h3>Depth from generative &amp; diffusion priors</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Use a generative model &mdash; a diffusion prior &mdash; as the inductive bias that resolves monocular depth&rsquo;s inherent ambiguity, and to bridge synthetic-to-real gaps.</p>
+<p>The generative prior supplies the &lsquo;what plausible 3D looks like&rsquo; that geometry alone can&rsquo;t.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Iris (diffusion priors)</b> &mdash; progressive generative distillation merges diffusion priors with real depth</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Iris (language into diffusion depth)</b> &mdash; language descriptions guide diffusion-based depth for semantic geometry</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TransDiff</b> &mdash; diffusion prior completes depth where transparency defeats sensors</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DiffSSC</b> &mdash; denoising diffusion completes semantic LiDAR scans through occlusion</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Recovering 3D from images is the oldest problem in computer vision and still not solved. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>Metric scale from one eye.</b> Monocular depth is scale-ambiguous by construction; getting reliable metric distance without a second view or IMU is still hard.</div>
+<div class="op"><b>Hidden geometry.</b> Transparent, specular, and thin surfaces actively hide their 3D structure and defeat matching-based depth.</div>
+<div class="op"><b>Accuracy vs the onboard clock.</b> Dense SLAM, MVS, and global bundle adjustment are heavy; real-time on a small robot forces sparse, approximate choices.</div>
+<div class="op"><b>Dynamic &amp; deforming scenes.</b> 4D reconstruction compounds the ambiguity &mdash; the same video can come from different motion + geometry pairs.</div>
+<div class="op"><b>Feed-forward generalization.</b> One-pass 3D predictors are fast but generalize less sharply to geometry unlike their training data.</div>
+<div class="op"><b>Robustness in the wild.</b> Low light, weather, texture-less walls, and long-term appearance change still break perception; fusion and events help, not fully.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">3D Perception explainer &middot; mechanism diagrams are live JavaScript (assets/pe-anim.js) &middot; LightStereo + NeuFlow runs are ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the raw seeing beneath the <a href="the-machine.html">four-stage loop</a> and the <a href="gaussian-splatting-explained.html">splatting</a> stack &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/pe-anim.js"></script>
+</body></html>
