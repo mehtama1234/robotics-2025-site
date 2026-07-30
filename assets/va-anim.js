@@ -104,6 +104,128 @@
     lab(ctx,'explicit intermediate reasoning grounds loose words in geometry → far more robust',14,h-12,C.mut);
   };
 
+  // ===== per-family diagrams (wave 2a: families 1-8) =====
+
+  // F1 GENERALIST — pool many robots' data into one VLA that deploys back to all of them.
+  A.vaf_generalist=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Pool every robot’s data into one policy that deploys back to all of them',14,16,C.dim);
+    const bodies=['arm','quadruped','humanoid','drone','car'];
+    const cx=w*0.5,cy=h*0.5;box(ctx,cx-w*0.1,cy-20,w*0.2,40,'one VLA',C.green,hexA(C.green,0.06));
+    const hi=Math.floor(saw(t,5)*5)%5;
+    bodies.forEach((b,i)=>{const a=(i/5)*TAU-Math.PI/2,r=Math.min(w,h)*0.42;const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r*0.72;
+      const on=i===hi;dot(ctx,x,y,on?7:5,on?C.amber:hexA(C.mut,0.6));lab(ctx,b,x-14,y+ (y<cy?-14:16),on?C.amber:C.mut,9.5);
+      // data in (thin) and deploy out (highlighted)
+      arrow(ctx,x+(cx-x)*0.16,y+(cy-y)*0.16,cx+(x-cx)*0.16,cy+(y-cy)*0.16,on?C.green:hexA(C.mut,0.4),on?1.6:1);});
+    lab(ctx,'data in from every body → one set of weights out',cx,cy+38,C.mut,10,'center');
+    lab(ctx,'a new task is a new sentence; a new robot needs only a little adaptation data',14,h-12,C.mut);
+  };
+
+  // F2 LATENT ACTION FROM VIDEO — learn actions from unlabeled video via motion, bridge to the robot.
+  A.vaf_action=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Learn to act from unlabeled VIDEO — motion is a free action label',14,16,C.dim);
+    // video frames
+    const fy=h*0.4,fw=Math.min(52,w*0.1);const p=saw(t,3);
+    for(let k=0;k<3;k++){const x=w*0.06+k*(w*0.12);rrect(ctx,x,fy-fw*0.3,fw,fw*0.6,4,C.cyan,hexA(C.cyan,0.08));
+      // flow arrows between frames
+      if(k<2)arrow(ctx,x+fw+2,fy,x+w*0.12-2,fy,hexA(C.amber,0.8),1.4);}
+    lab(ctx,'web / human video',w*0.06,fy+fw*0.5+10,C.cyan,10);
+    lab(ctx,'optical flow = motion',w*0.06,fy-fw*0.5-8,C.amber,9.5);
+    arrow(ctx,w*0.42,fy,w*0.5,fy,C.ink,1.4);
+    // latent action tokens
+    for(let k=0;k<5;k++){ctx.fillStyle=C.violet;ctx.fillRect(w*0.52+k*16,fy-6,13,13);}
+    lab(ctx,'latent action tokens',w*0.52,fy+22,C.violet,10);
+    // bridge to robot with a little data
+    arrow(ctx,w*0.52,h*0.7,w*0.7,h*0.7,C.green,1.6);box(ctx,w*0.71,h*0.62,w*0.22,h*0.16,'+ little robot data → motor commands',C.green);
+    lab(ctx,'pretrain on oceans of video, then map latent actions to the robot with a few demos',14,h-12,C.mut);
+  };
+
+  // F3 LLM PLANNING — decompose an instruction into skill calls + a feasibility check.
+  A.vaf_plan=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'An LLM decomposes the goal into skills, and checks each is feasible',14,16,C.dim);
+    box(ctx,w*0.05,h*0.44,w*0.16,28,'“make coffee”',C.cyan);
+    arrow(ctx,w*0.22,h*0.5,w*0.3,h*0.5,C.ink,1.4);box(ctx,w*0.31,h*0.42,w*0.12,h*0.16,'LLM',C.violet);
+    const steps=['grind','fill water','brew','pour'];const lit=Math.floor(saw(t,4)*4);
+    steps.forEach((s,i)=>{const y=h*0.28+i*h*0.16,on=i<=lit;arrow(ctx,w*0.44,h*0.5,w*0.5,y,hexA(C.mut,0.5),1);
+      box(ctx,w*0.51,y-12,w*0.2,24,s,on?C.amber:C.mut);
+      lab(ctx,on?'✓ feasible':'…',w*0.72,y,on?C.green:C.dim,10);});
+    lab(ctx,'each step calls a low-level skill; infeasible steps trigger a re-plan',14,h-12,C.mut);
+  };
+
+  // F4 OPEN-VOCAB — the VLM points at the requested thing in the image; grasp there, no class list.
+  A.vaf_openvocab=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Say it in any words → the VLM points at it → grasp there (no fixed classes)',14,16,C.dim);
+    box(ctx,w*0.05,h*0.3,w*0.2,26,'“the striped mug”',C.cyan);
+    // scene with 3 objects
+    const scene=[[w*0.42,h*0.62,'cup',false],[w*0.56,h*0.6,'mug',true],[w*0.7,h*0.64,'bowl',false]];
+    rrect(ctx,w*0.35,h*0.44,w*0.42,h*0.34,8,C.line,null);lab(ctx,'camera view',w*0.36,h*0.42,C.dim,9);
+    scene.forEach(o=>{const on=o[3];dot(ctx,o[0],o[1],on?12:9,on?C.amber:hexA(C.mut,0.6));lab(ctx,o[2],o[0]-8,o[1]+22,on?C.amber:C.mut,9.5);
+      if(on){ctx.strokeStyle=C.amber;ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(o[0],o[1],16,0,TAU);ctx.stroke();
+        arrow(ctx,o[0],o[1]-40,o[0],o[1]-18,C.amber,1.6);lab(ctx,'VLM marks it',o[0]-24,o[1]-48,C.amber,9.5);}});
+    arrow(ctx,w*0.79,h*0.6,w*0.86,h*0.6,C.green,1.6);lab(ctx,'grasp',w*0.86,h*0.55,C.green,10);
+    lab(ctx,'the same pipeline handles a tool, a fruit, or a cable it never saw in robot data',14,h-12,C.mut);
+  };
+
+  // F5 CHAIN/TREE OF THOUGHT — reason several plans, score, pick the best.
+  A.vaf_cot=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Think before acting: draft several plans, score them, pick the best',14,16,C.dim);
+    box(ctx,w*0.05,h*0.46,w*0.16,28,'instruction',C.cyan);
+    arrow(ctx,w*0.22,h*0.5,w*0.3,h*0.5,C.ink,1.4);dot(ctx,w*0.31,h*0.5,5,C.violet);
+    const plans=[[-0.2,'plan A','6',false],[0,'plan B','9',true],[0.2,'plan C','3',false]];
+    plans.forEach(p=>{const y=h*0.5+p[0]*h;const on=p[3];
+      ctx.strokeStyle=on?C.green:hexA(C.violet,0.6);ctx.lineWidth=on?2:1.2;ctx.beginPath();ctx.moveTo(w*0.31,h*0.5);ctx.bezierCurveTo(w*0.45,h*0.5,w*0.5,y,w*0.62,y);ctx.stroke();
+      lab(ctx,p[1]+'  score '+p[2],w*0.63,y,on?C.green:C.violet,10);if(on)lab(ctx,'▸ act on this',w*0.63,y+15,C.green,9.5);});
+    lab(ctx,'tree-of-thought scores candidates for safety / progress; the written reasoning is auditable',14,h-12,C.mut);
+  };
+
+  // F6 SPATIAL GROUNDING — VLM names it (semantic ✓) but off; 3D snaps it to the right metric point.
+  A.vaf_spatial=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'VLM knows WHAT (“the mug”) but not exactly WHERE — 3D fixes the geometry',14,16,C.dim);
+    // left: VLM semantic guess (fuzzy, off)
+    const lx=w*0.26,ly=h*0.5;rrect(ctx,lx-w*0.16,ly-h*0.2,w*0.32,h*0.4,8,C.line,null);lab(ctx,'VLM 2D guess',lx-w*0.14,ly-h*0.2-8,C.cyan,9.5);
+    const g=ctx.createRadialGradient(lx+20,ly,2,lx+20,ly,26);g.addColorStop(0,hexA(C.coral,0.5));g.addColorStop(1,hexA(C.coral,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(lx+20,ly,26,0,TAU);ctx.fill();
+    dot(ctx,lx-6,ly-6,4,C.green);lab(ctx,'true mug',lx-30,ly-24,C.green,9);lab(ctx,'off by cm ✗',lx+6,ly+30,C.coral,10);
+    arrow(ctx,w*0.44,ly,w*0.52,ly,C.ink,1.4);lab(ctx,'+ 3D',w*0.44,ly-12,C.violet,9);
+    // right: 3D grid snaps to correct metric point
+    const rx=w*0.72;ctx.strokeStyle=hexA(C.mut,0.35);for(let i=0;i<=5;i++){ctx.beginPath();ctx.moveTo(rx-w*0.14+i*w*0.056,ly-h*0.18);ctx.lineTo(rx-w*0.14+i*w*0.056,ly+h*0.18);ctx.stroke();}
+    for(let j=0;j<=5;j++){ctx.beginPath();ctx.moveTo(rx-w*0.14,ly-h*0.18+j*h*0.072);ctx.lineTo(rx+w*0.14,ly-h*0.18+j*h*0.072);ctx.stroke();}
+    dot(ctx,rx+6,ly-4,6,C.green);lab(ctx,'metric target ✓',rx-20,ly+30,C.green,10);
+    lab(ctx,'snap the semantic target onto real depth / point-cloud geometry → centimeters, not vibes',14,h-12,C.mut);
+  };
+
+  // F7 NAVIGATION — ground the goal, traverse a topological/semantic map, replan.
+  A.vaf_nav=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Follow language through an unseen building: map, remember, replan',14,16,C.dim);
+    box(ctx,w*0.05,h*0.24,w*0.3,26,'“go to the kitchen, find a mug”',C.cyan);
+    // topological graph
+    const nodes=[[w*0.15,h*0.6],[w*0.32,h*0.5],[w*0.5,h*0.66],[w*0.66,h*0.48],[w*0.82,h*0.62]];
+    const edges=[[0,1],[1,2],[2,3],[3,4],[1,3]];
+    ctx.strokeStyle=hexA(C.mut,0.5);edges.forEach(e=>{ctx.beginPath();ctx.moveTo(...nodes[e[0]]);ctx.lineTo(...nodes[e[1]]);ctx.stroke();});
+    // path progress
+    const path=[0,1,3,4];const prog=saw(t,4)*(path.length-1);
+    for(let k=0;k<path.length-1;k++){if(prog>k){const a=nodes[path[k]],b=nodes[path[k+1]],f=Math.min(1,prog-k);
+      ctx.strokeStyle=C.green;ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f);ctx.stroke();}}
+    nodes.forEach((n,i)=>{dot(ctx,n[0],n[1],i===0?6:i===4?7:5,i===4?C.amber:C.violet);});
+    lab(ctx,'start',nodes[0][0]-6,nodes[0][1]+16,C.mut,9);lab(ctx,'goal',nodes[4][0]-6,nodes[4][1]+16,C.amber,9);
+    lab(ctx,'a long-context VLM picks the next node on a map it builds; replans when confidence drops',14,h-12,C.mut);
+  };
+
+  // F8 DRIVING VLA — reason about the scene in language, score trajectories, output one with a rationale.
+  A.vaf_drive=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Driving VLA: reason about the scene in words, then output a trajectory',14,16,C.dim);
+    // scene
+    rrect(ctx,w*0.05,h*0.3,w*0.3,h*0.42,8,C.line,null);lab(ctx,'scene (cameras/LiDAR)',w*0.06,h*0.28,C.dim,9);
+    dot(ctx,w*0.14,h*0.6,6,C.cyan);lab(ctx,'ego',w*0.11,h*0.68,C.cyan,9);dot(ctx,w*0.26,h*0.44,6,C.coral);lab(ctx,'ped',w*0.24,h*0.4,C.coral,9);
+    // reason bubble
+    arrow(ctx,w*0.36,h*0.5,w*0.42,h*0.5,C.ink,1.4);box(ctx,w*0.43,h*0.36,w*0.24,h*0.28,'',C.violet,hexA(C.violet,0.05));lab(ctx,'reason',w*0.44,h*0.33,C.violet,9.5);
+    ['pedestrian may cross','slow, keep right'].forEach((s,i)=>lab(ctx,'• '+s,w*0.45,h*0.45+i*16,C.ink,9.5));
+    // candidate trajectories scored
+    arrow(ctx,w*0.68,h*0.5,w*0.74,h*0.5,C.ink,1.4);
+    [[-0.08,'risky','coral'],[0.06,'safe','green']].forEach((tr,i)=>{const on=tr[1]==='safe';ctx.strokeStyle=on?C.green:hexA(C.coral,0.7);ctx.lineWidth=on?2.2:1.3;
+      ctx.beginPath();ctx.moveTo(w*0.75,h*0.5);ctx.bezierCurveTo(w*0.85,h*0.5,w*0.9,h*0.5+tr[0]*h,w*0.96,h*0.5+tr[0]*h);ctx.stroke();
+      lab(ctx,tr[1],w*0.9,h*0.5+tr[0]*h-8,on?C.green:C.coral,9.5);});
+    lab(ctx,'trades the brittle detect→track→plan cascade for grounded, explainable decisions',14,h-12,C.mut);
+  };
+
   // ---- boot ----
   const running=new Map();
   function start(cv){if(running.has(cv))return;const anim=A[cv.dataset.vaanim];if(!anim)return;

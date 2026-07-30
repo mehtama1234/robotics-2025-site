@@ -61,6 +61,15 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
 .cat.rb{background:#F6E9E1;color:#9A4419;border:1px solid #E6CDBE}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#F1E6CE;color:var(--accent-deep);border:1px solid #E4D3AC}
 .fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#2A2312}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.gs{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#14100A;border:1px solid #37301F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;color:#33291a;margin:5px 0;line-height:1.5}.worked li b{color:var(--accent-deep)}
 .papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#33291a;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
@@ -170,10 +179,17 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip rb" href="#va1"><span class="cn">01</span>Generalist VLA policies</a><a class="fchip bb" href="#va2"><span class="cn">02</span>Action representation: tokens vs continuous heads</a><a class="fchip rb" href="#va3"><span class="cn">03</span>LLM task planning</a><a class="fchip rb" href="#va4"><span class="cn">04</span>Open-vocabulary manipulation</a><a class="fchip bb" href="#va5"><span class="cn">05</span>Embodied reasoning</a><a class="fchip bb" href="#va6"><span class="cn">06</span>Spatial</a><a class="fchip bb" href="#va7"><span class="cn">07</span>Language-conditioned navigation (VLN)</a><a class="fchip vb" href="#va8"><span class="cn">08</span>Driving VLAs</a><a class="fchip rb" href="#va9"><span class="cn">09</span>Affordance</a><a class="fchip rb" href="#va10"><span class="cn">10</span>Failure detection, recovery</a><a class="fchip bb" href="#va11"><span class="cn">11</span>Cross-embodiment</a><a class="fchip vb" href="#va12"><span class="cn">12</span>Efficient</a><a class="fchip vb" href="#va13"><span class="cn">13</span>Force-aware</a><a class="fchip vb" href="#va14"><span class="cn">14</span>Active perception</a><a class="fchip vb" href="#va15"><span class="cn">15</span>Robustness, safety</a></div>
   <div class="famgrid">
-<div class="fam" id="va1">
+<div class="fam rich" id="va1">
   <div class="famhd"><span class="famn">01</span><h3>Generalist VLA policies</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>The core recipe: adapt a pretrained VLM so one network maps image + instruction to action, across many tasks and even many robot bodies. Trained on giant cross-embodiment demonstration mixes, a single policy replaces a zoo of specialists.</p>
-<p>These are the open backbones the rest of the field builds on.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Training a separate policy per robot and per task doesn&rsquo;t scale &mdash; you&rsquo;d need a dataset and a model for every combination, forever.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>The core recipe: adapt a pretrained VLM so one network maps image + instruction to action, across many tasks and even many robot bodies. Trained on giant cross-embodiment demonstration mixes, a single policy replaces a zoo of specialists.</p>
+<p>These are the open backbones the rest of the field builds on.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_generalist" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Pool demonstrations</b> from many robots and many tasks into one giant mixed dataset.</li>
+<li><b>Encode every robot&rsquo;s observations and actions</b> into a shared format.</li>
+<li><b>Fine-tune one pretrained VLM</b> on the whole mix, with the instruction as conditioning.</li>
+<li><b>Deploy the single set of weights</b> on any of the robots.</li>
+<li><b>A new task is a new sentence;</b> a new robot needs only a little adaptation data.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>OpenVLA</b> &mdash; open-source 7B VLA on 970k demos with efficient adapter fine-tuning</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Octo</b> &mdash; transformer policy pretrained on 800k Open X-Embodiment trajectories; language or goal-image conditioned (the one we run in the diffusion explainer)</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Scaling Cross-Embodied Learning</b> &mdash; one network drives arms, quadrupeds, wheeled and aerial robots from 900k trajectories</span></li>
@@ -181,70 +197,119 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Harmon</b> &mdash; a VLM refines human-motion priors into text-aligned humanoid whole-body motion</span></li></ul>
 </div>
 
-<div class="fam" id="va2">
+<div class="fam rich" id="va2">
   <div class="famhd"><span class="famn">02</span><h3>Action representation: tokens vs continuous heads</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>A VLM emits text, so how do you get a continuous action out? Discretize it into tokens the model predicts like words, or attach a diffusion/flow head that denoises a smooth action. The choice sets a VLA&rsquo;s smoothness, expressiveness, and speed.</p>
-<p>Flow-matching heads are the current sweet spot &mdash; multimodal and fast enough for real control.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Robot action-labeled data is tiny, but the internet has endless unlabeled video of things happening. Can that video teach a policy to act?</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>A VLM emits text, so how do you get a continuous action out? Discretize it into tokens the model predicts like words, or attach a diffusion/flow head that denoises a smooth action. The choice sets a VLA&rsquo;s smoothness, expressiveness, and speed.</p>
+<p>Flow-matching heads are the current sweet spot &mdash; multimodal and fast enough for real control.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_action" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Take unlabeled video</b> (web or human).</li>
+<li><b>Extract how things move between frames</b> &mdash; e.g., optical flow &mdash; as a proxy for action.</li>
+<li><b>Learn a latent action space</b> that explains that motion, shared across video and robot data.</li>
+<li><b>Pretrain the VLA</b> to predict these latent actions from huge video.</li>
+<li><b>Fine-tune with a little real robot data</b> to map latent actions to motor commands.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>MM-ACT</b> &mdash; a unified discrete-token VLA with parallel decoding for text/image/action at 40Hz</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus</b> &mdash; learns a latent action space from video via optical flow to bridge web and robot data</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>WAM-Flow</b> &mdash; discrete flow matching generates trajectories in parallel, 3&times; faster than autoregressive</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Equivariant Diffusion Policy</b> &mdash; a continuous (diffusion) action head with built-in symmetry (see the diffusion-policies explainer)</span></li></ul>
 </div>
 
-<div class="fam" id="va3">
+<div class="fam rich" id="va3">
   <div class="famhd"><span class="famn">03</span><h3>LLM task planning &amp; decomposition</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Use a language model as the high-level planner: decompose a long instruction into steps, each calling a low-level skill, with the LLM reasoning over constraints and feasibility.</p>
-<p>This is the &lsquo;brain on top of skills&rsquo; pattern &mdash; language for the plan, learned or scripted controllers for the execution.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A single instruction like &lsquo;make coffee&rsquo; hides a dozen steps and constraints a flat policy can&rsquo;t juggle.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Use a language model as the high-level planner: decompose a long instruction into steps, each calling a low-level skill, with the LLM reasoning over constraints and feasibility.</p>
+<p>This is the &lsquo;brain on top of skills&rsquo; pattern &mdash; language for the plan, learned or scripted controllers for the execution.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_plan" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Give the instruction to an LLM planner.</b></li>
+<li><b>It decomposes the goal</b> into ordered sub-steps, each a call to a known skill.</li>
+<li><b>It checks each step against constraints</b> (reachable? object present? safe?).</li>
+<li><b>If a step is infeasible,</b> it re-plans or asks for the missing piece.</li>
+<li><b>Low-level controllers execute each skill;</b> the plan sequences them.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Trust the PRoC3S</b> &mdash; the LLM emits parameterized skill code; a constraint solver makes it kinematically feasible</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>AutoGPT+P</b> &mdash; LLM affordance mapping + a symbolic planner handles missing objects and incomplete info</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Language-Augmented Symbolic Planner</b> &mdash; LLM error diagnosis feeds a symbolic planner that grows its domain knowledge</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>INTERPRET</b> &mdash; learns PDDL predicates from language feedback to generalize task planning</span></li></ul>
 </div>
 
-<div class="fam" id="va4">
+<div class="fam rich" id="va4">
   <div class="famhd"><span class="famn">04</span><h3>Open-vocabulary manipulation</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Grasp and manipulate objects the robot was never trained on, named in open language, by having a VLM reason about parts, affordances, and how to point at them.</p>
-<p>The trick is turning &lsquo;pick up the striped mug&rsquo; into a spatial target without any task-specific training.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You can&rsquo;t pre-train a grasp detector for every object in the world &mdash; and users will ask for things by any name.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Grasp and manipulate objects the robot was never trained on, named in open language, by having a VLM reason about parts, affordances, and how to point at them.</p>
+<p>The trick is turning &lsquo;pick up the striped mug&rsquo; into a spatial target without any task-specific training.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_openvocab" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Take the open-language request</b> (&ldquo;the striped mug&rdquo;).</li>
+<li><b>Ask the VLM to locate it</b> in the image &mdash; often by drawing a mark or point on it.</li>
+<li><b>Turn that visual mark into a 3D grasp target.</b></li>
+<li><b>Grasp there,</b> with no class-specific training.</li>
+<li><b>The same pipeline handles</b> a tool, a fruit, or a cable it never saw.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>MOKA</b> &mdash; mark-based visual prompting turns instructions into VQA affordance reasoning for zero-shot tool use</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Manipulate-Anything</b> &mdash; a VLM generates trajectories with no privileged state; cloning from them beats human data</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Open-World Grasping with Large VLMs</b> &mdash; part-level VLM reasoning selects grasps under occlusion, no task data</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RAM</b> &mdash; a retrieval affordance bank transfers zero-shot to unseen object categories</span></li></ul>
 </div>
 
-<div class="fam" id="va5">
+<div class="fam rich" id="va5">
   <div class="famhd"><span class="famn">05</span><h3>Embodied reasoning &amp; chain-of-thought</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Make the VLA think before it moves: emit an explicit chain (or tree) of thought &mdash; steps, predicted future frames, candidate trajectories &mdash; and only then act. Reasoning in language or latent space beats jumping straight to control.</p>
-<p>It improves long-horizon success and, crucially, makes the decision auditable.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Jumping straight from a hard instruction to an action is brittle &mdash; the model commits to the first idea, right or wrong.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Make the VLA think before it moves: emit an explicit chain (or tree) of thought &mdash; steps, predicted future frames, candidate trajectories &mdash; and only then act. Reasoning in language or latent space beats jumping straight to control.</p>
+<p>It improves long-horizon success and, crucially, makes the decision auditable.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_cot" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Before acting, have the model write out its reasoning</b> &mdash; the steps it will take.</li>
+<li><b>For risky decisions, generate several candidate plans</b> (a tree of thought).</li>
+<li><b>Score each candidate</b> for safety, progress, feasibility.</li>
+<li><b>Pick the best and act on it.</b></li>
+<li><b>The written reasoning is auditable,</b> so you can see why it chose that.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>TRM-VLA</b> &mdash; keyframe-triggered hierarchical CoT + memory: &minus;77.6% tokens, +28.6% success on LIBERO-90</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>OctoNav</b> &mdash; Think-Before-Action navigation trained Action-SFT &rarr; TBA-SFT &rarr; nav-GRPO &rarr; online RL</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>HybridDriveVLA</b> &mdash; visual chain-of-thought predicts future frames; tree-of-thought scores trajectories &mdash; 0.17% collisions</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ACoT-VLA</b> &mdash; action chain-of-thought reasons through task steps before predicting the action</span></li></ul>
 </div>
 
-<div class="fam" id="va6">
+<div class="fam rich" id="va6">
   <div class="famhd"><span class="famn">06</span><h3>Spatial &amp; 3D grounding</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Fix the VLM&rsquo;s biggest weakness &mdash; geometry. Augment the backbone with explicit 3D (BEV, occupancy, point clouds, scene graphs) so a loose instruction is anchored to real metric space and precise manipulation becomes possible.</p>
-<p>Without this, VLAs name the mug correctly but reach a few centimeters wrong.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A VLM confidently says &lsquo;that&rsquo;s the mug&rsquo; but is off by centimeters on where it is &mdash; and centimeters are the whole game for a gripper.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Fix the VLM&rsquo;s biggest weakness &mdash; geometry. Augment the backbone with explicit 3D (BEV, occupancy, point clouds, scene graphs) so a loose instruction is anchored to real metric space and precise manipulation becomes possible.</p>
+<p>Without this, VLAs name the mug correctly but reach a few centimeters wrong.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_spatial" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Let the VLM identify the target</b> semantically from the image + words.</li>
+<li><b>Fuse an explicit 3D representation</b> &mdash; depth, point cloud, BEV, or occupancy.</li>
+<li><b>Snap the semantic target onto the real 3D geometry</b> to get metric coordinates.</li>
+<li><b>Plan the action against those coordinates,</b> not the fuzzy 2D guess.</li>
+<li><b>Now &lsquo;put it by the sink&rsquo; lands</b> where the sink actually is.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SpatialBot</b> &mdash; gives VLMs precise spatial understanding via 3D scene graphs, fixing 3D localization</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>VLM-Grounder</b> &mdash; a VLM agent does zero-shot 3D visual grounding, coarse-to-fine</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ActiveVLA</b> &mdash; coarse-to-fine active perception + multi-view projection &mdash; 91.8% RLBench</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReKep</b> &mdash; auto-generates relational keypoint constraints from language + RGB-D for real-time optimization</span></li></ul>
 </div>
 
-<div class="fam" id="va7">
+<div class="fam rich" id="va7">
   <div class="famhd"><span class="famn">07</span><h3>Language-conditioned navigation (VLN)</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Follow &lsquo;go to the kitchen and find a mug&rsquo; through an unseen building: ground the instruction, build semantic memory, and replan as the world reveals itself.</p>
-<p>Long-context VLMs over topological maps, and policies auto-labeled from in-the-wild video, are pushing open-world navigation.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>&lsquo;Go to the kitchen and find a mug&rsquo; means traversing an unseen building, remembering what you&rsquo;ve seen, and replanning as it unfolds.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Follow &lsquo;go to the kitchen and find a mug&rsquo; through an unseen building: ground the instruction, build semantic memory, and replan as the world reveals itself.</p>
+<p>Long-context VLMs over topological maps, and policies auto-labeled from in-the-wild video, are pushing open-world navigation.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_nav" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Ground the instruction into a goal</b> (object, place, or image).</li>
+<li><b>Build a topological / semantic map as you explore,</b> remembering landmarks.</li>
+<li><b>A long-context VLM picks the next move</b> on that map.</li>
+<li><b>When confidence drops or the map is stale,</b> replan.</li>
+<li><b>Reach the goal,</b> updating memory so next time is faster.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>LeLaN</b> &mdash; auto-labels 50+ hours of in-the-wild video with VLMs for zero-shot object navigation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>GOAT: Go To Any Thing</b> &mdash; a continually-augmented semantic memory hits 83% over 675 goals across 9 homes</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Mobility VLA</b> &mdash; long-context VLM planning over topological graphs for open-vocabulary navigation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>OctoNav</b> &mdash; one generalist policy for ObjNav, PointNav, ImgNav and VLN at once</span></li></ul>
 </div>
 
-<div class="fam" id="va8">
+<div class="fam rich" id="va8">
   <div class="famhd"><span class="famn">08</span><h3>Driving VLAs</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Bring VLA reasoning to autonomous driving: the model reasons in language about the scene, the risks, and the plan, then outputs a trajectory &mdash; trading the brittle detect-track-plan cascade for grounded, explainable decisions.</p>
-<p>Spatial grounding and future-frame reasoning are what make it safe enough to consider.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>The old detect&rarr;track&rarr;plan cascade loses information at every stage, and a pure black-box net can&rsquo;t explain why it braked.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Bring VLA reasoning to autonomous driving: the model reasons in language about the scene, the risks, and the plan, then outputs a trajectory &mdash; trading the brittle detect-track-plan cascade for grounded, explainable decisions.</p>
+<p>Spatial grounding and future-frame reasoning are what make it safe enough to consider.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_drive" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Feed the driving scene</b> (cameras, maybe LiDAR) to the VLA.</li>
+<li><b>It reasons in language</b> about what&rsquo;s happening and what the risks are.</li>
+<li><b>It predicts how the scene will evolve</b> (future frames or occupancy).</li>
+<li><b>It scores candidate trajectories</b> for safety, progress, comfort.</li>
+<li><b>It outputs a trajectory</b> &mdash; with a readable rationale you can audit.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DrivePI</b> &mdash; a 0.5B 4D spatial MLLM with LiDAR beats 7B VLAs on nuScenes-QA and occupancy</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Percept-WAM</b> &mdash; unifies 2D and 3D (BEV) world tokens in the VLM backbone for robust end-to-end driving</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>HybridDriveVLA</b> &mdash; visual-CoT + tree-of-thought trajectory evaluation for safe planning</span></li>
