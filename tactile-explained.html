@@ -29,6 +29,7 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
 .ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
 .ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;max-width:360px;margin:0 auto;height:auto;border-radius:8px;background:#0C1218}
 .ranfig figcaption{font-size:13px;color:#2E2029;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
 .math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
 .math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
@@ -151,7 +152,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Impedance / force control commands a target wrench and lets motion comply: F = K(x* &minus; x) with a force target, instead of tracking x* rigidly.</p>
 <p>Contact-rich control regulates force through mode switches (stick/slip/separate), which requires measuring force &mdash; the sensor closes the loop.</p></div></details>
 </section>
-<section class="fp"><figure class="ranfig"><div class="ranbadge" style="background:var(--graphite)">&#9679; honest note</div><figcaption style="margin-top:0">Unlike our other explainers, this one has <b>no &lsquo;we ran it&rsquo; demo</b>. Touch needs physical tactile hardware &mdash; a GelSight-class sensor or a force/torque wrist &mdash; that a headless GPU box doesn&rsquo;t have, so we won&rsquo;t fake one. The mechanism diagrams above are real, live JavaScript; the families below are real papers. A hardware run is the honest thing to add later.</figcaption></figure></section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge">&#9679; we ran it &middot; simulation</div><img src="assets/ta/gelsight_sim.gif" alt="A contact-mechanics simulation of a GelSight-style tactile sensor pressed by a hex nut, showing marker flow and a contact map"><figcaption>Touch, in simulation: we have no physical sensor on a headless box, so rather than fake a reading we <b>simulated the contact mechanics</b> &mdash; an elastic gel with a printed marker grid, pressed by a hard hex nut. The code computes the gel&rsquo;s surface deformation and the resulting <b>marker flow</b> and <b>contact map</b>, exactly the dense image a GelSight-style sensor&rsquo;s internal camera would see. This is Part&nbsp;I&rsquo;s &lsquo;a camera watching a soft skin deform&rsquo; made concrete &mdash; a physics simulation, honestly labelled, not a physical sensor. Our own run.</figcaption></figure></section>
 
 <div class="part">
   <div class="pl">how it compares</div><h2>Three ways a robot feels</h2>
@@ -428,6 +429,6 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 
 </div>
 <div class="wrap"><nav class="related"><b>related explainers</b> <a href="manipulation-explained.html">Manipulation</a> &middot; <a href="hardware-explained.html">Hardware</a> &middot; <a href="medical-explained.html">Medical &amp; Surgical</a> &middot; <a href="diffusion-policies-explained.html">Diffusion Policies</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
-<footer><div class="wrap">Tactile &amp; Force Sensing explainer &middot; mechanism diagrams are live JavaScript (assets/ta-anim.js) &middot; no hardware demo (honest note) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the sense of touch under the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<footer><div class="wrap">Tactile &amp; Force Sensing explainer &middot; mechanism diagrams are live JavaScript (assets/ta-anim.js) &middot; the GelSight run is a contact-mechanics simulation (ours) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the sense of touch under the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/ta-anim.js"></script>
 </body></html>
