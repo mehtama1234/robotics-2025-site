@@ -1,0 +1,336 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Locomotion &amp; Whole-Body Control, from first principles</title>
+<style>
+:root{--ink:#170F16;--paper:#F4EFF3;--panel:#FCFAFC;--tint:#EBDFEA;--line:#DBCBDA;
+ --graphite:#5A4E59;--g2:#8C7C8B;--accent:#9B4A8A;--accent-deep:#6E3363;--accent-lite:#C98ABF;
+ --robo:#B4531F;--cvpr:#2F6F8B;--both:#9B4A8A;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#140B13;color:#F2E7F0;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#FAF2F8}
+header p{color:#C3B0C0;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#A594A3}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#332B32;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#140B13;border:1px solid #33223140;border-radius:12px;padding:14px 14px 10px}
+.instrument{border:1px solid #322231}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#A895A6;margin-top:8px}
+.essay p{font-size:15.5px;color:#241D23;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.note{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px;font-size:13.5px;color:#332B32;margin:14px 0 2px}.note b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#2B242A;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#332B32;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#2B242A}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:700px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#2B242A}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#EBDCEA}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#241D23;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#F6E9E1;color:#9A4419;border:1px solid #E6CDBE}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#EBDCEA;color:var(--accent-deep);border:1px solid #D8C2D6}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#241D23}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#2B242A;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#191319}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#2B242A}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Locomotion &amp; whole-body &middot; first principles &middot; robotics + vision</div>
+  <h1>Locomotion &amp; Whole-Body Control</h1>
+  <p>How a machine with many joints keeps its balance and moves &mdash; walking, running, recovering from a shove, doing a task while staying upright. Why walking is hard, why learning took over, and every way the field makes bodies move, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">learn it</a> &middot; <a href="#fp3">teach it</a> &middot; <a href="#fp4">stay up</a> &middot; <a href="#fp5">whole body</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why walking is hard, how RL discovers gaits, the privileged-teacher trick, balance-as-stepping, and whole-body coordination. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">~2018</span><b>sim-to-real RL</b><p>RL + domain randomization walks a real quadruped &mdash; learning enters legged control.</p></div><div class="ln"><span class="lyr">2020&ndash;22</span><b>teacher-student</b><p>privileged teachers distilled into onboard students conquer blind and perceptive rough-terrain walking.</p></div><div class="ln"><span class="lyr">2022&ndash;23</span><b>parkour &amp; agility</b><p>extreme terrain, jumping, high-speed maneuvers &mdash; RL pushes past what hand-tuning could reach.</p></div><div class="ln"><span class="lyr">2024</span><b>the humanoid wave</b><p>Berkeley Humanoid, HOVER, expressive whole-body control, and learning gaits from human mocap.</p></div><div class="ln"><span class="lyr">2025&ndash;</span><b>loco-manipulation &amp; language</b><p>whole-body manipulation, VLM-guided behavior, diffusion gaits &mdash; the families below.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>Why walking is hard</h2>
+  <figure class="instrument"><canvas data-loanim="lo_problem" height="300"></canvas>
+    <figcaption>Three difficulties at once: many joints to coordinate, contact that turns the physics discontinuous the instant a foot lands, and balance that must survive a shove. Hand-written control chokes on the contact cliff — which is why learning took over.</figcaption></figure>
+  <div class="essay"><p>A legged robot has a dozen to fifty joints, and in the air they move through smooth, predictable physics you can plan through. The instant a foot touches down, that smoothness falls off a cliff: contact starts and stops abruptly, forces spike, and a millimetre of error flips a stable step into a slip.</p>
+<p>On top of that, the robot must <b>balance</b> &mdash; keep its center of mass over its feet &mdash; while the ground varies and things shove it. Coordinating many joints, through discontinuous contact, under disturbance, all at once, is what makes walking hard, and it&rsquo;s exactly where hand-tuned controllers struggle and learning shines.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>State = joint angles + velocities (12&ndash;50 dimensions) plus base pose; the dynamics are <em>hybrid</em> &mdash; they switch mode every time a foot makes or breaks contact.</p>
+<p>Contact makes the dynamics non-smooth, so gradient-based control and smooth MPC struggle across mode boundaries.</p>
+<p>Balance constraint: keep the (ground-projected) center of mass / ZMP inside the support polygon, under external disturbance.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; learn it</div>
+  <h2>RL discovers the gait</h2>
+  <figure class="instrument"><canvas data-loanim="lo_rl" height="300"></canvas>
+    <figcaption>Don't hand-design a gait. Give a reward — go this fast, stay upright, use little energy — and let reinforcement learning try millions of times in simulation. Walk, trot, gallop, and the transitions between them emerge on their own.</figcaption></figure>
+  <div class="essay"><p>For decades, gaits were hand-crafted: engineers specified footfall patterns and timing. The learned approach throws that away. Write down a <b>reward</b> &mdash; track this velocity, stay upright, spend little energy, don&rsquo;t fall &mdash; and let RL try billions of steps in a massively parallel simulator.</p>
+<p>What comes out is not one scripted gait but a whole repertoire: the policy discovers walking, trotting, and galloping, picks the energy-optimal one for each speed, and transitions between them smoothly &mdash; plus recovery moves no one designed. Reward shapes the behavior; the gait emerges.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Maximize E[ &Sigma;&#8348; &gamma;&#7511; r(s&#8348;, a&#8348;) ], with r &asymp; velocity-tracking &minus; energy &minus; orientation-error &minus; fall penalty.</p>
+<p>Trained with PPO across thousands of parallel simulated robots; the gait and its transitions are emergent, not encoded.</p>
+<p>Reward shaping + curriculum (harder terrain over time) do the work a hand-tuned controller&rsquo;s gait scheduler used to.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; teach it</div>
+  <h2>A privileged teacher, an onboard student</h2>
+  <figure class="instrument"><canvas data-loanim="lo_teacher" height="300"></canvas>
+    <figcaption>In simulation you know everything — the terrain height, the exact friction, the coming push. On the real robot you don't. So train a teacher with those privileged facts, then distill it into a student that acts on only what the robot can actually sense.</figcaption></figure>
+  <div class="essay"><p>There&rsquo;s a trick that makes learned locomotion work. In simulation the trainer has <em>privileged</em> information &mdash; the exact terrain height under each foot, the friction, the mass, even the disturbance about to hit. A policy with those facts learns fast and well.</p>
+<p>But the real robot can&rsquo;t sense them. So you train the privileged <b>teacher</b> first, then <b>distill</b> it into a <b>student</b> that sees only onboard signals &mdash; joint sensors, maybe a camera &mdash; and learns to reproduce the teacher&rsquo;s behavior blind. Learn with cheats, deploy without them.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Teacher &pi;_T(a | s, s_priv) trains with privileged state s_priv (terrain, friction, mass, disturbance).</p>
+<p>Student &pi;_S(a | o_onboard, history) is trained to match the teacher (DAgger / behavior cloning) using only deployable observations.</p>
+<p>The history window lets the student <em>infer</em> what the teacher was told &mdash; an implicit system identification.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; stay up</div>
+  <h2>Balance is stepping</h2>
+  <figure class="instrument"><canvas data-loanim="lo_recover" height="300"></canvas>
+    <figcaption>Balance isn't standing still — it's stepping. When a push tips the center of mass, the controller computes where to put the next foot (the capture point) so the robot rocks back over its support instead of toppling.</figcaption></figure>
+  <div class="essay"><p>The intuition most people have &mdash; that balance means holding still &mdash; is wrong for a legged robot. Balance is <b>active stepping</b>. When a shove sends the center of mass tipping forward, standing rigid guarantees a fall.</p>
+<p>Instead the controller predicts the <b>capture point</b> &mdash; roughly where the foot must land to arrest the fall &mdash; and steps there, so momentum carries the body back over its feet. Recovery from a push, catching a stumble, walking downhill: all of it is choosing the next foothold that keeps the center of mass over support.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Linear inverted pendulum: capture point &xi; = x + &#7819;/&omega;, with &omega; = &radic;(g/h).</p>
+<p>Step so &xi; lands inside the next support region &rarr; the center of mass decelerates back over the feet (DCM / capture-point control).</p>
+<p>Hierarchical MPC co-optimizes stepping + upper-body to maximize the recoverable disturbance.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; whole body</div>
+  <h2>Whole-body: legs balance while arms work</h2>
+  <figure class="instrument"><canvas data-loanim="lo_wholebody" height="300"></canvas>
+    <figcaption>A humanoid can't move its arms without disturbing its balance — reaching shifts the center of mass. Whole-body control coordinates everything at once: the arms do the task, the legs constantly counter to keep the body over its feet.</figcaption></figure>
+  <div class="essay"><p>The hardest form is a humanoid doing a task while staying upright. Every arm motion shifts the center of mass; reach too far and the robot tips. You cannot control the upper and lower body separately &mdash; they fight each other.</p>
+<p><b>Whole-body control</b> solves them together: the arms pursue the task (reach, carry, push) while the legs continuously adjust to keep the center of mass over the support polygon. When walking and manipulating combine &mdash; <em>loco-manipulation</em> &mdash; the coupling is the whole problem, and coordinating it is the frontier of humanoid robotics.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Whole-body QP: min &Vert; task &minus; J&thinsp;q&#776; &Vert;&sup2; subject to the full-body dynamics, contact constraints, and torque limits.</p>
+<p>A reaching task moves the CoM; the balance constraint (ZMP in support) forces the legs to compensate in the same solve.</p>
+<p>Loco-manipulation couples a moving base with the manipulation task &mdash; solved jointly, not in sequence.</p></div></details>
+</section>
+<section class="fp">
+  <div class="note"><b>An honest note on demos.</b> The five diagrams above are live JavaScript, but &mdash; unlike our driving and splatting pages &mdash; we haven&rsquo;t run a locomotion policy on GPU for this one. A learned quadruped or humanoid gait in a randomized sim is the natural next &lsquo;we ran it&rsquo; to add.</div>
+</section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three ways to make a body move</h2>
+  <p class="intro">Model-based control, reinforcement learning, and learning-from-humans each answer the walking problem differently &mdash; and the best systems increasingly blend them.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it decides</th><th>Where the gait comes from</th><th>Strength</th><th>Best when</th></tr></thead><tbody><tr><th class="rn">Model-based (MPC/WBC)</th><td>solve an optimization on a physics model each tick</td><td>you specify contacts & schedule</td><td>precise, provable, real-time force control</td><td>dynamics are known; safety-critical</td></tr><tr class="hi"><th class="rn">Reinforcement learning</th><td>learn a policy from reward in randomized sim</td><td>emerges from the reward</td><td>robust, terrain-general, emergent recovery</td><td>messy terrain, contact, disturbance</td></tr><tr><th class="rn">Learn from humans / diffusion</th><td>imitate mocap or model the behavior distribution</td><td>inherited from human motion</td><td>expressive, multimodal, natural</td><td>humanoids, expressive whole-body motion</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons learning reshaped legged control.</p>
+  <div class="bens"><div class="ben"><h4>Gaits emerge, not scripted</h4><p>RL discovers walking, trotting, galloping and the energy-optimal transitions between them from a reward &mdash; no hand-tuned footfall schedules.</p></div>
+<div class="ben"><h4>Generalizes across terrain</h4><p>A learned policy adapts online to slope, friction, and obstacles it never saw, where a hand-built controller needs re-tuning per surface.</p></div>
+<div class="ben"><h4>Emergent robustness</h4><p>Learning finds recovery and disturbance-rejection behaviors &mdash; catching a stumble, absorbing a shove &mdash; that no one explicitly designed.</p></div>
+<div class="ben"><h4>Sim-to-real makes it real</h4><p>Massively parallel randomized simulation + a privileged teacher lets a policy trained entirely in sim walk out onto real snow, stairs, and rubble.</p></div>
+<div class="ben"><h4>One policy, many skills</h4><p>A single whole-body controller can carry navigation, loco-manipulation, and expressive motion, switching modes without retraining.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way the field makes bodies move</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026, the human-motion side), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip rb" href="#lo1"><span class="cn">01</span>RL locomotion: learn gaits from reward</a><a class="fchip rb" href="#lo2"><span class="cn">02</span>Model-based control</a><a class="fchip rb" href="#lo3"><span class="cn">03</span>Sim-to-real for legged robots</a><a class="fchip rb" href="#lo4"><span class="cn">04</span>Terrain, rough ground</a><a class="fchip rb" href="#lo5"><span class="cn">05</span>Humanoid whole-body control</a><a class="fchip rb" href="#lo6"><span class="cn">06</span>Loco-manipulation</a><a class="fchip rb" href="#lo7"><span class="cn">07</span>Learning from demonstration</a><a class="fchip rb" href="#lo8"><span class="cn">08</span>Balance, recovery</a><a class="fchip rb" href="#lo9"><span class="cn">09</span>Diffusion / generative locomotion policies</a><a class="fchip rb" href="#lo10"><span class="cn">10</span>Whole-body from language</a><a class="fchip vb" href="#lo11"><span class="cn">11</span>Physics-based motion generation</a><a class="fchip vb" href="#lo12"><span class="cn">12</span>Humanoid imitation</a><a class="fchip vb" href="#lo13"><span class="cn">13</span>Physically-plausible motion synthesis</a><a class="fchip vb" href="#lo14"><span class="cn">14</span>Hand-object</a><a class="fchip vb" href="#lo15"><span class="cn">15</span>Text/music-to-motion</a></div>
+  <div class="famgrid">
+<div class="fam" id="lo1">
+  <div class="famhd"><span class="famn">01</span><h3>RL locomotion: learn gaits from reward</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The dominant paradigm: specify a reward, train in massively parallel randomized simulation, and let the gait &mdash; and its transitions and recoveries &mdash; emerge. RL beats hand-tuning by automating what a gait scheduler used to do by hand.</p>
+<p>Recent work discovers whole gait libraries and energy-optimal switching in a single policy.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AllGaits</b> &mdash; one RL policy learns all 9 biological gaits + instant energy-optimal transitions</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Agile But Safe</b> &mdash; a learned reach-avoid value net gives provable safety at 2.5 m/s in clutter</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Energy Regularization for Gait Transition</b> &mdash; real-time gait selection, 30% lower energy, no scripted sequence</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Think on Your Feet</b> &mdash; WGAN-div + hybrid model for seamless human-like humanoid gait switching</span></li></ul>
+</div>
+
+<div class="fam" id="lo2">
+  <div class="famhd"><span class="famn">02</span><h3>Model-based control &amp; whole-body optimization</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The classical rigor the field keeps: solve a real-time optimization on a physics model for whole-body forces under contact and torque limits &mdash; exact contact reasoning and provable behavior, no reward engineering.</p>
+<p>The frontier is handling non-smooth contact fast enough, and fusing it with learned components.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time WBC with MPPI</b> &mdash; first sampling-based whole-body MPC on real ANYmal, no task-specific reward</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reduced-Order-Guided Contact-Implicit MPC</b> &mdash; HLIP-guided CI-MPC for a 24-DOF humanoid on rough terrain</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic Tube MPC</b> &mdash; learned uncertainty tubes replace worst-case bounds for narrow-corridor agility</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Optimal Torque Distribution on Slippery Terrain</b> &mdash; real-time slip-aware torque allocation, no pre-trained model</span></li></ul>
+</div>
+
+<div class="fam" id="lo3">
+  <div class="famhd"><span class="famn">03</span><h3>Sim-to-real for legged robots</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Train entirely in randomized simulation and deploy zero-shot on hardware &mdash; the enabler behind nearly every learned locomotion result &mdash; via domain randomization, privileged learning, and online adaptation.</p>
+<p>See the <a href='sim-to-real-explained.html'>data-engine explainer</a> for the general recipe; here it&rsquo;s tuned for contact and balance.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Berkeley Humanoid</b> &mdash; a low-cost humanoid achieves outdoor agility + perturbation recovery from RL alone</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Denoising World Model Learning (DWL)</b> &mdash; first humanoid deployment on snow / stairs / inclines, zero-shot</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RL2AC</b> &mdash; 1000Hz adaptive control corrects disturbances, terrain, and payload live</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DreamFLEX</b> &mdash; joint fault estimation + RL keeps walking under a locked or overheated joint</span></li></ul>
+</div>
+
+<div class="fam" id="lo4">
+  <div class="famhd"><span class="famn">04</span><h3>Terrain, rough ground &amp; parkour</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Generalize across surfaces &mdash; stairs, gaps, mud, sand &mdash; and pull off agile maneuvers like jumping and parkour, using perception (elevation, semantics) or commonsense reasoning to read traversability.</p>
+<p>The recurring move is a curriculum of ever-harder terrain plus a perceptive internal model.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Agile Continuous Jumping in Discontinuous Terrains</b> &mdash; first continuous quadruped jumping across 14-step stairs + sparse stones</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Watch Your STEPP</b> &mdash; self-supervised DINO features estimate semantic traversability, no labels</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Commonsense Reasoning for Legged Adaptation with VLMs</b> &mdash; an in-context VLM planner clears obstacle courses zero-shot</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Humanoid Locomotion with a Perceptive Internal Model</b> &mdash; elevation-map perception enables robust stair climbing</span></li></ul>
+</div>
+
+<div class="fam" id="lo5">
+  <div class="famhd"><span class="famn">05</span><h3>Humanoid whole-body control</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Coordinate a high-DOF humanoid&rsquo;s balance, legs, and expressive upper body in one policy &mdash; unifying walking, manipulation, and human-like motion where separate controllers would fight.</p>
+<p>Distillation into a single versatile controller is the emerging pattern.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>HOVER</b> &mdash; one distilled neural whole-body controller across navigation, loco-manip, tabletop</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Expressive Whole-Body Control</b> &mdash; upper-body imitation + lower-body RL mimics dance and handshakes, sim-to-real</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Design and Control of a Bipedal Robotic Character</b> &mdash; artist-directed expressive motion blended with RL for entertainment robotics</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Angular DCM</b> &mdash; first spatial divergent-component-of-motion capturing rotational balance</span></li></ul>
+</div>
+
+<div class="fam" id="lo6">
+  <div class="famhd"><span class="famn">06</span><h3>Loco-manipulation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Walk and manipulate at the same time: decouple the task-centric end-effector motion from the robot-centric whole-body dynamics, so a mobile base extends reach while RL learns the coordination.</p>
+<p>The coupling between base motion and the manipulation task is the crux.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>UMI-on-Legs</b> &mdash; hand-held UMI demos + a whole-body controller → 70%+ mobile manipulation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Mobile ALOHA</b> &mdash; low-cost whole-body teleop learns cooking, doors, elevators from 50 demos</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Agent Loco-Manipulation for Quadrupedal Pushing</b> &mdash; hierarchical multi-agent RL, +36% success on long-horizon pushing</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>BiFold</b> &mdash; language-conditioned bimanual cloth folding, state-of-the-art</span></li></ul>
+</div>
+
+<div class="fam" id="lo7">
+  <div class="famhd"><span class="famn">07</span><h3>Learning from demonstration &amp; motion priors</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Leverage abundant human and mocap data to seed or regularize controllers &mdash; retargeting motion to the robot, using adversarial motion priors for naturalness, or few real demos plus hierarchy.</p>
+<p>The prize is human-like motion and sample efficiency; the gap is embodiment.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>HumanPlus</b> &mdash; 40h of human mocap → humanoid shadowing + imitation, 60&ndash;100% real success</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Expressive Whole-Body Control</b> &mdash; mocap upper-body imitation blended with RL lower-body</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SkillMimicGen</b> &mdash; auto-segments + stitches human demos into 24k synthetic from 60 examples</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Imitation with Limited Actions via Diffusion + Koopman</b> &mdash; few action-labeled demos via latent Koopman actions</span></li></ul>
+</div>
+
+<div class="fam" id="lo8">
+  <div class="famhd"><span class="famn">08</span><h3>Balance, recovery &amp; fall avoidance</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Survive large disturbances &mdash; pushes, terrain drops, faults &mdash; with learned backup policies, capture-point stepping, and hierarchical MPC that co-optimizes stepping with upper-body motion.</p>
+<p>The goal is graceful recovery instead of catastrophic failure.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>FRASA</b> &mdash; one DRL agent for fall recovery + stand-up, beats the RoboCup 2023 champion</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adapting Gait Frequency for Push-Recovery via Hierarchical MPC</b> &mdash; +131% recoverable impulse by co-optimizing stepping + arms</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Agile But Safe</b> &mdash; dual agile+recovery policies with a learned reach-avoid safety net</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Safety-Critical Locomotion in Infeasible Paths</b> &mdash; a hierarchy of safety conditions resolves conflicting constraints</span></li></ul>
+</div>
+
+<div class="fam" id="lo9">
+  <div class="famhd"><span class="famn">09</span><h3>Diffusion / generative locomotion policies</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Bring diffusion policies to legged control: model the multimodal distribution of valid gaits and recoveries from offline data, with the expressiveness and long-horizon sequencing regression lacks.</p>
+<p>The challenge is squeezing sampling into a fast locomotion control loop (see the <a href='diffusion-policies-explained.html'>diffusion-policies explainer</a>).</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DiffuseLoco</b> &mdash; first real-time diffusion legged control from offline data, beats RL/BC on stability</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Preference-Aligned Diffusion Planner for Quadrupeds</b> &mdash; offline diffusion + preference refinement → zero-shot sim-to-real gaits</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Transferable Latent-to-Latent Locomotion</b> &mdash; a latent diffusion recovery module adapts one core across robots</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ProDapt</b> &mdash; long-term contact-memory diffusion completes tasks from proprioception only</span></li></ul>
+</div>
+
+<div class="fam" id="lo10">
+  <div class="famhd"><span class="famn">10</span><h3>Whole-body from language</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Command a body in words: a VLM or LLM turns an instruction into whole-body behavior, grounds affordances, or plans long-horizon tasks &mdash; zero-shot, without task-specific training.</p>
+<p>This is where locomotion meets the VLA wave (see the <a href='vla-explained.html'>VLA explainer</a>).</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Harmon</b> &mdash; a VLM refines human-motion priors into text-aligned humanoid whole-body motion</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Commonsense Reasoning for Legged Adaptation with VLMs</b> &mdash; in-context VLM planning clears novel obstacle courses</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Language-Guided Preference Learning for Quadruped Behaviors</b> &mdash; 4 human queries yield expressive behaviors from LLM priors</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RT-H</b> &mdash; a language-motion hierarchy predicts primitives and accepts human corrections</span></li></ul>
+</div>
+
+<div class="fam" id="lo11">
+  <div class="famhd"><span class="famn">11</span><h3>Physics-based motion generation</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>The vision side: generate human/humanoid motion that&rsquo;s physically plausible by embedding a simulator or physics loss &mdash; so motion respects gravity, contact, and momentum instead of floating.</p>
+<p>Raw kinematic generation foot-skates and floats; physics is what grounds it.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAMotion</b> &mdash; uses object acceleration to infer contact, applies a physics-aware loss in diffusion</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GRIP</b> &mdash; LSTM kinematics + a PPO physics controller + adversarial motion prior in Isaac Gym</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Recovering Physically Plausible HOI from Monocular Video</b> &mdash; RL physics simulation refines noisy monocular interactions</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysHO</b> &mdash; physics-constrained dynamic 3D-Gaussian human + object from one video</span></li></ul>
+</div>
+
+<div class="fam" id="lo12">
+  <div class="famhd"><span class="famn">12</span><h3>Humanoid imitation &amp; mocap retargeting</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Convert human motion capture to a humanoid&rsquo;s different body and learn control that tracks it &mdash; preserving contacts (a handshake must still touch) across the embodiment gap.</p>
+<p>Contact-preserving retargeting is the recurring technical key.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Beyond Mimicry</b> &mdash; contact-preserving retargeting (pairwise-distance consistency) + hierarchical diffusion policy on a real G1</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Gallant</b> &mdash; dual-LiDAR voxel grids → PPO humanoid locomotion, 90%+ sim-to-real on 8 terrains</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RAM: Recover Any 3D Human Motion in-the-Wild</b> &mdash; motion-aware tracking + memory attention for stable reconstruction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Multi-level Causal LLM Text-to-Motion</b> &mdash; causal motion tokenizer matched to LLM causality for aligned generation</span></li></ul>
+</div>
+
+<div class="fam" id="lo13">
+  <div class="famhd"><span class="famn">13</span><h3>Physically-plausible motion synthesis</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Generate full-body motion that avoids foot-skating, floating, and interpenetration &mdash; even without a full simulator &mdash; via part-aware tokenizers, contact-aware losses, and physical-feasibility filtering.</p>
+<p>The aim is motion that looks and behaves right, at scale, from text.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>OpenT2M</b> &mdash; part-decomposed tokenizer + million-scale data with physical-feasibility validation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MotionHiFlow</b> &mdash; hierarchical flow matching with a topology-aware motion VAE, coarse-to-fine</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SceMoS</b> &mdash; scene-aware synthesis grounded on per-frame heightmaps → 0.98 contact accuracy</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FloodDiffusion</b> &mdash; tailored diffusion forcing for low-latency streaming motion generation</span></li></ul>
+</div>
+
+<div class="fam" id="lo14">
+  <div class="famhd"><span class="famn">14</span><h3>Hand-object &amp; human-scene interaction</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Coordinate the whole body with the world it touches &mdash; hands grasping objects, bodies sitting and navigating scenes &mdash; under geometric and contact constraints so interactions are plausible.</p>
+<p>Penetration and contact-consistency losses are what keep hands on objects and feet on floors.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoDexGrasp</b> &mdash; SIM(3)-equivariant, physics-refined dexterous grasp generation, −40% penetration</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OneHOI</b> &mdash; a relational DiT unifies human-object interaction generation and editing</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SceMoS</b> &mdash; heightmap-grounded motion respects scene surfaces and ground contact</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAM</b> &mdash; a pose→appearance→motion engine for sim-to-real hand-object interaction video</span></li></ul>
+</div>
+
+<div class="fam" id="lo15">
+  <div class="famhd"><span class="famn">15</span><h3>Text/music-to-motion &amp; controllable avatars</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Drive whole-body motion from language, speech, or music &mdash; and edit it with pose, sketch, or trajectory control &mdash; unifying diverse inputs into physically-aware, controllable human animation.</p>
+<p>The push is toward any-modality-in, plausible-motion-out, controllable and live.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Archon</b> &mdash; any-to-any across 7 modalities for holistic digital-human generation, 72 tasks</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AudioAvatar</b> &mdash; speech prosody drives personalized whole-body gesture and posture</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MotionV2V</b> &mdash; optical-flow-guided selective motion editing while preserving appearance</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>3D-Aware Implicit Motion Control</b> &mdash; 3D-aware control for view-adaptive human video generation</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Legged robots went from lab curiosities to walking out the door in a few years. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>Contact is still the wall.</b> Friction, deformation, and the make/break of contact are where both physics engines and learned models stay least accurate.</div>
+<div class="op"><b>Sim-to-real for humanoids.</b> High-DOF humanoids amplify every modeling error; zero-shot transfer works but only with careful randomization and tuning.</div>
+<div class="op"><b>Loco-manipulation coupling.</b> Doing a task while staying balanced &mdash; the arms and legs fighting &mdash; is far from solved for general tasks.</div>
+<div class="op"><b>Physical plausibility in generation.</b> Generated human motion still floats, foot-skates, or interpenetrates without a simulator or careful physics losses.</div>
+<div class="op"><b>Robustness &amp; safety.</b> Provable safety under disturbance exists for narrow cases; certifying a learned whole-body controller is open.</div>
+<div class="op"><b>Data for bodies.</b> Human mocap doesn&rsquo;t match a robot&rsquo;s embodiment, and on-robot data is scarce &mdash; the retargeting gap persists.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Locomotion &amp; Whole-Body explainer &middot; mechanism diagrams are live JavaScript (assets/lo-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the body beneath the <a href="the-machine.html">four-stage loop</a> &middot; companion to the <a href="diffusion-policies-explained.html">diffusion-policies</a>, <a href="vla-explained.html">VLA</a>, and <a href="sim-to-real-explained.html">data-engine</a> explainers &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/lo-anim.js"></script>
+</body></html>
