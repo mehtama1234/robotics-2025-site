@@ -1,0 +1,328 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Navigation &amp; Motion Planning, from first principles</title>
+<style>
+:root{--ink:#0B1512;--paper:#EDF3F0;--panel:#F8FCFA;--tint:#D6E7DF;--line:#C2DBD0;
+ --graphite:#42544D;--g2:#758a80;--accent:#1B8A6B;--accent-deep:#136B52;--accent-lite:#57C4A3;
+ --robo:#4E6172;--cvpr:#2F6F8B;--both:#1B8A6B;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#07130F;color:#E6F1EC;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#F0F8F4}
+header p{color:#AEC6BC;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#8AA69B}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#213029;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#07130F;border:1px solid #16302699;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#8FA89E;margin-top:8px}
+.essay p{font-size:15.5px;color:#1A2621;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#1B2721;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#213029;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#1B2721}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#1B2721}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#CFEADF}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#1A2621;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#E4EAEF;color:#3A4A5A;border:1px solid #C6D2DC}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#CFEADF;color:var(--accent-deep);border:1px solid #AFD8C8}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#1A2621}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#1B2721;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#0B1512}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#1B2721}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Navigation &amp; Motion Planning &middot; plan · react · localize &middot; robotics + vision</div>
+  <h1>Navigation: getting there without hitting anything</h1>
+  <p>The oldest job a mobile robot has &mdash; find a path to the goal through a world it only partly knows and that won&rsquo;t hold still. Sampling and optimization, the map-plan-react stack, social navigation, and learned & language-driven navigation &mdash; from first principles, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">plan it</a> &middot; <a href="#fp3">the stack</a> &middot; <a href="#fp4">the world moves</a> &middot; <a href="#fp5">learn it</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why a path is the whole problem, how sampling and optimization find one, the map-plan-react stack, navigating among people, and learning it from pixels and words. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">classical</span><b>search &amp; sampling</b><p>A*, RRT, and PRM find collision-free paths in a modeled configuration space &mdash; provably, if slowly.</p></div><div class="ln"><span class="lyr">2000s</span><b>the nav stack</b><p>occupancy grids + global planner + a fast local reactive loop become the deployed standard for mobile robots.</p></div><div class="ln"><span class="lyr">2010s</span><b>optimization &amp; safety</b><p>trajectory optimization, MPC, and control-barrier functions add smooth, dynamically-feasible, provably-safe motion.</p></div><div class="ln"><span class="lyr">2018&ndash;</span><b>learned navigation</b><p>end-to-end and RL policies map pixels straight to motion, and image/object-goal navigation takes off in simulation.</p></div><div class="ln"><span class="lyr">2022&ndash;</span><b>language &amp; foundation models</b><p>VLN and VLM/world-model navigators follow plain-language goals and generalize to unmapped buildings &mdash; the families below.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>A free path to the goal</h2>
+  <figure class="instrument"><canvas data-nvanim="nv_why" height="300"></canvas>
+    <figcaption>Navigation is one deceptively simple task: get from where you are to where you want to be without hitting anything. The straight line almost never works — obstacles are in the way — and the map you have may be wrong, incomplete, or changing as you move.</figcaption></figure>
+  <div class="essay"><p>Every mobile robot faces the same first question: how do I get over there? The goal is a place; the world between here and there is full of walls, furniture, people, and things the map didn&rsquo;t mention. The straight line is almost always blocked.</p>
+<p>So navigation is the search for a <b>collision-free path</b> &mdash; a continuous route through the empty space to the goal. What makes it hard isn&rsquo;t drawing the line; it&rsquo;s that the robot only partly knows the world, the world moves, and whatever path it picks has to be one the robot&rsquo;s body can actually follow.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Split the robot&rsquo;s configuration space C into free space C_free and obstacles C_obs. A path is a continuous curve &tau;:[0,1]&rarr;C_free with &tau;(0)=start, &tau;(1)=goal.</p>
+<p>Partial and changing knowledge means C_obs is only estimated from sensors &mdash; so planning and re-planning interleave as the estimate updates.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; plan it</div>
+  <h2>Two ways to find a path</h2>
+  <figure class="instrument"><canvas data-nvanim="nv_plan" height="300"></canvas>
+    <figcaption>There are two great families. Sampling-based planners throw down random points and connect the collision-free ones into a tree that reaches for the goal. Optimization-based planners start with a rough guess and bend it until it's smooth, short, and clear of obstacles.</figcaption></figure>
+  <div class="essay"><p>Given the free space, how do you actually find a route through it? One answer is to <b>sample</b>: scatter random points, keep the ones that don&rsquo;t hit anything, and connect them into a growing tree until a branch reaches the goal. Try enough points and you&rsquo;ll find a path if one exists.</p>
+<p>The other answer is to <b>optimize</b>: start from a rough guess &mdash; even a bad one &mdash; and repeatedly nudge it to lower a cost that rewards short, smooth, obstacle-free motion. One explores by trying many motions; the other refines a single one until it fits. Most real systems use both.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Sampling (RRT): draw a random q, steer the nearest tree node toward it, keep the edge if collision-free; probabilistically complete &mdash; finds a path if one exists, given enough samples.</p>
+<p>Optimization: min<sub>&tau;</sub> &int; cost(&tau;,&tau;&#775;) dt subject to dynamics and collision constraints; solved with iLQR/MPC-style updates from an initial guess.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; the stack</div>
+  <h2>A map to plan on, a loop to dodge</h2>
+  <figure class="instrument"><canvas data-nvanim="nv_map" height="300"></canvas>
+    <figcaption>The classic navigation stack has two layers. A global planner finds a route across a map of the whole space. A fast local loop watches the live sensors and swerves around whatever appears — a person, a box, a door that's now shut — while still following the global route.</figcaption></figure>
+  <div class="essay"><p>In practice a robot runs two loops at once. The <b>global planner</b> works on a stored map &mdash; usually an occupancy grid marking free and blocked cells, with a cost that pushes paths away from walls &mdash; and finds a route all the way to the goal.</p>
+<p>But the map is always a little out of date, so a fast <b>local planner</b> runs many times a second on the live sensor feed, choosing immediate motions that follow the global route <em>and</em> dodge whatever just appeared. Plan globally on what you know; react locally to what you see.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Global: run A* / Dijkstra over the costmap grid c(x) to get a least-cost route to the goal.</p>
+<p>Local: each cycle pick controls (v,&omega;) minimizing distance-to-path + a collision penalty over a short horizon (DWA / MPC) &mdash; a fast reactive loop under the slow global one.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; the world moves</div>
+  <h2>Navigating among people</h2>
+  <figure class="instrument"><canvas data-nvanim="nv_social" height="300"></canvas>
+    <figcaption>When the obstacles are people, they move back. The robot has to predict where everyone is going and weave through the gaps. Predict too timidly and every direction looks blocked — the robot freezes in place, the classic failure of crowd navigation.</figcaption></figure>
+  <div class="essay"><p>Static obstacles stay put; people don&rsquo;t. Navigating a crowd means the robot must <b>predict</b> where each person is heading over the next few seconds and thread a path through the gaps that will exist, not the ones that exist now.</p>
+<p>This is genuinely hard because prediction is uncertain, and if the robot assumes the worst about everyone, the predicted futures blanket every open direction &mdash; so the only &lsquo;safe&rsquo; move is to stop. That&rsquo;s the notorious <b>freezing-robot problem</b>: over-caution is its own failure, and good crowd navigation is really good prediction.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Predict each agent&rsquo;s future distribution p(x_t) and treat it as a time-varying obstacle; plan a path that keeps collision probability below a threshold.</p>
+<p>Freezing: if predicted occupancy fills the free space, no feasible low-risk path remains &mdash; the fix is joint / interaction-aware prediction, not more caution.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; learn it</div>
+  <h2>From pixels, and from words</h2>
+  <figure class="instrument"><canvas data-nvanim="nv_learn" height="300"></canvas>
+    <figcaption>Instead of an explicit map-plan-execute pipeline, a network can map what the camera sees — plus a goal, which may be an image or a sentence like 'go to the kitchen' — directly to the next move, and generalize to buildings it never mapped.</figcaption></figure>
+  <div class="essay"><p>The newest strand skips the explicit pipeline. A network takes the raw view and a goal &mdash; a target image, an object name, or a plain-language instruction &mdash; and outputs the next move directly, learning from demonstrations or from reward in simulation.</p>
+<p>This is what lets a robot follow &lsquo;go past the kitchen and stop at the second door&rsquo; in a building it has never seen, with no map handed over. It leans on the same web-pretrained vision-language models as the rest of the field &mdash; and inherits their strength (broad generalization) and their weakness (shaky precise geometry).</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Learn a policy &pi;&#952;(a | obs, goal) by imitation or RL; goal is an image, an object class, or language tokens.</p>
+<p>Vision-and-language navigation grounds instruction tokens against the visual stream step by step, emitting move / turn / stop until it reports done.</p></div></details>
+</section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three ways to get there</h2>
+  <p class="intro">The field&rsquo;s arc, in one table &mdash; from classical planners that come with proofs, to learned reactive policies, to foundation-model navigators that follow plain language.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it finds the way</th><th>Needs a map?</th><th>Guarantees</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Classical planning (RRT / MPC)</th><td>search or optimize a path in a modeled space</td><td>yes — a map + obstacle model</td><td>strong: feasibility, safety, optimality</td><td>brittle when the map or model is wrong</td></tr><tr><th class="rn">Learned / reactive</th><td>a network maps sensors → motion</td><td>no — reacts to what it sees</td><td>weak: hard to certify</td><td>gets stuck in dead-ends; data-hungry</td></tr><tr class="hi"><th class="rn">Foundation-model + language</th><td>reason about layout & instructions with a VLM</td><td>no — generalizes zero-shot</td><td>weak: hallucinates geometry</td><td>shaky metric precision; slow, heavy</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons a robot can be trusted to get where it&rsquo;s going.</p>
+  <div class="bens"><div class="ben"><h4>A route you can trust</h4><p>Sampling and optimization planners return a collision-free path that respects the robot&rsquo;s dynamics &mdash; the dependable core under everything else.</p></div>
+<div class="ben"><h4>React without re-planning everything</h4><p>A fast local loop dodges surprises in milliseconds while the global route stands &mdash; so the robot handles a world that never matches its map.</p></div>
+<div class="ben"><h4>Provable safety margins</h4><p>Control-barrier and reachability methods give formal guarantees the robot won&rsquo;t collide, even under uncertainty &mdash; the difference between a demo and a deployment.</p></div>
+<div class="ben"><h4>Goals in plain language</h4><p>Language- and image-goals let a non-expert say where to go &mdash; &lsquo;the kitchen&rsquo;, a photo of a door &mdash; instead of typing coordinates.</p></div>
+<div class="ben"><h4>Generalize to new buildings</h4><p>Learned and foundation-model navigators transfer to places they never mapped, reasoning about layout and semantics rather than memorizing a grid.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way a robot finds its way</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip rb" href="#nv1"><span class="cn">01</span>Sampling-based motion planning (RRT / PRM)</a><a class="fchip rb" href="#nv2"><span class="cn">02</span>Trajectory optimization</a><a class="fchip rb" href="#nv3"><span class="cn">03</span>Safe navigation</a><a class="fchip bb" href="#nv4"><span class="cn">04</span>Learned</a><a class="fchip bb" href="#nv5"><span class="cn">05</span>Vision-and-language navigation (VLN)</a><a class="fchip vb" href="#nv6"><span class="cn">06</span>Object-goal</a><a class="fchip bb" href="#nv7"><span class="cn">07</span>Semantic mapping</a><a class="fchip bb" href="#nv8"><span class="cn">08</span>Topological</a><a class="fchip rb" href="#nv9"><span class="cn">09</span>Social</a><a class="fchip rb" href="#nv10"><span class="cn">10</span>Off-road</a><a class="fchip rb" href="#nv11"><span class="cn">11</span>Kinodynamic planning</a><a class="fchip rb" href="#nv12"><span class="cn">12</span>Mapless</a><a class="fchip bb" href="#nv13"><span class="cn">13</span>Navigation foundation</a><a class="fchip vb" href="#nv14"><span class="cn">14</span>Map-free localization</a><a class="fchip vb" href="#nv15"><span class="cn">15</span>Simulation, benchmarks</a></div>
+  <div class="famgrid">
+<div class="fam" id="nv1">
+  <div class="famhd"><span class="famn">01</span><h3>Sampling-based motion planning (RRT / PRM)</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The classical backbone: scatter random collision-free configurations and connect nearby ones into a graph or tree, then read off a path. It handles high-dimensional spaces and odd kinematics where hand-drawing a route is hopeless.</p>
+<p>Recent work speeds convergence, improves path quality, and pushes sampling onto needles, AUVs, and nonholonomic vehicles.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Second-Order Stein Variational Dynamic Optimization</b> &mdash; variational sampling for dynamic trajectory optimization</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Path Planning Using Instruction-Guided Probabilistic Roadmaps</b> &mdash; an instruction biases where the PRM samples</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SIMP: Real-Time Energy and Time-Efficient 3D Motion Planning for Bio-Inspired AUVs</b> &mdash; real-time sampling planner for underwater vehicles</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Steerable Tape-Spring Needle for Autonomous Sharp Turns Through Tissue</b> &mdash; sampling-based planning for a steerable surgical needle</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Take Your Best Shot: Sampling-Based Planning for Autonomous Photography</b> &mdash; samples viewpoints + paths for a photography robot</span></li></ul>
+</div>
+
+<div class="fam" id="nv2">
+  <div class="famhd"><span class="famn">02</span><h3>Trajectory optimization &amp; MPC</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Instead of sampling, write down a cost &mdash; short, smooth, energy-cheap, clear of obstacles &mdash; and minimize it subject to the robot&rsquo;s dynamics. Model-predictive control re-solves it every cycle so the plan tracks a changing world.</p>
+<p>The work is speed (these solves are heavy), good initialization to dodge local minima, and differentiable planning fused with learning.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shadow Program Inversion with Differentiable Planning</b> &mdash; unifies program-parameter and trajectory optimization, differentiably</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Whole-Body Control of Legged Robots with Model-Predictive Path Integral Control</b> &mdash; MPPI samples trajectories in parallel for real-time control</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>High Accuracy Aerial Maneuvers via Variational Integrator Discretized Trajectory Optimization</b> &mdash; structure-preserving discretization for accurate aerial trajectories</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Time-Optimal Trajectory Generation with Multi-level Continuous Kinodynamics Constraints</b> &mdash; time-optimal trajectories under layered kinodynamic limits</span></li></ul>
+</div>
+
+<div class="fam" id="nv3">
+  <div class="famhd"><span class="famn">03</span><h3>Safe navigation &amp; collision avoidance</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Layer a safety filter over any planner: monitor distance to obstacles and forbid controls that could lead to a collision. Control-barrier functions and reachability analysis give <em>formal</em> guarantees, not just good behavior on average.</p>
+<p>The tension is conservatism &mdash; guarantees need margins, and too-large margins make cluttered spaces impassable.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps</b> &mdash; CBF safety on top of a live splat map</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Vision Transformers for End-to-End Vision-Based Quadrotor Obstacle Avoidance</b> &mdash; learned high-speed obstacle dodging from images</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Safety-Critical Control for Aerial Physical Interaction in Uncertain Environment</b> &mdash; safety-critical control under model uncertainty</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAFE-GIL: SAFEty Guided Imitation Learning for Robotic Systems</b> &mdash; injects safety guidance into imitation learning</span></li></ul>
+</div>
+
+<div class="fam" id="nv4">
+  <div class="famhd"><span class="famn">04</span><h3>Learned &amp; end-to-end navigation</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Train a network to map observations straight to motion &mdash; from demonstrations or from reward in simulation &mdash; skipping the explicit map-plan-execute pipeline. It captures intuitive, human-like navigation that&rsquo;s hard to hand-specify.</p>
+<p>The open issues are the usual ones for learning: data hunger, distribution shift, and hard-to-certify safety.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Imitation to Refinement — Residual RL for Precise Assembly</b> &mdash; residual RL sharpens an imitation-learned policy</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Extending Embodied Question Answering from Perception to Decision</b> &mdash; a four-stage agent from scene understanding to instant decision</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OctoNav: Towards Generalist Embodied Navigation</b> &mdash; one agent for point/object/image/instruction goals, think-before-action</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Validity Learning on Failures: Mitigating Distribution Shift in AV Planning</b> &mdash; learns from failure cases to fight distribution shift</span></li></ul>
+</div>
+
+<div class="fam" id="nv5">
+  <div class="famhd"><span class="famn">05</span><h3>Vision-and-language navigation (VLN)</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Follow a natural-language route &mdash; &lsquo;turn left at the plant, stop by the window&rsquo; &mdash; by grounding each phrase against the live view and deciding the next step. The core problem is bridging fuzzy language and precise geometry.</p>
+<p>Recent systems add self-aware reasoning, fast-slow control, and hierarchical waypoints to survive new buildings and instruction styles.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>AwareVLN: Reasoning with Self-awareness for Vision-Language Navigation</b> &mdash; progress-aware reasoning triggered at decision nodes</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>General VLN via Fast-Slow Interactive Reasoning</b> &mdash; a fast action policy plus slow LLM reflection</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Bridging the 2D-3D Gap: Hierarchical Semantic-Geometric Map for VLN</b> &mdash; a map that links VLM semantics to 3D geometry</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Language-Guided Object Search in Agricultural Environments</b> &mdash; language-directed search over an outdoor farm</span></li></ul>
+</div>
+
+<div class="fam" id="nv6">
+  <div class="famhd"><span class="famn">06</span><h3>Object-goal &amp; image-goal navigation</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>The goal isn&rsquo;t coordinates but a <em>thing</em>: find the fridge, or reach the place shown in this photo. The robot must explore an unknown space and recognize when it has arrived &mdash; the &lsquo;last-mile&rsquo; viewpoint problem.</p>
+<p>Generative sub-goals, 3D scene graphs, and frontier value maps drive smarter exploration toward the target.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeniNav: Generative Image-Goal Navigation via Consistency Flow Matching</b> &mdash; imagined sub-goals + flow-matched trajectories</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MSGNav: Multi-modal 3D Scene Graph for Zero-Shot Embodied Navigation</b> &mdash; scene graphs keep visual edges for the last-mile viewpoint</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Context-Nav: Viewpoint-Aware 3D Spatial Reasoning for Instance Navigation</b> &mdash; text-guided frontier maps + viewpoint verification</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>BEINGS: Bayesian Embodied Image-Goal Navigation With Gaussian Splatting</b> &mdash; Bayesian image-goal navigation over a splat map</span></li></ul>
+</div>
+
+<div class="fam" id="nv7">
+  <div class="famhd"><span class="famn">07</span><h3>Semantic mapping &amp; open-vocabulary maps</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Build a map that stores <em>meaning</em>, not just occupancy: language-aligned features at each place, so the robot can later be asked for &lsquo;the sink&rsquo; or any object never labelled in advance. This is where navigation meets <a href='open-vocab-explained.html'>open-vocabulary perception</a>.</p>
+<p>Selective queries and instance-level fields keep it real-time on the robot.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>One Map to Find Them All: Real-time Open-Vocabulary Mapping for Multi-Object Navigation</b> &mdash; a single open-vocab map serves zero-shot multi-object goals</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OVI-MAP: Open-Vocabulary Instance-Semantic Mapping</b> &mdash; decoupled instance geometry + selective VLM semantic queries</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Ov3R: Open-Vocabulary Semantic 3D Reconstruction from RGB Videos</b> &mdash; instance-level open-vocab reconstruction from video</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Beyond Bare Queries: Open-Vocabulary Object Grounding with 3D Scene Graph</b> &mdash; grounds queries against an open-vocab 3D scene graph</span></li></ul>
+</div>
+
+<div class="fam" id="nv8">
+  <div class="famhd"><span class="famn">08</span><h3>Topological &amp; scene-graph navigation</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Drop the dense grid for a graph of places and connections &mdash; rooms as nodes, doorways as edges. Planning becomes cheap graph search, robust to small geometry changes, and it maps naturally onto how people give directions.</p>
+<p>Hierarchical and dynamic scene graphs scale this to whole buildings and moving objects.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hierarchical Open-Vocabulary 3D Scene Graphs for Language-Grounded Navigation</b> &mdash; multi-level graphs with 75% smaller representation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Key-Scan-Based Mobile Robot Navigation via Graphs of Scan Regions</b> &mdash; integrated mapping/planning/control over scan-region graphs</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OpenObject-NAV: Object-Oriented Navigation via Dynamic Carrier-Relationship Scene Graph</b> &mdash; tracks object-carrier relations for moved objects</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Enhancing 3D Scene Graphs with Real-Time Room Classification</b> &mdash; labels rooms online to enrich the navigation graph</span></li></ul>
+</div>
+
+<div class="fam" id="nv9">
+  <div class="famhd"><span class="famn">09</span><h3>Social &amp; human-aware navigation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Move through people politely and safely: predict their trajectories, respect personal space, and signal intent &mdash; without freezing when the crowd is dense.</p>
+<p>The frontier is interaction-aware prediction (people react to the robot too) and future-aware planning.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Cognition to Precognition: A Future-Aware Framework for Social Navigation</b> &mdash; plans against predicted future crowd states</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Dynamic Weight Adjustment for Crowd Navigation</b> &mdash; adapts planner weights to crowd density in real time</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Hybrid Approach to Indoor Social Navigation</b> &mdash; reactive local planning plus proactive global planning</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning to Predict the Future from Monocular Vision for Human-Aware Navigation</b> &mdash; monocular future prediction for efficient weaving</span></li></ul>
+</div>
+
+<div class="fam" id="nv10">
+  <div class="famhd"><span class="famn">10</span><h3>Off-road &amp; terrain-aware navigation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Off the paved path, the question isn&rsquo;t just &lsquo;is it free?&rsquo; but &lsquo;can I traverse it?&rsquo; &mdash; mud, sand, slopes, and rubble each carry a cost the robot must estimate from vision and feel.</p>
+<p>Learned traversability and VLM commonsense increasingly judge terrain the robot has never seen.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Watch Your STEPP: Semantic Traversability Estimation Using Pose-Projected Features</b> &mdash; learns traversability cost from projected features</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>VLM-GroNav: Robot Navigation Using Physically Grounded VLMs Outdoors</b> &mdash; a VLM judges outdoor terrain traversability</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Commonsense Reasoning for Legged Robot Adaptation with VLMs</b> &mdash; VLM commonsense adapts gait/route to terrain</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Gnd: Global Navigation Dataset with Multi-Category Traversability</b> &mdash; a large multi-modal outdoor traversability dataset</span></li></ul>
+</div>
+
+<div class="fam" id="nv11">
+  <div class="famhd"><span class="famn">11</span><h3>Kinodynamic planning</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>A car can&rsquo;t turn in place and a truck-trailer can&rsquo;t sidestep &mdash; kinodynamic planning bakes the robot&rsquo;s motion limits (curvature, momentum, reverse) into the search, so the path is one the body can truly execute.</p>
+<p>It doubles or worse the search space, so learned heuristics and hybrid search are the levers.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ME-PATS: Mutually Enhancing Search Planner and Learning Agent for Tractor-Trailer Systems</b> &mdash; couples search and learning for tractor-trailers</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>VertiCoder: Self-Supervised Kinodynamic Representation on Vertically Challenging Terrain</b> &mdash; learns kinodynamic features for extreme terrain</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Kinodynamic MPC for Energy Efficient Locomotion with Parallel Elasticity</b> &mdash; kinodynamic MPC exploiting elastic dynamics</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Time-Optimal Trajectory Generation with Multi-level Kinodynamics Constraints</b> &mdash; layered constraints for executable time-optimal paths</span></li></ul>
+</div>
+
+<div class="fam" id="nv12">
+  <div class="famhd"><span class="famn">12</span><h3>Mapless &amp; reactive navigation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Skip the map entirely: react to raw sensor readings right now. Memory-free and instant, it thrives in dynamic or unknown spaces &mdash; but a purely reactive robot can walk straight into a dead-end it can&rsquo;t reason its way out of.</p>
+<p>Learned reactive policies and congestion estimation soften the local-minimum trap.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hierarchical RL for Safe Mapless Navigation with Congestion Estimation</b> &mdash; estimates congestion to avoid reactive dead-ends</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Focus Bug: Learning Environmental Awareness for Efficient Mapless Navigation</b> &mdash; learns where to attend for map-free navigation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Brain-Inspired Spatial Continuous State Encoding for Spiking-Based Navigation</b> &mdash; neuromorphic reactive navigation encoding</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Optimizing Underwater Robot Navigation: DRL + Multi-Modal Sensor Fusion</b> &mdash; deep-RL reactive navigation underwater</span></li></ul>
+</div>
+
+<div class="fam" id="nv13">
+  <div class="famhd"><span class="famn">13</span><h3>Navigation foundation &amp; world models</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Pretrain one big model on oceans of video and robot data, then reason about spatial goals, predict what an action will do, and plan by imagining futures &mdash; zero-shot in places it never trained on.</p>
+<p>The tension is latency and hallucination: big models are slow and confidently wrong about geometry.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>NavForesee: A Unified Vision-Language World Model for Embodied Navigation</b> &mdash; predicts next frames + plans at test time</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReMEmbR: Reasoning Over Long-Horizon Spatio-Temporal Memory for Navigation</b> &mdash; builds and queries long-horizon spatial memory</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus: A Unified Latent Action World Model</b> &mdash; optical-flow latent actions bridge video and robot data</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SocialNav: Human-Inspired Foundation Model for Socially-Aware Navigation</b> &mdash; a VLM social-reasoning brain + flow-matching action expert</span></li></ul>
+</div>
+
+<div class="fam" id="nv14">
+  <div class="famhd"><span class="famn">14</span><h3>Map-free localization &amp; place recognition</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Know where you are without a prebuilt map, by matching the current view against references or across viewpoints &mdash; the anchor that keeps goal-directed navigation honest when there&rsquo;s no GPS.</p>
+<p>Cross-view geolocalization and language-to-map matching are the fast-moving edges.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoFlow: Real-Time Fine-Grained Cross-View Geolocalization via Iterative Flow</b> &mdash; flow-based cross-view geolocalization in continuous pose</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>VLM-Loc: Localization in Point Cloud Maps via Vision-Language Models</b> &mdash; text-to-point-cloud localization via BEV + scene graphs</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LiteVLoc: Map-Lite Visual Localization for Image Goal Navigation</b> &mdash; lightweight visual localization for image-goal nav</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SinGeo: Unlock Single Models&rsquo; Potential for Cross-View Geo-Localization</b> &mdash; one robust model across view configurations</span></li></ul>
+</div>
+
+<div class="fam" id="nv15">
+  <div class="famhd"><span class="famn">15</span><h3>Simulation, benchmarks &amp; sim-to-real</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Navigation research runs on simulators &mdash; photoreal houses, procedural scenes, terrain curricula &mdash; that give reproducible tests and cheap, massive training, then transfer to real robots via domain randomization.</p>
+<p>The gap is fidelity: photorealism isn&rsquo;t physics, and agents that ace the benchmark can still stumble outdoors.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>OctoNav-Bench: 45k+ instruction-trajectory pairs across 400+ scenes</b> &mdash; a large multi-capability navigation benchmark</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeniBench: 176 scenes, 491.6 km of coherent trajectories</b> &mdash; closed-loop image-goal benchmark with real-robot tests</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DP-Habitat: Bridging Simulation and Reality for Dynamic Pedestrian Navigation</b> &mdash; sim-to-real visual navigation among pedestrians</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PanoEnv: 3D Spatial Intelligence in Panoramic Environments with RL</b> &mdash; geometry-grounded panoramic navigation training</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Getting a robot reliably from A to B in the open world is far from finished. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>Generalization past the training world.</b> Learned navigators still degrade in buildings, lighting, and clutter unlike their training data &mdash; distribution shift is the field&rsquo;s limiting factor.</div>
+<div class="op"><b>Certifying learned motion.</b> Classical planners come with safety proofs; learned and foundation-model navigators don&rsquo;t &mdash; verifying them formally is largely unsolved.</div>
+<div class="op"><b>Language that means geometry.</b> VLMs read instructions well but reason about exact distances and free space poorly, so language navigation still leans on separate geometric grounding.</div>
+<div class="op"><b>Crowds that react back.</b> People adjust to the robot, so one-way prediction breaks; interaction-aware prediction that avoids the freezing-robot trap is still hard.</div>
+<div class="op"><b>Real-time under a heavy model.</b> Foundation-model and world-model navigators are slow and memory-hungry; fitting them inside a control loop on a small robot is an open squeeze.</div>
+<div class="op"><b>The sim-to-real gap.</b> Simulators underspecify friction, contact, and the messiness of the real world, so benchmark wins don&rsquo;t always survive the sidewalk.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Navigation &amp; Motion Planning explainer &middot; mechanism diagrams are live JavaScript (assets/nv-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; how the machine gets where it&rsquo;s going, around the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/nv-anim.js"></script>
+</body></html>

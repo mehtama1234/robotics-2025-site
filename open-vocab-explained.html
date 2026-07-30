@@ -1,0 +1,332 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Open-Vocabulary Perception, from first principles</title>
+<style>
+:root{--ink:#151007;--paper:#F3EFE3;--panel:#FBF8EF;--tint:#EBDFC2;--line:#DED0AC;
+ --graphite:#544B36;--g2:#8C7E5D;--accent:#B98A16;--accent-deep:#8F6910;--accent-lite:#DEB84A;
+ --robo:#4E6172;--cvpr:#2F6F8B;--both:#B98A16;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#120E06;color:#F3ECDB;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#FBF4E3}
+header p{color:#C8B892;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#A8996f}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#2C2417;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#120E06;border:1px solid #2C2410;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#B2A176;margin-top:8px}
+.essay p{font-size:15.5px;color:#211A0F;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#120E06}
+.ranfig figcaption{font-size:13px;color:#2C2417;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#271F12;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#2C2417;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#271F12}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#271F12}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#EEE0BF}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#211A0F;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#E4EAEF;color:#3A4A5A;border:1px solid #C6D2DC}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#EEE0BF;color:var(--accent-deep);border:1px solid #DECFA0}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#211A0F}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#271F12;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#151007}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#271F12}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Open-Vocabulary Perception &middot; name · detect · ground &middot; robotics + vision</div>
+  <h1>Open-Vocabulary Perception: naming anything by words</h1>
+  <p>For a decade, recognition meant choosing from a fixed list &mdash; and failing on everything else. Open-vocabulary perception escapes the list: name, detect, segment, and ground objects described by <em>any</em> words, in 2D and in 3D. The CLIP idea, open-vocab detection & segmentation, grounding, and language-queryable 3D maps &mdash; from first principles, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">the key idea</a> &middot; <a href="#fp3">detect &amp;amp; segment</a> &middot; <a href="#fp4">grounding</a> &middot; <a href="#fp5">into 3D</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why a fixed list fails, how one shared image-text space fixes it, boxing anything by prompt, grounding a full phrase, and lifting language into a queryable 3D map. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">pre-2021</span><b>closed vocabularies</b><p>detectors and segmenters chose from a fixed class list &mdash; anything else was invisible or mislabeled.</p></div><div class="ln"><span class="lyr">2021</span><b>CLIP</b><p>contrastive image-text pretraining aligns pictures and words in one space &mdash; zero-shot recognition of arbitrary text.</p></div><div class="ln"><span class="lyr">2022&ndash;23</span><b>open-vocab dense prediction</b><p>detection and segmentation learn to score regions against text; SAM makes segmentation promptable.</p></div><div class="ln"><span class="lyr">2023&ndash;24</span><b>language into 3D</b><p>CLIP/DINO features distilled into NeRFs, Gaussians, and voxel maps &mdash; queryable 3D scenes.</p></div><div class="ln"><span class="lyr">2024&ndash;</span><b>MLLM grounding</b><p>multimodal LLMs reason over referring phrases, parts, video, and 4D &mdash; the families below.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>You can't list every thing</h2>
+  <figure class="instrument"><canvas data-ovanim="ov_why" height="300"></canvas>
+    <figcaption>A classic recognizer is trained on a fixed list of classes — cup, chair, dog — and the moment the world shows it something not on the list, it can only guess wrong. The real world has endless categories; you can't enumerate them in advance. That's the wall open-vocabulary perception breaks.</figcaption></figure>
+  <div class="essay"><p>For a decade, recognition meant choosing from a fixed list. Train a network on a thousand classes and it will happily label any of those thousand &mdash; but show it the one thing you forgot to include, and it has no choice but to force a wrong answer from its list.</p>
+<p>The world doesn&rsquo;t come with a finite menu. New objects, rare objects, oddly-described objects &mdash; a robot in a real kitchen meets things no label set anticipated. <b>Open-vocabulary perception</b> is the escape from the fixed list: recognize, detect, and segment things described by <em>any</em> words, including ones never seen in training.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Closed-set classifier: softmax over K fixed classes &mdash; any input is forced onto one of the K, so an unseen category is always mislabeled.</p>
+<p>Open-vocabulary: score the input against embeddings of arbitrary text, so the label set can grow at test time without retraining.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; the key idea</div>
+  <h2>Put pictures and words in one space</h2>
+  <figure class="instrument"><canvas data-ovanim="ov_clip" height="300"></canvas>
+    <figcaption>The enabling trick: train an image encoder and a text encoder together so a picture lands near the words that describe it, in one shared space. Then recognition is no longer a fixed classifier — it's a nearest-neighbor lookup against whatever words you type.</figcaption></figure>
+  <div class="essay"><p>The idea that broke the wall is deceptively simple. Train two encoders together &mdash; one for images, one for text &mdash; on hundreds of millions of caption pairs, so that a picture and its description land at the <em>same place</em> in a shared embedding space.</p>
+<p>Once images and words share a space, recognition stops being a fixed classifier and becomes a <b>lookup</b>: embed the picture, embed any set of words you like, and pick the nearest. Add a new category by simply typing its name &mdash; no retraining. This vision-language embedding (CLIP and its kin) is the engine under everything that follows.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Contrastive training pulls matching image-text pairs together and pushes mismatches apart, aligning both encoders in one space.</p>
+<p>Recognition: label = argmax over candidate texts of cosine(image embedding, text embedding) &mdash; a nearest-neighbour lookup over any vocabulary.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; detect &amp; segment</div>
+  <h2>Box anything you can describe</h2>
+  <figure class="instrument"><canvas data-ovanim="ov_detect" height="300"></canvas>
+    <figcaption>Give a detector region proposals and score each one against a free-text prompt instead of a fixed label. Now 'find the laptop' works even if 'laptop' was never a training class — and you can swap in any words at test time, including whole descriptive phrases.</figcaption></figure>
+  <div class="essay"><p>Recognizing a whole image is one thing; finding <em>where</em> things are is what a robot needs. Open-vocabulary detection and segmentation take region proposals &mdash; candidate boxes or masks &mdash; and score each against arbitrary text embeddings rather than a fixed classifier head.</p>
+<p>So you type &lsquo;the laptop&rsquo; (or &lsquo;a small blue mug&rsquo;) and the regions that match light up, even for categories never in the training labels. The words are supplied at test time, which means the same model handles an open, growing set of things to look for &mdash; the practical form open-vocabulary usually takes.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>For each region proposal r with feature v_r, score s(r,t) = v_r &middot; t for each prompt embedding t; keep boxes above threshold, label by best t.</p>
+<p>Training often distills a VLM&rsquo;s features into the detector so region features live in the shared image-text space.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; grounding</div>
+  <h2>The one I mean, not just the class</h2>
+  <figure class="instrument"><canvas data-ovanim="ov_ground" height="300"></canvas>
+    <figcaption>Often you don't want every mug — you want 'the red mug behind the laptop.' Grounding resolves a full referring phrase, with attributes and spatial relations, down to the single region it points at, choosing among look-alikes.</figcaption></figure>
+  <div class="essay"><p>Detection finds all the cups; language usually means <em>one</em> of them. &lsquo;The red mug behind the laptop&rsquo; is a referring expression, and resolving it &mdash; <b>grounding</b> &mdash; means picking the exact region the words point to, not just the category.</p>
+<p>That takes reasoning over attributes (red), and spatial relations (behind the laptop), to disambiguate among look-alikes. Grounding is what turns open-vocabulary perception into something a person can actually direct: say what you mean in plain language, and the system points at the right thing.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Referring: pick the region maximizing a match(region, phrase) that accounts for attributes and relations, not just the class.</p>
+<p>Relations (&lsquo;behind the laptop&rsquo;) require reasoning over pairs of regions &mdash; grounding resolves to the single intended referent.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; into 3D</div>
+  <h2>A map you can ask by name</h2>
+  <figure class="instrument"><canvas data-ovanim="ov_3d" height="300"></canvas>
+    <figcaption>Lift the language-aligned features off the 2D image and bake them into a 3D map — a feature per point or voxel. Now a robot can query the space itself: ask 'where is the sink?' and get a location, for objects nobody labelled when the map was built.</figcaption></figure>
+  <div class="essay"><p>For a robot, recognition has to live in space. The final step lifts language-aligned features off flat images and into a <b>3D map</b> &mdash; attaching a CLIP-style feature to every point, voxel, or Gaussian using the camera geometry.</p>
+<p>Now the map itself is queryable by language: ask &lsquo;where is the sink?&rsquo; and the matching region in 3D lights up, even though no one labelled a &lsquo;sink&rsquo; when the map was built. This open-vocabulary 3D field is where perception meets navigation and manipulation &mdash; a spatial memory you address with words.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Lift 2D features to 3D: for each 3D point X seen in image pixels, aggregate the pixels&rsquo; language-aligned features into a per-point descriptor F(X).</p>
+<p>Query: score F(X) &middot; t against a text embedding t to localize &lsquo;the sink&rsquo; in the map &mdash; open-vocabulary, no 3D labels needed.</p></div></details>
+</section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div><img src="assets/vlm/qwenvl_two_cats.png" alt="A vision-language model naming and locating objects in a photo by open text"><figcaption>Open vocabulary, for real: we ran <b>Qwen2-VL</b> on an ordinary photo and asked it, in plain words, to name and locate what&rsquo;s there &mdash; it points to each object by description, with no fixed class list anywhere in the loop. This is Part&nbsp;I&rsquo;s &lsquo;name it by comparing to words&rsquo; made concrete on a real image. Our own run.</figcaption></figure></section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three ways to name what you see</h2>
+  <p class="intro">The shift, in one table &mdash; from a fixed classifier that fails on the unlisted, to open-vocabulary matching against free text, to promptable and grounding models you direct with a phrase.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it names things</th><th>New categories</th><th>Spatial output</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Closed-set model</th><td>fixed classifier head over K classes</td><td>needs relabeling + retraining</td><td>boxes/masks for trained classes</td><td>fails silently on anything unlisted</td></tr><tr class="hi"><th class="rn">Open-vocabulary (CLIP-based)</th><td>match regions to free-text embeddings</td><td>just type the words</td><td>boxes, masks, or 3D queries</td><td>weaker on rare words, fine parts, exact geometry</td></tr><tr><th class="rn">Promptable / grounding (SAM, MLLM)</th><td>segment or point from a prompt or phrase</td><td>interactive, per-prompt</td><td>precise masks / referents</td><td>prompt-sensitive; heavier; temporally jittery</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons open vocabulary replaced the fixed list.</p>
+  <div class="bens"><div class="ben"><h4>Recognize the unlisted</h4><p>Name, detect, and segment objects that were never training categories &mdash; the escape from the fixed label set that real deployments demand.</p></div>
+<div class="ben"><h4>Add a class by typing it</h4><p>New categories cost a word, not a labeling campaign and a retrain &mdash; the vocabulary grows for free at test time.</p></div>
+<div class="ben"><h4>Direct it in plain language</h4><p>Grounding lets a person say &lsquo;the red mug behind the laptop&rsquo; and get the exact region &mdash; perception you can talk to.</p></div>
+<div class="ben"><h4>One backbone, many tasks</h4><p>A single vision-language model powers detection, segmentation, grounding, and 3D queries across 2D, video, and point clouds.</p></div>
+<div class="ben"><h4>A spatial memory you can query</h4><p>Open-vocabulary 3D maps let a robot ask its own map for objects by name &mdash; the bridge from seeing to navigating and grasping.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way perception opens the vocabulary</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip bb" href="#ov1"><span class="cn">01</span>Vision-language embeddings (the CLIP idea)</a><a class="fchip bb" href="#ov2"><span class="cn">02</span>Open-vocabulary detection</a><a class="fchip vb" href="#ov3"><span class="cn">03</span>Open-vocabulary segmentation</a><a class="fchip vb" href="#ov4"><span class="cn">04</span>Training-free</a><a class="fchip bb" href="#ov5"><span class="cn">05</span>Referring</a><a class="fchip bb" href="#ov6"><span class="cn">06</span>Promptable segmentation (SAM-based)</a><a class="fchip bb" href="#ov7"><span class="cn">07</span>Open-vocabulary 3D scene understanding</a><a class="fchip bb" href="#ov8"><span class="cn">08</span>Language-embedded feature fields</a><a class="fchip vb" href="#ov9"><span class="cn">09</span>3D visual grounding</a><a class="fchip bb" href="#ov10"><span class="cn">10</span>Open-world discovery</a><a class="fchip vb" href="#ov11"><span class="cn">11</span>Part segmentation</a><a class="fchip rb" href="#ov12"><span class="cn">12</span>Language-driven affordance grounding</a><a class="fchip rb" href="#ov13"><span class="cn">13</span>Open-vocab for manipulation</a><a class="fchip vb" href="#ov14"><span class="cn">14</span>Video temporal</a><a class="fchip vb" href="#ov15"><span class="cn">15</span>Domain-specific open-vocabulary</a></div>
+  <div class="famgrid">
+<div class="fam" id="ov1">
+  <div class="famhd"><span class="famn">01</span><h3>Vision-language embeddings (the CLIP idea)</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>The foundation: train image and text encoders together so a picture lands near its description in one space, and recognition becomes a text lookup. Everything else here builds on this alignment.</p>
+<p>Work refines the embedding for dense, spatial, and synonym-robust use.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SynCLIP: Synonym-Coherent Language-Image Pretraining</b> &mdash; enriches pretraining so synonyms give consistent spatial attention</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Looking Beyond the Window: Global-Local Aligned CLIP</b> &mdash; dynamic attention normalization across sliding windows</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Do Visual-Language Grid Maps Capture Latent Semantics?</b> &mdash; analyzes when VLM-embedding maps actually generalize</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Generalizable Feature Fields for Mobile Manipulation</b> &mdash; distills CLIP into a feature field unifying navigation + manipulation</span></li></ul>
+</div>
+
+<div class="fam" id="ov2">
+  <div class="famhd"><span class="famn">02</span><h3>Open-vocabulary detection</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Find and box objects named by arbitrary text, not a fixed list, by scoring region proposals against prompt embeddings &mdash; usually distilling a VLM into the detector.</p>
+<p>Recent work goes beyond category names to attributes and prompt-enriched training.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SRA-Det: Omni-Grained Open-Vocabulary Detection Beyond Category Names</b> &mdash; semantic-facet retrieval + soft-min matching for attributes</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PET-DINO: Unifying Visual Cues into Grounding DINO</b> &mdash; prompt-enriched training with dynamic memory distillation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ViTPrompt: Training-Free Prompt Refinement with Visual Tokens</b> &mdash; visual-token augmentation refines boxes and scores, no training</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Detect Everything with Few Examples</b> &mdash; few-shot detection with ViT features + prototypes, on a real robot</span></li></ul>
+</div>
+
+<div class="fam" id="ov3">
+  <div class="famhd"><span class="famn">03</span><h3>Open-vocabulary segmentation</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Label every pixel by open text &mdash; semantic, instance, or panoptic &mdash; the dense version of the problem, where global image-text alignment fights pixel-level precision.</p>
+<p>Objectness bias, region-text alignment, and cost aggregation are the battlegrounds.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Mitigating Objectness Bias for Open-Vocabulary Panoptic Segmentation</b> &mdash; CLIP-conditioned objectness + mask refinement</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PCA-Seg: Revisiting Cost Aggregation for Semantic &amp; Part Segmentation</b> &mdash; better cost aggregation for open-vocab dense prediction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Reconstructing CLIP for Open-Vocabulary Dense Perception</b> &mdash; multi-scale features restore spatial detail for dense output</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Rethinking MLLM Itself as a Segmenter with a Single Token</b> &mdash; a residual-refilled MLLM decodes high-resolution masks</span></li></ul>
+</div>
+
+<div class="fam" id="ov4">
+  <div class="famhd"><span class="famn">04</span><h3>Training-free &amp; frozen-VLM dense prediction</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Skip training entirely: freeze a pretrained VLM and project its dense features onto text embeddings for pixel labels &mdash; fast, and it inherits the VLM&rsquo;s open vocabulary directly.</p>
+<p>Geometry alignment and attention fixes correct the VLM&rsquo;s global bias.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>PEARL: Geometry Aligns Semantics for Training-Free Segmentation</b> &mdash; Procrustes alignment + text-aware Laplacian propagation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>The Power of Prior: Training-Free Segmentation with LLaVA</b> &mdash; frozen MLLM features + cosine matching for dense labels</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Direct Segmentation without Logits Optimization</b> &mdash; analytical distribution-discrepancy solve, no training</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPAR: Single-Pass Any-Resolution ViT for Segmentation</b> &mdash; teacher-student distillation for resolution-agnostic features</span></li></ul>
+</div>
+
+<div class="fam" id="ov5">
+  <div class="famhd"><span class="famn">05</span><h3>Referring &amp; visual grounding</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Resolve a full phrase &mdash; &lsquo;the red mug behind the laptop&rsquo; &mdash; to the exact region it means, reasoning over attributes and relations to pick among look-alikes.</p>
+<p>Grounding spans images, video, and 3D, increasingly driven by MLLMs.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Open-World Grasping with Large Vision-Language Models</b> &mdash; VLM referring segmentation + contact-aware grasp ranking</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>VLM-Grounder: A VLM Agent for Zero-Shot 3D Visual Grounding</b> &mdash; 2D-only VLM grounding reaches 51.6% on ScanRefer</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DeRVOS: Decoupling Trajectory Generation for Referring Video Segmentation</b> &mdash; temporal consistency + multimodal fusion for video referring</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ThinkGrasp: A Vision-Language System for Strategic Part Grasping in Clutter</b> &mdash; reasons about occlusion to grasp heavily-occluded referents</span></li></ul>
+</div>
+
+<div class="fam" id="ov6">
+  <div class="famhd"><span class="famn">06</span><h3>Promptable segmentation (SAM-based)</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Segment Anything takes a prompt &mdash; a point, box, or text &mdash; and returns a mask for any object, no retraining. Robots use it to cut out arbitrary objects specified on the fly.</p>
+<p>Adapters, LLM-driven prompting, and auto-labeling extend SAM to robot tasks.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>GraspSAM: When Segment Anything Meets Grasp Detection</b> &mdash; light adapters turn SAM into a promptable grasp detector</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAM-Rectified Part Detection with Iterative Pose Refinement</b> &mdash; fine-tuned SAM recognizes functional parts across objects</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MovSAM: Single-Image Moving Object Segmentation via Deep Thinking</b> &mdash; LLM reasoning generates prompts for SAM to infer motion</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Low-Effort Iterative Dataset Generation for Instance Segmentation</b> &mdash; change detection + SAM auto-labels novel objects</span></li></ul>
+</div>
+
+<div class="fam" id="ov7">
+  <div class="famhd"><span class="famn">07</span><h3>Open-vocabulary 3D scene understanding</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Bring open-vocabulary labels into 3D: parse a scene &mdash; points, voxels, or Gaussians &mdash; against arbitrary text, so a robot understands space by language without a closed 3D label set.</p>
+<p>Reconstruction quality and 2D-to-3D fusion are the bottlenecks.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Ov3R: Open-Vocabulary Semantic 3D Reconstruction from RGB Videos</b> &mdash; CLIP3R fuses 2D-3D for instance-level open-vocab reconstruction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CoSMo3D: Promptable 3D Semantic Segmentation via LLM-Guided Canonical Space</b> &mdash; LLM-guided canonical modeling for open-world 3D segmentation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OpenVoxel: Training-Free Grouping and Captioning of Voxels</b> &mdash; MLLM text reasoning over 3D voxels, training-free</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>OpenVox: Real-Time Instance-Level Open-Vocabulary Voxels</b> &mdash; incremental voxel SLAM with VLM-grounded instances</span></li></ul>
+</div>
+
+<div class="fam" id="ov8">
+  <div class="famhd"><span class="famn">08</span><h3>Language-embedded feature fields</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Distill 2D foundation-model features (CLIP, DINO) into a continuous 3D field, so querying any 3D location returns a language-aligned feature &mdash; open-vocabulary 3D with no 3D annotation.</p>
+<p>Efficiency (dense features are heavy) and view-consistency are the work.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>GraspSplats: Efficient Manipulation with 3D Feature Splatting</b> &mdash; distills features into 3D Gaussians for grasp sampling in 60 s</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LensDFF: Language-Enhanced Sparse Feature Distillation for Grasping</b> &mdash; view-consistent 2D features onto point clouds for dexterous grasps</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DVEFormer: Efficient Dense Visual Embeddings via Distillation</b> &mdash; distills Alpha-CLIP into an RGB-D transformer at 26–77 FPS</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ExtrinSplat: Decoupling Geometry and Semantics in 3D Scenes</b> &mdash; separates geometry and semantics in Gaussian splatting</span></li></ul>
+</div>
+
+<div class="fam" id="ov9">
+  <div class="famhd"><span class="famn">09</span><h3>3D visual grounding &amp; spatial localization</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Ground language directly in 3D &mdash; point to the region a phrase means in a point cloud or splat &mdash; often zero-shot, without 3D training data, by reasoning over geometry and relations.</p>
+<p>Reasoning-chain distillation makes it fast enough to run.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>UZ3DVG: Unaided Zero-Shot 3D Visual Grounding</b> &mdash; reasoning-chain distillation + geometry-aware modeling at 7.69 FPS</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SAQN: Semantic-Based Adaptive Query Network for 3D Referring Segmentation</b> &mdash; class-level semantic queries for point clouds</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LangRef3DGS: Language-Guided 3D Referential Segmentation</b> &mdash; Dirichlet-process discovery of novel categories from partial views</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>QueryMe: Open-Vocabulary 3D Object Affordance Grounding</b> &mdash; grounds affordances in 3D from multimodal evidence</span></li></ul>
+</div>
+
+<div class="fam" id="ov10">
+  <div class="famhd"><span class="famn">10</span><h3>Open-world discovery &amp; novel categories</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Rather than force every object onto a known class, treat the unfamiliar as an anomaly in feature space &mdash; discover, flag, or learn genuinely new categories, the basis for lifelong, safe perception.</p>
+<p>Anomaly framing and novel-category embedding are the recurring tools.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Zoo3D: Zero-Shot 3D Object Detection at Scene Level</b> &mdash; training-free 3D detection via SAM + graph clustering</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>NoOVD: Novel Category Discovery for Open-Vocabulary Detection</b> &mdash; metric learning discovers and embeds novel categories</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Zero-Shot Semantic Segmentation for Robots in Agriculture</b> &mdash; crops as hyperspheres in feature space; weeds are anomalies</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>OoDIS: Anomaly Instance Segmentation and Detection Benchmark</b> &mdash; a benchmark for detecting genuinely unknown objects</span></li></ul>
+</div>
+
+<div class="fam" id="ov11">
+  <div class="famhd"><span class="famn">11</span><h3>Part segmentation &amp; fine-grained understanding</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Go below the object to its parts &mdash; the handle, the blade, the wheel &mdash; combining global semantics with fine attention, without a predefined part taxonomy. Parts are what manipulation actually acts on.</p>
+<p>The hard split is over-segmenting an object versus missing a small part.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HOPS: Hierarchical Open-Vocabulary Part Segmentation</b> &mdash; attention filtering + affinity propagation for parts</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PCA-Seg: Cost Aggregation for Semantic &amp; Part Segmentation</b> &mdash; unified semantic and part segmentation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SRA-Det: Detection Beyond Category Names</b> &mdash; multi-facet decomposition reaches attributes and parts</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Part-Aware Vision-Language Models for Fine-Grained Recognition</b> &mdash; explicit part alignment inside a VLM</span></li></ul>
+</div>
+
+<div class="fam" id="ov12">
+  <div class="famhd"><span class="famn">12</span><h3>Language-driven affordance grounding</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>For a robot, the useful open-vocabulary question isn&rsquo;t just &lsquo;what is it?&rsquo; but &lsquo;where do I act?&rsquo; &mdash; grounding a task in words to the object part and pose to grasp or push.</p>
+<p>VLMs reason about task-relevant affordances zero-shot, from implicit instructions.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AffordGrasp: In-Context Affordance Reasoning for Open-Vocabulary Grasping</b> &mdash; a VLM infers the task and grounds part-level affordances</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoboPoint: A VLM for Spatial Affordance Prediction</b> &mdash; predicts image keypoint affordances, zero-shot across scenes</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MOKA: Open-World Manipulation through Mark-Based Visual Prompting</b> &mdash; affordance reasoning as VLM question-answering</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SemSegGrasp: Task-Oriented Grasping via Semantic Segmentation</b> &mdash; open-vocab part segmentation drives task grasps</span></li></ul>
+</div>
+
+<div class="fam" id="ov13">
+  <div class="famhd"><span class="famn">13</span><h3>Open-vocab for manipulation &amp; navigation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The payoff on real robots: open-vocabulary perception feeding action &mdash; grab or go to the object named in plain language, even if it was never a training class.</p>
+<p>Open-vocab maps and grasping close the loop from words to motion.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>One Map to Find Them All: Real-Time Open-Vocabulary Mapping for Multi-Object Nav</b> &mdash; one open-vocab map serves zero-shot multi-object navigation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Beyond Bare Queries: Open-Vocabulary Grounding with 3D Scene Graph</b> &mdash; grounds queries against an open-vocab 3D scene graph</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tag Map: A Text-Based Map for Spatial Reasoning with LLMs</b> &mdash; a text map supports thousands of classes at tiny memory</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAGE: Bridging Semantic and Actionable Parts for Articulated Manipulation</b> &mdash; maps semantic parts to actionable parts under language</span></li></ul>
+</div>
+
+<div class="fam" id="ov14">
+  <div class="famhd"><span class="famn">14</span><h3>Video temporal &amp; 4D open-vocabulary</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Extend open vocabulary through time: localize the moment or the moving object a phrase describes in a video, or query a dynamic 4D scene &mdash; adding identity tracking to the semantic problem.</p>
+<p>Hierarchical embeddings and instance-aware 4D fields drive it.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HERO: Hierarchical Embedding-Refinement for Temporal Sentence Grounding</b> &mdash; four-level embeddings + cross-modal filtering for video grounding</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LangField4D: Spatio-Temporal Continuous 4D Language Fields</b> &mdash; identity-adaptive Gaussian grouping + TetraPlane semantics</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ST4R-Splat: Spatio-Temporal Referring Segmentation in 4D Gaussians</b> &mdash; instance-aware 4D fields with auto MLLM captions</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OmniGround: A Spatio-Temporal Grounding Benchmark</b> &mdash; 81-category benchmark for complex real-world grounding</span></li></ul>
+</div>
+
+<div class="fam" id="ov15">
+  <div class="famhd"><span class="famn">15</span><h3>Domain-specific open-vocabulary</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Take open vocabulary out of everyday photos and into remote sensing, underwater, thermal, and medical imagery &mdash; where distribution shift wrecks off-the-shelf VLM features and domain priors must be added.</p>
+<p>Attention refinement and cross-modal fusion adapt the backbone.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ReAttnCLIP: Training-Free Open-Vocabulary Remote Sensing Segmentation</b> &mdash; redefined CLIP attention for overhead imagery</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Exploring the Underwater World Segmentation without Extra Training</b> &mdash; Earth2Ocean + a 255-category underwater dataset</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Thermal-Det: Language-Guided Cross-Modal Distillation for Thermal Detection</b> &mdash; thermal-RGB distillation for open-vocab thermal detection</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MM-OVSeg: Multimodal Optical-SAR Fusion for Remote Sensing</b> &mdash; fuses optical and SAR for open-vocab remote-sensing segmentation</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Naming anything by language is a young superpower with rough edges. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>Dense precision from a global model.</b> VLMs are trained on whole-image alignment, which fights the pixel-level precision segmentation needs &mdash; background bias and geometric drift persist.</div>
+<div class="op"><b>Rare words &amp; fine parts.</b> Open vocabulary is strong on common objects but weak on rare descriptions, fine-grained parts, and compositional phrases (&lsquo;three to the left of&rsquo;).</div>
+<div class="op"><b>Real-time at dense resolution.</b> Per-pixel VLM inference is slow; sliding-window accuracy costs a large slowdown, and edge deployment forces hard trade-offs.</div>
+<div class="op"><b>Feature drift &amp; hallucination.</b> VLM embeddings drift across domains and sessions and confidently mislabel; there is no principled uncertainty for a grounding failure.</div>
+<div class="op"><b>Geometry the language ignores.</b> Language names things well but reasons about exact distance and reachability poorly &mdash; robot use still needs separate geometric grounding.</div>
+<div class="op"><b>Domain shift.</b> Remote-sensing, underwater, thermal, and medical imagery break off-the-shelf features; generalizing across domains stays brittle.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Open-Vocabulary Perception explainer &middot; mechanism diagrams are live JavaScript (assets/ov-anim.js) &middot; the Qwen2-VL run is ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the semantic seeing beside the <a href="3d-perception-explained.html">geometric</a> one, feeding the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/ov-anim.js"></script>
+</body></html>

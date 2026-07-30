@@ -4,7 +4,7 @@
 <style>
  :root{--ink:#14161A;--paper:#F1F2F4;--panel:#FBFBFC;--tint:#E7E9EC;--line:#D7DADF;
   --graphite:#555B63;--g2:#828A93;
-  --gs:#1F6F8B;--wm:#6B4CC9;--vla:#B5751A;--dp:#B8436A;--lo:#9B4A8A;--se:#2E8B5E;--dr:#3E6699;--pe:#1C7ED6;--mr:#C0392B;
+  --gs:#1F6F8B;--wm:#6B4CC9;--vla:#B5751A;--dp:#B8436A;--lo:#9B4A8A;--se:#2E8B5E;--dr:#3E6699;--pe:#1C7ED6;--mr:#C0392B;--gr:#BF5B3A;--ta:#B0398F;--nv:#1B8A6B;--ov:#B98A16;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
   --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
  *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
@@ -30,7 +30,7 @@
  .stage .fp{font-size:14px;color:#2B2E33;margin:0 0 10px}
  .stage .go{font-family:var(--mono);font-size:12px;color:var(--ac)}
  .s-gs{--ac:var(--gs)}.s-wm{--ac:var(--wm)}.s-vla{--ac:var(--vla)}.s-dp{--ac:var(--dp)}
- .s-lo{--ac:var(--lo)}.s-se{--ac:var(--se)}.s-dr{--ac:var(--dr)}.s-pe{--ac:var(--pe)}.s-mr{--ac:var(--mr)}
+ .s-lo{--ac:var(--lo)}.s-se{--ac:var(--se)}.s-dr{--ac:var(--dr)}.s-pe{--ac:var(--pe)}.s-mr{--ac:var(--mr)}.s-gr{--ac:var(--gr)}.s-ta{--ac:var(--ta)}.s-nv{--ac:var(--nv)}.s-ov{--ac:var(--ov)}
  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0 6px}
  @media(max-width:640px){.pillars{grid-template-columns:1fr}}
  .prose p{font-size:15.5px;color:#25282D;max-width:72ch;margin:11px 0}.prose em{font-style:italic}
@@ -45,7 +45,7 @@
 <header><div class="wrap">
   <div class="bug">the four explainers &middot; one loop</div>
   <h1>One machine, four models</h1>
-  <p>A robot that does anything in the world runs one tight loop &mdash; <b>perceive → imagine → decide → act</b>, then look again. Four deep-dive explainers, one per stage &mdash; plus five more for the raw seeing beneath perception, the body it runs on, the data it learns from, the road it proves itself on, and the team it becomes when it isn&rsquo;t one machine but many. This page is what they all add up to.</p>
+  <p>A robot that does anything in the world runs one tight loop &mdash; <b>perceive → imagine → decide → act</b>, then look again. Four deep-dive explainers, one per stage &mdash; plus nine more for the systems that make the loop real: the raw seeing and the naming that feed it, the hands, touch, and body that let it act, the way it finds through space, the data it learns from, the road it proves itself on, and the team it becomes when it isn&rsquo;t one machine but many. This page is what they all add up to.</p>
 </div></header>
 <div class="wrap">
 
@@ -90,10 +90,14 @@
 </div>
 
 <h2>Beneath and around the loop</h2>
-<div class="prose"><p>The loop above is the mind. It only works if it has raw <b style="color:var(--pe)">seeing</b> feeding it, a <b style="color:var(--lo)">body</b> to run on, <b style="color:var(--se)">data</b> to learn from, a hard <b style="color:var(--dr)">place</b> to prove itself, and &mdash; more and more &mdash; a whole <b style="color:var(--mr)">team</b> of machines rather than one. Five more explainers, one each:</p></div>
+<div class="prose"><p>The loop above is the mind. It only works if it has raw <b style="color:var(--pe)">seeing</b> and open-vocabulary <b style="color:var(--ov)">naming</b> feeding it; <b style="color:var(--gr)">hands</b>, a sense of <b style="color:var(--ta)">touch</b>, and a <b style="color:var(--lo)">body</b> to act with; a <b style="color:var(--nv)">way</b> to get where it&rsquo;s going; <b style="color:var(--se)">data</b> to learn from; a hard <b style="color:var(--dr)">place</b> to prove itself; and &mdash; more and more &mdash; a whole <b style="color:var(--mr)">team</b> rather than one. Nine more explainers, one each:</p></div>
 <div class="pillars">
   <a class="stage s-pe" href="3d-perception-explained.html"><div class="role">the raw seeing</div><h3>3D Perception</h3><p class="fp">The depth, motion, and map under perception itself &mdash; stereo, monocular depth, optical flow, and SLAM &mdash; putting back the third dimension a camera throws away.</p><div class="go">Open the explainer →</div></a>
+  <a class="stage s-ov" href="open-vocab-explained.html"><div class="role">the naming</div><h3>Open-Vocabulary Perception</h3><p class="fp">Seeing isn&rsquo;t naming &mdash; recognizing, detecting, and grounding anything described in words, not a fixed list, in 2D and in 3D.</p><div class="go">Open the explainer →</div></a>
+  <a class="stage s-gr" href="manipulation-explained.html"><div class="role">the hands</div><h3>Manipulation &amp; Grasping</h3><p class="fp">Controlling the world through contact &mdash; force-closure grasps, in-hand dexterity, and contact-rich control where the physics jumps.</p><div class="go">Open the explainer →</div></a>
+  <a class="stage s-ta" href="tactile-explained.html"><div class="role">the touch</div><h3>Tactile &amp; Force Sensing</h3><p class="fp">The sense vision lacks &mdash; feeling force and slip at the contact the camera can&rsquo;t see, and commanding force instead of position.</p><div class="go">Open the explainer →</div></a>
   <a class="stage s-lo" href="locomotion-explained.html"><div class="role">the body</div><h3>Locomotion &amp; Whole-Body</h3><p class="fp">The legs and balance the loop rides on &mdash; many joints, discontinuous contact, and staying upright while doing a task.</p><div class="go">Open the explainer →</div></a>
+  <a class="stage s-nv" href="navigation-explained.html"><div class="role">the way</div><h3>Navigation &amp; Motion Planning</h3><p class="fp">Getting from here to the goal without hitting anything &mdash; planning, the map-plan-react stack, crowds, and language-driven navigation.</p><div class="go">Open the explainer →</div></a>
   <a class="stage s-se" href="sim-to-real-explained.html"><div class="role">the data</div><h3>Sim-to-Real &amp; the Data Engine</h3><p class="fp">Where every stage gets its examples &mdash; randomize, capture, generate, and learn the simulator, then verify it transfers.</p><div class="go">Open the explainer →</div></a>
   <a class="stage s-dr" href="autonomous-driving-explained.html"><div class="role">the road</div><h3>Autonomous Driving</h3><p class="fp">The whole loop at highway speed and the highest stakes &mdash; the flagship instance of perceive→imagine→decide→act.</p><div class="go">Open the explainer →</div></a>
   <a class="stage s-mr" href="multi-robot-explained.html"><div class="role">the many</div><h3>Multi-Robot Systems</h3><p class="fp">When it isn&rsquo;t one machine but a team &mdash; path finding without collision, deciding centrally or locally, and seeing past occlusion by sharing.</p><div class="go">Open the explainer →</div></a>
@@ -101,7 +105,7 @@
 
 </div>
 <footer><div class="wrap">
-  The loop, whole &middot; <a href="gaussian-splatting-explained.html">perceive</a> &middot; <a href="world-models-explained.html">imagine</a> &middot; <a href="vla-explained.html">decide</a> &middot; <a href="diffusion-policies-explained.html">act</a> &nbsp;+&nbsp; <a href="3d-perception-explained.html">seeing</a> &middot; <a href="locomotion-explained.html">body</a> &middot; <a href="sim-to-real-explained.html">data</a> &middot; <a href="autonomous-driving-explained.html">road</a> &middot; <a href="multi-robot-explained.html">many</a> &middot; diagram is live JavaScript (assets/hub-anim.js) &middot; <a href="index.html">Robotics 2025 home</a>
+  The loop, whole &middot; <a href="gaussian-splatting-explained.html">perceive</a> &middot; <a href="world-models-explained.html">imagine</a> &middot; <a href="vla-explained.html">decide</a> &middot; <a href="diffusion-policies-explained.html">act</a> &nbsp;+&nbsp; <a href="3d-perception-explained.html">seeing</a> &middot; <a href="open-vocab-explained.html">naming</a> &middot; <a href="manipulation-explained.html">hands</a> &middot; <a href="tactile-explained.html">touch</a> &middot; <a href="locomotion-explained.html">body</a> &middot; <a href="navigation-explained.html">way</a> &middot; <a href="sim-to-real-explained.html">data</a> &middot; <a href="autonomous-driving-explained.html">road</a> &middot; <a href="multi-robot-explained.html">many</a> &middot; diagram is live JavaScript (assets/hub-anim.js) &middot; <a href="index.html">Robotics 2025 home</a>
 </div></footer>
 <script src="assets/hub-anim.js"></script>
 </body></html>

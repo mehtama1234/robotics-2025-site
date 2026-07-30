@@ -1,0 +1,335 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manipulation &amp; Grasping, from first principles</title>
+<style>
+:root{--ink:#1A0C08;--paper:#F4ECE8;--panel:#FCF7F4;--tint:#EDD9CF;--line:#E0C6B9;
+ --graphite:#5B473F;--g2:#94796D;--accent:#BF5B3A;--accent-deep:#9A4327;--accent-lite:#E08A6B;
+ --robo:#4E6172;--cvpr:#2F6F8B;--both:#BF5B3A;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#160A06;color:#F3E7E1;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#FBEFE9}
+header p{color:#C9B3A9;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#A98F83}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#30231D;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#160A06;border:1px solid #2E170E;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#B4948A;margin-top:8px}
+.essay p{font-size:15.5px;color:#241611;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#160A06}
+.ranfig figcaption{font-size:13px;color:#30231D;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#2A1A13;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#30231D;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#2A1A13}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#2A1A13}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#F0DACE}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#241611;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#E4EAEF;color:#3A4A5A;border:1px solid #C6D2DC}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#F0DACE;color:var(--accent-deep);border:1px solid #E6BCA6}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#241611}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#2A1A13;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#1A0C08}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#2A1A13}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Manipulation &amp; Grasping &middot; contact · force · dexterity &middot; robotics + vision</div>
+  <h1>Manipulation: controlling the world through contact</h1>
+  <p>Perception happens at a distance; changing the world does not. To grasp, insert, fold, or hand over, a robot works entirely through fleeting physical contact &mdash; where the forces must be right and the physics jumps the instant a finger lands. Grasping, dexterity, contact-rich control, and learned policies &mdash; from first principles, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">hold it</a> &middot; <a href="#fp3">the hard part</a> &middot; <a href="#fp4">dexterity</a> &middot; <a href="#fp5">learn it</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why everything happens through contact, what makes a grasp hold, why contact makes the physics jump, how a hand reorients an object, and how policies learn to commit to one good grasp. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">classical</span><b>grasp geometry</b><p>force closure and grasp metrics compute stable grips from a known object shape and friction model.</p></div><div class="ln"><span class="lyr">2010s</span><b>learned grasp detection</b><p>CNNs predict 6-DoF grasps straight from depth images &mdash; robust to novel objects, no CAD model needed.</p></div><div class="ln"><span class="lyr">2018&ndash;</span><b>RL for dexterity</b><p>reinforcement learning in simulation cracks in-hand reorientation and contact-rich control, then transfers to real hands.</p></div><div class="ln"><span class="lyr">2022&ndash;</span><b>diffusion &amp; imitation</b><p>diffusion / flow policies learn multimodal manipulation from a few demos and commit to decisive motion.</p></div><div class="ln"><span class="lyr">2023&ndash;</span><b>language &amp; foundation models</b><p>VLMs pick task-relevant grasps and affordances from plain instructions, and 3D/hand foundation models generalize &mdash; the families below.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>Everything happens through contact</h2>
+  <figure class="instrument"><canvas data-granim="gr_why" height="300"></canvas>
+    <figcaption>To move an object, a robot has to touch it — and touch is the only handle it has. Control exists only while contact lasts, the forces must be right, and the physics changes the instant a finger lands or leaves. Manipulation is the art of controlling the world through contact.</figcaption></figure>
+  <div class="essay"><p>Perception can happen at a distance, but changing the world cannot. To move, open, place, or assemble anything, a robot has to make physical <b>contact</b> &mdash; and that contact is the only channel through which it can push the world around.</p>
+<p>This is what makes manipulation its own hard problem. Control only exists while the robot is touching; the forces have to point the right way or the object slips or crushes; and the instant a finger touches down or lifts off, the physics changes character. Grasping and manipulation are the science of shaping the world through those fleeting contacts.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>A contact applies a wrench (force + torque) to the object; the robot can only change the object&rsquo;s motion through the sum of contact wrenches &mdash; no contact, no control authority.</p>
+<p>Making/breaking contact switches the system&rsquo;s equations of motion, so manipulation dynamics are hybrid, not smooth.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; hold it</div>
+  <h2>A grasp is a cage of forces</h2>
+  <figure class="instrument"><canvas data-granim="gr_grasp" height="300"></canvas>
+    <figcaption>A good grasp isn't about squeezing hard — it's about placing contacts so their friction cones together can resist a push from any direction. That property, force closure, is what makes a grip that a bump or a twist can't break.</figcaption></figure>
+  <div class="essay"><p>What makes a grasp actually hold? Not raw squeezing force, but <em>where</em> the contacts are. Each fingertip can only push inward and, thanks to friction, resist some sideways force &mdash; a &lsquo;cone&rsquo; of forces it can apply. Place the fingers well and those cones together can cancel a push or twist from <em>any</em> direction.</p>
+<p>That property is called <b>force closure</b>, and it&rsquo;s the difference between a grip that survives a bump and one that drops the object. Much of grasping is finding, from an object&rsquo;s shape, contact points that achieve it &mdash; fast, and even when you can only see part of the object.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Force closure: the contact wrenches positively span the whole wrench space &mdash; any external wrench can be resisted by a non-negative combination of contact forces.</p>
+<p>Each contact obeys the friction cone &Vert;f_t&Vert; &le; &mu; f_n (tangential force bounded by friction times normal force); grasp synthesis places contacts so the cones jointly close.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; the hard part</div>
+  <h2>Contact makes the physics jump</h2>
+  <figure class="instrument"><canvas data-granim="gr_contact" height="300"></canvas>
+    <figcaption>Insert a peg and the dynamics don't change smoothly — they flip between distinct modes: free, one-point contact, jammed, sliding. Each mode obeys different rules, and you can't smoothly follow a gradient across the switch. This discontinuity is what makes contact-rich control genuinely hard.</figcaption></figure>
+  <div class="essay"><p>Away from contact, a robot&rsquo;s motion is smooth and predictable. The moment it touches, everything changes: pressing a peg into a hole, the system jumps between distinct <b>modes</b> &mdash; floating free, touching at one point, wedged at two, sliding home &mdash; and each mode follows different equations.</p>
+<p>That&rsquo;s why contact-rich tasks resist the usual tools. You can&rsquo;t just follow a smooth gradient to the goal, because the gradient breaks at every mode switch. Handling these non-smooth, hybrid dynamics &mdash; with force feedback, clever solvers, or learning &mdash; is the core challenge of assembly, insertion, and tool use.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Contact is a complementarity condition: 0 &le; force &perp; gap &ge; 0 &mdash; either touching (gap 0, force &ge; 0) or separated (gap &gt; 0, force 0).</p>
+<p>This makes the dynamics non-smooth and mode-switched (stick / slip / separate); gradients are undefined across switches, so smooth optimizers stall.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; dexterity</div>
+  <h2>Rearranging the grip itself</h2>
+  <figure class="instrument"><canvas data-granim="gr_dexterous" height="300"></canvas>
+    <figcaption>A dexterous hand can reorient an object without dropping it — lifting one finger, repositioning it, and pressing again while the others hold. Coordinating many joints through this making and breaking of contact, called finger gaiting, is how in-hand manipulation works.</figcaption></figure>
+  <div class="essay"><p>A parallel gripper can only clamp; a multi-fingered hand can <em>rearrange</em>. To turn an object in place, the hand lifts one finger, moves it to a new spot, and presses again &mdash; all while the remaining fingers keep the object secure. Repeat, and the object rotates without ever being dropped.</p>
+<p>This is <b>finger gaiting</b>, and it demands coordinating many joints through a constantly changing pattern of which fingers are in contact where. It&rsquo;s the hardest, most human part of manipulation &mdash; and where learned policies and tactile feedback have made the biggest recent gains.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>A dexterous hand has many DoF; reorientation is a sequence of sub-grasps, each a force-closure grip, linked by finger gaiting (relocate one contact while others hold).</p>
+<p>Planning is over both continuous finger motion and the discrete contact schedule &mdash; a hybrid problem RL handles well in simulation.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; learn it</div>
+  <h2>Many good grasps, commit to one</h2>
+  <figure class="instrument"><canvas data-granim="gr_learn" height="300"></canvas>
+    <figcaption>There's rarely one right way to grasp a mug — there are many. A policy learned from a handful of human demonstrations has to represent that whole distribution of good options and then commit to a single one, without averaging two good grasps into a bad one in between.</figcaption></figure>
+  <div class="essay"><p>You can&rsquo;t hand-code every grasp, so modern manipulation is learned &mdash; often by imitation from a handful of human demonstrations. But there&rsquo;s a subtlety: a mug affords many good grasps, and the policy has to represent that whole set of valid options.</p>
+<p>The trap is averaging. Blend two perfectly good grasps and you can land on the bad one in between &mdash; a grip on empty air. This is exactly why diffusion and flow-matching policies took over: they can hold a <em>multimodal</em> distribution of actions and <b>commit</b> to one clean choice, instead of collapsing to a mushy average.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Learn &pi;&#952;(a | observation) from demos; the action posterior is multimodal (many valid grasps), so a unimodal regressor averages modes into an invalid action.</p>
+<p>Diffusion / flow policies model the full distribution and sample one mode &mdash; committing to a decisive action instead of the mean.</p></div></details>
+</section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div><img src="assets/tamp/kuka_pick.gif" alt="KUKA arm planning and executing a pick"><figcaption>Manipulation, for real: we ran a full <b>grasp &rarr; inverse-kinematics &rarr; collision-free motion plan</b> pick on a KUKA arm (pybullet_planning, headless). The planner picks a grasp, solves the arm configuration that reaches it, then searches a collision-free path (BiRRT) to lift the block &mdash; the classic pick pipeline of Part&nbsp;I made concrete. Our own run.</figcaption></figure></section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three ways to decide how to grip</h2>
+  <p class="intro">The field&rsquo;s arc, in one table &mdash; from analytic grasp planning on a known shape, to learned grasp detection, to full learned policies that pick up the contact implicitly.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it decides where/how to grip</th><th>Needs a model?</th><th>Handles contact-rich tasks?</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Analytic grasp planning</th><td>optimize force closure on a known shape</td><td>yes — geometry & friction</td><td>poorly — assumes rigid, clean contact</td><td>brittle to unknown shape, clutter, deformables</td></tr><tr><th class="rn">Learned grasp detection</th><td>a network predicts grasps from vision</td><td>no — trained from data</td><td>some, with tactile</td><td>weak on task-relevance & occlusion</td></tr><tr class="hi"><th class="rn">Learned policies (diffusion / VLA)</th><td>generate the whole action from demos</td><td>no — imitation / RL</td><td>yes — learns contact implicitly</td><td>data-hungry; hard to certify; sim-to-real gap</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons a robot can grip and manipulate the real world.</p>
+  <div class="bens"><div class="ben"><h4>Grip that survives a bump</h4><p>Force-closure grasp synthesis places contacts that resist a push from any direction &mdash; the difference between holding an object and dropping it.</p></div>
+<div class="ben"><h4>Precision through contact feedback</h4><p>Force and tactile signals let a robot feel jamming, slipping, and seating &mdash; so it completes insertions and assemblies vision alone can&rsquo;t.</p></div>
+<div class="ben"><h4>Dexterity without dropping</h4><p>Finger gaiting reorients an object in-hand by making and breaking contacts &mdash; the human-like skill that unlocks tools and tight spaces.</p></div>
+<div class="ben"><h4>One policy, many objects</h4><p>Learned policies grasp objects and shapes they never saw, generalizing from demonstrations instead of per-object engineering.</p></div>
+<div class="ben"><h4>Decisive, not averaged, motion</h4><p>Diffusion and flow policies commit to one good grasp out of many &mdash; avoiding the mushy in-between that clamps on nothing.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way robots grip and manipulate</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip bb" href="#gr1"><span class="cn">01</span>Grasp synthesis</a><a class="fchip bb" href="#gr2"><span class="cn">02</span>Grasp detection</a><a class="fchip bb" href="#gr3"><span class="cn">03</span>Dexterous</a><a class="fchip rb" href="#gr4"><span class="cn">04</span>Bimanual</a><a class="fchip bb" href="#gr5"><span class="cn">05</span>Contact-rich</a><a class="fchip rb" href="#gr6"><span class="cn">06</span>Deformable-object manipulation</a><a class="fchip rb" href="#gr7"><span class="cn">07</span>Non-prehensile manipulation</a><a class="fchip rb" href="#gr8"><span class="cn">08</span>Tool use</a><a class="fchip rb" href="#gr9"><span class="cn">09</span>Pick-and-place</a><a class="fchip bb" href="#gr10"><span class="cn">10</span>Affordance</a><a class="fchip rb" href="#gr11"><span class="cn">11</span>Cluttered-scene</a><a class="fchip bb" href="#gr12"><span class="cn">12</span>Manipulation policies</a><a class="fchip vb" href="#gr13"><span class="cn">13</span>Articulated-object manipulation</a><a class="fchip vb" href="#gr14"><span class="cn">14</span>Hand-object interaction: reconstruction</a><a class="fchip bb" href="#gr15"><span class="cn">15</span>Sim-to-real for manipulation</a></div>
+  <div class="famgrid">
+<div class="fam" id="gr1">
+  <div class="famhd"><span class="famn">01</span><h3>Grasp synthesis &amp; generation</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>The core question: given an object, where should the fingers go? Synthesis computes contact placements that achieve force closure, scaling from single objects to huge generated datasets, and now to full dexterous-hand configurations.</p>
+<p>Recent work makes generation geometry-aware, physically plausible, and diverse.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>BODex: Scalable Dexterous Grasp Synthesis Using Bilevel Optimization</b> &mdash; a QP enforces force closure while the outer level scales dataset generation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoDexGrasp: Geometry-aware, Physics-plausible Dexterous Grasping</b> &mdash; SIM(3)-equivariant pose/shape split + physics refinement cuts penetration 40%</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MaskDexGrasp: Generative Masked Modeling for Part-Aware Grasp Synthesis</b> &mdash; anatomical part codebooks + masked transformer, editable per finger</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Qdgset: a Large-Scale Grasping Dataset via Quality-Diversity</b> &mdash; quality-diversity search generates diverse grasps at scale</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DextER: Language-driven Dexterous Grasp Generation with Embodied Reasoning</b> &mdash; contact-token autoregression for interpretable, language-driven grasps</span></li></ul>
+</div>
+
+<div class="fam" id="gr2">
+  <div class="famhd"><span class="famn">02</span><h3>Grasp detection &amp; 6-DoF pose</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Skip the model: predict grasps &mdash; and object poses &mdash; straight from vision, handling material, occlusion, and uncertainty. This is the workhorse that turns a depth image into something to grab.</p>
+<p>The edges are transparent/specular objects, multi-view fusion, and honest uncertainty.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>GraspSAM: When Segment Anything Meets Grasp Detection</b> &mdash; adapts SAM with light adapters for promptable grasp detection</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>NeuGrasp: Material-Agnostic Grasp Detection via Neural Surface Reconstruction</b> &mdash; neural surfaces recover transparent/specular geometry for grasping</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Cross-view Fusion Framework for Robust 6-DoF Grasp Pose Estimation</b> &mdash; cross-view attention fuses multi-view RGB-D with adaptive weighting</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>vMF-Contact: Uncertainty-Aware Evidential Learning for Contact-Grasp</b> &mdash; models aleatoric + epistemic uncertainty for noisy clutter</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ComPose: Unified Completion-Pose for Category-Level Object Pose</b> &mdash; joint shape completion + 6-DoF pose under occlusion</span></li></ul>
+</div>
+
+<div class="fam" id="gr3">
+  <div class="famhd"><span class="famn">03</span><h3>Dexterous &amp; in-hand manipulation</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Multi-finger hands reorient objects in-hand by coordinating many joints through making and breaking contact &mdash; finger gaiting, regrasp, sliding. Tactile feedback disambiguates which finger touches where.</p>
+<p>RL in simulation plus sim-to-real touch has driven the biggest gains here.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ViViDex: Vision-Based Dexterous Manipulation from Human Videos</b> &mdash; trajectory-guided rewards from human video, vision-only rollouts</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>AnyRotate: Gravity-Invariant In-Hand Rotation with Sim-to-Real Touch</b> &mdash; dense tactile sim-to-real for multi-axis in-hand rotation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Simple to Complex Skills: In-Hand Object Reorientation</b> &mdash; hierarchical policy sequences low-level rotation skills</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Structural Action Transformer for 3D Dexterous Manipulation</b> &mdash; embodied joint codebook + flow matching, cross-embodiment</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Composing Dexterous Grasping and In-Hand Manipulation via an RL Critic</b> &mdash; reuses an RL critic to score grasps for downstream reorientation</span></li></ul>
+</div>
+
+<div class="fam" id="gr4">
+  <div class="famhd"><span class="famn">04</span><h3>Bimanual &amp; dual-arm coordination</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Two arms handle what one can&rsquo;t &mdash; folding cloth, carrying a beam, catching &mdash; but coupling through the shared object means each arm must account for what the other does.</p>
+<p>State-diffusion, keypoints, and active vision coordinate the pair.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>BiFold: Bimanual Cloth Folding with Language Guidance</b> &mdash; a VLM predicts bimanual fold actions from language</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Coordinated Bimanual Policies with State Diffusion</b> &mdash; diffuses future scene states, then inverse-dynamics to actions</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Vision for Bimanual Robotic Manipulation</b> &mdash; a separate arm carries a camera to beat occlusion</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Dexterous Bimanual Catch Skills via Adversarial-Cooperative RL</b> &mdash; 2× over single-agent RL on bimanual catching</span></li></ul>
+</div>
+
+<div class="fam" id="gr5">
+  <div class="famhd"><span class="famn">05</span><h3>Contact-rich &amp; force-controlled manipulation</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>When the task <em>is</em> the contact &mdash; insertion, wiping, pressing &mdash; the robot must sense and regulate force through sticking, sliding, and jamming, not just track a position.</p>
+<p>Force and tactile feedback plus fast contact-mode solvers are the tools.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ForceVLA2: Hybrid Force-Position Control with Force Awareness</b> &mdash; a force-aware mixture-of-experts for contact-rich assembly</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Compliance Policy: Learning Compliance for Diffusion Control</b> &mdash; learns spatiotemporal compliance profiles from demos</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tactile-Driven Non-Prehensile Manipulation via Extrinsic Contact Mode Control</b> &mdash; switches stick/slide via gradient optimization on tactile</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Contact-Aware Neural Dynamics</b> &mdash; tactile co-training implicitly aligns sim and real contact</span></li></ul>
+</div>
+
+<div class="fam" id="gr6">
+  <div class="famhd"><span class="famn">06</span><h3>Deformable-object manipulation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Cloth, rope, cables, and dough have effectively infinite degrees of freedom and change shape as you act &mdash; so the robot must predict how the object deforms under its moves.</p>
+<p>Point-cloud dynamics, keypoints, and differentiable simulation model the state.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DeformPAM: Data-Efficient Long-Horizon Deformable Manipulation via Preference Alignment</b> &mdash; diffusion over 3D point clouds + preference-based training</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>General-Purpose Clothes Manipulation with Semantic Keypoints</b> &mdash; sparse semantic keypoints unify fold/flatten/hang</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Object Properties via Differentiable Robot-Object Interaction</b> &mdash; differentiable sim identifies elasticity/mass from proprioception</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shared Control for Cable Routing with Tactile Sensing</b> &mdash; tactile-driven authority sharing for contact-rich cable routing</span></li></ul>
+</div>
+
+<div class="fam" id="gr7">
+  <div class="famhd"><span class="famn">07</span><h3>Non-prehensile manipulation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>You don&rsquo;t always grasp &mdash; sometimes you push, pivot, topple, or slide. Non-prehensile manipulation rearranges objects through external contact, planning contact sequences that respect friction.</p>
+<p>MPPI and contact-mode control handle the uncertainty and mode switches.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReloPush: Multi-Object Rearrangement with a Nonholonomic Pusher</b> &mdash; a push-traversability graph plans confined-space rearrangement</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic Object-Goal Pushing with Mobile Manipulators via Constrained RL</b> &mdash; constrained RL discovers push contacts reactively</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Goal-Driven Robotic Pushing Under Uncertain Object Properties</b> &mdash; MPPI handles uncertain mass/friction without preset trajectories</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic On-Palm Manipulation via Controlled Sliding</b> &mdash; contact-implicit MPC slides objects on the palm</span></li></ul>
+</div>
+
+<div class="fam" id="gr8">
+  <div class="famhd"><span class="famn">08</span><h3>Tool use</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Grasp a tool, then apply forces <em>through</em> it &mdash; a peeler, a spatula, a rope &mdash; adapting to the tool&rsquo;s geometry and the contact it makes with the world.</p>
+<p>Contact-based demos, hierarchical RL, and visual prompting teach tool skills.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robotic Hand Tool Use with Contact-Based Demonstration: Cucumber Peeling</b> &mdash; optical tactile captures tool stiffness, reproduces contact not trajectory</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hierarchical RL for Articulated Tool Manipulation with a Multifingered Hand</b> &mdash; a tool-affordance encoder conditions a hierarchical policy</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Implicit Physics-aware Policy for Dynamic Manipulation via Soft Body Tools</b> &mdash; online system-ID for manipulating with rope-like tools</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MOKA: Open-World Manipulation through Mark-Based Visual Prompting</b> &mdash; turns affordance reasoning into VLM question-answering for tool use</span></li></ul>
+</div>
+
+<div class="fam" id="gr9">
+  <div class="famhd"><span class="famn">09</span><h3>Pick-and-place &amp; rearrangement</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The bread and butter: grasp, move, place &mdash; sequenced over many objects to minimize travel and avoid collisions. Simple to state, subtle to optimize at scale.</p>
+<p>Lazy search, registration-as-policy, and 3D language policies push generalization.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ORLA*: Mobile-Manipulator Rearrangement with Lazy A*</b> &mdash; lazy A* + learned heuristics for time-optimal rearrangement</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Match Policy: From Point-Cloud Registration to Manipulation</b> &mdash; recasts action inference as registering target poses to demos</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Generalizable Vision-Language Manipulation: GemBench + 3D-LOTUS</b> &mdash; scene-conditioned 3D policy generalizes across objects/poses</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hook-Based Aerial Payload Grasping from a Moving Platform</b> &mdash; trajectory optimization times an aerial pick-up</span></li></ul>
+</div>
+
+<div class="fam" id="gr10">
+  <div class="famhd"><span class="famn">10</span><h3>Affordance &amp; task-oriented grasping</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>The right grasp depends on the goal: hold a knife by the handle to cut, by the blade to hand over. Affordance grasping reasons about object parts and task to pick where and how to grip.</p>
+<p>VLM in-context reasoning and part segmentation ground affordances by language.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AffordGrasp: In-Context Affordance Reasoning for Open-Vocabulary Grasping</b> &mdash; a VLM infers the task and grounds part-level affordances</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RT-Affordance: Affordances as Intermediate Representations</b> &mdash; predicts affordance keypoint plans from language, web-scale</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AffordGen: Diverse Demonstrations via Affordance Correspondence</b> &mdash; DINOv2 correspondences transfer grasps across novel objects</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SemSegGrasp: Task-Oriented Grasping via Semantic Segmentation</b> &mdash; decouples semantic part analysis from grasp detection</span></li></ul>
+</div>
+
+<div class="fam" id="gr11">
+  <div class="famhd"><span class="famn">11</span><h3>Cluttered-scene &amp; amodal manipulation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Real bins are messy: objects occlude each other and only part of each is visible. The robot must segment instances, complete hidden shape, and reason about what blocks what.</p>
+<p>Boundary-refined segmentation, shape-completion confidence, and obstruction graphs help.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>High-Quality Unknown Object Instance Segmentation via Boundary Refinement</b> &mdash; estimates four boundary error types for robust clutter segmentation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Measuring Uncertainty in Shape Completion to Improve Grasp Quality</b> &mdash; per-point completion confidence steers grasp choice</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Obstruction Reasoning for Robotic Grasping</b> &mdash; a graph identifies obstructing objects to clear first</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Grasping of Moving Objects in Dense Clutter</b> &mdash; global-to-local detection + static-to-dynamic planning</span></li></ul>
+</div>
+
+<div class="fam" id="gr12">
+  <div class="famhd"><span class="famn">12</span><h3>Manipulation policies &amp; imitation learning</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Learn the whole visuomotor policy from demonstrations &mdash; observations to continuous actions &mdash; handling the multimodality of valid actions and generalizing across tasks and embodiments.</p>
+<p>Diffusion transformers, recovery behaviors, and model merging are the current tools.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>The Ingredients for Robotic Diffusion Transformers</b> &mdash; ablates DiT design choices for manipulation policies</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>REACH: Explicit Recovery Behavior for Diffusion Policies</b> &mdash; OOD detection + retreat for robust action selection</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist VLA</b> &mdash; task-mask LoRA merges skills without forgetting</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoCoDA: Counterfactual Data Augmentation for Robot Learning</b> &mdash; causal invariance + SE(3) equivariance augments demos</span></li></ul>
+</div>
+
+<div class="fam" id="gr13">
+  <div class="famhd"><span class="famn">13</span><h3>Articulated-object manipulation</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Doors, drawers, laptops, scissors &mdash; objects with moving parts. The robot must infer the joint (hinge or slider) and manipulate the part along it, ideally from a single view.</p>
+<p>VLM knowledge, analytic part concepts, and Gaussian part models reconstruct the kinematics.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Physically Grounded Commonsense for Articulated Manipulation with Analytic Concepts</b> &mdash; maps MLLM semantics to cuboid/cylinder control concepts</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPARK: Sim-ready Part-level Articulated Reconstruction with VLM Knowledge</b> &mdash; differentiable forward kinematics + URDF refinement from one image</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Part2GS: Part-aware Modeling of Articulated Objects with 3D Gaussians</b> &mdash; part-level Gaussian decomposition for articulation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hoi!: A Multimodal Dataset for Force-Grounded Articulated Manipulation</b> &mdash; 3048 sequences with synced RGB-D, pose, force, haptic</span></li></ul>
+</div>
+
+<div class="fam" id="gr14">
+  <div class="famhd"><span class="famn">14</span><h3>Hand-object interaction: reconstruction &amp; synthesis</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Recover, or generate, how a hand grips and moves an object &mdash; from monocular video, under occlusion, obeying physics (no floating, no penetration). This is the perception side that teaches robots how humans manipulate.</p>
+<p>Foundation models, discrete hand tokens, and physics-aware diffusion drive it.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ArtHOI: Monocular 4D Reconstruction of Hand-Articulated-Object Interaction</b> &mdash; multi-foundation-model + MLLM contact reasoning for 4D HOI</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TokenHand: Discrete Tokens for Efficient Hand Mesh Reconstruction</b> &mdash; VQ-VAE hand codebook, 65 FPS at SOTA accuracy</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAD-Hand: Physics-Aware Diffusion for Hand Motion Recovery</b> &mdash; probabilistic Euler-Lagrange dynamics with variance maps</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Recovering Physically Plausible Human-Object Interactions from Video</b> &mdash; RL frame selection + physics simulation refine noisy HOI</span></li></ul>
+</div>
+
+<div class="fam" id="gr15">
+  <div class="famhd"><span class="famn">15</span><h3>Sim-to-real for manipulation</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Manipulation policies are mostly trained in simulation, where data is cheap and failures are free &mdash; then they must survive real friction, sensor noise, and delay. Closing that last gap is its own discipline.</p>
+<p>Teacher-student distillation, delta actions, and tactile co-training bridge it.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Opening the Sim-to-Real Door for Humanoid Pixel-to-Action Transfer</b> &mdash; stage-reset exploration + GRPO, 83% real door-opening</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>VIRAL: Visual Sim-to-Real at Scale for Humanoid Loco-Manipulation</b> &mdash; teacher-student with delta actions, 91.5% real cycles</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DemoStart: Auto-Curriculum for Sim-to-Real with Multi-Fingered Robots</b> &mdash; demo-initialized auto-curriculum RL for dexterous sim-to-real</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Dual-Arm Coordination for Grasping Large Flat Objects</b> &mdash; zero-shot transferable dual-arm RL, sim-to-real validated</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Manipulating the real world as fluently as a person is far from solved. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>Contact you can&rsquo;t differentiate through.</b> The physics jumps between stick, slip, and separation; smooth optimizers stall at the switches, and learning contact-rich skills stays sample-hungry.</div>
+<div class="op"><b>Generalizing to every object.</b> Even with foundation-model priors, grasping and manipulation still lean on large pre-training; true one-shot skill on arbitrary objects is unsolved.</div>
+<div class="op"><b>The last 10% of sim-to-real.</b> Policies plateau at 80&ndash;90% real success; unmodeled friction, delay, and calibration eat the rest, and closing it without per-task tuning is open.</div>
+<div class="op"><b>Deformables at scale.</b> Cloth, rope, and fluids have unbounded state and defeat generic models &mdash; each still needs a good deal of per-object engineering.</div>
+<div class="op"><b>Grasp meets long-horizon reasoning.</b> Choosing a grasp that serves the <em>next</em> step &mdash; and clearing what obstructs it &mdash; needs scene reasoning most systems don&rsquo;t yet have.</div>
+<div class="op"><b>Tactile that transfers.</b> Touch sensors vary wildly and the tactile sim-to-real gap is larger than vision&rsquo;s; policies rarely move between sensor types without retraining.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Manipulation &amp; Grasping explainer &middot; mechanism diagrams are live JavaScript (assets/gr-anim.js) &middot; the KUKA pick run is ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the hands of the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/gr-anim.js"></script>
+</body></html>
