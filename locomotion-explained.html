@@ -162,6 +162,9 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
   <img src="assets/lo/slip_hopper.gif" alt="A spring-mass hopper storing and returning energy in its leg, integrated under gravity">
   <figcaption>Locomotion, for real: we simulated a <b>spring-mass hopper</b> &mdash; a point mass on a springy leg, integrated numerically under gravity (CPU). In flight it falls; on the ground the leg compresses and springs it back up, storing the landing energy and returning it, so it hops almost for free. This spring-mass template is the model beneath real legged gaits &mdash; balance and push made concrete. Our own run.</figcaption></figure>
+  <figure class="ranfig"><div class="ranbadge">&#9679; we ran it &middot; GPU</div>
+  <img src="assets/lo/gait_learning.png" alt="Learning curve of a SAC policy learning to hop on MuJoCo Hopper, trained on a Colab T4 GPU">
+  <figcaption>And a <b>learned</b> gait, for real: we trained a deep-RL policy (<b>SAC</b>) on MuJoCo <b>Hopper</b> on a Colab T4 GPU. Starting from random flailing (episode return ~18) it discovers a stable hopping gait (~790) over 120k steps &mdash; the reward-driven learning that Part&nbsp;I&rsquo;s &lsquo;RL discovers the gait&rsquo; describes, on a real GPU. (The rollout video render hit the Colab CLI&rsquo;s heavy-3D limit, so we show the honest learning curve.) Our own run.</figcaption></figure>
 </section>
 
 <div class="part">
