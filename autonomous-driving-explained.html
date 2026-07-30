@@ -71,6 +71,17 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#24303B}.op b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0C1218;border:1px solid #22323F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;color:#1D262F;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
 </style></head><body>
 <header><div class="wrap">
   <div class="bug">Autonomous Driving &middot; first principles &middot; robotics + vision</div>
@@ -172,20 +183,36 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip bb" href="#dr1"><span class="cn">01</span>BEV perception</a><a class="fchip bb" href="#dr2"><span class="cn">02</span>3D occupancy</a><a class="fchip rb" href="#dr3"><span class="cn">03</span>3D detection</a><a class="fchip bb" href="#dr4"><span class="cn">04</span>Motion</a><a class="fchip bb" href="#dr5"><span class="cn">05</span>End-to-end planning</a><a class="fchip bb" href="#dr6"><span class="cn">06</span>Driving VLAs: reason, then drive</a><a class="fchip bb" href="#dr7"><span class="cn">07</span>Driving world models</a><a class="fchip bb" href="#dr8"><span class="cn">08</span>Sensor fusion (camera + LiDAR + radar)</a><a class="fchip bb" href="#dr9"><span class="cn">09</span>Adverse weather</a><a class="fchip rb" href="#dr10"><span class="cn">10</span>Online mapping, lanes</a><a class="fchip rb" href="#dr11"><span class="cn">11</span>Planning, MPC</a><a class="fchip bb" href="#dr12"><span class="cn">12</span>Closed-loop simulation</a><a class="fchip rb" href="#dr13"><span class="cn">13</span>Safety monitoring, failure</a><a class="fchip rb" href="#dr14"><span class="cn">14</span>Efficient onboard perception</a></div>
   <div class="famgrid">
-<div class="fam" id="dr1">
+<div class="fam rich" id="dr1">
   <div class="famhd"><span class="famn">01</span><h3>BEV perception &amp; detection</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Lift multi-camera (and LiDAR) features into a shared top-down bird&rsquo;s-eye grid where objects, lanes, and free space all live in one frame the planner can use directly.</p>
-<p>The recurring work is doing it from cheap cameras, under bad light, and generalizing across camera rigs.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A camera delivers a perspective image — objects look smaller far away, and you can't tell depth from a single pixel. But a planner needs a top-down map: how far is that car, which lane is it in, what space is free? The core problem is lifting 2D image pixels from several cameras into a single top-down grid where every cell has known real-world coordinates. That grid is called the bird's-eye view, and it is not something a camera outputs naturally — it has to be constructed by projecting each image feature along its 3D ray into the correct top-down cell.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Lift multi-camera (and LiDAR) features into a shared top-down bird&rsquo;s-eye grid where objects, lanes, and free space all live in one frame the planner can use directly.</p>
+<p>The recurring work is doing it from cheap cameras, under bad light, and generalizing across camera rigs.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_bev2" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Setup:</b> six surround cameras around a car; BEV grid is 100×100 cells, each 0.5 m × 0.5 m, covering 50 m in every direction.</li>
+<li><b>Feature extraction:</b> each camera image is passed through a backbone (e.g. ResNet-50) producing a 32×32 feature map.</li>
+<li><b>Lift:</b> for each BEV cell at (x, y), compute its 3D world coordinate, project it into each camera image, and bilinearly sample the feature at that pixel location — one feature vector per camera per cell.</li>
+<li><b>Fuse:</b> features from all cameras that can see a cell are averaged (or attended over); occluded cells get only the cameras that face them.</li>
+<li><b>Detect:</b> a detection head runs on the 100×100 BEV feature grid, outputting bounding boxes in top-down coordinates — no 2D-to-3D guessing needed downstream.</li>
+<li><b>Result:</b> BEV-CAR achieves 38.4 mAP on nuScenes val from cameras only; every subsequent planning step operates in the same 50 m square.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>BEV-CAR</b> &mdash; context-aware ray rasterization improves monocular BEV segmentation + occlusion handling</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Retinex-BEVFormer</b> &mdash; Retinex enhancement makes multi-view BEV detection robust in low light</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>CoIn3D</b> &mdash; configuration-invariant multi-camera 3D detection generalizes across camera setups</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dur360BEV</b> &mdash; single-camera 360° BEV, dropping the complex multi-camera rig</span></li></ul>
 </div>
 
-<div class="fam" id="dr2">
+<div class="fam rich" id="dr2">
   <div class="famhd"><span class="famn">02</span><h3>3D occupancy &amp; 4D forecasting</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Instead of boxes, predict a dense grid of which 3D cells are filled &mdash; and forecast that grid into the future, separating static structure from moving agents.</p>
-<p>Occupancy captures odd shapes and unknown objects that box detectors miss, and forecasting it gives the planner foresight.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A bounding box says a car is 4.5 m × 1.8 m at this location. But a mattress fallen on the highway has no standard size. A child half-hidden by a parked car fits no box template. The core problem is representing what space is occupied without assuming shape. The answer is a 3D voxel grid: divide the world into small cubes, predict which are filled and with what. Then forecast that grid forward in time so the planner knows not just where things are but where they will be — a particularly critical gap for planning safe merges.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Instead of boxes, predict a dense grid of which 3D cells are filled &mdash; and forecast that grid into the future, separating static structure from moving agents.</p>
+<p>Occupancy captures odd shapes and unknown objects that box detectors miss, and forecasting it gives the planner foresight.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_occ" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Setup:</b> voxel grid is 200×200×16 cells at 0.4 m resolution — 200×200 covers 80 m × 80 m around the car, 16 layers cover 0–6.4 m height.</li>
+<li><b>Input:</b> six camera images; no LiDAR (ShelfOcc uses a foundation model for supervision instead).</li>
+<li><b>Occupancy prediction:</b> a BEV encoder lifts camera features to the 3D grid; each voxel gets a class probability — empty, vehicle, pedestrian, bicycle, static.</li>
+<li><b>4D step:</b> a recurrent head reads the occupancy grid at t=0 and outputs predicted grids at t+0.5 s, t+1.0 s, t+1.5 s; each cell gets a predicted class and a flow vector showing where it moves.</li>
+<li><b>Planner input:</b> the t+1.0 s predicted grid flags any voxel on the ego's intended path as occupied → planner brakes or re-routes.</li>
+<li><b>Result:</b> ShelfOcc scores 39.8 RayIoU on nuScenes without any LiDAR at train time — better than earlier methods that used it.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ShelfOcc</b> &mdash; foundation-model 3D supervision for camera-only occupancy, no LiDAR needed</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Gau-Occ</b> &mdash; geometry-completed Gaussians for smooth multi-modal 3D occupancy</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GenieDrive</b> &mdash; 4D-occupancy-guided video generation; models how actions change occupancy</span></li>
@@ -193,120 +220,216 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>OCCUQ</b> &mdash; efficient uncertainty on occupancy so planning can be risk-aware</span></li></ul>
 </div>
 
-<div class="fam" id="dr3">
+<div class="fam rich" id="dr3">
   <div class="famhd"><span class="famn">03</span><h3>3D detection &amp; multi-object tracking</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Find every vehicle, pedestrian, and cyclist and keep a consistent identity for each across time, through clutter, occlusion, and irregular motion.</p>
-<p>The hard parts are long-range detection, cross-modal resolution gaps, and association when motion breaks the usual assumptions.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Detecting objects in one frame is not enough: the planner needs to know which car from the last frame is the same car now, how fast it is moving, and whether it is getting closer. The core problem is association — matching detections across frames so each agent keeps a continuous identity over time. This sounds easy until occlusion, crowding, or sudden maneuvers break the standard assumption that things move at constant velocity. A mistaken swap of identities makes a decelerating car look like an approaching one.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Find every vehicle, pedestrian, and cyclist and keep a consistent identity for each across time, through clutter, occlusion, and irregular motion.</p>
+<p>The hard parts are long-range detection, cross-modal resolution gaps, and association when motion breaks the usual assumptions.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_track" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Frame 1:</b> LiDAR point cloud processed by a 3D detector → three bounding boxes: car A at (12 m, 0 m), car B at (8 m, 2 m), pedestrian C at (5 m, -1 m). Each gets a new track ID.</li>
+<li><b>Frame 2 detection:</b> three new boxes appear — car at (11.2 m, 0 m), car at (7.6 m, 2.1 m), pedestrian at (4.8 m, -0.9 m). No IDs yet.</li>
+<li><b>Association:</b> compute 3D IoU between frame-1 and frame-2 boxes; Hungarian matching assigns frame-2 car to ID A (IoU 0.72), frame-2 car to ID B (IoU 0.68), frame-2 pedestrian to ID C (IoU 0.61).</li>
+<li><b>Track state update:</b> Kalman filter updates each track's position and velocity — car A velocity estimated at 2.2 m/s away; car B at 1.1 m/s lateral.</li>
+<li><b>New object:</b> a fourth detection in frame 2 has no match (IoU < 0.3) → assigned new ID D; kept tentative until confirmed in frame 3.</li>
+<li><b>Planner output:</b> IDs A and B are flagged as moving away; ID D as unknown — planner stays conservative until D is confirmed.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ConTrack3D</b> &mdash; contrastive association stays robust when constant-velocity assumptions break</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stands on Shoulders of Giants</b> &mdash; lifts abundant 2D detections to 3D to cut expensive LiDAR labeling</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>SaViD</b> &mdash; adaptive camera-LiDAR fusion bridges the resolution gap at long range</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>LGDD</b> &mdash; native 4D-radar detection with noise-robust proposal filtering</span></li></ul>
 </div>
 
-<div class="fam" id="dr4">
+<div class="fam rich" id="dr4">
   <div class="famhd"><span class="famn">04</span><h3>Motion &amp; trajectory forecasting</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Predict where each agent will go &mdash; a genuinely multimodal question (left, straight, right) &mdash; capturing interactions and uncertainty so the planner can react to the whole distribution of futures.</p>
-<p>Regression to one averaged path is dangerous; the field models the modes and their probabilities.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A car turning left and a car going straight look identical for the first half-second — same position, same speed. Waiting for certainty is too late. The core problem is that every agent's future is genuinely multimodal: at an intersection a vehicle might go straight (probability 0.55), turn left (0.30), or turn right (0.15). If the forecaster outputs a single averaged path, it lands in the middle of none of those — the worst possible prediction. The planner must receive the full distribution of futures, weighted by probability, so it can plan conservatively around the dangerous possibilities even if they are unlikely.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Predict where each agent will go &mdash; a genuinely multimodal question (left, straight, right) &mdash; capturing interactions and uncertainty so the planner can react to the whole distribution of futures.</p>
+<p>Regression to one averaged path is dangerous; the field models the modes and their probabilities.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_forecast" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Scene:</b> ego car at an intersection; agent A is 15 m ahead, velocity 8 m/s; agent B is 10 m to the left, velocity 4 m/s lateral.</li>
+<li><b>Encoding:</b> a graph neural network encodes the past 2 s of each agent's trajectory plus lane geometry into a context vector per agent.</li>
+<li><b>Mode sampling:</b> a learned anchor library proposes 6 trajectory modes per agent — the network scores each mode and outputs probabilities; top-3 for agent A: straight (0.52), left-turn (0.31), right-turn (0.17).</li>
+<li><b>Trajectory regression:</b> for each mode, a small MLP outputs a sequence of (x, y) waypoints at 0.5 s intervals over 3 s — 6 waypoints per mode.</li>
+<li><b>Interaction refinement:</b> agent A's modes and agent B's modes are cross-attended so the model knows a simultaneous left-turn by both is physically impossible.</li>
+<li><b>Planner use:</b> ego planner samples future scenarios weighted by joint probability; the 0.31×0.12=3.7% scenario where both turn left causes a potential collision → planner slows 0.8 m/s to create margin.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Curb Your Attention</b> &mdash; causal attention gating filters non-causal agents → +54% robustness</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Categorical Traffic Transformer</b> &mdash; tokenized latent space for interpretable, diverse multimodal prediction</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>FoSS</b> &mdash; Fourier + state-space models capture long-range multimodal uncertainty efficiently</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SHARP</b> &mdash; short-window streaming prediction robust to variable observation lengths</span></li></ul>
 </div>
 
-<div class="fam" id="dr5">
+<div class="fam rich" id="dr5">
   <div class="famhd"><span class="famn">05</span><h3>End-to-end planning</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Train one network from sensors (or BEV) straight to a trajectory, optimizing the final driving objective instead of stitching separate modules &mdash; and increasingly generate that trajectory with flow matching for speed + multimodality.</p>
-<p>Keeps information the cascade would drop; the challenge is safety and interpretability.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>The modular stack — detect, then track, then predict, then plan — throws information away at each handoff. The detector collapses a rich image feature into a bounding box. The tracker discards the box appearance. The predictor sees only past positions. By the time the planner acts, much of the original sensor signal is gone. The core idea of end-to-end planning is to train one differentiable network from raw sensors straight to a trajectory, letting the gradient flow all the way back so every layer is optimized for the final driving objective. The current generation uses flow matching to generate the trajectory as a distribution rather than a single point.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Train one network from sensors (or BEV) straight to a trajectory, optimizing the final driving objective instead of stitching separate modules &mdash; and increasingly generate that trajectory with flow matching for speed + multimodality.</p>
+<p>Keeps information the cascade would drop; the challenge is safety and interpretability.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_e2e" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> six camera images at 640×480 plus a 32-beam LiDAR sweep; all encoded jointly into a 256-channel BEV feature grid.</li>
+<li><b>Flow matching setup:</b> start with 64 trajectory particles sampled from a Gaussian over (x, y) waypoints at 10 future steps (0.5 s each). Each particle is a candidate 5-second plan.</li>
+<li><b>Denoising:</b> a transformer reads the BEV features + current noisy particles and predicts a velocity field that pushes particles toward likely trajectories — run for 4 steps (not 1000 like diffusion).</li>
+<li><b>Constraint embedding:</b> GuideFlow adds a lane-boundary and collision cost directly into the velocity field, so physically invalid particles are deflected rather than filtered after the fact.</li>
+<li><b>Output:</b> the 64 particles converge to a tight cluster; the median is taken as the planned trajectory — (0, 0) → (2.1, 0.1) → (4.3, 0.3) → … m over 5 s.</li>
+<li><b>Score:</b> WAM-Flow achieves 89.1 PDMS on nuScenes bench, 3× faster than diffusion-based predecessors at the same quality.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>WAM-Flow</b> &mdash; discrete flow matching plans trajectories in parallel, 3× faster, 89.1 PDMS</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GuideFlow</b> &mdash; embeds hard constraints (lane, collision) into flow-matching planning</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Percept-WAM</b> &mdash; unifies 2D/3D perception inside the planner so geometry informs the plan</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizing E2E Driving with Zero-Shot LLMs</b> &mdash; closed-loop LLM guidance cuts data needs, improves unseen-obstacle generalization</span></li></ul>
 </div>
 
-<div class="fam" id="dr6">
+<div class="fam rich" id="dr6">
   <div class="famhd"><span class="famn">06</span><h3>Driving VLAs: reason, then drive</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Bring language reasoning into the loop: the model describes the scene and its risks, thinks through options, and then outputs a trajectory &mdash; grounded and explainable, unlike a black-box net.</p>
-<p>Chain- and tree-of-thought, plus spatial grounding, are what make the reasoning trustworthy.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>An end-to-end net maps sensors to a trajectory without saying why. When it brakes hard, you cannot tell whether it saw a pedestrian, misread a shadow, or had a sensor spike. That opacity is a safety and liability problem: engineers can't debug it, regulators can't certify it, and the car cannot explain itself after a collision. The core idea of a driving VLA is to make the reasoning explicit: the model produces a chain of natural-language steps — 'pedestrian on right, moving left, intersecting my path at 1.5 s' — and then converts that reasoning into a trajectory. The language is not decoration; the trajectory is conditioned on it.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Bring language reasoning into the loop: the model describes the scene and its risks, thinks through options, and then outputs a trajectory &mdash; grounded and explainable, unlike a black-box net.</p>
+<p>Chain- and tree-of-thought, plus spatial grounding, are what make the reasoning trustworthy.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_vla" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> six camera images + BEV occupancy grid at t=0.</li>
+<li><b>Visual encoding:</b> a ViT backbone encodes each camera image into patch tokens; a spatial projector aligns them to 3D BEV coordinates.</li>
+<li><b>Chain-of-thought:</b> the language model autoregressively generates: 'Cyclist detected 8 m ahead, velocity 3 m/s rightward. Intersection of paths at t=2.4 s. Risk level: high. Decision: decelerate and yield.'</li>
+<li><b>Action head:</b> the chain-of-thought token sequence is concatenated with BEV features and fed to a small MLP that outputs 6 waypoints at 0.5 s intervals.</li>
+<li><b>Grounding check:</b> SpaceDrive's spatial encoder verifies the named objects exist in the 3D BEV at the stated positions — if not, the chain-of-thought score is penalized.</li>
+<li><b>Result:</b> HybridDriveVLA scores 0.17% collision rate on Bench2Drive — lower than end-to-end nets (0.41%) and the model can be interrogated step by step after any incident.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HybridDriveVLA</b> &mdash; visual chain-of-thought + tree-of-thought trajectory scoring → 0.17% collisions</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SpaceDrive</b> &mdash; a geometric spatial encoder grounds the VLM&rsquo;s language in 3D for planning</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DrivePI</b> &mdash; a 0.5B 4D spatial MLLM with LiDAR beats 7B VLAs on nuScenes-QA</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>E3AD</b> &mdash; an emotion-aware VLA balances passenger comfort with safety</span></li></ul>
 </div>
 
-<div class="fam" id="dr7">
+<div class="fam rich" id="dr7">
   <div class="famhd"><span class="famn">07</span><h3>Driving world models &amp; video generation</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Learn to generate the future &mdash; frames or occupancy &mdash; so the planner reacts to a mental simulation of what its actions will cause, grounding decisions in predicted dynamics.</p>
-<p>A world model turns out to be a richer teacher than sparse reward.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A planner that only sees the current frame cannot know what will happen if it brakes, accelerates, or changes lanes — it must act and then observe. But acting to observe is expensive and dangerous on a real road. The core idea is to train a model that takes the current scene and a proposed action, and generates what the world would look like next — essentially a simulator that runs inside the car. The planner can then mentally simulate several candidate trajectories, see which generates safer predicted futures, and only then commit to an action.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Learn to generate the future &mdash; frames or occupancy &mdash; so the planner reacts to a mental simulation of what its actions will cause, grounding decisions in predicted dynamics.</p>
+<p>A world model turns out to be a richer teacher than sparse reward.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_wm" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Setup:</b> current occupancy grid at t=0; three candidate actions — (A) continue at 15 m/s, (B) decelerate to 10 m/s, (C) change lane left.</li>
+<li><b>World model rollout:</b> GaussianDWM takes the 3D Gaussian scene representation + action A, generates predicted occupancy at t+0.5 s, t+1.0 s, t+1.5 s via a latent dynamics model.</li>
+<li><b>Collision check on plan A:</b> at t+1.0 s, a vehicle voxel overlaps the ego's predicted position — plan A would result in a collision with probability 0.82.</li>
+<li><b>Rollout plan B:</b> deceleration to 10 m/s; predicted occupancy at t+1.5 s shows 3.2 m clearance — no overlap, cost 0.12.</li>
+<li><b>Rollout plan C:</b> lane change left; model predicts an adjacent-lane vehicle at t+0.8 s — unsafe, cost 0.91.</li>
+<li><b>Decision:</b> plan B selected; latency for all three rollouts is 18 ms on the onboard GPU — well within the 100 ms loop budget.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianDWM</b> &mdash; a 3D-Gaussian driving world model unifies scene understanding + generation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DriveLaW</b> &mdash; chains video generation into a latent planner so visuals and decisions stay consistent</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GEM</b> &mdash; a LiDAR world model with explicit dynamic/static disentanglement</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldLens</b> &mdash; full-spectrum benchmark exposing texture-vs-geometry-vs-behavior trade-offs</span></li></ul>
 </div>
 
-<div class="fam" id="dr8">
+<div class="fam rich" id="dr8">
   <div class="famhd"><span class="famn">08</span><h3>Sensor fusion (camera + LiDAR + radar)</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Combine complementary sensors in a shared frame so color, depth, and velocity-through-weather reinforce each other &mdash; the backbone of reliable all-conditions perception.</p>
-<p>Spatial-temporal alignment across heterogeneous, differently-sampled sensors is the core difficulty.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Each sensor sees the world through a different physical principle and goes blind in a different way. A camera captures dense color and semantic texture but cannot measure depth — it guesses. LiDAR measures exact 3D distance but returns a sparse point cloud with no color, and thin out past 50 m. Radar directly measures the velocity of reflective objects and cuts through rain and fog, but its resolution is so coarse that two vehicles 2 m apart look like one. Relying on any single sensor means accepting its blind spot as a system failure mode. The answer is to fuse all three in a common coordinate frame so their weaknesses do not overlap.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Combine complementary sensors in a shared frame so color, depth, and velocity-through-weather reinforce each other &mdash; the backbone of reliable all-conditions perception.</p>
+<p>Spatial-temporal alignment across heterogeneous, differently-sampled sensors is the core difficulty.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_fuse" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Scene:</b> heavy rain; camera images are blurred; LiDAR returns 40% of normal points (rain scatter); radar unaffected, returns 12 moving targets with velocity vectors.</li>
+<li><b>Projection:</b> all sensors projected into the shared BEV grid (100×100 at 0.5 m) using known extrinsic calibration. Camera features occupy all cells; LiDAR points hit ~30% of cells; radar targets land in 12 cells with velocity annotations.</li>
+<li><b>Camera stream:</b> contributes semantic features — lane markings visible despite rain (camera sees painted lines).</li>
+<li><b>LiDAR stream:</b> contributes depth for the 30% of cells it hits; the 70% without LiDAR returns fall back to camera depth estimates.</li>
+<li><b>Radar stream:</b> the 12 radar targets provide velocity directly — crucial because camera optical flow is unreliable in rain. These cells get velocity ground truth.</li>
+<li><b>Output:</b> RPGFusion achieves 58.3 NDS on nuScenes-rain — 9.1 points above camera-only, 4.2 above LiDAR-only, because radar fills exactly the gap rain creates.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>CRAB</b> &mdash; camera-radar fusion resolves radar&rsquo;s depth ambiguity via camera keypoints</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>RPGFusion</b> &mdash; 4D-radar priors guide image BEV sampling for robust 3D detection</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DSERT-RoLL</b> &mdash; first benchmark fusing event+thermal+RGB+4D-radar+dual-LiDAR in rain/snow/fog</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Talk2Radar</b> &mdash; grounds language reasoning on the underused 4D-radar modality</span></li></ul>
 </div>
 
-<div class="fam" id="dr9">
+<div class="fam rich" id="dr9">
   <div class="famhd"><span class="famn">09</span><h3>Adverse weather &amp; robustness</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Rain, snow, glare, fog, and night break camera-first perception; this family hardens the stack with test-time adaptation, weather decomposition, and cross-modal redundancy.</p>
-<p>The aim is graceful degradation, not silent failure, when conditions leave the training distribution.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A model trained on sunny California highways meets heavy snow in Minnesota and the world looks nothing like its training data — headlights become halos, lane markings disappear, LiDAR returns scatter off snowflakes. The core problem is distribution shift: the model's parameters encode an assumption about what the world looks like, and when conditions violate that assumption the outputs degrade quietly, without the model signaling uncertainty. Silent failure is the worst failure mode for a safety-critical system. The goal is either to adapt the model at test time to the new conditions, or to build in enough redundancy (radar) that no single condition can degrade all sensors simultaneously.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Rain, snow, glare, fog, and night break camera-first perception; this family hardens the stack with test-time adaptation, weather decomposition, and cross-modal redundancy.</p>
+<p>The aim is graceful degradation, not silent failure, when conditions leave the training distribution.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_weather" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Scene:</b> the car enters a rainstorm; camera images show rain streaks + reduced contrast; LiDAR range drops from 80 m to 45 m.</li>
+<li><b>Baseline (no adaptation):</b> the detector's mAP drops from 52.3 to 31.7 — a 39% drop — because rain was rare in training data.</li>
+<li><b>CD-Buffer approach:</b> maintain two memory buffers: one with recent clear-weather features, one with recent rain features. At test time the model blends weights toward the rain buffer using a domain classifier that reads the rain score from current frames.</li>
+<li><b>Adaptation step:</b> 12 gradient steps on the buffered rain examples using a self-supervised consistency loss — no human labels needed. Takes 80 ms on the GPU (within loop budget).</li>
+<li><b>After adaptation:</b> mAP recovers to 46.1 — still 6 points below clear-weather, but the system now knows its uncertainty is elevated and flags it to the planner.</li>
+<li><b>Planner response:</b> uncertainty flag triggers conservative mode — following distance increases from 2 s to 3.5 s, speed limited to 60 km/h until confidence recovers.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>CD-Buffer</b> &mdash; a dual-buffer scheme adapts detection to adverse weather at test time</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RMSeg-UDA</b> &mdash; unsupervised adaptation carries road-marking segmentation from clear to rainy/night</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>The Blind Spot of Adaptation</b> &mdash; benchmarks catastrophic forgetting in driving domain adaptation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MARSS</b> &mdash; a radar-specific architecture for semantic segmentation in bad conditions</span></li></ul>
 </div>
 
-<div class="fam" id="dr10">
+<div class="fam rich" id="dr10">
   <div class="famhd"><span class="famn">10</span><h3>Online mapping, lanes &amp; HD-map-free</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Detect lanes, drivable area, and road structure on the fly so the car needn&rsquo;t depend on a pre-built HD map &mdash; essential to scale beyond mapped regions.</p>
-<p>3D lane geometry and robust segmentation under domain shift are the recurring problems.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Traditional autonomous driving depends on a pre-built HD map — a centimeter-accurate 3D model of every road the car will ever drive. Building that map costs roughly $5,000/km and covers only roads the mapping fleet has visited. When the car encounters a construction zone, a new roundabout, or simply an unmapped suburb, the pre-built map is wrong or absent and the system fails. The core problem is to detect lanes, drivable area, and road structure directly from the car's own sensors, in real time, with no prior map — so the system can drive anywhere, not just mapped regions.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Detect lanes, drivable area, and road structure on the fly so the car needn&rsquo;t depend on a pre-built HD map &mdash; essential to scale beyond mapped regions.</p>
+<p>3D lane geometry and robust segmentation under domain shift are the recurring problems.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_map" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Scenario:</b> car enters a newly-built interchange; HD map shows only an old single road; actual road has three new lanes.</li>
+<li><b>Input:</b> six camera images; no map tile available (the tile lookup returns 'unmapped').</li>
+<li><b>Lane detection:</b> SCAM-P runs a shared backbone at 28 ms, simultaneously segmenting lane markings (3 detected), drivable area (two lanes wide, ~7.2 m), and the ego lane boundary.</li>
+<li><b>3D geometry:</b> '3D Lane Detection with Projection-Consistent Reference Points' lifts the 2D lane detections to 3D using adaptive reference points that fit the image appearance — recovering the actual road curve, not a flat projection.</li>
+<li><b>Local map build:</b> the detected lanes are accumulated into a local map as the car drives; after 80 m of travel the new interchange geometry is fully reconstructed at ~15 cm accuracy.</li>
+<li><b>Planner use:</b> the online lane map replaces the missing HD map — car stays in lane and navigates the interchange without any pre-built data.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D Lane Detection with Projection-Consistent Reference Points</b> &mdash; adaptive 3D references aligned to image appearance</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>SCAM-P</b> &mdash; one real-time backbone for detection + drivable-area + lane segmentation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Incremental Mapping for Multi-Floor Parking</b> &mdash; degeneration-aware mapping in featureless, repetitive spaces</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Spatial Retrieval Augmented Autonomous Driving</b> &mdash; augments perception with offline geographic context</span></li></ul>
 </div>
 
-<div class="fam" id="dr11">
+<div class="fam rich" id="dr11">
   <div class="famhd"><span class="famn">11</span><h3>Planning, MPC &amp; safety-critical control</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Turn perception and prediction into a safe, feasible trajectory under vehicle dynamics and hard constraints &mdash; with risk budgets and provable guarantees where possible.</p>
-<p>The tension is between provable safety and the agility real traffic demands.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Given a perception output and predicted agent futures, the planner must produce a trajectory the car can physically follow, that avoids all obstacles, stays in the lane, and arrives at the goal. This sounds like search — enumerate candidate trajectories and pick the best. The catch is that 'best' must also mean 'safe': a trajectory that clips a lane boundary at 3% probability is not a small matter when 3% × 10 decisions/minute × 8 hours/day = 144 near-misses per day. Model Predictive Control formalizes this: project the car's dynamics forward in time, evaluate a cost that rewards progress and penalizes constraint violations, and solve for the trajectory that minimizes cost under hard constraints.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Turn perception and prediction into a safe, feasible trajectory under vehicle dynamics and hard constraints &mdash; with risk budgets and provable guarantees where possible.</p>
+<p>The tension is between provable safety and the agility real traffic demands.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_mpc" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>State:</b> ego at intersection, 12 m from center, 10 m/s; two agents predicted (agent A straight 0.7 probability, agent B turning 0.6 probability).</li>
+<li><b>Trajectory tree:</b> planner expands 5 actions × 6 time steps = 30 candidate trajectories; each step applies bicycle model dynamics (wheelbase 2.7 m).</li>
+<li><b>Cost evaluation:</b> each trajectory scored: lane-keep cost (distance to center), velocity cost (deviation from 10 m/s target), collision cost (min distance to any agent trajectory, weighted by probability).</li>
+<li><b>Constraint check:</b> 'Guaranteed Reach-Avoid' neural reachability certifies 8 of 30 trajectories as provably collision-free under agent uncertainty; remaining 22 are pruned.</li>
+<li><b>Risk budget:</b> 'Online Risk-Bounded Planning' allocates a per-decision risk budget of 0.01; the selected trajectory has a collision probability of 0.008 — within budget.</li>
+<li><b>Output:</b> the winning trajectory accelerates to 11.5 m/s and steers 0.8° right, passing behind agent A with 2.4 m clearance at the point of closest approach.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Risk-Bounded Graph-Based Local Planning</b> &mdash; distributes a mission-level risk budget per decision, with guarantees</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>ME-PATS</b> &mdash; fuses a search-based planner with a learned heuristic agent</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Guaranteed Reach-Avoid through Narrow Gaps</b> &mdash; neural reachability gives provable safety for black-box dynamics</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Reliable Policy Transfer for Safety-Aware E2E Driving</b> &mdash; uncertainty-gated control-layer reliability for RL driving</span></li></ul>
 </div>
 
-<div class="fam" id="dr12">
+<div class="fam rich" id="dr12">
   <div class="famhd"><span class="famn">12</span><h3>Closed-loop simulation &amp; benchmarks</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Because open-loop scores on logged data flatter models, the field builds closed-loop simulators and benchmarks (NAVSIM, nuPlan) where the policy actually drives and its errors compound.</p>
-<p>Realistic reactive traffic and honest metrics are what separate a demo from a driver.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>The standard way to score a driving model is to replay a log — play back a recorded drive, ask the model what it would have done, and compare to the human. This is called open-loop evaluation. The problem is that it grades the model only on situations where nothing went wrong, because the log was recorded by a human who survived. If the model makes a small error — brakes slightly late — the log keeps going without consequence, so the score looks fine. Real driving is closed-loop: errors accumulate, and a 2% error at step 1 puts the car in a new position that makes step 2 harder. The field needs simulators where the policy actually drives and agents react to it.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Because open-loop scores on logged data flatter models, the field builds closed-loop simulators and benchmarks (NAVSIM, nuPlan) where the policy actually drives and its errors compound.</p>
+<p>Realistic reactive traffic and honest metrics are what separate a demo from a driver.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_sim" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Open-loop test:</b> model scores 0.74 displacement error on nuScenes val — top-5 on the leaderboard.</li>
+<li><b>Closed-loop setup:</b> same model dropped into IGDrivSim; reactive agents follow their own learned policies and respond to the ego car's actual decisions.</li>
+<li><b>First 30 s:</b> model's slight tendency to hug the left lane goes unpunished in open-loop; in closed-loop, a reactive agent behind it interprets this as a lane-change signal and begins to overtake.</li>
+<li><b>Error compounding:</b> at 45 s the model, now in an unexpected configuration, fails to yield at a merge — collision probability spikes; the sim records a near-miss.</li>
+<li><b>Score:</b> open-loop rank: 3rd; closed-loop rank: 14th — the imitation gap reveals the model had memorized common patterns, not learned to drive.</li>
+<li><b>Diagnosis:</b> IGDrivSim's 'imitation gap' metric quantifies this mismatch at 0.38 (0 = same rank, 1 = completely different) — now a standard audit before deployment.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>IGDrivSim</b> &mdash; a benchmark quantifying the imitation gap under closed-loop evaluation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Promptable Closed-loop Traffic Simulation</b> &mdash; LLM-instantiated, interactively-refined traffic scenarios</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldLens</b> &mdash; human-aligned full-spectrum evaluation of driving world models</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SafeDrive</b> &mdash; fine-grained safety reasoning with per-instance collision risk in a sparse world</span></li></ul>
 </div>
 
-<div class="fam" id="dr13">
+<div class="fam rich" id="dr13">
   <div class="famhd"><span class="famn">13</span><h3>Safety monitoring, failure &amp; OOD</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Catch perception failures and out-of-distribution situations at run time, and synthesize the rare edge cases needed to test coverage &mdash; the difference between a system that fails loudly and one that fails silently.</p>
-<p>Foundation models are increasingly used both to monitor and to generate the hard cases.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A model trained on a million hours of driving in sunny cities will encounter exactly one unusual situation it has never seen: a car fire blocking the road with emergency vehicles approaching from three sides. In that moment its perception might still output plausible-looking detections — because it was trained to always output something — while having no reliable signal from the out-of-distribution input. The car that doesn't know it's confused is more dangerous than the car that stops. The core problem is detecting when the system is outside its trained competence, so it can either trigger a fallback (slow down, hand off to a human) or synthesize training data for the gap.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Catch perception failures and out-of-distribution situations at run time, and synthesize the rare edge cases needed to test coverage &mdash; the difference between a system that fails loudly and one that fails silently.</p>
+<p>Foundation models are increasingly used both to monitor and to generate the hard cases.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_ood" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Normal driving:</b> SPARQ monitors the Q-value of the planner's action head alongside a perception-failure score. Q-value for current action: 0.87 (high confidence). Perception score: 0.12 (low failure likelihood).</li>
+<li><b>Unseen scene arrives:</b> emergency vehicles with flashing lights; detector's feature uncertainty (measured by Monte Carlo dropout, 10 samples) spikes from 0.08 to 0.61.</li>
+<li><b>SPARQ alert:</b> Q-network sees perception-failure score 0.61 × plan-safety score 0.34 → joint risk 0.87 → threshold 0.6 exceeded. Alert raised.</li>
+<li><b>Fallback:</b> car decelerates to 20 km/h and turns on hazard lights; human override requested.</li>
+<li><b>OOD synthesis (offline):</b> 'Generating OOD Scenarios Using LLMs' uses the failure description to branch-synthesize 200 new sim scenarios with emergency vehicles; model retrained on those cases.</li>
+<li><b>Outcome:</b> SPARQ achieves 90% recall on perception failures in the SPARQ benchmark — 23 points above a standalone rule-based monitor — without increasing false-alert rate.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>System-Level Safety Monitoring and Recovery (SPARQ)</b> &mdash; a Q-network jointly reasons over perception failures + plan safety, 90% recall</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generating OOD Scenarios Using LLMs</b> &mdash; LLM branching-tree synthesis of out-of-distribution test scenarios</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Validity Learning on Failures</b> &mdash; an annotation-free failure objective mitigates planning distribution shift</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Foundation Models for Rapid Autonomy Validation</b> &mdash; generative coverage cuts the sim-miles to find rare events</span></li></ul>
 </div>
 
-<div class="fam" id="dr14">
+<div class="fam rich" id="dr14">
   <div class="famhd"><span class="famn">14</span><h3>Efficient onboard perception &amp; data</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Squeeze perception into the car&rsquo;s real-time, power-limited computer &mdash; via compression, distillation, and label-efficient learning &mdash; and curate which data is even worth training on.</p>
-<p>Accuracy that misses the latency budget or the annotation budget doesn&rsquo;t ship.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>The model that tops the nuScenes leaderboard runs on a server with eight GPUs and takes 200 ms per frame. The car's onboard computer is a 15W embedded chip with a single GPU and a 100 ms deadline — total, for the entire loop, including actuation. Accuracy that misses the deadline is worse than useless: a stale perception output fed to the planner gives a false sense of safety. The core problem is closing the gap between what's achievable at research scale and what fits the onboard budget — in compute, memory, and power — while retaining enough accuracy that the car remains safe.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Squeeze perception into the car&rsquo;s real-time, power-limited computer &mdash; via compression, distillation, and label-efficient learning &mdash; and curate which data is even worth training on.</p>
+<p>Accuracy that misses the latency budget or the annotation budget doesn&rsquo;t ship.</p></div></div>
+  <figure class="fdiag"><canvas data-dranim="drf_eff" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Starting point:</b> BEVFormer-Large, 69M parameters, 210 ms/frame on an NVIDIA Orin (the target chip). Loop budget: 100 ms. Gap: 110 ms.</li>
+<li><b>Distillation:</b> KDMOS-style knowledge distillation trains a 9M-parameter student to mimic the teacher's BEV feature maps — not just the output boxes — using L2 loss on intermediate features.</li>
+<li><b>Compression:</b> 'Real-Time LiDAR Compression' encodes the point cloud at 60:1 before transmission to the perception module — reduces memory bandwidth by 40%.</li>
+<li><b>Label efficiency:</b> 'Label-Efficient LiDAR Panoptic Segmentation' lifts sparse 2D pseudo-labels to 3D, cutting the annotation budget from 50,000 to 3,200 hand-labeled frames while retaining +10.6 PQ.</li>
+<li><b>Result:</b> student runs at 34 ms/frame on Orin (67% of budget), mAP 41.3 vs teacher's 47.8 — a 6.5-point cost for a 6× speed gain.</li>
+<li><b>Data selection:</b> 'Scaling-Aware Data Selection' ranks the remaining training corpus by per-sample utility; keeping the top 30% of samples by utility achieves 98% of full-corpus performance — saving 3 weeks of training compute.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time LiDAR Point Cloud Compression</b> &mdash; 40&ndash;80× compression on resource-constrained robots, task accuracy kept</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>KDMOS</b> &mdash; knowledge distillation for motion segmentation, 7.69× fewer parameters</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Label-Efficient LiDAR Panoptic Segmentation</b> &mdash; lifts sparse 2D pseudo-labels to 3D, +10.6 PQ with minimal annotation</span></li>

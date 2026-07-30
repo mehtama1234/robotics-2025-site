@@ -71,6 +71,17 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#2A1A16}.op b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0C1218;border:1px solid #22323F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;color:#241512;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
 </style></head><body>
 <header><div class="wrap">
   <div class="bug">Multi-Robot Systems &middot; teams · swarms · cooperation &middot; robotics + vision</div>
@@ -136,7 +147,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <figure class="instrument"><canvas data-mranim="mr_swarm" height="300"></canvas>
     <figcaption>A flock has no leader and no plan. Each bird follows three simple rules about its nearest neighbors — don't crowd, match heading, stay together — and coherent global motion emerges from the crowd. The same trick lets hundreds of cheap robots act as one without any central control.</figcaption></figure>
   <div class="essay"><p>The most extreme answer to coordination is to have almost none. A flock of birds isn&rsquo;t following a leader or executing a plan &mdash; each bird just reacts to the handful of neighbors nearest it, with three simple rules: don&rsquo;t crowd them, point roughly the way they&rsquo;re pointing, and drift toward their center.</p>
-<p>Out of those purely <b>local</b> rules, a coherent global pattern <em>emerges</em> &mdash; the flock turns and splits and reforms as one, though nothing is coordinating it. Swarm robotics runs on this: give each of a hundred cheap robots the same few local rules and you get robust collective behavior with no central computer, no fragile leader, and graceful behavior when individuals drop out.</p></div>
+<p>Out of those purely <b>local</b> rules, a coherent global pattern <em>emerges</em> &mdash; the flock turns and splits and reforms as one, though nothing is coordinating it. Swarm robotics runs on this: give each of a hundred cheap robots the same few local rules and you get reliable collective behavior with no central computer, no fragile leader, and graceful behavior when individuals drop out.</p></div>
   <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Boids: each robot&rsquo;s velocity gets three local terms &mdash; separation (push from close neighbors), alignment (match neighbors&rsquo; heading), cohesion (pull toward neighbors&rsquo; center) &mdash; each summed only over neighbors within radius r.</p>
 <p>No global state appears in the update, yet global order (a coherent flock) emerges &mdash; the hallmark of self-organization: complex collective behavior from simple local interaction.</p></div></details>
 </section>
@@ -167,10 +178,17 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip rb" href="#mr1"><span class="cn">01</span>Multi-agent path finding</a><a class="fchip rb" href="#mr2"><span class="cn">02</span>Task allocation</a><a class="fchip rb" href="#mr3"><span class="cn">03</span>Centralized ↔ decentralized control</a><a class="fchip bb" href="#mr4"><span class="cn">04</span>Multi-agent reinforcement learning</a><a class="fchip rb" href="#mr5"><span class="cn">05</span>Formation control</a><a class="fchip bb" href="#mr6"><span class="cn">06</span>Cooperative perception: seeing past occlusion</a><a class="fchip bb" href="#mr7"><span class="cn">07</span>Communication-efficient collaboration</a><a class="fchip vb" href="#mr8"><span class="cn">08</span>Robustness: weather, latency</a><a class="fchip vb" href="#mr9"><span class="cn">09</span>Security</a><a class="fchip rb" href="#mr10"><span class="cn">10</span>Cooperative manipulation</a><a class="fchip bb" href="#mr11"><span class="cn">11</span>Heterogeneous</a><a class="fchip rb" href="#mr12"><span class="cn">12</span>Multi-robot exploration</a><a class="fchip rb" href="#mr13"><span class="cn">13</span>Decentralized</a><a class="fchip bb" href="#mr14"><span class="cn">14</span>Game-theoretic</a><a class="fchip bb" href="#mr15"><span class="cn">15</span>Multi-agent reasoning</a></div>
   <div class="famgrid">
-<div class="fam" id="mr1">
+<div class="fam rich" id="mr1">
   <div class="famhd"><span class="famn">01</span><h3>Multi-agent path finding &amp; collision-free planning</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>The bedrock problem: route every robot from start to goal so no two ever collide and nobody deadlocks. Because the joint plan space explodes with team size, the craft is resolving conflicts lazily &mdash; plan freely, then negotiate only the collisions that appear.</p>
-<p>Recent work speeds up the conflict search and pushes it onto real kinematics and mobile manipulators.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You have N robots in a shared grid or space, each with a start and a goal. You need routes that are guaranteed not to overlap at any moment in time — no two robots in the same cell at the same step. One robot is easy: just run A*. Two robots sharing space is already harder because one's detour changes what's safe for the other. Twelve robots sharing a warehouse aisle can deadlock forever if each waits for someone ahead who is waiting for someone ahead. The joint search space — every combination of positions for all N robots at every time step — is exponential in N, so you cannot try everything.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The bedrock problem: route every robot from start to goal so no two ever collide and nobody deadlocks. Because the joint plan space explodes with team size, the craft is resolving conflicts lazily &mdash; plan freely, then negotiate only the collisions that appear.</p>
+<p>Recent work speeds up the conflict search and pushes it onto real kinematics and mobile manipulators.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_mapf" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>12 warehouse robots, one aisle crossing.</b> Each robot independently plans with A*: robot 3 and robot 7 both want cell (8,5) at time-step 14.</li>
+<li><b>Conflict detected.</b> CBS branches: one branch forbids robot 3 from (8,5) at t=14; the other forbids robot 7. Each branch re-runs A* for only the constrained robot.</li>
+<li><b>Robot 3's detour adds 2 steps.</b> It waits one step at (7,5) then curves around via (8,4). Robot 7 keeps its original route.</li>
+<li><b>No new conflict in either branch.</b> The left branch is optimal (total cost 147 steps) vs. right branch (149). CBS returns the 12-route plan with cost 147.</li>
+<li><b>Deadlock check.</b> The planner verifies no robot is waiting for a robot that is waiting for it — the plan is acyclic and safe to execute.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ICBSS: Improved Multi-Agent Combinatorial Path Finding</b> &mdash; Conflict-Based Steiner Search beats CBS on speed and solution quality</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Heuristically Guided Compilation for Task Assignment and Path Finding</b> &mdash; couples ILP with large-neighborhood search for joint assignment + collision-free routing</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Constrained Nonlinear Kaczmarz Projection for Coordinated Mobile Manipulation</b> &mdash; solves 80+ nonlinear constraints across 3–6 mobile manipulators at once</span></li>
@@ -178,30 +196,51 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Safe Radial Segregation for Swarms of Dubins-Like Robots</b> &mdash; first collision-free swarm convergence for nonholonomic robots from local sensing</span></li></ul>
 </div>
 
-<div class="fam" id="mr2">
+<div class="fam rich" id="mr2">
   <div class="famhd"><span class="famn">02</span><h3>Task allocation &amp; assignment</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Who does what? Given a team and a pile of jobs, dispatch tasks to robots to minimize total time or maximize value &mdash; centrally with integer programs, or in a decentralized market where robots bid.</p>
-<p>The frontier is folding allocation and path planning together, and predicting work before it arrives.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You have a team of robots and a list of jobs — pick up package A, inspect sensor B, weld joint C. Naively you could try every assignment of jobs to robots, but that blows up factorially with the number of tasks. Real warehouse jobs arrive continuously, take different amounts of time on different robots, and some jobs must be done before others. The goal is to dispatch work so the whole mission finishes as fast as possible, without any robot sitting idle while another queues up six tasks.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Who does what? Given a team and a pile of jobs, dispatch tasks to robots to minimize total time or maximize value &mdash; centrally with integer programs, or in a decentralized market where robots bid.</p>
+<p>The frontier is folding allocation and path planning together, and predicting work before it arrives.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_task_alloc" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>8 robots, 24 packages to deliver.</b> Robot R4 is closest to packages 7, 11, 19. Robot R1 is nearby but already carrying two packages.</li>
+<li><b>Auction round starts.</b> The auctioneer broadcasts package 7's location. Each free robot bids its estimated delivery time. R4 bids 12 s, R6 bids 18 s.</li>
+<li><b>R4 wins the bid.</b> Package 7 is assigned to R4. The auctioneer immediately opens bidding on package 11.</li>
+<li><b>Prediction step.</b> The scheduler notices a cluster of packages near dock D3 will arrive in 40 s. It pre-assigns R2 and R3 to move toward D3 now.</li>
+<li><b>R1 finishes.</b> It re-enters the auction pool. Total makespan with prediction: 3 min 22 s vs. 4 min 8 s reactive-only — a 19% reduction.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Foresee and Act Ahead: Task Prediction and Pre-Scheduling</b> &mdash; predict + pre-schedule for 30%+ efficiency in a real warehouse</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalized Mission Planning via LLM-Constructed Hierarchical Trees</b> &mdash; an LLM builds task trees for heterogeneous teams</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Digital Model-Driven Genetic Algorithm for Layout + Task Allocation</b> &mdash; jointly optimizes cell layout and who-does-what in human-robot assembly</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hybrid Decentralization for Multi-Robot Orienteering</b> &mdash; mothership-passenger coordination for 26.6% coverage gain</span></li></ul>
 </div>
 
-<div class="fam" id="mr3">
+<div class="fam rich" id="mr3">
   <div class="famhd"><span class="famn">03</span><h3>Centralized ↔ decentralized control &amp; consensus</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>The central tension of the field, made concrete: a single optimal-but-fragile brain versus many robots agreeing from local messages. Consensus and distributed feedback give provable agreement with only nearest-neighbor links.</p>
-<p>Real systems land on hybrids &mdash; centralize what&rsquo;s cheap, decentralize the rest &mdash; and cut communication hard.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Who is in charge, and what does that cost you? A single central planner knows every robot's exact position and can compute the mathematically best joint action — but every robot must send its state to the planner and wait for commands back. That round-trip takes time, the link can fail, and the planner becomes a bottleneck as the team grows. The alternative is to let each robot decide from only what it can locally sense and the short messages it receives from nearby teammates — no single point of failure, and adding more robots doesn't overload anything. The cost is that no robot has the full picture, so the team may settle for a plan that is good but not globally optimal.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The central tension of the field, made concrete: a single optimal-but-fragile brain versus many robots agreeing from local messages. Consensus and distributed feedback give provable agreement with only nearest-neighbor links.</p>
+<p>Real systems land on hybrids &mdash; centralize what&rsquo;s cheap, decentralize the rest &mdash; and cut communication hard.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_consensus" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>5 UAVs need to agree on a common loitering altitude.</b> Each starts with its own GPS-measured altitude: 48 m, 51 m, 45 m, 53 m, 47 m.</li>
+<li><b>Consensus round 1.</b> Each UAV averages its value with its two nearest neighbors. Values update to 49.0, 49.7, 49.7, 49.0, 49.0.</li>
+<li><b>Round 2.</b> Same averaging. Values: 49.5, 49.5, 49.5, 49.2, 49.0. The spread is narrowing.</li>
+<li><b>Round 4.</b> All five values converge to 49.4 m — the global average — reached with only nearest-neighbor messages, no central planner.</li>
+<li><b>UAV 3 drops out.</b> Remaining four re-run consensus in 3 rounds and converge to 49.8 m. The planner-free approach absorbed the failure with no restart.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Distributed Loitering Synchronization with Fixed-Wing UAVs</b> &mdash; firefly-inspired sync with 10× less communication, flown for real</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Constrained Learning for Decentralized Multi-Objective Coverage</b> &mdash; Lagrangian duality bakes fairness + thresholds into decentralized policies</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reinforcement Learning Driven Multi-Robot Exploration via Explicit Communication</b> &mdash; decentralized RL with map-sharing beats frontier-only baselines</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hybrid Decentralization for Multi-Robot Orienteering</b> &mdash; a tunable centralized-decentralized split for task coverage</span></li></ul>
 </div>
 
-<div class="fam" id="mr4">
+<div class="fam rich" id="mr4">
   <div class="famhd"><span class="famn">04</span><h3>Multi-agent reinforcement learning</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Learn coordination that&rsquo;s too subtle to hand-design: train policies together (so they learn to cooperate) but run them independently. The hard part is credit assignment &mdash; who earned the shared reward &mdash; in a world that shifts as everyone else learns.</p>
-<p>Permutation-invariant critics and hierarchy tame the non-stationarity and scale.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Hand-designing coordination rules breaks down when the behavior you want is too subtle — when the right action for robot A depends on what robot B is likely to do, which depends on what B thinks A will do. That circular dependency is hard to write by hand. RL can discover it, but training N agents together is unstable: as each agent's policy changes, the environment seen by all the others shifts, so the experience that trained yesterday's policy is stale today. And when agents share one team reward, it's unclear who earned it — the robot that kicked the ball, or the one that set up the pass.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Learn coordination that&rsquo;s too subtle to hand-design: train policies together (so they learn to cooperate) but run them independently. The hard part is credit assignment &mdash; who earned the shared reward &mdash; in a world that shifts as everyone else learns.</p>
+<p>Permutation-invariant critics and hierarchy tame the non-stationarity and scale.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_marl" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>4 quadrupeds must collectively push a 40 kg block to a goal.</b> Each robot sees its own joint angles and the block's relative position — nothing else.</li>
+<li><b>Training, episode 12,000.</b> The shared reward is &minus;0.8 (block still far). Critic network estimates each robot's contribution from the joint Q-value. Robot R2 is assigned credit +0.3 for nudging the block 4 cm.</li>
+<li><b>Episode 24,000.</b> Two robots have learned to flank the block from opposite sides. The other two discovered pushing from behind amplifies the flankers. No one programmed this split.</li>
+<li><b>Permutation-invariant critic.</b> The critic processes the four robots' observations as an unordered set — so the policy generalizes to different team sizes at test time.</li>
+<li><b>Test, unseen floor friction.</b> The team adjusts pressure within 3 steps and gets the block to the goal in 18 s, versus 38 s for the hand-coded baseline.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>MARVEL: MARL for Constrained Field-of-View Exploration</b> &mdash; orientation-aware pruning scales FoV-limited exploration to unseen maps</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Multi-Agent Loco-Manipulation for Quadrupedal Pushing</b> &mdash; hierarchical MARL, 36% over baselines on coordinated pushing</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>HARP: Human-Assisted Regrouping with Permutation-Invariant Critic</b> &mdash; lets non-experts steer multi-agent regrouping</span></li>
@@ -209,20 +248,34 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Agent Inverse Q-Learning from Demonstrations</b> &mdash; recovers multi-agent rewards 2–5× better than prior inverse RL</span></li></ul>
 </div>
 
-<div class="fam" id="mr5">
+<div class="fam rich" id="mr5">
   <div class="famhd"><span class="famn">05</span><h3>Formation control &amp; swarms</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Make many robots hold a shape or flow as one crowd, using local interaction laws &mdash; potential fields, consensus dynamics, attraction-repulsion. Global pattern emerges without anyone commanding it.</p>
-<p>The work spans light-show choreography, microrobot swarms, and physically-realized emergent behaviors.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You want a hundred robots to fly in a V-shape, or hold a defensive perimeter, or flow through a narrow corridor without jamming. Giving each robot a fixed target position works when nothing changes, but breaks the moment one robot drifts or an obstacle appears. The deeper challenge is emergent shape: you want the formation to appear from local rules, with no robot explicitly knowing 'I am position 47 of 100,' so it scales to any team size and recovers automatically when robots join or leave.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Make many robots hold a shape or flow as one crowd, using local interaction laws &mdash; potential fields, consensus dynamics, attraction-repulsion. Global pattern emerges without anyone commanding it.</p>
+<p>The work spans light-show choreography, microrobot swarms, and physically-realized emergent behaviors.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_formation" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>63 drones must form a diamond and hold it as wind gusts arrive.</b> Each drone knows only the positions of its 4 nearest neighbors.</li>
+<li><b>Each drone runs three local forces.</b> Separation: if neighbor is closer than 3 m, push away (force proportional to 1/d²). Alignment: match neighbors' average velocity. Cohesion: drift toward neighbors' centroid.</li>
+<li><b>At t=8 s, drone 31 fails.</b> Its neighbors sense the gap — their cohesion pulls them slightly inward. The formation reshapes around the hole within 4 s.</li>
+<li><b>Wind gust at t=22 s, 6 m/s from the north.</b> Alignment force damps the drift. The diamond tilts 8° then self-corrects within 3 s.</li>
+<li><b>Final shape error</b> (mean distance from ideal diamond vertex): 0.6 m, vs. 4.1 m for a centrally-commanded baseline that lost sync when the leader link dropped.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Realizing Emergent Collective Behaviors Through Robotic Swarmalators</b> &mdash; first physical realization of predicted swarmalator patterns</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Contingency Formation Planning for Interactive Drone Light Shows</b> &mdash; real-time responsive formations with contingency recovery</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Express Yourself: Multi-Human-Swarm Interaction with MOSAIX</b> &mdash; 63 robots + 294 humans, decentralized theme-clustering, no central control</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>An Equilibrium Analysis of Magnetic Quadrupole Force Fields</b> &mdash; selective splitting + steering of microrobotic swarms via force fields</span></li></ul>
 </div>
 
-<div class="fam" id="mr6">
+<div class="fam rich" id="mr6">
   <div class="famhd"><span class="famn">06</span><h3>Cooperative perception: seeing past occlusion</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Robots and vehicles share sensor data so each sees what its own view can&rsquo;t &mdash; around corners, past trucks, beyond range. The design choice is <em>what</em> to share: raw data (accurate, heavy), features (efficient), or just detections (light, lossy); feature-level fusion usually wins.</p>
-<p>This is CVPR&rsquo;s densest multi-agent thread, driven by connected vehicles (V2X).</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A single sensor has a fixed range, and anything behind a wall or a large truck is simply invisible to it — no processing trick recovers data that never arrived. In a busy intersection, a car turning left can't see the cyclist hidden by a parked delivery van. Its lidar has a clear half-second window before the cyclist enters the crossing. That window only exists in the data from a vehicle parked on the opposite corner. The question is how to get that information across, cheaply, in real time, and in a form the receiving car can fuse with its own view without knowing exactly where the sender is calibrated.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Robots and vehicles share sensor data so each sees what its own view can&rsquo;t &mdash; around corners, past trucks, beyond range. The design choice is <em>what</em> to share: raw data (accurate, heavy), features (efficient), or just detections (light, lossy); feature-level fusion usually wins.</p>
+<p>This is CVPR&rsquo;s densest multi-agent thread, driven by connected vehicles (V2X).</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_coop_perc" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Car A approaches an intersection at 40 km/h.</b> Its lidar sees 0 objects in the crossing — the view is blocked by a van on the right.</li>
+<li><b>Car B, parked across the street, sees cyclist C</b> at position (14.2 m, 3.1 m) in its local frame, moving at 5 m/s south.</li>
+<li><b>B sends a 128-byte feature packet</b> (compressed BEV feature slice, not raw lidar). Transmission takes 4 ms over V2X.</li>
+<li><b>A transforms B's features into its own coordinate frame</b> using their GPS positions: cyclist appears at (−2.8 m, 11.7 m) from A, 2.3 s until the crossing.</li>
+<li><b>A brakes at 1.4 g.</b> Without B's data, A would have detected the cyclist only at 0.6 s — too late to stop safely at this speed.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>CoopDETR: Unified Cooperative Perception via Object Query</b> &mdash; SOTA 3D detection on OPV2V/V2XSet at 1/782 the transmission cost</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Long-SCOPE: Fully Sparse Long-Range Cooperative Perception</b> &mdash; sparse fusion extends detection range across vehicles with little data</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Unsupervised Multi-agent Perception from Cooperative Views</b> &mdash; cross-view consensus supplies labels for free — no annotation</span></li>
@@ -230,89 +283,152 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>V2U4Real: Real-World Vehicle-to-UAV Cooperative Perception</b> &mdash; first large real V2U dataset — 56K LiDAR frames, elevated aerial views</span></li></ul>
 </div>
 
-<div class="fam" id="mr7">
+<div class="fam rich" id="mr7">
   <div class="famhd"><span class="famn">07</span><h3>Communication-efficient collaboration</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>The binding constraint on any team is bandwidth: you can&rsquo;t send everything, so cooperation lives or dies on sending the <em>few bits that matter</em>. Foreground-aware sampling, channel selection, and map compression recover dense-fusion accuracy at a tenth of the data.</p>
-<p>The insight repeated across the corpus: smart sparsity beats brute-force sharing.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Every robot has more sensor data than it could ever send, and wireless bandwidth is a hard, shared ceiling. A 64-beam lidar produces 1.3 million points per second; a typical V2X radio gives each vehicle around 6 Mbps. Sending the raw point cloud from even one neighbor is physically impossible in real time. But if you send nothing, you get no cooperation at all. The game is choosing — at each frame — which small slice of your data will do the most good for the robots that receive it, and compressing that slice without losing the signal they actually need.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The binding constraint on any team is bandwidth: you can&rsquo;t send everything, so cooperation lives or dies on sending the <em>few bits that matter</em>. Foreground-aware sampling, channel selection, and map compression recover dense-fusion accuracy at a tenth of the data.</p>
+<p>The insight repeated across the corpus: smart sparsity beats brute-force sharing.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_comm_eff" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Vehicle A has a 1.3 M-point/s lidar. Budget: 200 KB per frame.</b> Raw cloud = 15 MB — 75× over budget.</li>
+<li><b>A runs a foreground mask.</b> Background road and buildings are static — 91% of points. A discards them, keeping only the 117K moving-object points.</li>
+<li><b>Feature compression.</b> A encodes those 117K points as a sparse 128-channel BEV feature map. At 4-bit quantization: 18 KB.</li>
+<li><b>Vehicle B receives the 18 KB packet, 6 ms latency.</b> It fuses A's BEV features with its own at the channel level. Detection AP rises from 61.2 to 74.8 on occluded objects.</li>
+<li><b>Bandwidth drops to 50 KB budget</b> (congested network). A switches to detection-only mode: 3 bounding boxes, 512 bytes. AP drops to 69.1 — still 8 points above solo perception.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>WhisperNet: Bandwidth-Efficient Collaboration</b> &mdash; receiver-centric coordination cuts 95% of communication, accuracy held</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>CoLC: Communication-Efficient Perception with LiDAR Completion</b> &mdash; 86.1 AP@0.5 on OPV2V at only 12.5% of the transmission volume</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Communication-Aware Iterative Map Compression</b> &mdash; 98% less transmitted map data with navigation performance intact</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bandwidth-Adaptive Spatiotemporal Correspondence for Collaboration</b> &mdash; 8–56% better collaborative retrieval under bandwidth limits</span></li></ul>
 </div>
 
-<div class="fam" id="mr8">
+<div class="fam rich" id="mr8">
   <div class="famhd"><span class="famn">08</span><h3>Robustness: weather, latency &amp; heterogeneous sensors</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Real V2X is noisy: messages arrive late and out of sync, calibrations disagree, and rain or fog wrecks individual sensors. Robust cooperation aligns asynchronous streams, models calibration uncertainty, and fuses complementary sensors so the team degrades gracefully.</p>
-<p>Fusing LiDAR with velocity-sensing 4D radar keeps performance up where any single sensor collapses.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>In a lab, two robots share the same sensor model, are calibrated together, and communicate instantly. On a real road, a message from a roadside unit may arrive 80 ms late — the world has moved. Two vehicles from different manufacturers have lidar with different vertical resolutions and different coordinate conventions. One vehicle is in rain; its lidar returns are half as dense as its partner's in clear air. If you fuse these mismatched, asynchronous, degraded streams naively, the combined result is worse than either sensor alone.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Real V2X is noisy: messages arrive late and out of sync, calibrations disagree, and rain or fog wrecks individual sensors. Reliable cooperation aligns asynchronous streams, models calibration uncertainty, and fuses complementary sensors so the team degrades gracefully.</p>
+<p>Fusing LiDAR with velocity-sensing 4D radar keeps performance up where any single sensor collapses.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_robustness" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Vehicle A (lidar) and vehicle B (4D radar) approach the same junction.</b> Rain starts: A's lidar detection AP drops from 72 to 41.</li>
+<li><b>B's 4D radar is unaffected</b> by rain. It still sees at 68 AP. The fusion module detects A's degradation via its uncertainty estimate (entropy rises from 0.3 to 1.1 nats).</li>
+<li><b>Adaptive weighting.</b> The fuser shifts from 60/40 (lidar/radar) to 20/80. Combined AP: 64 — vs. 41 lidar-alone.</li>
+<li><b>Calibration mismatch.</b> B's radar coordinate frame is 3° rotated relative to A's lidar frame (different mount heights). Gaussian BEV uncertainty modeling absorbs this: instead of a hard transform, each detection becomes a distribution; fusion averages them.</li>
+<li><b>Latency spike: B's message arrives 120 ms late.</b> The sync module back-projects B's detections using their reported velocity: cyclist at t−120 ms was 0.67 m east of its current position. Adjusted, the fused track is accurate to 0.2 m.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hybrid Robust Collaborative Perception with LiDAR-4D Radar Fusion</b> &mdash; 90%+ in heavy rain vs 40–50% for LiDAR-only via adaptive weighting</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>CATNet: Collaborative Alignment under Latency &amp; Noise</b> &mdash; spatio-temporal sync + wavelet denoising, +5.7% AP on V2XSet</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GSV2X: Geometry-Aware Uncertainty for Roadside Perception</b> &mdash; Gaussian BEV models calibration error — 0.6% drop under perturbation vs 9.5%</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Linking Modality Isolation in Heterogeneous Collaboration</b> &mdash; aligns agents with no shared training modality, 1024× less communication</span></li></ul>
 </div>
 
-<div class="fam" id="mr9">
+<div class="fam rich" id="mr9">
   <div class="famhd"><span class="famn">09</span><h3>Security &amp; trust in collaboration</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Sharing perception means trusting teammates &mdash; and a malicious or spoofed agent can inject false detections into everyone&rsquo;s fused view. The defense uses temporal consistency and Bayesian reasoning to spot liars, even when <em>no</em> vehicle can be trusted.</p>
-<p>A new attack surface the moment robots start believing each other.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>The moment a vehicle accepts another's sensor data, it opens a new attack surface. A compromised or spoofed car can broadcast false detections — a phantom pedestrian that doesn't exist, or a real car made to disappear. The receiver has no way to check the sender's raw sensor: it only sees what the sender claims to see. Worse, a sophisticated attacker can make its false reports consistent with one timestamp but shift them gradually — below the threshold of any single-frame sanity check. If you trust every message, a single bad actor can steer an entire platoon into a crash.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Sharing perception means trusting teammates &mdash; and a malicious or spoofed agent can inject false detections into everyone&rsquo;s fused view. The defense uses temporal consistency and Bayesian reasoning to spot liars, even when <em>no</em> vehicle can be trusted.</p>
+<p>A new attack surface the moment robots start believing each other.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_security" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>8-vehicle platoon, vehicle V6 is compromised.</b> V6 begins reporting a phantom pedestrian at (12 m, 0 m) — the car's path — at every frame.</li>
+<li><b>Bayesian trust filter, t=0.</b> Each vehicle starts with a uniform prior: P(V6 honest) = 0.5.</li>
+<li><b>Frame 4.</b> The phantom appears in V6's reports but in none of the other 7 vehicles' sensor data covering the same area. Likelihood ratio: 0.07. P(V6 honest) drops to 0.12.</li>
+<li><b>Frame 7.</b> Temporal consistency check: the phantom has not moved in 3 frames despite being labeled 'pedestrian walking.' P(V6 honest) &lt; 0.03. V6's reports are quarantined.</li>
+<li><b>Without the filter:</b> all 8 vehicles would brake simultaneously, causing a rear-end chain. With the filter: 2.5 checks per frame, V6 identified by frame 7, 79–87% of legitimate detections preserved.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>All Vehicles Can Lie: Defense in Fully Untrusted Collaboration</b> &mdash; Bayesian inference IDs liars at 2.5 checks/frame, restores 79–87% precision</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learning Mutual View Information Graph for Adversarial Perception</b> &mdash; temporal graph exposes shared vulnerabilities across defenses</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Adversarial Policies for Swarm Leader Identification</b> &mdash; a probing agent detects a swarm&rsquo;s leader at 95.7% accuracy</span></li></ul>
 </div>
 
-<div class="fam" id="mr10">
+<div class="fam rich" id="mr10">
   <div class="famhd"><span class="famn">10</span><h3>Cooperative manipulation &amp; transport</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Two or more robots handle one object together &mdash; carry a beam, assemble a part, catch with two hands &mdash; where the coupling through the shared object means each must account for the forces the others apply.</p>
-<p>Bimanual and multi-arm coordination, learned or optimized under force and kinematic constraints.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>One robot arm can pick up a small object. Two robot arms can pick up a large flat panel — but now the object is rigid and physically connects the two arms: every force one arm exerts is felt by the other instantly. If arm A pushes 5 N east, arm B must react or the panel bends, slips, or breaks. The robots can't move independently; they must agree on a shared grasp plan that satisfies the object's internal force balance at every step. With more arms, or a deformable object like a cable, the coupling gets worse and the constraint space gets harder to solve.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Two or more robots handle one object together &mdash; carry a beam, assemble a part, catch with two hands &mdash; where the coupling through the shared object means each must account for the forces the others apply.</p>
+<p>Bimanual and multi-arm coordination, learned or optimized under force and kinematic constraints.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_manip" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Two arms lift a 1.2 m glass panel.</b> Left arm grips at (0.1 m, 0.6 m) from panel center; right arm at (−0.1 m, −0.6 m).</li>
+<li><b>Desired move:</b> raise panel 0.2 m, tilt 10° clockwise. The joint torque commands are solved from a shared optimization: minimize total joint torque subject to contact-force balance — the two grip forces must sum to zero net torque on the panel.</li>
+<li><b>Left arm applies 18 N upward, 3 N east.</b> Right arm must supply 18 N upward, 3 N west simultaneously — the solver computed this pair, not each arm independently.</li>
+<li><b>At t=1.4 s, left arm hits a joint limit.</b> Force on the panel would drop. Reactive re-solve in 8 ms: right arm compensates with an extra 4 N upward to keep the panel level.</li>
+<li><b>Panel placed to within 2 mm</b> of target. Single-arm attempt on the same panel failed at 0.8 m height — torque exceeded safe limit by 35%.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Dual-Arm Coordination for Grasping Large Flat Objects</b> &mdash; zero-shot transferable dual-arm RL, sim-to-real validated</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Dexterous Bimanual Catch Skills via Adversarial-Cooperative RL</b> &mdash; 2× over single-agent RL on bimanual catching</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Cooperative Manipulation with Multiple Quadrotors + Control Barrier Functions</b> &mdash; CBFs guarantee obstacle avoidance for the whole flying team</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Robot Assembly of Deformable Linear Objects</b> &mdash; end-to-end multi-robot DLO assembly from visual + tactile sensing</span></li></ul>
 </div>
 
-<div class="fam" id="mr11">
+<div class="fam rich" id="mr11">
   <div class="famhd"><span class="famn">11</span><h3>Heterogeneous &amp; aerial-ground teams</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Mix different bodies &mdash; ground and air, strong and nimble, sensing and acting &mdash; so the team has capabilities no single platform owns. The work is capability-aware assignment and coordinating complementary robots.</p>
-<p>Elevated drones pairing with ground robots is a recurring, powerful pattern.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A ground robot can carry heavy equipment and maneuver precisely in tight spaces, but can't see over a wall or across a ridge. A drone can survey large areas quickly from above but can't pick up anything, and its battery lasts 20 minutes. Neither alone can search a disaster site effectively. The problem is that these robots have different speeds, payloads, sensor ranges, and communication radii — so assigning tasks requires knowing what each platform can actually do, and coordinating them means synchronizing actions that play out on very different timescales.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Mix different bodies &mdash; ground and air, strong and nimble, sensing and acting &mdash; so the team has capabilities no single platform owns. The work is capability-aware assignment and coordinating complementary robots.</p>
+<p>Elevated drones pairing with ground robots is a recurring, powerful pattern.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_hetero" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Search mission: 400 m × 400 m collapsed building area, 3 ground robots + 1 drone.</b></li>
+<li><b>Phase 1 (0–8 min): drone surveys from 30 m altitude.</b> It generates a coarse occupancy map at 0.5 m/pixel, identifies 6 candidate survivor zones, transmits compressed map (240 KB) to ground robots.</li>
+<li><b>Phase 2: task assignment.</b> Capability-aware allocator checks ground robots' reach: R1 (heavy manipulator) → zone A (debris requiring removal); R2 (sensor-laden) → zones B, C; R3 (fast, no arm) → zones D, E as relay node.</li>
+<li><b>R1 enters zone A.</b> Drone hovers at 8 m above to provide real-time overhead view — ground robot's forward camera is blocked by debris. Drone streams 720p at 5 fps over the local mesh.</li>
+<li><b>R1 localizes a survivor at (22 m, 14 m).</b> It flags the position. Drone re-routes to relay the alert, since R1's radio is shadowed by concrete. Total time to first contact: 11 min 40 s, vs. 23 min ground-only.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Terrain-Aware Ground-Aerial Exploration via Hierarchical Graph</b> &mdash; coordinates complementary ground + aerial sensing over a shared graph</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Heterogeneous Exploration with Online Free-Space Ellipsoid Graphs</b> &mdash; polynomial-complexity target assignment for mixed teams</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>V2U4Real: Vehicle-to-UAV Cooperative Perception</b> &mdash; aerial views complement ground blind spots, real multi-modal dataset</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>CLSTR: Capability-Level System for Tracking Robots</b> &mdash; capability-summarizing UI for heterogeneous fleet awareness</span></li></ul>
 </div>
 
-<div class="fam" id="mr12">
+<div class="fam rich" id="mr12">
   <div class="famhd"><span class="famn">12</span><h3>Multi-robot exploration &amp; coverage</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Send a team into the unknown to map or cover it fastest, splitting the frontier so robots don&rsquo;t redundantly revisit the same ground &mdash; decentralized, under limited communication and line-of-sight.</p>
-<p>Frontier assignment, information gain, and staying connected are the recurring levers.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A team is dropped into an unknown space — a cave, a burning building, an unknown field — and must map it as quickly as possible. The naive approach sends every robot to the nearest unexplored edge (frontier). But multiple robots will rush to the same frontier, wasting trips. And a robot that goes too far loses radio contact, so it can't share what it found. The tension is between spreading out fast (for speed) and staying close enough to communicate (for coordination), while ensuring the entire space gets covered with no patch revisited twice.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Send a team into the unknown to map or cover it fastest, splitting the frontier so robots don&rsquo;t redundantly revisit the same ground &mdash; decentralized, under limited communication and line-of-sight.</p>
+<p>Frontier assignment, information gain, and staying connected are the recurring levers.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_explore" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>4 robots enter an unknown 60 m × 60 m floor.</b> All start at the entrance. The floor is empty except for 3 interior walls.</li>
+<li><b>t=0: frontier list = {F1 (north), F2 (east), F3 (west), F4 (south)}.</b> Each robot bids on the nearest unassigned frontier. R1→F1, R2→F2, R3→F3, R4→F4.</li>
+<li><b>t=45 s: R1 reaches F1 and reveals a new sub-room, adding frontiers F5 and F6.</b> It broadcasts the updated map. R4 has finished F4 and, seeing F5 is closer than any remaining frontier, takes it.</li>
+<li><b>R3 loses radio at t=82 s</b> (behind a wall segment). It switches to line-of-sight relay: R2 moves 4 m to act as a repeater, re-establishing the mesh.</li>
+<li><b>Coverage complete at t=3 min 11 s</b> (vs. 7 min 40 s for a single robot). No frontier visited twice. 98.4% of floor mapped.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>MARVEL: MARL for Constrained-FoV Multi-Robot Exploration</b> &mdash; orientation-aware exploration generalizes to unseen large environments</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Realm: Real-Time Line-of-Sight Maintenance in Unknown Environments</b> &mdash; first LoS-constrained exploration with live LiDAR formulation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACE: Fast Lightweight Urban Exploration for Multi-Robot Systems</b> &mdash; ACO-based collective frontier search, maze-solving to real robots</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>FlyKites: Interactive Exploration under Limited Communication</b> &mdash; jointly optimizes relay topology, operator routing, and robot roles</span></li></ul>
 </div>
 
-<div class="fam" id="mr13">
+<div class="fam rich" id="mr13">
   <div class="famhd"><span class="famn">13</span><h3>Decentralized &amp; collaborative SLAM</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Have a team build one shared map while each robot localizes in it &mdash; without a central server &mdash; merging trajectories and closing loops across robots that meet.</p>
-<p>Decentralized C-SLAM now matches centralized accuracy on real hardware.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Simultaneous localization and mapping — SLAM — is already hard for one robot: it must estimate where it is and what the map looks like at the same time, from noisy sensors, in a loop. Multiple robots add a new problem: how do they merge their separate maps into one consistent shared map without a central server? When robot A and robot B happen to see the same landmark from different sides, they must recognize the overlap, align their local maps, and propagate the correction back through their entire trajectory history — all while still moving and mapping new ground.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Have a team build one shared map while each robot localizes in it &mdash; without a central server &mdash; merging trajectories and closing loops across robots that meet.</p>
+<p>Decentralized C-SLAM now matches centralized accuracy on real hardware.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_dslam" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Robot A has been mapping for 4 min, 180 m of corridor, 1,240 keyframes.</b> Robot B has mapped a parallel route, 160 m, 1,080 keyframes. They meet at a junction.</li>
+<li><b>Place recognition.</b> A extracts a BEV density image of the junction; B does the same. Descriptor distance = 0.18 (below threshold 0.25). A match is declared.</li>
+<li><b>Relative pose estimation.</b> ICP on overlapping point clouds converges in 34 ms: B's map is 1.2 m east and 3° rotated from A's local frame.</li>
+<li><b>Pose graph merge.</b> A new edge is added between the matching keyframes. A distributed pose-graph optimizer runs 12 iterations of gradient descent, updating all 2,320 keyframe poses.</li>
+<li><b>Loop-closure drift corrects.</b> A's accumulated drift was 0.8 m over 180 m. After the merge, both robots share a single map accurate to 0.15 m — matching centralized SLAM on the same dataset.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DVM-SLAM: Decentralized Visual Monocular SLAM</b> &mdash; open-source decentralized collaborative SLAM, centralized-level accuracy</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reinforcement Learning Driven Exploration via Explicit Map-Sharing</b> &mdash; robots share maps to explore faster than frontier-only baselines</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Effective Heterogeneous Point-Cloud Place Recognition</b> &mdash; BEV density images register aerial-to-ground clouds for map merging</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Communication-Aware Iterative Map Compression</b> &mdash; compresses the shared map 98% for online multi-robot planning</span></li></ul>
 </div>
 
-<div class="fam" id="mr14">
+<div class="fam rich" id="mr14">
   <div class="famhd"><span class="famn">14</span><h3>Game-theoretic &amp; interactive multi-agent</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>When robots (or robots and people) have their own goals, coordination becomes a game &mdash; predict and influence others, compute equilibria, avoid deadlock at the merge or the doorway.</p>
-<p>This links robot planning to realistic traffic and pedestrian behavior modeling in vision.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Most coordination assumes robots cooperate — they share a goal and just need to agree on who does what. But in traffic, at a doorway, in a negotiation, agents have their own private goals. A car turning left wants the gap in oncoming traffic; the oncoming driver doesn't want to slow down. Each must predict what the other will do, knowing the other is predicting them in return. If you ignore this circularity and plan as if others are static obstacles, you get either deadlock (both waiting) or dangerous gap-taking (both moving at once). Game theory provides the formal tools: equilibrium concepts that predict what rational self-interested agents will do when they anticipate each other.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>When robots (or robots and people) have their own goals, coordination becomes a game &mdash; predict and influence others, compute equilibria, avoid deadlock at the merge or the doorway.</p>
+<p>This links robot planning to realistic traffic and pedestrian behavior modeling in vision.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_game" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Two cars at a T-junction, each wanting the single-lane gap.</b> Car A is the row player, Car B the column player. Payoff table (A go, B wait): A gets +8, B gets +2. (Both go): both get −10 crash. (Both wait): A gets −3, B gets −3.</li>
+<li><b>Pure Nash equilibria: (A go, B wait) and (A wait, B go).</b> Neither player can benefit by switching alone. But which equilibrium will they land on?</li>
+<li><b>Stackelberg solution.</b> If A commits first (it arrived first and B can see A's indicator), A is the leader. B best-responds: wait. Optimal play: A goes, B waits. A gets +8, B gets +2. Total: +10 vs. −6 for random coordination.</li>
+<li><b>In an 8-car intersection sim</b> (RLFTSim), assigning priority by arrival order and computing the Stackelberg order of play reduced deadlocks from 12% to 0.4% of episodes.</li>
+<li><b>Off-equilibrium behavior.</b> A pedestrian unexpectedly enters. The game's payoffs shift (crash cost spikes). Both agents re-solve in 14 ms; the updated equilibrium is now both wait.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Who Plays First? Optimizing the Order of Play in Stackelberg Games</b> &mdash; provably optimal play order for air traffic, swarms, delivery fleets</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RD3G: Fast Newton Solver for Constrained General-Sum Games</b> &mdash; 4× faster game solving with 2× higher convergence</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>RLFTSim: Controllable Multi-Agent Traffic Simulation via RL</b> &mdash; RL fine-tuning yields realistic, controllable multi-agent traffic</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>InterAgent: Physics-Based Multi-Agent Execution on Interaction Graphs</b> &mdash; diffusion over interaction graphs for plausible coordinated motion</span></li></ul>
 </div>
 
-<div class="fam" id="mr15">
+<div class="fam rich" id="mr15">
   <div class="famhd"><span class="famn">15</span><h3>Multi-agent reasoning &amp; LLM-coordinated teams</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>The newest thread: treat coordination as language and reasoning. LLMs build mission plans for heterogeneous teams; and inside a single vision system, specialized agents cooperate over a shared blackboard to solve a task none could alone.</p>
-<p>Coordination moves up a level &mdash; from motion to reasoning.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Classical multi-robot coordination solves for motion and task assignment, but the mission specification is assumed to be given. When the mission is itself complex — 'search the building, prioritize medical rooms, avoid the structural risk zone, and radio the operator if you find anyone' — translating that into a concrete sequence of actions for a heterogeneous team requires reasoning that is hard to encode in a planner. LLMs can parse the intent and produce structured task trees. But they also hallucinate, misunderstand spatial constraints, and cannot verify their own plans against the actual robot capabilities or the current map.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The newest thread: treat coordination as language and reasoning. LLMs build mission plans for heterogeneous teams; and inside a single vision system, specialized agents cooperate over a shared blackboard to solve a task none could alone.</p>
+<p>Coordination moves up a level &mdash; from motion to reasoning.</p></div></div>
+  <figure class="fdiag"><canvas data-mranim="mrf_llm" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Operator types:</b> 'Clear building sectors B and C, check all offices for survivors, avoid the east stairwell (structural risk), and have a drone maintain overwatch.'</li>
+<li><b>LLM decomposes the mission</b> into a task tree: root → [ClearB, ClearC, Overwatch]. ClearB → [SearchB1, SearchB2, SearchB3] with ordering constraint SearchB1 before SearchB2.</li>
+<li><b>Capability check.</b> The system queries robot capabilities: ground robot R1 has an arm (can open doors), R2 does not. SearchB2 requires opening a blocked door — assigned to R1. R2 assigned to B3.</li>
+<li><b>Constraint propagation.</b> The LLM flagged 'avoid east stairwell.' The planner adds a forbidden zone polygon to R1 and R2's maps. Both re-route; total path adds 18 m.</li>
+<li><b>Drone overwatch task starts immediately.</b> At t=6 min, drone spots a heat signature in B2. It inserts a new subtask 'AlertOperator(B2, survivor)' into the tree. R1 re-prioritizes and reaches B2 in 2 min 10 s.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalized Mission Planning via LLM-Constructed Hierarchical Trees</b> &mdash; an LLM composes task trees for heterogeneous multi-robot missions</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>AgentDet: Shared-Blackboard Multi-Agent Zero-/Few-Shot Detection</b> &mdash; four agents (Scout, Pinner, Curator, Judge) cooperate over a blackboard</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SVAgent: Storyline-Guided Video Understanding via Multi-Agent Collaboration</b> &mdash; six agents build query-guided narratives, +5.5–11.5% on long-video QA</span></li>
@@ -326,7 +442,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Getting many robots to act as one reliable system is far from solved. What is genuinely still hard:</p>
   <div class="opgrid"><div class="op"><b>Coordination that scales.</b> Optimal joint planning explodes with team size; keeping coordination cheap as robots go from tens to thousands is still unsolved in general.</div>
 <div class="op"><b>Communication is the bottleneck.</b> Bandwidth, latency, and dropouts limit every real team &mdash; deciding the few bits worth sending, under a shifting network, remains hard.</div>
-<div class="op"><b>Credit assignment in MARL.</b> When many robots share one reward in a world that changes as they learn, working out who earned it &mdash; and staying robust off-distribution &mdash; is fragile.</div>
+<div class="op"><b>Credit assignment in MARL.</b> When many robots share one reward in a world that changes as they learn, working out who earned it &mdash; and staying reliable off-distribution &mdash; is fragile.</div>
 <div class="op"><b>Trusting teammates.</b> Shared perception assumes honest neighbors; defending fused views against spoofed or compromised agents is a young, open problem.</div>
 <div class="op"><b>Heterogeneity without shared data.</b> Real fleets mix sensors, vendors, and eras that never trained together; aligning them into one team without shared observations is barely started.</div>
 <div class="op"><b>Sim-to-real for teams.</b> Each robot has partial, noisy state and imperfect models of its teammates&rsquo; intent &mdash; coordination learned in simulation degrades in the messy, asynchronous real world.</div></div>

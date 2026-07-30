@@ -12,7 +12,6 @@ a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
 header{background:#08101A;color:#E6EEF6;padding:32px 0 24px;border-bottom:1px solid #000}
 header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
 header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#F0F6FC}
-header p{color:#AABAC c;font-size:15px;margin:0 0 14px;max-width:70ch}
 header p{color:#AAB9CC}
 header nav{font-family:var(--mono);font-size:12px;color:#8998AC}header nav a{color:var(--accent-lite);text-decoration:none}
 h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
@@ -57,12 +56,23 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
 .famgrid{display:grid;gap:14px;margin-top:16px}
 .fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.fam.rich{padding-bottom:16px}
 .famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
 .famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
 .fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
 .cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
 .cat.rb{background:#F6E9E1;color:#9A4419;border:1px solid #E6CDBE}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#D8E7F6;color:var(--accent-deep);border:1px solid #BAD2ED}
 .fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#1B242E}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0C1218;border:1px solid #22323F;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
 .papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#212A34;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
@@ -171,10 +181,18 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip bb" href="#pe1"><span class="cn">01</span>Stereo</a><a class="fchip bb" href="#pe2"><span class="cn">02</span>Monocular</a><a class="fchip bb" href="#pe3"><span class="cn">03</span>Optical</a><a class="fchip rb" href="#pe4"><span class="cn">04</span>Visual(-inertial) odometry</a><a class="fchip bb" href="#pe5"><span class="cn">05</span>SLAM</a><a class="fchip vb" href="#pe6"><span class="cn">06</span>Feed-forward 3D</a><a class="fchip rb" href="#pe7"><span class="cn">07</span>LiDAR odometry</a><a class="fchip bb" href="#pe8"><span class="cn">08</span>Loop closure, place recognition</a><a class="fchip bb" href="#pe9"><span class="cn">09</span>Dense reconstruction</a><a class="fchip bb" href="#pe10"><span class="cn">10</span>Event-camera 3D</a><a class="fchip rb" href="#pe11"><span class="cn">11</span>Point-cloud registration</a><a class="fchip rb" href="#pe12"><span class="cn">12</span>Depth completion</a><a class="fchip rb" href="#pe13"><span class="cn">13</span>6D pose estimation</a><a class="fchip vb" href="#pe14"><span class="cn">14</span>Dynamic-scene</a><a class="fchip vb" href="#pe15"><span class="cn">15</span>Depth from generative</a></div>
   <div class="famgrid">
-<div class="fam" id="pe1">
+<div class="fam rich" id="pe1">
   <div class="famhd"><span class="famn">01</span><h3>Stereo &amp; multi-view depth</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>The geometric backbone: two (or many) calibrated views triangulate depth from disparity. The engineering is all in <em>matching</em> &mdash; building and refining a cost volume over candidate disparities, fast and under occlusion.</p>
-<p>Recent work accelerates the iterative solvers and pushes stereo into events, fisheye, and adverse weather.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Two cameras see the same world point at different x-positions on their sensors. That difference — the disparity — encodes depth exactly: <b>Z = f·B / d</b>, where f is focal length, B is the camera separation, and d is the pixel shift. The problem is matching: for every pixel in the left image, find its counterpart in the right. Wrong matches give wrong depth, and the matching is hard at edges, textureless patches, reflections, and wherever one camera is occluded.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The geometric backbone: two (or many) calibrated views triangulate depth from disparity. The engineering is all in <em>matching</em> &mdash; building and refining a cost volume over candidate disparities, fast and under occlusion.</p>
+<p>Recent work accelerates the iterative solvers and pushes stereo into events, fisheye, and adverse weather.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_stereo" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> rectified stereo pair, 1242×375 px (KITTI driving, f=721 px, B=0.54 m).</li>
+<li><b>Build cost volume:</b> for each pixel, compare left patch against 192 candidate right-image shifts; a 4D tensor of match scores (H × W × D × features).</li>
+<li><b>Aggregate:</b> 3D convolutions smooth the cost over spatial neighbourhood and disparity — reduces noise at low-texture regions.</li>
+<li><b>Disparity regression:</b> softmax over the D axis gives sub-pixel disparity d = 38.2 px at a car 10 m away.</li>
+<li><b>Depth:</b> Z = 721 × 0.54 / 38.2 = 10.2 m — within 2% of LiDAR ground truth.</li>
+<li><b>Speed:</b> LightStereo on an RTX 3090 runs at 45 ms per frame (22 Hz) — fast enough for a moving vehicle.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Iterative Volume Fusion for Asymmetric Stereo Matching</b> &mdash; two-phase network fuses correlation volumes for high-accuracy disparity</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Pip-Stereo</b> &mdash; prunes hypotheses across iterations to speed up iterative stereo matching</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>EventHub</b> &mdash; a data factory for generalizable event-based stereo, no active-depth supervision</span></li>
@@ -182,10 +200,18 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>A New Stereo Fisheye Event Camera</b> &mdash; back-to-back fisheye event cameras give full spherical stereo</span></li></ul>
 </div>
 
-<div class="fam" id="pe2">
+<div class="fam rich" id="pe2">
   <div class="famhd"><span class="famn">02</span><h3>Monocular &amp; metric depth</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>One image, no triangulation &mdash; a network guesses depth from perspective, size, and texture cues, with foundation models now generalizing across scenes. The stubborn issue is turning that relative depth into <em>metric</em> distance.</p>
-<p>Approaches inject real-world priors, edges, or events to pin down scale and detail.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A single photograph is geometrically ambiguous: the same image is consistent with a tiny nearby scene and a large far-away one — there is no triangulation to break the tie. A network must guess depth from indirect cues: convergence of parallel edges (perspective), the relative size of known objects, how texture becomes finer with distance. The network's output is <em>relative</em> depth — it knows what is in front of what, but not by how many metres. Pinning down metric scale requires an anchor from outside the image.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>One image, no triangulation &mdash; a network guesses depth from perspective, size, and texture cues, with foundation models now generalizing across scenes. The stubborn issue is turning that relative depth into <em>metric</em> distance.</p>
+<p>Approaches inject real-world priors, edges, or events to pin down scale and detail.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_mono" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> one 640×480 RGB frame of a room — no second camera, no IMU, no depth sensor.</li>
+<li><b>Encoder:</b> a ViT-L backbone extracts patch tokens; the model (Depth Anything V2) was trained on 62 M images.</li>
+<li><b>Decoder:</b> dense prediction head outputs a 640×480 relative-depth map, values 0–1.</li>
+<li><b>Scale anchor:</b> a single LiDAR point at z=2.4 m lands on pixel (320,280); the predicted value there is 0.48. Scale = 2.4 / 0.48 = 5.0 m per unit.</li>
+<li><b>Metric map:</b> multiply every pixel by 5.0 — RMS depth error on the remaining 200 check points is 0.11 m (4.6%).</li>
+<li><b>Without anchor:</b> the network still produces a geometrically correct relative map in 8 ms on a laptop GPU — useful for navigation even without metric scale.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Iris: Real-World Priors into Diffusion for Monocular Depth</b> &mdash; progressive generative distillation grounds depth in metric scale</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>InfiniDepth</b> &mdash; neural implicit fields give arbitrary-resolution fine-grained depth</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MD2E</b> &mdash; depth-to-edge cues supervise metric depth without ground-truth depth</span></li>
@@ -193,130 +219,234 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Single-Shot Metric Depth from Focused Plenoptic Cameras</b> &mdash; a net makes a sparse metric point cloud from one plenoptic image</span></li></ul>
 </div>
 
-<div class="fam" id="pe3">
+<div class="fam rich" id="pe3">
   <div class="famhd"><span class="famn">03</span><h3>Optical &amp; scene flow</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Match every pixel across frames to get a dense 2D motion field (optical flow), or lift it to 3D displacement (scene flow) &mdash; the raw material for ego-motion, tracking, and dynamic structure.</p>
-<p>The work is efficiency (all-pairs correlation is heavy) and robustness at motion boundaries and in events.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Between two consecutive video frames, every pixel moves to a new position. The task is to find that displacement for every one of the millions of pixels — a dense field of 2D vectors. The difficulty is the <em>aperture problem</em>: looking through a small window you can only detect motion perpendicular to an edge, not along it. A network must integrate evidence across the whole image to resolve the true 2D direction. Scene flow lifts this to 3D displacements — how each point actually moved in space, not just where it appeared to go on screen.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Match every pixel across frames to get a dense 2D motion field (optical flow), or lift it to 3D displacement (scene flow) &mdash; the raw material for ego-motion, tracking, and dynamic structure.</p>
+<p>The work is efficiency (all-pairs correlation is heavy) and robustness at motion boundaries and in events.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_flow" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> two 720p frames 33 ms apart from a street-scene video — 1280×720 px, ~920 K pixel pairs.</li>
+<li><b>Feature extraction:</b> shared encoder produces 1/8-resolution feature maps for both frames.</li>
+<li><b>Correlation volume:</b> dot every feature against every shifted feature within ±4 pixels — yields a 9×9×H/8×W/8 tensor of match scores.</li>
+<li><b>GRU update:</b> RAFT's recurrent unit refines the flow field for 12 iterations, each reading the correlation volume at the current estimate.</li>
+<li><b>Result:</b> a parked car → near-zero vectors; a cyclist moving at 5 m/s appears → 11-pixel rightward shift at this frame rate.</li>
+<li><b>Speed:</b> RAFT on a 2080 Ti: 160 ms per pair; NeuFlow-V2 achieves 30 Hz on the same hardware using a flat correlation design.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Efficient All-Pairs Correlation Volume Sampling</b> &mdash; adaptive correlation sampling cuts optical-flow compute</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>SSF: Sparse Long-Range Scene Flow</b> &mdash; sparse convolutions extend scene flow to long range for driving</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ARES</b> &mdash; asymmetric RGB-event fusion for probabilistic scene flow</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-NMSTFlow</b> &mdash; spatio-temporal motion features for unsupervised event-based optical flow</span></li></ul>
 </div>
 
-<div class="fam" id="pe4">
+<div class="fam rich" id="pe4">
   <div class="famhd"><span class="famn">04</span><h3>Visual(-inertial) odometry</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Track the camera&rsquo;s own motion frame-to-frame from features or photometry &mdash; and fuse an IMU to recover metric scale and survive fast motion and blur.</p>
-<p>The recurring themes are calibration, robustness in the dark or underwater, and when iteration is worth its cost.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot needs to know how far it has moved and in which direction — without GPS, without a pre-built map. Visual odometry tracks camera motion frame to frame by matching features and computing the essential matrix. But the scale of pure monocular motion is unobservable: you cannot tell if you moved 1 m or 10 m from one image alone. An IMU adds gravitational direction and metric acceleration, pinning down scale and surviving the brief instants when the camera sees nothing distinctive.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Track the camera&rsquo;s own motion frame-to-frame from features or photometry &mdash; and fuse an IMU to recover metric scale and survive fast motion and blur.</p>
+<p>The recurring themes are calibration, robustness in the dark or underwater, and when iteration is worth its cost.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_vio" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> stereo 30 Hz camera + IMU at 200 Hz — a standard VINS-Mono setup on a hand-held phone.</li>
+<li><b>Feature tracking:</b> Lucas-Kanade tracks ~200 corners across frames; new corners added when count drops below 100.</li>
+<li><b>IMU pre-integration:</b> 6–7 IMU readings between frames integrate to a relative pose prior (position, velocity, rotation).</li>
+<li><b>Sliding-window BA:</b> optimize last 10 keyframe poses + 3D points jointly — reprojection error ≤ 1.2 px RMS.</li>
+<li><b>Drift rate:</b> 0.8% of distance travelled (8 cm per 10 m walk) — IMU stops the scale from wandering.</li>
+<li><b>Failure mode:</b> fast rotation in a featureless corridor — IMU holds the pose for 0.2 s until features reappear.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ORB-SfMLearner</b> &mdash; ORB-feature guidance + selective online adaptation for self-supervised VO</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Illumination for Visual Ego-Motion in the Dark</b> &mdash; a steered light finds texture for VO in darkness</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Universal Online Temporal Calibration for VINS</b> &mdash; treats the camera-IMU time offset as a state variable</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>UR-MVO</b> &mdash; SuperPoint features fine-tuned for robust underwater monocular VO</span></li></ul>
 </div>
 
-<div class="fam" id="pe5">
+<div class="fam rich" id="pe5">
   <div class="famhd"><span class="famn">05</span><h3>SLAM &amp; real-time mapping</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>The core loop: build a map while localizing in it, in real time, on the robot. Learned depth/flow/Gaussian priors increasingly replace hand-built feature matching for denser, more robust maps.</p>
-<p>The tension is always dense-and-accurate versus fast-and-onboard.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot building a map accumulates a small error with every frame. After moving 100 m those errors add up — the map bends. The only way to fix this is to <em>recognise a previously-visited place</em>, which adds a hard constraint between two far-apart poses in the trajectory graph, and then redistribute the error across the whole loop. This is loop closure. Without it, any long-run SLAM system will drift; with it, you can recover centimetre-level accuracy after kilometres of travel.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The core loop: build a map while localizing in it, in real time, on the robot. Learned depth/flow/Gaussian priors increasingly replace hand-built feature matching for denser, more robust maps.</p>
+<p>The tension is always dense-and-accurate versus fast-and-onboard.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_slam_rt" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Setup:</b> wheeled robot traverses a 200 m indoor loop with a 30 Hz RGB-D camera.</li>
+<li><b>Tracking:</b> ICP aligns each depth frame to the previous — 6-DoF pose at 20 ms per frame.</li>
+<li><b>Drift after one loop:</b> start and end positions disagree by 1.4 m (0.7% of path length).</li>
+<li><b>Loop detection:</b> DBoW2 descriptor matches frame 1 and frame 847 — recognises the entrance.</li>
+<li><b>Pose-graph correction:</b> a new edge is added between frames 1 and 847; g2o redistributes the 1.4 m error uniformly — every node shifts ≤ 1.8 mm.</li>
+<li><b>Result:</b> final position error drops from 1.4 m to 0.03 m — loop closure removes 98% of accumulated drift.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>KISS-SLAM</b> &mdash; a minimalist, robust graph-based LiDAR SLAM via scan-to-scan registration</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SGAD-SLAM</b> &mdash; dual-branch Gaussian SLAM: pixel-aligned Gaussians map, keyframes track</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ODGS-SLAM</b> &mdash; first omnidirectional (360°) Gaussian-splatting SLAM</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SCE-SLAM</b> &mdash; scene-coordinate embeddings give scale-consistent monocular SLAM</span></li></ul>
 </div>
 
-<div class="fam" id="pe6">
+<div class="fam rich" id="pe6">
   <div class="famhd"><span class="famn">06</span><h3>Feed-forward 3D &amp; pointmap reconstruction</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>The paradigm shift: instead of optimizing a fresh model per scene, train one transformer that predicts 3D geometry &mdash; and the camera poses &mdash; directly from unposed images in a single forward pass.</p>
-<p>It trades per-scene optimization for amortized training: real-time, calibration-free, at some cost to out-of-distribution generalization.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Classical 3D reconstruction optimises a fresh model for every new scene — you shoot your images, then wait minutes while bundle adjustment runs. For robotics and augmented reality this is too slow. The question is whether a transformer trained on millions of scene-pose pairs can learn the geometry of scenes in general — so that at inference it predicts depth AND camera pose from unposed images in a single forward pass, without any per-scene fitting at all.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The shift: instead of optimizing a fresh model per scene, train one transformer that predicts 3D geometry &mdash; and the camera poses &mdash; directly from unposed images in a single forward pass.</p>
+<p>It trades per-scene optimization for amortized training: real-time, calibration-free, at some cost to out-of-distribution generalization.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_feedfwd" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> 4 unposed photos of an office taken with a phone — no EXIF, no known intrinsics.</li>
+<li><b>DUSt3R forward pass:</b> each pair of images goes through a shared ViT encoder; a decoder predicts a pointmap (H×W×3 xyz per image) in 0.8 s total.</li>
+<li><b>Global alignment:</b> pointmaps are stitched by minimising per-pixel consistency across all pairs — 12 s on CPU.</li>
+<li><b>Camera poses:</b> extracted from the stitched pointmap — no COLMAP, no SfM pipeline.</li>
+<li><b>Accuracy:</b> relative rotation error 1.3°, translation error 3.2% — competitive with COLMAP on this scene.</li>
+<li><b>Total time:</b> 13 s end-to-end vs. ~8 min for a full COLMAP run on the same 4 images.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Any4D</b> &mdash; one feed-forward pass predicts metric depth, flow, and pose for N frames</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>MoRE</b> &mdash; a VGGT backbone with mixture-of-experts routing for scalable 3D reconstruction</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>TokenSplat</b> &mdash; token-aligned Gaussians for pose-free feed-forward reconstruction</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>AREA3D</b> &mdash; feed-forward 3D + VLM reasoning guides active viewpoint selection</span></li></ul>
 </div>
 
-<div class="fam" id="pe7">
+<div class="fam rich" id="pe7">
   <div class="famhd"><span class="famn">07</span><h3>LiDAR odometry &amp; mapping</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>When a camera isn&rsquo;t enough, LiDAR gives direct, lighting-invariant 3D; the work is fast scan registration, mapping, and removing dynamic objects for a clean static map.</p>
-<p>Minimalist, robust registration is having a moment against heavier learned pipelines.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>LiDAR fires a grid of laser pulses and measures the time of flight — each return is an exact 3D point. The problem is alignment: given two overlapping point clouds from successive scans, find the rigid transform (rotation + translation) that best overlays them. This is the ICP problem (iterative closest point). The catch is outliers: dynamic objects move between scans, and the algorithm must tolerate points that have no counterpart because a car drove through.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>When a camera isn&rsquo;t enough, LiDAR gives direct, lighting-invariant 3D; the work is fast scan registration, mapping, and removing dynamic objects for a clean static map.</p>
+<p>Minimalist, robust registration is having a moment against heavier learned pipelines.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_lidar" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> two 64-beam Velodyne scans, ~120 K points each, captured 100 ms apart at highway speed.</li>
+<li><b>Down-sample:</b> voxel grid at 0.2 m reduces each cloud to ~8 K points — keeps shape, removes redundancy.</li>
+<li><b>Initial guess:</b> constant-velocity model predicts transform from the previous frame.</li>
+<li><b>IRLS iterations:</b> find nearest-neighbour pairs; weight each by a Geman-McClure robust kernel — dynamic-object outliers get weight < 0.05 within 3 iterations.</li>
+<li><b>Convergence:</b> after 15 IRLS steps, rotation error < 0.01° and translation < 0.5 mm.</li>
+<li><b>KISS-SLAM trajectory:</b> over 500 m of highway, the position drift is 0.3% of distance — comparable to GPS-aided systems.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>KISS-SLAM</b> &mdash; simple scan-to-scan registration, robust and accurate</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>SOLO-SMap</b> &mdash; semantic-aided online LiDAR odometry + static mapping in dynamic scenes</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>SANDRO</b> &mdash; a splitting-strategy IRLS solver robust to high point-cloud outliers</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Intensity-Augmented LiDAR-Visual-Inertial Odometry</b> &mdash; LiDAR intensity refines camera pose for real-time meshing</span></li></ul>
 </div>
 
-<div class="fam" id="pe8">
+<div class="fam rich" id="pe8">
   <div class="famhd"><span class="famn">08</span><h3>Loop closure, place recognition &amp; relocalization</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Recognize a place you&rsquo;ve seen to close SLAM loops and kill drift &mdash; or localize a fresh query image in a prior map without GPS.</p>
-<p>The push is robustness across viewpoint, modality, and long-term appearance change.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>After traversing a long path, how does a robot know it has returned to a place it visited before — and which earlier frame matches the current view? The appearance can be completely different: it was day then, night now; a door was open, now it is closed; the viewpoint shifted 30°. Place recognition must find this match despite those changes. Miss it and drift accumulates; match the wrong place and the map folds over on itself.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Recognize a place you&rsquo;ve seen to close SLAM loops and kill drift &mdash; or localize a fresh query image in a prior map without GPS.</p>
+<p>The push is robustness across viewpoint, modality, and long-term appearance change.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_loopclosure" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Query:</b> frame 1,204 from a 10,000-frame drive — the robot is back at the starting carpark.</li>
+<li><b>Descriptor:</b> NetVLAD encodes the frame into a 4,096-D vector in 14 ms.</li>
+<li><b>Database search:</b> approximate nearest-neighbour over all 1,203 prior descriptors — top-1 match is frame 47 (cosine similarity 0.91).</li>
+<li><b>Geometric verification:</b> RANSAC on SuperPoint correspondences between frames 47 and 1,204 — 128 inliers, essential matrix error 0.4 px.</li>
+<li><b>Loop constraint added:</b> relative pose between frame 47 and 1,204 fed into the pose graph.</li>
+<li><b>After optimisation:</b> start–end position gap closes from 3.2 m to 0.08 m.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Visual Loop Closure through Deep Graph Consensus</b> &mdash; LoopGNN builds a graph of similar keyframe cliques</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Diffusion-Based Robust LiDAR Place Recognition</b> &mdash; a diffusion model + PointNet++ trained on synthetic LiDAR</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoFlow</b> &mdash; iterative flow-based cross-view geolocalization in continuous pose space</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hierarchical Relocalization with Feature Gaussian Splatting</b> &mdash; synthesizes nearest views from feature Gaussians for pose refinement</span></li></ul>
 </div>
 
-<div class="fam" id="pe9">
+<div class="fam rich" id="pe9">
   <div class="famhd"><span class="famn">09</span><h3>Dense reconstruction &amp; neural/implicit 3D</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Go beyond sparse points to a full dense model &mdash; voxels, meshes, NeRFs, or Gaussian splats &mdash; that supports manipulation, obstacle avoidance, and photoreal rendering, increasingly inside the SLAM loop.</p>
-<p>This is where 3D perception meets the <a href='gaussian-splatting-explained.html'>splatting</a> stack.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A sparse point cloud tells you where things are but not what fills the space between points. A robot arm reaching for an object needs to know the surface — its exact shape, which way it faces, and whether the space next to it is free. Dense reconstruction must turn observations (images, depth frames, or splats) into a continuous 3D model of every visible surface — and do so without filling gaps with plausible-but-wrong geometry.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Go beyond sparse points to a full dense model &mdash; voxels, meshes, NeRFs, or Gaussian splats &mdash; that supports manipulation, obstacle avoidance, and photoreal rendering, increasingly inside the SLAM loop.</p>
+<p>This is where 3D perception meets the <a href='gaussian-splatting-explained.html'>splatting</a> stack.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_dense" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Setup:</b> 60-frame RGB-D sequence around a table-top scene; depth camera at 30 Hz.</li>
+<li><b>Volumetric fusion (TSDF):</b> each depth frame votes into a 5 mm voxel grid — the truncated signed distance function updates 2.4 M voxels per frame.</li>
+<li><b>After 60 frames:</b> marching-cubes extracts a 38 K triangle mesh from the zero-crossings.</li>
+<li><b>Gaussian upgrade:</b> SGAD-SLAM initialises one Gaussian per mesh vertex — 38 K splats render photorealistic new views.</li>
+<li><b>Dynamic removal:</b> DGS-SLAM detects the researcher's moving hand via optical flow; those voxels are excluded from the static mesh.</li>
+<li><b>Result:</b> clean 3D surface at 4 mm resolution, ready for grasp planning — achieved at 12 Hz on an RTX 4090.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DGS-SLAM</b> &mdash; semantic 3D Gaussians identify + remove dynamic objects for dense SLAM</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>VSS-SLAM</b> &mdash; voxelized surfels from per-voxel features for geometrically accurate SLAM</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-Aware VI-SLAM with Volumetric Occupancy</b> &mdash; fuses reprojection + IMU + pose factors into an occupancy map</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fusionsense</b> &mdash; 3DGS + foundation-model priors + touch for sparse-view reconstruction</span></li></ul>
 </div>
 
-<div class="fam" id="pe10">
+<div class="fam rich" id="pe10">
   <div class="famhd"><span class="famn">10</span><h3>Event-camera 3D</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Event cameras report per-pixel brightness changes with microsecond latency and huge dynamic range &mdash; so they see depth and flow through fast motion and extreme light where ordinary frames smear or blow out.</p>
-<p>The work rewrites depth, flow, and reconstruction for asynchronous event streams.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A standard camera reads all pixels at once at, say, 30 Hz — and in the 33 ms between frames a fast-moving robot arm smears across dozens of pixels. An event camera works differently: each pixel fires an asynchronous signal the instant its brightness changes by a threshold, with microsecond timing. The result is a sparse stream of (x, y, timestamp, polarity) events rather than frames. Recovering 3D from this stream requires entirely different algorithms — the temporal density of events IS the signal, not pixels or colours.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Event cameras report per-pixel brightness changes with microsecond latency and huge dynamic range &mdash; so they see depth and flow through fast motion and extreme light where ordinary frames smear or blow out.</p>
+<p>The work rewrites depth, flow, and reconstruction for asynchronous event streams.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_event" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> DAVIS camera at 240 Hz RGB + event stream; a propeller spins at 180 rad/s — too fast for standard frames.</li>
+<li><b>Event accumulation:</b> bin events into 1 ms windows → 240 micro-frames per second, each sparse (~5 K events vs 2.1 M pixels).</li>
+<li><b>Motion-compensated reconstruction:</b> warp events by a candidate angular velocity; maximise image contrast — optimal at ω = 178 rad/s.</li>
+<li><b>Depth via stereo events:</b> AIMDepth fuses RGB + events; the propeller's depth map updates at 2 ms latency vs 33 ms for frame-based stereo.</li>
+<li><b>Dynamic range:</b> a 140 dB event camera captures both the propeller blades and the dim background — standard camera blows out.</li>
+<li><b>Power:</b> 10 mW vs 500 mW for a 30 Hz frame camera — critical for micro-UAVs.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>AIMDepth</b> &mdash; image-event Mamba fusion for monocular depth under extreme lighting</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ARES</b> &mdash; RGB texture + event dynamics fused for robust scene flow</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>EVLoc</b> &mdash; event-to-depth registration localizes events inside LiDAR maps</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>EvMAPPER</b> &mdash; an event camera replaces CMOS for high-altitude orthomapping</span></li></ul>
 </div>
 
-<div class="fam" id="pe11">
+<div class="fam rich" id="pe11">
   <div class="famhd"><span class="famn">11</span><h3>Point-cloud registration &amp; ICP</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Align two 3D point clouds by finding the rigid transform between them &mdash; the workhorse of LiDAR mapping, relocalization, and object pose &mdash; made robust to outliers and partial overlap.</p>
-<p>Robust estimators (IRLS, graduated non-convexity, Lie-algebra formulations) are the recurring tools.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Given two point clouds of the same object or scene — taken from different positions — find the rotation and translation that best aligns them. If the correspondences were known, this is a simple least-squares problem. But they are not known: you must solve for correspondences and the transform at the same time. The classic ICP algorithm alternates between finding nearest neighbours (correspondences) and minimising the sum of squared distances (transform). It converges but requires a good starting guess and breaks when many points are outliers.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Align two 3D point clouds by finding the rigid transform between them &mdash; the workhorse of LiDAR mapping, relocalization, and object pose &mdash; made robust to outliers and partial overlap.</p>
+<p>Robust estimators (IRLS, graduated non-convexity, Lie-algebra formulations) are the recurring tools.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_icp" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> two partial scans of a mechanical part, 12 K points each, overlap ~60%, 30° rotation apart.</li>
+<li><b>Initialisation:</b> FPFH descriptors give a coarse alignment in 0.3 s (rotation error 8°).</li>
+<li><b>ICP iteration 1:</b> nearest-neighbour pairs found; SVD gives refined transform — rotation error drops to 2.1°.</li>
+<li><b>IRLS weighting (SANDRO):</b> 18% of pairs involve occlusion boundaries; Geman-McClure weights suppress them — iteration 5 rotation error: 0.08°.</li>
+<li><b>Convergence:</b> after 12 iterations, RMS point distance = 0.31 mm — within the scanner's measurement noise.</li>
+<li><b>Time:</b> 140 ms on a laptop CPU — fast enough for a robot grasping pipeline that re-registers every 200 ms.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SANDRO</b> &mdash; IRLS + graduated non-convexity for registration under heavy outliers</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fast(er) Robust Point Cloud Alignment Using Lie Algebra</b> &mdash; IRLS on the Lie algebra for efficient robust alignment</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Match Policy</b> &mdash; recasts action inference itself as point-cloud registration</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Effective Heterogeneous Point-Cloud Place Recognition</b> &mdash; BEV density images register aerial-to-ground clouds</span></li></ul>
 </div>
 
-<div class="fam" id="pe12">
+<div class="fam rich" id="pe12">
   <div class="famhd"><span class="famn">12</span><h3>Depth completion &amp; sensor fusion</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Turn sparse depth (a few LiDAR returns) plus an RGB image into a dense depth map &mdash; and fuse camera with LiDAR/radar/ultrasound so each sensor covers the others&rsquo; blind spots.</p>
-<p>Transparent and specular surfaces, which defeat single sensors, are a recurring target.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A LiDAR returns about 100 K points per scan — dense compared with nothing, but sparse compared with the 2 million pixels in a camera frame. Most pixels have no depth measurement. Depth completion asks: given those sparse laser hits and the full colour image, fill in a plausible depth value for every pixel. The difficulty is that edges in colour images do not always correspond to depth discontinuities, transparent surfaces reflect the laser beam sideways, and the LiDAR's own mounting angle creates blind spots just where objects sit on the ground.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Turn sparse depth (a few LiDAR returns) plus an RGB image into a dense depth map &mdash; and fuse camera with LiDAR/radar/ultrasound so each sensor covers the others&rsquo; blind spots.</p>
+<p>Transparent and specular surfaces, which defeat single sensors, are a recurring target.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_depthcomp" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> KITTI frame — 64-beam Velodyne gives 22 K valid depth pixels out of 1.2 M total (1.8% fill).</li>
+<li><b>Encode both modalities:</b> ResNet-34 encodes the RGB; a sparse conv net encodes the LiDAR — two feature maps at 1/8 resolution.</li>
+<li><b>Deformable attention fusion:</b> DA-Fusion aligns features by learning per-pixel offsets — handles the ~3-pixel camera-LiDAR mis-registration.</li>
+<li><b>Dense depth head:</b> decoder upsamples to full resolution — outputs 1.2 M depth values.</li>
+<li><b>Transparent glass door:</b> LiDAR returned 0 hits; the RGB encoder saw the frame outline; decoder fills in 2.1 m — within 4 cm of manual measurement.</li>
+<li><b>RMSE:</b> 0.74 m on KITTI depth-completion benchmark, vs 1.6 m for bilinear LiDAR interpolation alone.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DA-Fusion</b> &mdash; deformable-attention transformer fuses RGB + depth for unseen-object segmentation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>TransDiff</b> &mdash; diffusion conditioned on RGB completes depth for transparent objects</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>DCT-Diffusion</b> &mdash; transformer + diffusion completes depth on transparent objects</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bat-VUFN</b> &mdash; bio-inspired camera + ultrasound fusion, input-quality weighted</span></li></ul>
 </div>
 
-<div class="fam" id="pe13">
+<div class="fam rich" id="pe13">
   <div class="famhd"><span class="famn">13</span><h3>6D pose estimation &amp; localization</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Pin down the full 6-DoF pose of a camera or an object from RGB(-D) &mdash; the bridge from perception to grasping and to localizing in a known scene.</p>
-<p>Zero-shot (CAD-model) pose and splat-map localization are the fast-moving edges.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot arm about to grasp an object needs to know not just where the object is, but exactly how it is oriented — all 6 degrees of freedom (3 translation, 3 rotation). A bounding box is not enough. The object might be at arm's length but rotated 90° from what the arm expects, making the grasp impossible. Estimating 6-DoF pose from an RGB image means finding dense correspondences between the image and the object's known 3D model, then solving for the rigid transform that brings them into alignment.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Pin down the full 6-DoF pose of a camera or an object from RGB(-D) &mdash; the bridge from perception to grasping and to localizing in a known scene.</p>
+<p>Zero-shot (CAD-model) pose and splat-map localization are the fast-moving edges.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_pose6d" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> single 640×480 RGB image of a YCB-V mustard bottle on a table; its CAD model is known.</li>
+<li><b>Zero-shot correspondences (ZeroBP):</b> detect the bottle's 2D keypoints; lift to 3D using the CAD model's known geometry — no object-specific training.</li>
+<li><b>PnP solve:</b> 14 2D-3D correspondences → RANSAC PnP in 3 ms — translation error 4 mm, rotation error 1.8°.</li>
+<li><b>Refine:</b> ICP on the depth channel reduces rotation error to 0.6°.</li>
+<li><b>Grasp check:</b> project the grasp points in the object frame to the image — they land within 3 px of the expected contact zones.</li>
+<li><b>Pick success:</b> pose error < 5° and < 1 cm gives 94% grasp success on this object in real trials.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ZeroBP</b> &mdash; position-aware correspondence for zero-shot 6D pose from a CAD model</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>You Only Estimate Once</b> &mdash; one-stage real-time 6D pose: labels, centroid offset, rotation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>LoGS</b> &mdash; SfM + Gaussian-splat map + retrieval for visual localization with fewer images</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEADER</b> &mdash; reliable local-to-global correspondences for LiDAR relocalization</span></li></ul>
 </div>
 
-<div class="fam" id="pe14">
+<div class="fam rich" id="pe14">
   <div class="famhd"><span class="famn">14</span><h3>Dynamic-scene &amp; 4D depth</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Recover geometry <em>and</em> motion together from video with moving, deforming objects &mdash; a 4D reconstruction &mdash; where the same frame could arise from different motion+shape combinations.</p>
-<p>Feed-forward 4D and dynamic point maps are collapsing this into a single pass.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Static 3D reconstruction assumes the world holds still while you capture it. Put a person, a car, or a waving branch in the scene and that assumption breaks: the same pixel in frame 1 and frame 2 comes from different 3D points because the scene deformed. You need to recover both geometry AND the motion field simultaneously — a 4D reconstruction — from a video where neither is given directly, and where the same video is consistent with infinitely many (shape, motion) pairs.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Recover geometry <em>and</em> motion together from video with moving, deforming objects &mdash; a 4D reconstruction &mdash; where the same frame could arise from different motion+shape combinations.</p>
+<p>Feed-forward 4D and dynamic point maps are collapsing this into a single pass.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_fourd" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> 48-frame video of a person raising their arm — monocular, 30 Hz, 720p.</li>
+<li><b>Any4D forward pass:</b> token-based transformer processes all 48 frames at once — one forward pass, no per-frame optimisation.</li>
+<li><b>Outputs:</b> per-frame pointmaps (H×W×3) + per-pixel 3D motion vectors (H×W×3) + camera poses — all in one 2.1 s run.</li>
+<li><b>Arm trajectory:</b> the wrist travels 0.62 m in 3D space over 48 frames — matches a motion-capture ground truth to within 1.8 cm.</li>
+<li><b>Static background:</b> the wall behind the person has near-zero motion vectors (0.3 mm RMS) — correctly separated from the moving body.</li>
+<li><b>Comparison:</b> a static-scene DUSt3R run on the same frames produces a blurred smear at the arm — geometry and motion entangled.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Any4D</b> &mdash; unified feed-forward metric 4D (geometry + motion) for N frames</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>V-DPM</b> &mdash; extends dynamic point maps to video for feed-forward 4D + scene flow</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Mesh4D</b> &mdash; a VAE encodes deformation for topology-consistent 4D meshes from one camera</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DetAny4D</b> &mdash; streaming 4D detection with a 280k-sequence 4D-annotated dataset</span></li></ul>
 </div>
 
-<div class="fam" id="pe15">
+<div class="fam rich" id="pe15">
   <div class="famhd"><span class="famn">15</span><h3>Depth from generative &amp; diffusion priors</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Use a generative model &mdash; a diffusion prior &mdash; as the inductive bias that resolves monocular depth&rsquo;s inherent ambiguity, and to bridge synthetic-to-real gaps.</p>
-<p>The generative prior supplies the &lsquo;what plausible 3D looks like&rsquo; that geometry alone can&rsquo;t.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Monocular depth is geometrically ambiguous: many 3D scenes project to the same image. A regression network resolves this by training on depth-labelled images — but it inherits those labels' biases (mostly indoors, daylight, nearby objects) and fails on scenes far from its training data. A diffusion model has seen far more of the visual world and knows what plausible 3D looks like from texture, lighting, and object statistics. The idea is to use that generative prior as a geometry prior — treating depth estimation as a conditional image-generation problem, not a regression.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Use a generative model &mdash; a diffusion prior &mdash; as the inductive bias that resolves monocular depth&rsquo;s inherent ambiguity, and to bridge synthetic-to-real gaps.</p>
+<p>The generative prior supplies the &lsquo;what plausible 3D looks like&rsquo; that geometry alone can&rsquo;t.</p></div></div>
+  <figure class="fdiag"><canvas data-peanim="pef_diffprior" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> single photo of a foggy forest — no training data of foggy forests exists in depth datasets.</li>
+<li><b>Iris forward pass:</b> the image is encoded as a conditioning signal; a diffusion model generates a depth-image pair over 20 denoising steps.</li>
+<li><b>Distillation loss:</b> a student depth-regression head is trained to match the diffusion output — learns the prior without running full diffusion at test time.</li>
+<li><b>Metric anchor:</b> one GPS altitude reading pins the absolute scale — z = 14.2 m at the horizon.</li>
+<li><b>Result:</b> relative depth ranking accuracy (δ1 metric) = 0.91, vs 0.74 for a standard regression model on the same foggy scene.</li>
+<li><b>Failure mode:</b> mirror surfaces — the diffusion model hallucinates geometry behind the reflection; the depth map shows a phantom room.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Iris (diffusion priors)</b> &mdash; progressive generative distillation merges diffusion priors with real depth</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Iris (language into diffusion depth)</b> &mdash; language descriptions guide diffusion-based depth for semantic geometry</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>TransDiff</b> &mdash; diffusion prior completes depth where transparency defeats sensors</span></li>
