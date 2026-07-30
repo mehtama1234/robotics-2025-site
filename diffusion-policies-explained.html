@@ -312,69 +312,118 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>PoCo</b> &mdash; composes diffusion policies across modalities (vision, depth, tactile) and domains</span></li></ul>
 </div>
 
-<div class="fam" id="dp9">
+<div class="fam rich" id="dp9">
   <div class="famhd"><span class="famn">09</span><h3>Diffusion for planning &amp; trajectory optimization</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Skip the explicit optimizer: let diffusion generate whole collision-free trajectories directly, conditioned on the scene, either as the plan or as seeds for a fast solver.</p>
-<p>Because it samples, it naturally proposes several distinct routes &mdash; useful for multimodal, cluttered planning.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Classical motion planners are reliable but slow, and they usually return a single path &mdash; no sense of the other good routes through a cluttered scene.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Skip the explicit optimizer: let diffusion generate whole collision-free trajectories directly, conditioned on the scene, either as the plan or as seeds for a fast solver.</p>
+<p>Because it samples, it naturally proposes several distinct routes &mdash; useful for multimodal, cluttered planning.</p></div></div>
+  <figure class="fdiag"><canvas data-dpanim="dpf_plan" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Give the model the start, the goal, and the obstacle map.</b></li>
+<li><b>Denoise several whole trajectories at once</b> &mdash; each a complete path.</li>
+<li><b>Because it samples,</b> the paths take genuinely different routes around obstacles.</li>
+<li><b>Score them</b> (length, clearance) and keep the best &mdash; or hand them to a fast solver as seeds.</li>
+<li><b>You get a diverse set of valid plans</b> without running a slow optimizer from scratch.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DiffusionSeeder</b> &mdash; diffusion seeds a GPU motion optimizer → 12× average, 36× worst-case speedup</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Joint Localization and Planning Using Diffusion</b> &mdash; one diffusion model does global localization + SE(2) path planning from LiDAR</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GuideFlow</b> &mdash; constraint-guided flow matching embeds hard rules into the velocity field → SOTA NavSim</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Aerobatic Flight via Diffusion</b> &mdash; learns aerobatic primitives; classifier-guided batch sampling avoids obstacles</span></li></ul>
 </div>
 
-<div class="fam" id="dp10">
+<div class="fam rich" id="dp10">
   <div class="famhd"><span class="famn">10</span><h3>Guided, constrained &amp; safe generation</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Steer the sampler at inference: nudge each denoising step with a cost, a potential field, or a hard constraint so the generated action stays safe or on-preference &mdash; no retraining.</p>
-<p>This turns a single trained policy into a family of behaviors you can shape on the fly.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A policy trained to do the task well won&rsquo;t necessarily stay safe or on-preference in a new setting &mdash; and retraining a fresh policy for every new constraint is wasteful.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Steer the sampler at inference: nudge each denoising step with a cost, a potential field, or a hard constraint so the generated action stays safe or on-preference &mdash; no retraining.</p>
+<p>This turns a single trained policy into a family of behaviors you can shape on the fly.</p></div></div>
+  <figure class="fdiag"><canvas data-dpanim="dpf_guide" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Train the diffusion policy once, normally.</b></li>
+<li><b>At sampling time, add a cost</b> &mdash; distance to obstacles, a safety margin, a preference.</li>
+<li><b>At each denoising step, nudge the action</b> in the direction that lowers that cost.</li>
+<li><b>The sample bends away from the hazard</b> while staying a valid action.</li>
+<li><b>Change the cost</b> and the same policy produces a different, safe behavior &mdash; no retraining.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Potential Field-Guided Flow Matching</b> &mdash; potential-field guidance steers flow away from obstacles while keeping task success</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Physics-Informed Conditional Diffusion (drifting)</b> &mdash; physics-informed guidance adapts drifting across tire/road conditions</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Risk-Averse Diffusion Policies</b> &mdash; distributional diffusion + risk-averse optimization for offline RL</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>NaviDiffuser</b> &mdash; weight-range guidance for real-time multi-objective navigation trade-offs</span></li></ul>
 </div>
 
-<div class="fam" id="dp11">
+<div class="fam rich" id="dp11">
   <div class="famhd"><span class="famn">11</span><h3>Dexterous, contact-rich &amp; tactile</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>When fingers touch objects the dynamics turn discontinuous and vision alone stops being enough; folding touch into the denoiser gives fine force control for in-hand and assembly tasks.</p>
-<p>Tactile + diffusion consistently beats vision-only on fragile and occluded manipulation.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>The instant a finger touches an object the physics turns discontinuous, and a camera often can&rsquo;t even see the contact &mdash; so vision-only policies fumble fragile, occluded, contact-rich tasks.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>When fingers touch objects the dynamics turn discontinuous and vision alone stops being enough; folding touch into the denoiser gives fine force control for in-hand and assembly tasks.</p>
+<p>Tactile + diffusion consistently beats vision-only on fragile and occluded manipulation.</p></div></div>
+  <figure class="fdiag"><canvas data-dpanim="dpf_tactile" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Add touch sensors to the fingers</b> alongside the camera.</li>
+<li><b>Feed both the image and the tactile reading</b> into the denoiser.</li>
+<li><b>When a finger makes contact,</b> the tactile signal tells the policy exactly when the dynamics change.</li>
+<li><b>Denoise an action that respects that contact</b> &mdash; press, don&rsquo;t crush; slide, don&rsquo;t drop.</li>
+<li><b>On fragile or occluded objects,</b> touch-aware sampling beats vision-only.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D-ViTac</b> &mdash; unified 3D visuo-tactile representation + diffusion → beats vision-only on fragile items</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Implicit Contact Diffuser</b> &mdash; latent diffusion over contact descriptors guides MPC past local minima</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>ProDapt</b> &mdash; long-term contact-memory conditioning enables proprioception-only completion</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>PolyTouch</b> &mdash; multi-modal tactile (camera + acoustic) + tactile-diffusion policies</span></li></ul>
 </div>
 
-<div class="fam" id="dp12">
+<div class="fam rich" id="dp12">
   <div class="famhd"><span class="famn">12</span><h3>Locomotion &amp; whole-body control</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Legged control has many valid gaits and recovery moves &mdash; a natural fit for a distribution-modeling policy. Diffusion brings offline-learned, multimodal locomotion to real robots in real time.</p>
-<p>The trick is squeezing the sampler into the tight, high-rate loop a walking robot needs.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A walking robot has many valid gaits and split-second recovery moves; averaging them (as regression does) yields a stumble, and the control loop is far too fast for slow sampling.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Legged control has many valid gaits and recovery moves &mdash; a natural fit for a distribution-modeling policy. Diffusion brings offline-learned, multimodal locomotion to real robots in real time.</p>
+<p>The trick is squeezing the sampler into the tight, high-rate loop a walking robot needs.</p></div></div>
+  <figure class="fdiag"><canvas data-dpanim="dpf_loco" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Collect offline logs</b> of a legged robot moving &mdash; multiple valid gaits.</li>
+<li><b>Train a diffusion policy on them;</b> it captures trot, bound, and recovery moves.</li>
+<li><b>In the control loop, sample a gait-consistent action chunk</b> fast enough for real time.</li>
+<li><b>The robot commits to one coherent gait</b> instead of averaging into a stumble.</li>
+<li><b>Preference or sim-to-real tuning</b> adapts the gaits to new terrain.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DiffuseLoco</b> &mdash; first real-time legged control by diffusion from offline data; beats RL/BC on stability</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Preference-Aligned Diffusion Planner for Quadrupeds</b> &mdash; offline diffusion planner + preference refinement → zero-shot sim-to-real gaits</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Transferable Latent-to-Latent Locomotion</b> &mdash; a latent diffusion recovery module adapts one core across robots</span></li></ul>
 </div>
 
-<div class="fam" id="dp13">
+<div class="fam rich" id="dp13">
   <div class="famhd"><span class="famn">13</span><h3>Human motion generation</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>The vision side of the same idea: generate human motion &mdash; from text, sketch, or music &mdash; where countless motions fit one prompt. Diffusion captures that multimodality while respecting contacts and physics.</p>
-<p>Recent work makes it causal/streaming and physics-aware so the motion is both live and plausible.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>One instruction (&lsquo;a person waving&rsquo;) matches countless valid motions; a model that outputs the average produces a lifeless, physically-off motion.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>The vision side of the same idea: generate human motion &mdash; from text, sketch, or music &mdash; where countless motions fit one prompt. Diffusion captures that multimodality while respecting contacts and physics.</p>
+<p>Recent work makes it causal/streaming and physics-aware so the motion is both live and plausible.</p></div></div>
+  <figure class="fdiag"><canvas data-dpanim="dpf_motion" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Take a text prompt</b> (&ldquo;a person waving&rdquo;).</li>
+<li><b>Denoise a full-body motion sequence</b> conditioned on it.</li>
+<li><b>Sample again</b> &rarr; a different but equally valid waving motion.</li>
+<li><b>Add physics-aware losses</b> so contacts and balance stay plausible.</li>
+<li><b>Make it causal / streaming</b> so the motion can be generated live.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Causal Motion Diffusion Models</b> &mdash; first causal diffusion for streaming motion → order-of-magnitude lower latency</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAMotion</b> &mdash; a physics-aware loss on object acceleration enforces contact consistency</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SceMoS</b> &mdash; scene-aware motion via a token planner grounded on per-frame heightmaps</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Retrieval-Guided Diffusion Noise Optimization</b> &mdash; retrieval-augmented noise init for highly-constrained motion</span></li></ul>
 </div>
 
-<div class="fam" id="dp14">
+<div class="fam rich" id="dp14">
   <div class="famhd"><span class="famn">14</span><h3>Trajectory forecasting — multimodal futures</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Where will the pedestrian, cyclist, or car go? The future is genuinely multimodal &mdash; zigzag or straight, cautious or aggressive &mdash; and regression averages those into a useless middle path.</p>
-<p>Diffusion (and flow) forecast the full distribution of futures, which is exactly what an uncertainty-aware planner needs downstream.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Where a pedestrian or car goes next is genuinely uncertain &mdash; left, straight, or right &mdash; and a planner handed a single averaged prediction is dangerously wrong.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Where will the pedestrian, cyclist, or car go? The future is genuinely multimodal &mdash; zigzag or straight, cautious or aggressive &mdash; and regression averages those into a useless middle path.</p>
+<p>Diffusion (and flow) forecast the full distribution of futures, which is exactly what an uncertainty-aware planner needs downstream.</p></div></div>
+  <figure class="fdiag"><canvas data-dpanim="dpf_forecast" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Observe an agent&rsquo;s recent track</b> and the scene.</li>
+<li><b>A regressor would predict one averaged future</b> &mdash; often straight through where the agent won&rsquo;t go.</li>
+<li><b>Instead, denoise a set of futures:</b> left, straight, right &mdash; the real modes.</li>
+<li><b>Attach a probability to each.</b></li>
+<li><b>Hand the whole distribution to the planner,</b> which reacts to all the likely futures, not one.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>MeanFuser</b> &mdash; one-step multi-modal trajectory generation without a fixed vocabulary, 59 FPS</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Gaussian-Mixture Latent Flow</b> &mdash; a GMM latent flow for diverse, accurate stochastic 3D human motion prediction</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>PoseD-Flow</b> &mdash; guided flow on the rotation manifold → SOTA pose completion under occlusion</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>WAM-Flow</b> &mdash; discrete flow matching over trajectory tokens for fast multimodal driving plans</span></li></ul>
 </div>
 
-<div class="fam" id="dp15">
+<div class="fam rich" id="dp15">
   <div class="famhd"><span class="famn">15</span><h3>Diffusion + world models &amp; RL fine-tuning</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Two frontier seams. Pair a diffusion policy with a world model &mdash; imagine futures, then act &mdash; or fine-tune the policy with RL and human preference so it improves past what the demos showed.</p>
-<p>Both push diffusion policies from &lsquo;copy the demos&rsquo; toward &lsquo;get better than the demos&rsquo;.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A policy cloned from demonstrations can only ever match the demonstrators; it never discovers a better way, and it inherits their mistakes.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Two frontier seams. Pair a diffusion policy with a world model &mdash; imagine futures, then act &mdash; or fine-tune the policy with RL and human preference so it improves past what the demos showed.</p>
+<p>Both push diffusion policies from &lsquo;copy the demos&rsquo; toward &lsquo;get better than the demos&rsquo;.</p></div></div>
+  <figure class="fdiag"><canvas data-dpanim="dpf_rl" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Start from a diffusion policy trained by imitation</b> &mdash; it copies the demos, no better.</li>
+<li><b>Roll it out</b> (in a world model, with a learned reward, or against human preferences).</li>
+<li><b>Score which rollouts did better</b> than the demonstrations.</li>
+<li><b>Fine-tune the policy toward those</b> &mdash; with KL regularization so it doesn&rsquo;t destabilize.</li>
+<li><b>Now it exceeds the demonstrations</b> instead of merely matching them.</li></ol></div>
   <ul class="papers"><li><span class="vbadge bb">BOTH</span><span class="pt"><b>RehearseVLA</b> &mdash; a physically-consistent world model post-trains a VLA with <5 demos via safe RL</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>FDPP</b> &mdash; learns a reward from pairwise human preferences and fine-tunes a pretrained diffusion policy</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Diffusion Meets DAgger</b> &mdash; synthesizes out-of-distribution states with diffusion for eye-in-hand DAgger</span></li>

@@ -251,6 +251,117 @@
     lab(ctx,'shared encoders map each body to one space → the single policy matches specialists',14,h-12,C.mut);
   };
 
+  // ===== per-family diagrams (wave B: families 9-15) =====
+
+  // F9 PLANNING — denoise several whole trajectories at once; diverse routes around obstacles.
+  A.dpf_plan=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Generate whole trajectories directly — several diverse routes at once',14,16,C.dim);
+    const sx=w*0.1,gx=w*0.9,my=h*0.52;
+    dot(ctx,sx,my,7,C.ink);lab(ctx,'start',sx-6,my+18,C.mut,10);dot(ctx,gx,my,7,C.green);lab(ctx,'goal',gx-6,my+18,C.green,10);
+    // obstacles
+    rrect(ctx,w*0.42,my-46,w*0.06,36,4,C.coral,hexA(C.coral,0.15));rrect(ctx,w*0.56,my+10,w*0.06,40,4,C.coral,hexA(C.coral,0.15));
+    lab(ctx,'obstacles',w*0.44,my-54,C.coral,9);
+    // three sampled trajectories
+    const routes=[[-70,C.mut],[0,C.green],[64,C.violet]];const best=1;
+    routes.forEach((r,i)=>{const on=i===best;ctx.strokeStyle=on?C.green:hexA(r[1],0.6);ctx.lineWidth=on?2.2:1.3;
+      ctx.beginPath();ctx.moveTo(sx,my);ctx.bezierCurveTo(w*0.4,my+r[0],w*0.6,my+r[0],gx,my);ctx.stroke();});
+    lab(ctx,'diffusion samples 3 valid paths → keep the best (or seed a fast solver)',14,h-12,C.mut);
+  };
+
+  // F10 GUIDED — a cost bends the denoising away from a hazard, no retraining.
+  A.dpf_guide=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Steer at sampling time: a cost nudges each denoising step away from danger',14,16,C.dim);
+    const sx=w*0.1,gx=w*0.9,my=h*0.52;dot(ctx,sx,my,6,C.ink);dot(ctx,gx,my,6,C.green);
+    // hazard
+    ctx.fillStyle=hexA(C.coral,0.18);ctx.beginPath();ctx.arc(w*0.5,my,34,0,TAU);ctx.fill();lab(ctx,'hazard',w*0.5,my,C.coral,10,'center');
+    // unguided path straight into hazard
+    ctx.strokeStyle=hexA(C.coral,0.7);ctx.lineWidth=1.4;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(sx,my);ctx.lineTo(gx,my);ctx.stroke();ctx.setLineDash([]);
+    lab(ctx,'unguided → into it ✗',w*0.3,my-10,C.coral,10);
+    // guided path curving around, with nudge arrows
+    ctx.strokeStyle=C.green;ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(sx,my);ctx.bezierCurveTo(w*0.4,my-58,w*0.6,my-58,gx,my);ctx.stroke();
+    lab(ctx,'guided → around it ✓',w*0.42,my-64,C.green,10);
+    for(let k=0;k<3;k++){const x=w*(0.4+k*0.1);arrow(ctx,x,my-6,x,my-24,hexA(C.violet,0.8),1.2);}
+    lab(ctx,'cost gradient',w*0.4,my+22,C.violet,9);
+    lab(ctx,'same trained policy → change the cost, get a different safe behavior, no retraining',14,h-12,C.mut);
+  };
+
+  // F11 TACTILE — vision + touch into the denoiser; the contact on/off is handled.
+  A.dpf_tactile=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Fold in touch: the tactile signal marks exactly when contact changes the physics',14,16,C.dim);
+    box(ctx,w*0.05,h*0.3,w*0.2,26,'camera',C.cyan);
+    box(ctx,w*0.05,h*0.52,w*0.2,26,'touch / force',C.amber);
+    arrow(ctx,w*0.26,h*0.44,w*0.36,h*0.44,C.ink,1.4);
+    box(ctx,w*0.37,h*0.34,w*0.18,h*0.2,'denoiser',C.accent||C.cyan);
+    arrow(ctx,w*0.56,h*0.44,w*0.64,h*0.44,C.ink,1.4);box(ctx,w*0.65,h*0.36,w*0.16,h*0.16,'action',C.green);
+    // force curve: flat then spike at contact
+    const fx=w*0.05,fy=h*0.86,fw=w*0.5;ctx.strokeStyle=C.amber;ctx.lineWidth=1.6;ctx.beginPath();
+    for(let i=0;i<=40;i++){const u=i/40,x=fx+fw*u;const y=fy-(u<0.55?2: (u<0.62? (u-0.55)/0.07*26 : 26))*1;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+    lab(ctx,'force: flat → spike at contact',fx,fy+10,C.mut,9.5);
+    lab(ctx,'press don’t crush, slide don’t drop — touch-aware beats vision-only on fragile items',14,h-12,C.mut);
+  };
+
+  // F12 LOCOMOTION — many valid gaits sampled; commit to one, in real time.
+  A.dpf_loco=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Legged control has many valid gaits — sample one coherent gait, fast',14,16,C.dim);
+    // quadruped glyph
+    const qx=w*0.2,qy=h*0.5;ctx.strokeStyle=C.ink;ctx.lineWidth=2.5;ctx.strokeRect(qx-26,qy-10,52,18);
+    [-20,-8,8,20].forEach((dx,i)=>{const ph=Math.sin(t*4+i*1.6)*5;ctx.beginPath();ctx.moveTo(qx+dx,qy+8);ctx.lineTo(qx+dx,qy+22+ph);ctx.stroke();});
+    lab(ctx,'quadruped',qx-24,qy+34,C.mut,10);
+    // two gait footfall patterns, one highlighted
+    const pick=Math.floor(saw(t,3)*2)%2;
+    ['trot','bound'].forEach((g,gi)=>{const y=h*0.32+gi*h*0.34,on=gi===pick;lab(ctx,g,w*0.5,y-16,on?C.green:C.mut,10);
+      for(let leg=0;leg<4;leg++)for(let s=0;s<8;s++){const stance=(g==='trot')?((s+leg)%2===0):((s+ (leg<2?0:1))%2===0);
+        ctx.fillStyle=stance?(on?C.green:hexA(C.mut,0.5)):hexA(C.line,1);ctx.fillRect(w*0.52+s*16,y-8+leg*5,12,3);}});
+    lab(ctx,'sample a gait-consistent chunk in real time → commit, don’t average into a stumble',14,h-12,C.mut);
+  };
+
+  // F13 HUMAN MOTION — one text prompt, several valid motions sampled.
+  A.dpf_motion=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'One prompt, many valid motions: diffusion samples the multimodal futures',14,16,C.dim);
+    box(ctx,w*0.06,h*0.46,w*0.2,28,'“a person waving”',C.amber);
+    arrow(ctx,w*0.27,h*0.5,w*0.35,h*0.5,C.ink,1.4);
+    // three skeletons, waving differently, one animated
+    const pick=Math.floor(saw(t,3)*3)%3;
+    for(let k=0;k<3;k++){const cx=w*(0.46+k*0.17),cy=h*0.5,on=k===pick;const arm=(on?Math.sin(t*4):0.4)*0.6+ (k-1)*0.4;
+      ctx.strokeStyle=on?C.green:C.mut;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(cx,cy-24,5,0,TAU);ctx.moveTo(cx,cy-19);ctx.lineTo(cx,cy+6);
+      ctx.moveTo(cx,cy-10);ctx.lineTo(cx-12,cy-4);ctx.moveTo(cx,cy-10);ctx.lineTo(cx+12,cy-18-arm*10);
+      ctx.moveTo(cx,cy+6);ctx.lineTo(cx-7,cy+22);ctx.moveTo(cx,cy+6);ctx.lineTo(cx+7,cy+22);ctx.stroke();}
+    lab(ctx,'each sample is a different, valid wave — physics-aware losses keep balance plausible',14,h-12,C.mut);
+  };
+
+  // F14 FORECASTING — a fan of distinct futures vs regression's averaged middle path.
+  A.dpf_forecast=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'The future is multimodal: forecast the distinct options, not their average',14,16,C.dim);
+    const ax=w*0.16,ay=h*0.55;
+    // recent track
+    ctx.strokeStyle=C.ink;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(w*0.06,ay+18);ctx.lineTo(ax,ay);ctx.stroke();dot(ctx,ax,ay,6,C.ink);lab(ctx,'now',ax-6,ay+18,C.mut,10);
+    // regression averaged straight (wrong)
+    ctx.strokeStyle=hexA(C.coral,0.75);ctx.lineWidth=1.6;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(w*0.9,ay);ctx.stroke();ctx.setLineDash([]);
+    lab(ctx,'regression → averaged middle ✗',w*0.5,ay+4,C.coral,10);
+    // diffusion fan of futures
+    const outs=[-70,-10,60];outs.forEach((dy,i)=>{ctx.strokeStyle=C.green;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ax,ay);ctx.bezierCurveTo(w*0.5,ay,w*0.7,ay+dy,w*0.9,ay+dy);ctx.stroke();
+      lab(ctx,['left','straight','right'][i],w*0.91,ay+dy,C.green,9);});
+    lab(ctx,'left / straight / right — hand the whole distribution to the planner',14,h-12,C.mut);
+  };
+
+  // F15 RL FINE-TUNE — push past the demonstration ceiling with reward / preference / world model.
+  A.dpf_rl=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Go beyond copying: fine-tune past the demonstrations with reward or preference',14,16,C.dim);
+    const bx=w*0.1,bw=w*0.8,by=h*0.78;
+    // performance axis
+    ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+bw,by);ctx.moveTo(bx,by);ctx.lineTo(bx,h*0.24);ctx.stroke();
+    lab(ctx,'performance',bx-4,h*0.2,C.dim,9);
+    // demo ceiling
+    const demoY=h*0.5;ctx.strokeStyle=hexA(C.mut,0.6);ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(bx,demoY);ctx.lineTo(bx+bw,demoY);ctx.stroke();ctx.setLineDash([]);
+    lab(ctx,'demonstration ceiling (imitation stops here)',bx+6,demoY-10,C.mut,10);
+    // rising curve above it
+    const p=saw(t,4);ctx.strokeStyle=C.green;ctx.lineWidth=2.4;ctx.beginPath();
+    for(let i=0;i<=40;i++){const u=i/40;if(u>p)break;const x=bx+bw*u;const y=by-(by-h*0.3)*(u<0.5?u*1.6:0.8+ (u-0.5)*0.4);ctx.lineTo(x,y);}ctx.stroke();
+    arrow(ctx,bx+bw*0.5,demoY,bx+bw*0.7,h*0.34,C.green,1.6);lab(ctx,'RL / preference / world-model rollouts',bx+bw*0.42,h*0.3,C.green,10);
+    lab(ctx,'roll out, score what beat the demos, fine-tune toward it (KL-regularized so it stays stable)',14,h-12,C.mut);
+  };
+
   // ---- boot ----
   const running=new Map();
   function start(cv){if(running.has(cv))return;const anim=A[cv.dataset.dpanim];if(!anim)return;
