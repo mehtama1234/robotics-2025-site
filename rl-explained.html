@@ -1,0 +1,331 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reinforcement Learning &amp; Imitation, from first principles</title>
+<style>
+:root{--ink:#160710;--paper:#F4EAEE;--panel:#FCF5F8;--tint:#EDD3DC;--line:#E0BECB;
+ --graphite:#573F49;--g2:#93707E;--accent:#9E2B4E;--accent-deep:#7A1E3A;--accent-lite:#D4708F;
+ --robo:#4E6172;--cvpr:#2F6F8B;--both:#9E2B4E;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#12060C;color:#F4E7ED;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#FBEEF3}
+header p{color:#CAAEB9;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#A98B97}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#2E1D25;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#12060C;border:1px solid #2E1520;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#B48C9A;margin-top:8px}
+.essay p{font-size:15.5px;color:#22131B;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig figcaption{font-size:13px;color:#2E1D25;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#28171F;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#2E1D25;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#28171F}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#28171F}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#EFD3DC}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#22131B;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#E4EAEF;color:#3A4A5A;border:1px solid #C6D2DC}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#EFD3DC;color:var(--accent-deep);border:1px solid #E0B6C4}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#22131B}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#28171F;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#160710}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#28171F}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">RL &amp; Imitation &middot; reward · demos · sim-to-real &middot; robotics + vision</div>
+  <h1>How robots learn: reward, imitation, and trial-and-error</h1>
+  <p>You can&rsquo;t hand-write a rule for every situation &mdash; so specify what &lsquo;good&rsquo; means and let the robot discover how. The RL loop, exploration, imitation, and sim-to-real &mdash; the learning machinery under every other stage &mdash; from first principles, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">the loop</a> &middot; <a href="#fp3">the dilemma</a> &middot; <a href="#fp4">copy first</a> &middot; <a href="#fp5">practice safely</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; specify what not how, the state-action-reward loop, the explore-exploit dilemma, learning from demonstrations, and practising in simulation. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">classical</span><b>optimal control</b><p>hand-derived controllers and planners from a known dynamics model &mdash; precise, but brittle to the unmodeled.</p></div><div class="ln"><span class="lyr">2013&ndash;16</span><b>deep RL</b><p>deep networks + RL crack Atari and continuous control; policies learned straight from high-dimensional input.</p></div><div class="ln"><span class="lyr">2017&ndash;20</span><b>sim-to-real</b><p>domain randomization and massively parallel simulation make RL transfer to real robots &mdash; dexterity, locomotion.</p></div><div class="ln"><span class="lyr">2020&ndash;23</span><b>imitation at scale</b><p>behavior cloning and diffusion policies learn manipulation from human demos; DAgger fixes drift.</p></div><div class="ln"><span class="lyr">2023&ndash;</span><b>RL + foundation models</b><p>LLMs/VLMs plan and shape reward, and RL fine-tunes them (GRPO/RLHF) &mdash; the families below.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>Specify what, not how</h2>
+  <figure class="instrument"><canvas data-rlanim="rl_why" height="300"></canvas>
+    <figcaption>You cannot hand-write a rule for every situation a robot will meet. Reinforcement learning flips it: define what 'good' means with a reward, and let the robot discover the behavior itself by trial and error.</figcaption></figure>
+  <div class="essay"><p>Classic robotics wrote the <em>how</em>: if this, do that &mdash; a rule for every case. But the world has endless cases, and the rules grow brittle and never end. Some behaviors, like a fluid recovery from a shove, no one knows how to write down at all.</p>
+<p>Reinforcement learning changes the question. Instead of programming the behavior, you specify a <b>reward</b> &mdash; what counts as success &mdash; and let the robot find a policy that earns it, through trial and error. You give it the goal; it discovers the means.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Formalize as a Markov decision process (S, A, P, r, &gamma;): states, actions, transition P, reward r, discount &gamma;.</p>
+<p>The goal is a policy &pi; maximizing expected discounted return E[&Sigma; &gamma;&#7511; r&#7511;] &mdash; you specify r, learning finds &pi;.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; the loop</div>
+  <h2>State, action, reward, repeat</h2>
+  <figure class="instrument"><canvas data-rlanim="rl_loop" height="300"></canvas>
+    <figcaption>The whole of RL is one loop: the agent sees the state, takes an action, the environment returns a new state and a reward, and the agent adjusts to earn more reward over the long run — not just the next step.</figcaption></figure>
+  <div class="essay"><p>Every RL method is the same loop underneath. The agent observes the <b>state</b>, its policy picks an <b>action</b>, the environment responds with a new state and a scalar <b>reward</b>, and around it goes. Learning is nudging the policy so that, over many turns, it collects more reward.</p>
+<p>The subtlety is &lsquo;over the long run&rsquo;. A good move now may only pay off much later, so the agent must value future reward, not just immediate &mdash; which is what makes credit assignment (which action deserves the eventual win?) the hard core of RL.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Value: Q&#960;(s,a) = expected return from taking a in s then following &pi;; improve &pi; toward higher-Q actions.</p>
+<p>Credit assignment: temporal-difference updates propagate later reward back to earlier actions &mdash; the crux when rewards are delayed.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; the dilemma</div>
+  <h2>Explore or exploit</h2>
+  <figure class="instrument"><canvas data-rlanim="rl_explore" height="300"></canvas>
+    <figcaption>To learn, an agent must try things it isn't sure about; to score, it must use what already works. Explore too little and it settles for a mediocre habit; explore too much and it never cashes in. Balancing the two is the central dilemma.</figcaption></figure>
+  <div class="essay"><p>An agent that only does what it already knows works can never discover something better. An agent that only tries new things never benefits from what it learned. This is the <b>exploration-exploitation</b> trade-off, and it&rsquo;s unavoidable.</p>
+<p>It gets worse when reward is sparse &mdash; when success is rare and most tries yield nothing. Then the agent can wander for ages without a signal to learn from, which is why so much of RL is really about smarter exploration and shaping the reward so learning ever gets started.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Balance is formal: e.g. &epsilon;-greedy or entropy bonuses keep the policy trying non-greedy actions.</p>
+<p>Sparse reward makes the return signal near-zero almost everywhere &mdash; shaping, curiosity, or demonstrations restore a gradient to climb.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; copy first</div>
+  <h2>Learn from demonstrations</h2>
+  <figure class="instrument"><canvas data-rlanim="rl_imitation" height="300"></canvas>
+    <figcaption>Often it's far cheaper to show than to reward. Imitation learning copies a handful of expert demonstrations directly into a policy. The catch: a pure copy fails the moment it drifts somewhere no demo went — the distribution-shift problem.</figcaption></figure>
+  <div class="essay"><p>Designing a good reward is hard, and trial-and-error is slow. So the most practical route is often to <em>show</em> the robot: collect a handful of expert demonstrations and train the policy to copy them. This is imitation learning, and it skips the whole search.</p>
+<p>But copying has a famous failure. The policy is only reliable where the demos went; one small error takes it to an unfamiliar state, where it errs more, and it spirals. The fix is to ask the expert what to do <em>in those new states too</em> (DAgger), or to add a little reward-driven refinement on top.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Behavior cloning: supervised learning of &pi;(a|s) on expert (s,a) pairs &mdash; but errors compound as O(T&sup2;) over a horizon T.</p>
+<p>DAgger: roll out the policy, query the expert on the states it actually visits, and retrain &mdash; fixing the covariate shift.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; practice safely</div>
+  <h2>A million tries in a dream</h2>
+  <figure class="instrument"><canvas data-rlanim="rl_sim" height="300"></canvas>
+    <figcaption>RL needs enormous amounts of trial and error — far too much to do on a real robot. So it practices in fast, parallel simulation, then transfers to reality. Randomize the simulation enough and the real world becomes just one more variant it already handled.</figcaption></figure>
+  <div class="essay"><p>Trial-and-error learning is hungry &mdash; often millions of episodes. You cannot run that on real hardware without breaking it or waiting years. So RL trains in <b>simulation</b>, thousands of copies in parallel, at many times real speed.</p>
+<p>The gap is that simulation isn&rsquo;t reality. The trick that bridges it is <b>domain randomization</b>: vary the sim&rsquo;s physics, textures, and delays so widely that the real world looks like just another sample the policy already learned to handle. It&rsquo;s the same data-engine pressure that runs under the whole field.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Parallel sim collects samples at massive scale; domain randomization samples physics params &theta; ~ p(&theta;) so the policy is robust across the range.</p>
+<p>Reality is treated as one draw of &theta; inside the trained distribution &mdash; zero-shot transfer when the range is wide enough.</p></div></details>
+</section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge" style="background:var(--graphite)">&#9679; honest note</div><figcaption style="margin-top:0">This explainer has <b>no single &lsquo;we ran it&rsquo; demo</b> &mdash; RL is the method under many of our other runs (the Octo diffusion policy, the SparseDrive planner, the locomotion gaits) rather than a demo of its own. The mechanism diagrams above are real, live JavaScript; the families below are real papers.</figcaption></figure></section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three ways a robot learns</h2>
+  <p class="intro">Where the learning signal comes from, in one table &mdash; a reward it maximizes, demonstrations it copies, or a fixed dataset it learns from offline.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>Where the signal comes from</th><th>Data cost</th><th>Generalizes?</th><th>The catch</th></tr></thead><tbody><tr class="hi"><th class="rn">Reinforcement learning</th><td>a reward it maximizes by trial & error</td><td>very high (millions of tries)</td><td>well, if trained broadly</td><td>reward design & sample cost; sim-to-real gap</td></tr><tr><th class="rn">Imitation / behavior cloning</th><td>expert demonstrations to copy</td><td>low (a few demos)</td><td>only near the demos</td><td>distribution shift; needs an expert</td></tr><tr><th class="rn">Offline / from-video</th><td>a fixed dataset, no live interaction</td><td>reuses logged data</td><td>bounded by the dataset</td><td>no exploration; missing action labels</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons to learn rather than hand-code.</p>
+  <div class="bens"><div class="ben"><h4>Behaviors no one can hand-write</h4><p>RL discovers fluid, reactive skills &mdash; recovery from a shove, a dexterous regrasp &mdash; that resist being programmed rule by rule.</p></div>
+<div class="ben"><h4>Show instead of specify</h4><p>Imitation turns a few human demonstrations into a policy, sidestepping the hard art of reward design.</p></div>
+<div class="ben"><h4>Practice without breaking things</h4><p>Training in simulation means millions of safe, free trials, then transfer &mdash; no worn hardware, no danger.</p></div>
+<div class="ben"><h4>Adapts to the body and the task</h4><p>One learning recipe retrains across robots, morphologies, and goals, rather than a bespoke controller each time.</p></div>
+<div class="ben"><h4>Improves from its own experience</h4><p>Online and residual methods let a deployed policy keep getting better from the data it collects in the real world.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way robots learn behavior</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip rb" href="#rl1"><span class="cn">01</span>Deep RL for control</a><a class="fchip rb" href="#rl2"><span class="cn">02</span>Sim-to-real RL</a><a class="fchip bb" href="#rl3"><span class="cn">03</span>Reward design</a><a class="fchip bb" href="#rl4"><span class="cn">04</span>Offline RL</a><a class="fchip bb" href="#rl5"><span class="cn">05</span>Imitation</a><a class="fchip rb" href="#rl6"><span class="cn">06</span>Interactive imitation (DAgger)</a><a class="fchip rb" href="#rl7"><span class="cn">07</span>Inverse RL</a><a class="fchip bb" href="#rl8"><span class="cn">08</span>Learning from video</a><a class="fchip rb" href="#rl9"><span class="cn">09</span>Sample efficiency</a><a class="fchip bb" href="#rl10"><span class="cn">10</span>Model-based RL</a><a class="fchip rb" href="#rl11"><span class="cn">11</span>Hierarchical RL</a><a class="fchip rb" href="#rl12"><span class="cn">12</span>Residual RL</a><a class="fchip bb" href="#rl13"><span class="cn">13</span>RL + foundation models</a><a class="fchip vb" href="#rl14"><span class="cn">14</span>RLHF</a><a class="fchip rb" href="#rl15"><span class="cn">15</span>Safe RL</a></div>
+  <div class="famgrid">
+<div class="fam" id="rl1">
+  <div class="famhd"><span class="famn">01</span><h3>Deep RL for control</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Learn a control policy straight from interaction &mdash; no hand-derived controller &mdash; letting trial and error discover motor skills that generalize across embodiment and disturbance.</p>
+<p>The recurring struggle is sample cost and the sim-to-real gap.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoCoDA: Counterfactual Data Augmentation for Data-Efficient Robot Learning</b> &mdash; causal invariance + SE(3) equivariance augment RL data</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Imitation to Refinement — Residual RL for Precise Assembly</b> &mdash; RL sharpens an imitation policy for contact-rich assembly</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Vision Transformers for End-to-End Quadrotor Obstacle Avoidance</b> &mdash; learned high-speed flight control from images</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Adversarial Policies for Swarm Leader Identification</b> &mdash; RL discovers a probing behavior to find a leader</span></li></ul>
+</div>
+
+<div class="fam" id="rl2">
+  <div class="famhd"><span class="famn">02</span><h3>Sim-to-real RL</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Train cheaply in simulation, then transfer to a real robot by randomizing physics and appearance so reality falls inside the trained range.</p>
+<p>The open question is which parameters to randomize &mdash; transfer success is still variable.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DemoStart: Demonstration-Led Auto-Curriculum for Multi-Fingered Sim-to-Real</b> &mdash; demo-initialized auto-curriculum RL for dexterity</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Whole-Body Control of Legged Robots with MPPI</b> &mdash; parallel sampling control transferred to hardware</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Opening the Sim-to-Real Door for Humanoid Pixel-to-Action Transfer</b> &mdash; stage-reset exploration + GRPO, 83% real door-opening</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Incremental Few-Shot Adaptation via Parallelizable Physics Simulators</b> &mdash; adapts sim parameters online to close the gap</span></li></ul>
+</div>
+
+<div class="fam" id="rl3">
+  <div class="famhd"><span class="famn">03</span><h3>Reward design &amp; shaping</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>The reward <em>is</em> the specification &mdash; and getting it right is the hardest part. Learn it from preferences or human feedback instead of hand-tuning a sparse signal.</p>
+<p>The danger is reward hacking: policies that game a mis-specified reward.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>FDPP: Fine-Tune Diffusion Policy with Human Preference</b> &mdash; preference feedback shapes a manipulation policy</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Type Preference Learning</b> &mdash; learns reward from several kinds of human preference</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CCCaption: Dual-Reward RL for Complete and Correct Captioning</b> &mdash; completeness + correctness rewards with hallucination checks</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Perceptual-Evidence Anchored Reinforced Learning for Multimodal Reasoning</b> &mdash; anchors reward to verifiable perceptual evidence</span></li></ul>
+</div>
+
+<div class="fam" id="rl4">
+  <div class="famhd"><span class="famn">04</span><h3>Offline RL</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Learn from a fixed dataset with no live interaction &mdash; essential when exploration is unsafe or expensive &mdash; while guarding against overestimating actions the data never tried.</p>
+<p>Dataset quality is the ceiling; distribution shift is the enemy.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Language-Conditioned Offline RL</b> &mdash; offline policies conditioned on language goals</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Distributional Decision Transformer</b> &mdash; sequence-model offline RL over return distributions</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SRCP: Saliency-Guided Consistency Policy for Visual Unsupervised RL</b> &mdash; saliency-guided representations + consistency policies</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Efficient Frame Selection for Long Video Understanding via RL</b> &mdash; offline-style RL with rollback to prevent drift</span></li></ul>
+</div>
+
+<div class="fam" id="rl5">
+  <div class="famhd"><span class="famn">05</span><h3>Imitation &amp; behavior cloning</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Copy expert demonstrations directly into a policy &mdash; the fastest way to a working behavior &mdash; bootstrapping skill without any exploration.</p>
+<p>The weakness is drift off the demonstrated states; pretrained representations and augmentation help.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizable Imitation Learning Through Pre-Trained Representations</b> &mdash; pretrained vision backbones make BC data-efficient</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ProDapt: Proprioceptive Adaptation Using Long-Term Memory Diffusion</b> &mdash; contact-memory diffusion for robust imitation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Lifelong Imitation with Multimodal Latent Replay</b> &mdash; latent replay prevents forgetting across tasks</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>VideoWeaver: Multi-View Video-to-Video Transfer for Embodied Agents</b> &mdash; 4D-grounded multi-view domain randomization for BC</span></li></ul>
+</div>
+
+<div class="fam" id="rl6">
+  <div class="famhd"><span class="famn">06</span><h3>Interactive imitation (DAgger)</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Fix behavior cloning&rsquo;s drift by rolling out the policy and asking the expert what to do in exactly the states it visits &mdash; then retraining on those.</p>
+<p>The cost is an expert on call during training, and choosing which queries to make.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robot Policy Transfer with Online Demonstrations</b> &mdash; interactive demos correct the policy where it fails</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Imitation to Refinement — Residual RL for Precise Assembly</b> &mdash; combines demos with online refinement</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAFE-GIL: Safety-Guided Imitation Learning</b> &mdash; injects safety-aware queries into imitation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Opening the Sim-to-Real Door (DAgger + GRPO)</b> &mdash; DAgger mixture stabilizes pixel-to-action transfer</span></li></ul>
+</div>
+
+<div class="fam" id="rl7">
+  <div class="famhd"><span class="famn">07</span><h3>Inverse RL</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Run imitation backwards: instead of copying actions, infer the <em>reward</em> that explains the expert&rsquo;s behavior &mdash; an interpretable, transferable objective.</p>
+<p>It&rsquo;s ill-posed (many rewards fit) and assumes the expert is rational.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Agent Inverse Q-Learning from Demonstrations</b> &mdash; recovers multi-agent rewards 2–5× better than prior IRL</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Cost Function Estimation Using Inverse RL</b> &mdash; infers a planner&rsquo;s hidden cost from behavior</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generating Causal Explanations of Vehicular Agents</b> &mdash; IRL-style recovery of driver objectives for explanation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Think Deep and Fast: Neural Opinion Dynamics from Inverse Games</b> &mdash; recovers interaction objectives from expert play</span></li></ul>
+</div>
+
+<div class="fam" id="rl8">
+  <div class="famhd"><span class="famn">08</span><h3>Learning from video &amp; human demos</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Skip teleoperation: learn tasks from ordinary human video, where the demonstration is visual and the action labels are missing &mdash; a vast, cheap data source.</p>
+<p>The gaps are missing actions, viewpoint mismatch, and fragile temporal segmentation.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ViViDex: Vision-Based Dexterous Manipulation from Human Videos</b> &mdash; trajectory-guided rewards from human video</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RTAGrasp: Task-Oriented Grasping from Human Videos</b> &mdash; retrieve, transfer, align grasps from video memory</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus: A Unified Latent Action World Model</b> &mdash; optical-flow latent actions bridge video and robot data</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>NIL: No-Data Imitation Learning</b> &mdash; a video diffusion model generates the reference to imitate</span></li></ul>
+</div>
+
+<div class="fam" id="rl9">
+  <div class="famhd"><span class="famn">09</span><h3>Sample efficiency &amp; exploration</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Trial-and-error is expensive, so squeeze more learning from every step &mdash; smarter exploration, data reuse, and structure that restores a gradient under sparse reward.</p>
+<p>Efficiency tricks are often task-specific and can transfer negatively.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Efficient Imitation Without Demonstrations</b> &mdash; bootstraps exploration without a demo set</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoCoDA: Counterfactual Data Augmentation</b> &mdash; reuses each demo across symmetries for efficiency</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CaDRE: Curriculum/data-efficient RL</b> &mdash; orders experience to speed convergence</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Match Policy: From Point-Cloud Registration to Manipulation</b> &mdash; recasts action inference to need very little data</span></li></ul>
+</div>
+
+<div class="fam" id="rl10">
+  <div class="famhd"><span class="famn">10</span><h3>Model-based RL &amp; world models</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Learn the environment&rsquo;s dynamics, then plan or train inside that learned model &mdash; imagining outcomes instead of paying for every real trial. See the <a href='world-models-explained.html'>world-models</a> explainer.</p>
+<p>Model error compounds over long rollouts; learning dynamics from pixels is hard.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>LIMT: Language-Informed Multi-Task Visual World Models</b> &mdash; language-conditioned learned dynamics for planning</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Privileged-Dreamer: Explicit Imagination of Privileged Information</b> &mdash; imagines hidden state for fast adaptation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DreamSAC: Learning Hamiltonian World Models via Symmetry</b> &mdash; physics-structured world model with curiosity</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WPT: World-to-Policy Transfer via Online World-Model Distillation</b> &mdash; distills a world model into an actionable policy</span></li></ul>
+</div>
+
+<div class="fam" id="rl11">
+  <div class="famhd"><span class="famn">11</span><h3>Hierarchical RL</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Split a long task into a hierarchy &mdash; a high-level policy picks sub-goals, low-level policies execute &mdash; making credit assignment tractable and skills reusable.</p>
+<p>Automatic skill discovery is unsolved; a bad decomposition erases the benefit.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Multi-Agent Loco-Manipulation for Quadrupedal Pushing</b> &mdash; hierarchical MARL, 36% over baselines</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Diffusion Meets Options for Hierarchical Control</b> &mdash; diffusion over temporally-extended options</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>QuadWBG: Hierarchical Whole-Body Grasping</b> &mdash; high-level goals over low-level whole-body control</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Automated Hybrid Reward Scheduling</b> &mdash; schedules sub-rewards across a hierarchy</span></li></ul>
+</div>
+
+<div class="fam" id="rl12">
+  <div class="famhd"><span class="famn">12</span><h3>Residual RL</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Start from a decent controller or imitation policy and learn only the <em>correction</em> with RL &mdash; a small residual that trains in hours, not days.</p>
+<p>The base policy choice is critical, and residuals don&rsquo;t always stay small.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Imitation to Refinement — Residual RL for Precise Assembly</b> &mdash; residual RL on top of an imitation base</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>High-Frequency Residual Policy for Robotic Throwing</b> &mdash; a fast residual sharpens a nominal throw</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning-Based MPC for Autonomous Driving</b> &mdash; learned residual corrects a model-based controller</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Predictive Kinematic Coordinate Control + Residual</b> &mdash; residual learning over a kinematic base</span></li></ul>
+</div>
+
+<div class="fam" id="rl13">
+  <div class="famhd"><span class="famn">13</span><h3>RL + foundation models &amp; VLA</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Put a web-pretrained model in the loop &mdash; an LLM to plan or shape reward, a VLM as the policy backbone &mdash; and use RL to fine-tune it for embodied control.</p>
+<p>Foundation models hallucinate, and grounding language to precise action is unsolved.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAS-Prompt: LLMs as Numerical Optimizers for Robot Self-Improvement</b> &mdash; an LLM proposes and refines control parameters</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LLM-as-BT-Planner: Behavior-Tree Generation for Task Planning</b> &mdash; an LLM writes the task structure RL fills in</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist VLA</b> &mdash; merges skills into one vision-language-action agent</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RehearseVLA: Simulated Post-Training for VLAs with a World Model</b> &mdash; world-model rollouts post-train a VLA with RL</span></li></ul>
+</div>
+
+<div class="fam" id="rl14">
+  <div class="famhd"><span class="famn">14</span><h3>RLHF &amp; preference optimization</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>The technique that aligned chatbots, turned on vision: optimize a model directly against human (or model) preferences with policy-gradient methods like GRPO and DPO &mdash; now the default for tuning generators and VLMs.</p>
+<p>It lives or dies on the reward model; group-relative methods cut variance.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Dr. Seg: Revisiting GRPO Training for Visual LLMs</b> &mdash; perception-oriented GRPO with distribution-ranked rewards</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GDPO-SR: Group Direct Preference Optimization for Super-Resolution</b> &mdash; DPO-GRPO hybrid with attribute-aware rewards</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OraPO: Oracle-Educated RL for Factual Radiology Reports</b> &mdash; oracle-supervised GRPO with fact-based reward</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Curriculum Group Policy Optimization for Text-to-Image</b> &mdash; uses group reward variance as an online curriculum signal</span></li></ul>
+</div>
+
+<div class="fam" id="rl15">
+  <div class="famhd"><span class="famn">15</span><h3>Safe RL &amp; curriculum</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Learn while respecting hard safety constraints &mdash; and order the training from easy to hard so a policy can reach skills it could never learn from scratch.</p>
+<p>Constraints are hand-crafted, conservatism costs performance, and curriculum design is manual.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>RAIL: Reachability-Aided Imitation Learning for Safety</b> &mdash; reachability constraints keep imitation safe</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-Aware Input-Constrained Control Barrier Functions</b> &mdash; safe RL under uncertainty via CBFs</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Quiet Walking via Curriculum</b> &mdash; a curriculum grows a hard locomotion skill</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CTSAC: Curriculum Soft Actor-Critic</b> &mdash; curriculum-ordered exploration for stable RL</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Learning is how modern robots get their skills &mdash; and it is still far from solved. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>Sample cost.</b> Model-free RL still needs millions of interactions; despite efficiency tricks, learning complex skills from scratch is prohibitively hungry.</div>
+<div class="op"><b>The sim-to-real gap.</b> No principled way to pick domain-randomization ranges; transfer from simulation to hardware remains variable and hand-tuned.</div>
+<div class="op"><b>Reward design &amp; hacking.</b> The reward is the whole specification, and a subtly wrong one gets gamed &mdash; specifying intent without loopholes is unsolved.</div>
+<div class="op"><b>Credit assignment at horizon.</b> Attributing a distant success to the right early action, across hundreds of sparse-reward steps, breaks current methods.</div>
+<div class="op"><b>Distribution shift.</b> Imitation and offline policies fail off their data; staying reliable in states the training never covered is fragile.</div>
+<div class="op"><b>The human bottleneck.</b> Demonstrations, preferences, and safety specs all need expert humans &mdash; scaling learning past a small expert pool is open.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">RL &amp; Imitation explainer &middot; mechanism diagrams are live JavaScript (assets/rl-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the learning machinery under the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/rl-anim.js"></script>
+</body></html>

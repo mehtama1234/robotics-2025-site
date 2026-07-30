@@ -1,0 +1,332 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Video &amp; Temporal Understanding, from first principles</title>
+<style>
+:root{--ink:#0D1420;--paper:#EAF0F6;--panel:#F4F8FC;--tint:#CFD9ED;--line:#B8C8DF;
+ --graphite:#3D4F62;--g2:#6E8499;--accent:#3D5AB5;--accent-deep:#2A4290;--accent-lite:#7C93DE;
+ --robo:#4E6172;--cvpr:#2F6F8B;--both:#3D5AB5;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#0A0E1A;color:#E8EEF8;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#EEF3FC}
+header p{color:#8FA5C2;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#6E8499}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#1A2A3D;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#0A0E1A;border:1px solid #1A2540;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#7A9AB8;margin-top:8px}
+.essay p{font-size:15.5px;color:#1A2233;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#0A0E1A}
+.ranfig figcaption{font-size:13px;color:#1A2A3D;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#1A2233;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#1A2A3D;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#1A2233}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#1A2233}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#CFD9ED}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#1A2233;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#E4EAEF;color:#3A4A5A;border:1px solid #C6D2DC}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#CFD9ED;color:var(--accent-deep);border:1px solid #B8C8DF}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#1A2233}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#1A2233;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#0D1420}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#1A2233}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Video &amp; Temporal &middot; motion · tracking · long-form · prediction &middot; robotics + vision</div>
+  <h1>Video &amp; Temporal Understanding: time is a dimension, not a batch</h1>
+  <p>Shuffle a video's frames and the event is gone. The meaning lives in order, motion, identity over time, and the ability to remember what happened minutes ago. Motion estimation, multi-object tracking, long-form memory, and future-frame prediction &mdash; from first principles, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">motion</a> &middot; <a href="#fp3">keep identity</a> &middot; <a href="#fp4">long horizon</a> &middot; <a href="#fp5">predict</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why order matters, how motion signals action, what tracking really is, why long video is a compression problem, and why future prediction needs to commit to one sharp answer. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">~2014</span><b>per-frame CNNs</b><p>image classifiers applied to individual frames &mdash; cheap, but temporal structure is thrown away.</p></div><div class="ln"><span class="lyr">2014&ndash;17</span><b>two-stream &amp; 3D convs</b><p>separate appearance and flow streams fused late; then C3D / I3D fold time into 3D convolutional filters.</p></div><div class="ln"><span class="lyr">2018&ndash;21</span><b>video transformers</b><p>temporal self-attention (TimeSformer, ViViT) lets every frame attend to every other; accuracy rises, cost soars.</p></div><div class="ln"><span class="lyr">2021&ndash;24</span><b>video-language models</b><p>CLIP-style contrastive pretraining on video-text pairs (CLIP4Clip, InternVideo) + instruction tuning; zero-shot recognition arrives.</p></div><div class="ln"><span class="lyr">2024&ndash;</span><b>streaming &amp; long-video memory</b><p>token compression, frame selection, SSM-based sequence models (Mamba, HieraMamba) scale to hour-long video and real-time streaming.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>A video is not a stack of images</h2>
+  <figure class="instrument"><canvas data-vtanim="vt_why" height="300"></canvas>
+    <figcaption>Shuffle a video's frames and the event disappears. The meaning is not in any single image — it lives in the order and the motion between images. Time is a dimension, not a batch.</figcaption></figure>
+  <div class="essay"><p>An image classifier sees a single frame and says &ldquo;door.&rdquo; Show it the same door in each frame of a video and it still just sees &ldquo;door&rdquo; &mdash; it has thrown away whether the door opened or closed, who did it, and when. That information lives entirely in the <em>sequence</em>, not in any one picture.</p>
+<p>This is the core problem of video understanding. You cannot treat a video as a bag of still images and hope to recover the temporal structure; it is gone the moment you drop the order. Motion, change, causality, and event identity all depend on knowing which frame came before which &mdash; and how fast things moved between them.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>A video x = (f&#8321;, f&#8322;, &hellip;, f&#8338;) is an ordered sequence; a set {f&#7522;} loses the permutation &sigma; that carries the causal structure.</p>
+<p>Any temporal model must be equivariant to shifts and sensitive to order: P(x&#7556;&#8330;&#8325; | x&#8321;&#8315;&#7556;) &ne; P(x&#8330;&#8325;&#8315;&#7556; | x&#8321;&#8315;&#7556;) in general.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; motion</div>
+  <h2>What moved, and how</h2>
+  <figure class="instrument"><canvas data-vtanim="vt_motion" height="300"></canvas>
+    <figcaption>Action lives in how pixels move between frames. Two-stream networks separated this early: one stream sees appearance, the other sees flow. Separating subject motion from background motion is what turns raw pixel difference into a description of action.</figcaption></figure>
+  <div class="essay"><p>Between any two frames, every pixel has moved a little or a lot. <b>Optical flow</b> measures that displacement: a dense field of vectors, one per pixel, saying where each point went. The moving person has large vectors; the static wall has nearly zero. That flow field is the raw signal of action &mdash; the difference between &ldquo;the player kicked&rdquo; and &ldquo;the camera panned.&rdquo;</p>
+<p>Early work learned two parallel streams &mdash; one for appearance, one for flow &mdash; and fused their predictions. Modern 3D convolutions and video transformers collapse the two streams into one by treating time as a spatial dimension, but the insight is the same: action recognition is really motion recognition, and separating what moved from what stayed still is the first step.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Optical flow (u,v) at pixel (x,y): minimize ||I(x,y,t) &minus; I(x+u,y+v,t+1)||&sup2; subject to brightness constancy + regularization (Horn-Schunck).</p>
+<p>Two-stream score: P(action) = &lambda; P&#7552;(action|RGB) + (1&minus;&lambda;) P&#7549;(action|flow); 3D convolutions subsume both into spatio-temporal filters K &in; &#8477;^{T&times;H&times;W}.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; keep identity</div>
+  <h2>Follow the same thing over time</h2>
+  <figure class="instrument"><canvas data-vtanim="vt_track" height="300"></canvas>
+    <figcaption>A detector finds objects in each frame independently. A tracker adds the harder constraint: the car in frame 47 and the car in frame 93 are the same car, even if they crossed behind a pillar in between. Re-attaching identity through occlusion and crossing paths is what separates tracking from detection.</figcaption></figure>
+  <div class="essay"><p>Detection is easy to describe: run a network on a frame, get boxes and labels. <b>Tracking</b> adds a constraint the detector ignores: the same physical object must carry the same identity across every frame it appears in. When two vehicles cross paths and one briefly disappears behind a sign, a tracker must decide which ID reappears on each side &mdash; and get it right, or every downstream count and trajectory is wrong.</p>
+<p>The standard approach is &ldquo;tracking by detection&rdquo;: detect every frame, then associate the detections across time using motion models and appearance features. The failure modes are symmetric: re-identify too aggressively and unrelated objects merge; too conservatively and every occlusion spawns a new ID. Event cameras, which fire per-pixel on change rather than frame by frame, are pushing asynchronous tracking that avoids the occlusion window entirely.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Tracking-by-detection: cost C&#7522;&#8326; = &alpha; &middot; IoU(b&#7522;,b&#8326;) + (1&minus;&alpha;) &middot; d(e&#7522;,e&#8326;) between detection i and track j; Hungarian algorithm finds min-cost assignment.</p>
+<p>Kalman state x = [cx,cy,s,r,&dot;cx,&dot;cy,&dot;s]&#7488;; predict with constant-velocity, update with detection &mdash; SORT's core; re-ID features extend it to Re-ID across occlusion (DeepSORT / ByteTrack).</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; long horizon</div>
+  <h2>Understanding a whole video</h2>
+  <figure class="instrument"><canvas data-vtanim="vt_long" height="300"></canvas>
+    <figcaption>A one-second clip fits in a video transformer's attention window. A one-hour lecture does not — at all. Long-range video understanding is a compression and memory problem: what moments matter enough to keep, and what can be safely discarded so you can still answer a question twenty minutes later?</figcaption></figure>
+  <div class="essay"><p>Attention is quadratic in sequence length. A 30-fps video of an hour-long procedure has 108,000 frames &mdash; you cannot run a transformer that attends to all of them at once. The field answers this with <b>frame selection</b>, <b>token compression</b>, and structured <b>memory</b>: pick the key moments, compress the rest into a compact representation, and store enough to answer questions about what happened, and when, and why.</p>
+<p>The deeper problem is that what counts as a &ldquo;key moment&rdquo; depends on the question you will later ask. A frame selection policy that is good for &ldquo;who won?&rdquo; may discard the one frame that answers &ldquo;who fouled first?&rdquo; This is why the best long-video systems use the question itself to guide selection &mdash; and why annotation is so expensive: humans must watch the whole thing to label what matters.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Attention cost O(T&sup2;D) makes full-video attention prohibitive; memory reduces effective context to M slots: compress x&#8321;&#8315;&#7556; &rarr; m &in; &#8477;^{M&times;D}, attend only over m.</p>
+<p>Frame selection: score s&#7522; = f&#952;(f&#7522;, q) for query q, keep top-K frames; learned selection minimizes task loss end-to-end, avoiding heuristic uniform sampling.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; predict</div>
+  <h2>Guessing the next frames</h2>
+  <figure class="instrument"><canvas data-vtanim="vt_predict" height="300"></canvas>
+    <figcaption>If you can predict what happens next, you understand what is happening now. Future-frame prediction is a form of self-supervised learning that requires no labels — but it faces a hard trap: many futures are plausible, and a model that averages them produces a blurry mean instead of any one of them.</figcaption></figure>
+  <div class="essay"><p>A person watching a ball arc upward can predict where it will land. A model that can do the same has implicitly learned the physics of the scene &mdash; which is exactly what self-supervised video pretraining exploits. Predict the next frames (or the masked patches, or the future flow field) from unlabeled video, and the model acquires temporal structure for free, without a single human label.</p>
+<p>The trap is <b>multimodality</b>. At each step the future genuinely branches: the ball might be caught or drop; the pedestrian might turn left or right. A model minimizing mean squared error averages all those futures into a smeared, confident wrong answer. This is why prediction models now use diffusion or flow-matching: sample one sharp future from the distribution rather than commit to the blurry mean. The resulting models double as <b>world models</b> for planning.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Next-frame loss: L = ||f&#770;&#7556;&#8330;&#8321; &minus; f&#7556;&#8330;&#8321;||&sup2; collapses to the conditional mean E[f&#7556;&#8330;&#8321; | f&#8321;&#8315;&#7556;], blurring multimodal futures.</p>
+<p>Flow / diffusion prediction: sample f&#770;&#7556;&#8330;&#8321; ~ p&#952;(f&#7556;&#8330;&#8321; | f&#8321;&#8315;&#7556;) via reverse SDE or ODE &mdash; a single sharp draw from the conditional, not the mean.</p></div></details>
+</section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div><img src="assets/mctrack/mctrack_snapshots.png" alt="MCTrack 3D multi-object tracking across frames"><figcaption>We ran <b>MCTrack</b>, a 3D multi-object tracker, keeping consistent identities on vehicles across successive frames &mdash; Part I's &lsquo;keep the same identity over time&rsquo; made concrete. Our own run.</figcaption></figure></section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three ways a model uses time</h2>
+  <p class="intro">Where the temporal signal comes from and what it costs &mdash; ignoring time, fusing it with attention or convolution, or processing it causally in a stream.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it uses time</th><th>Cost</th><th>Long-range?</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Per-frame image models</th><td>ignores time; each frame processed independently</td><td>cheap — any image backbone</td><td>no — no cross-frame context</td><td>misses all temporal and motion information</td></tr><tr class="hi"><th class="rn">Temporal models (3D/attention/SSM)</th><td>fuses frames with 3D conv, attention, or state-space scan</td><td>high &mdash; O(T) to O(T&sup2;)</td><td>limited to window size</td><td>quadratic attention; memory at long horizons breaks</td></tr><tr><th class="rn">Streaming / online (causal)</th><td>processes each frame causally, updating a compact state</td><td>low per step — constant state</td><td>yes, in principle</td><td>state must compress; distant events fade from memory</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons to model time rather than treat each frame as a fresh image.</p>
+  <div class="bens"><div class="ben"><h4>Temporal binding across sparsity</h4><p>Video understanding compresses the crucial moments out of hours of footage and binds them into a coherent story &mdash; the same event across widely-separated frames.</p></div>
+<div class="ben"><h4>Motion as first-class signal</h4><p>Treating optical flow and inter-frame change as primary inputs catches the action that a per-frame classifier throws away.</p></div>
+<div class="ben"><h4>Identity through occlusion</h4><p>Multi-object tracking re-attaches identities after objects cross or disappear, turning a stream of detections into consistent tracklets for counting, safety, and behavior analysis.</p></div>
+<div class="ben"><h4>Memory for long video</h4><p>Learned compression and frame selection make it possible to answer questions about a full-length lecture or procedure without attending to every frame.</p></div>
+<div class="ben"><h4>Self-supervision from unlabeled video</h4><p>Predicting future frames, masked patches, or flow fields trains temporal models at zero annotation cost &mdash; the internet supplies the curriculum.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way time is modeled in video</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip vb" href="#vt1"><span class="cn">01</span>Long-form video understanding</a><a class="fchip vb" href="#vt2"><span class="cn">02</span>Video object segmentation</a><a class="fchip bb" href="#vt3"><span class="cn">03</span>Temporal action recognition</a><a class="fchip vb" href="#vt4"><span class="cn">04</span>Video question answering</a><a class="fchip vb" href="#vt5"><span class="cn">05</span>Temporal grounding</a><a class="fchip bb" href="#vt6"><span class="cn">06</span>Multi-object tracking</a><a class="fchip bb" href="#vt7"><span class="cn">07</span>Motion</a><a class="fchip rb" href="#vt8"><span class="cn">08</span>Learning robot policies from video</a><a class="fchip vb" href="#vt9"><span class="cn">09</span>Video representation</a><a class="fchip bb" href="#vt10"><span class="cn">10</span>Motion</a><a class="fchip rb" href="#vt11"><span class="cn">11</span>Event-based</a><a class="fchip vb" href="#vt12"><span class="cn">12</span>Streaming</a><a class="fchip vb" href="#vt13"><span class="cn">13</span>Video-language models</a><a class="fchip bb" href="#vt14"><span class="cn">14</span>Video anomaly</a><a class="fchip bb" href="#vt15"><span class="cn">15</span>Video prediction</a></div>
+  <div class="famgrid">
+<div class="fam" id="vt1">
+  <div class="famhd"><span class="famn">01</span><h3>Long-form video understanding</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Hour-long videos &mdash; lectures, procedures, sports matches &mdash; demand models that select which moments to attend to and compress the rest into a compact memory the system can query later.</p>
+<p>The binding constraint is attention cost: storing and attending to every token in an hour of 30-fps video is not feasible, so learned selection and memory are the problem.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Visual Memory Mechanism for Multimodal Large Language Models (VMem)</b> &mdash; compressed key-frame memory bank; selective retrieval for long-form QA</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Wavelet-Based Frame Selection for Long Video Understanding</b> &mdash; frequency-domain saliency scores pick informative frames before the LLM</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldMM — Multimodal Memory Agent for Long Video</b> &mdash; agentic memory agent with retrieval for open-domain long video</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>HieraMamba — Anchor-Mamba Hierarchical Pooling for Long-Range Video</b> &mdash; anchor tokens + Mamba SSM give sub-quadratic long-range context</span></li></ul>
+</div>
+
+<div class="fam" id="vt2">
+  <div class="famhd"><span class="famn">02</span><h3>Video object segmentation &amp; tracking</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Pixel-level segmentation must propagate a mask across frames, keeping the same identity through motion blur, occlusion, and scale change &mdash; harder than detection and harder than single-frame segmentation.</p>
+<p>Referring expressions and language ground the segment to &lsquo;the red car on the left&rsquo; rather than every car in the frame.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DeRVOS — Decoupled Referring Video Object Segmentation</b> &mdash; decouples segmentation from grounding for better referring VOS</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPARROW — Pixel-Grounded Video MLLM</b> &mdash; pixel-grounded multimodal LLM answers questions about specific video regions</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DTPTrack — Drift-Resilient Temporal Prior for Video Object Tracking</b> &mdash; temporal prior from prior frames corrects drift through occlusion</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ADTrack — RGB-T Tracking with Auxiliary Depth</b> &mdash; depth-modal auxiliary features for reliable thermal-RGB multi-modal tracking</span></li></ul>
+</div>
+
+<div class="fam" id="vt3">
+  <div class="famhd"><span class="famn">03</span><h3>Temporal action recognition &amp; detection</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Action recognition classifies a clip; temporal action detection must also find when each action starts and ends in a long video &mdash; a temporal segmentation problem on top of the recognition problem.</p>
+<p>Self-supervised ranking and tokenization compress the motion signal without requiring per-frame action labels.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Stitch in Time — Self-Supervised Temporal Action Localization via Plackett-Luce Ranking</b> &mdash; ranking-based self-supervised TAL without action labels</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learnable Motion-Focused Tokenization for Video Understanding</b> &mdash; motion-aware tokenizer reduces redundant static tokens</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TRCoRSurg — Triplet Recognition for Surgical Action Detection</b> &mdash; instrument-verb-target triplet recognition in surgical video</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Action Recognition from First-Person and Third-Person Video</b> &mdash; cross-view action recognition for robot and human video</span></li></ul>
+</div>
+
+<div class="fam" id="vt4">
+  <div class="famhd"><span class="famn">04</span><h3>Video question answering &amp; reasoning</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Video QA asks a model to answer a natural-language question grounded in video evidence, requiring temporal grounding, multi-step reasoning, and the ability to say which frames support the answer.</p>
+<p>Evidence purity &mdash; selecting only the frames that actually bear on the question &mdash; is the recurring bottleneck.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HERBench — Multi-Evidence Video QA Benchmark</b> &mdash; benchmark requiring evidence from multiple video segments per question</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Chain-of-Frames — Frame-Aware Chain-of-Thought for Video Reasoning</b> &mdash; generates frame-level reasoning chains before answering</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Select Less, Reason More — Evidence Purity for Video QA</b> &mdash; filters distractor frames before reasoning to improve answer quality</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MAD — Modality-Adaptive Decoding for Video LLMs</b> &mdash; adapts decoding to which modality (audio/visual/text) is most relevant</span></li></ul>
+</div>
+
+<div class="fam" id="vt5">
+  <div class="famhd"><span class="famn">05</span><h3>Temporal grounding &amp; moment retrieval</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Given a natural-language query and a video, find the exact moment (start and end time) the query describes &mdash; a retrieval problem where the index is time rather than space.</p>
+<p>Streaming geometry and referring-based grounding push temporal grounding into real-time and open-vocabulary settings.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HieraMamba — Anchor-Mamba for Long-Range Temporal Grounding</b> &mdash; anchor-pooled Mamba handles multi-minute videos for moment retrieval</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPARROW — Pixel-Grounded Video MLLM for Temporal Referring</b> &mdash; pixel-level grounding supports both spatial and temporal referring queries</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LongStream — Streaming Visual Geometry for Long Temporal Reasoning</b> &mdash; online geometry model infers temporal correspondences from streaming video</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RECS4R — Referring Grounding via Contrastive Spatio-Temporal Reasoning</b> &mdash; contrastive cross-modal alignment for language-guided temporal grounding</span></li></ul>
+</div>
+
+<div class="fam" id="vt6">
+  <div class="famhd"><span class="famn">06</span><h3>Multi-object tracking &amp; re-ID</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Multi-object tracking (MOT) assigns and maintains consistent identities for every object in every frame, even as objects enter, leave, cross paths, or vanish behind occluders.</p>
+<p>Event cameras fire per-pixel on luminance change rather than at a fixed rate, giving microsecond-precision detections between frames and attacking the occlusion window at its root.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Asynchronous Multi-Object Tracking with an Event Camera</b> &mdash; event-driven tracker propagates IDs at microsecond resolution, bypassing frame-rate occlusion windows</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MER-Tracker — Event-RGB 3D Multi-Object Tracking</b> &mdash; fuses event and RGB streams for 3D MOT in driving scenes</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FlexHook — Referring MOT with Flexible Query Hooks</b> &mdash; language-conditioned query hooks for open-vocabulary referring MOT</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>BarbieGait — Cloth-Changing Person Re-ID Dataset and Baseline</b> &mdash; large cloth-change re-ID dataset; appearance-invariant gait features</span></li></ul>
+</div>
+
+<div class="fam" id="vt7">
+  <div class="famhd"><span class="famn">07</span><h3>Motion &amp; trajectory prediction</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Predicting where agents &mdash; pedestrians, vehicles, robots &mdash; will be in the next few seconds requires modeling intent, social interaction, and the physical constraints of the scene.</p>
+<p>Flow-matching and causal attention give sharper, more diverse trajectory samples than earlier regression-based methods.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>TrajFlow — Flow-Matching Trajectory Prediction for Autonomous Agents</b> &mdash; normalizing-flow multi-modal trajectory generation in real time</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Curb Your Attention — Causal Attention Gating for Trajectory Prediction</b> &mdash; masks non-causal context to reduce spurious correlations in prediction</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Categorical Traffic Transformer — Discrete-Token Trajectory Prediction</b> &mdash; discrete token vocabulary for joint agent-scene prediction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ARMFlow — Online 3D Reaction Motion Prediction via Action-Conditioned Flow</b> &mdash; action-conditioned flow predicts full-body 3D reactions in real time</span></li></ul>
+</div>
+
+<div class="fam" id="vt8">
+  <div class="famhd"><span class="famn">08</span><h3>Learning robot policies from video</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Teleoperation is expensive; ordinary human video is abundant. Learning manipulation and locomotion policies directly from uncurated video requires inferring missing action labels from visual change alone.</p>
+<p>The gaps are viewpoint mismatch, missing proprioception, and the distributional distance between human and robot kinematics.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ViViDex — Dexterous Manipulation from Human Video</b> &mdash; trajectory-guided rewards extracted from human video enable vision-only dexterous rollouts</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RTAGrasp — Task-Oriented Grasping from Human Video Memory</b> &mdash; retrieve, transfer, and align task-relevant grasps from a video memory bank</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEMMo-Plan — Multimodal Demonstration Planning from Video</b> &mdash; multimodal planning from language + video demonstrations</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizable Imitation Learning Through Pre-Trained Representations</b> &mdash; pretrained vision encoders make imitation from video data-efficient</span></li></ul>
+</div>
+
+<div class="fam" id="vt9">
+  <div class="famhd"><span class="famn">09</span><h3>Video representation &amp; self-supervised learning</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Self-supervised pretraining on unlabeled video &mdash; predicting masked patches, future frames, or 3D Gaussian motion &mdash; learns temporal structure without a single human label.</p>
+<p>The resulting representations transfer to downstream recognition, retrieval, and prediction tasks with far fewer labeled examples.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Tracking by Predicting 3D Gaussians Over Time (Video-GMAE)</b> &mdash; masked autoencoder predicts 3D Gaussian motion for geometry-aware temporal pretraining</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Stitch in Time — Self-Supervised Temporal Ordering via Ranking</b> &mdash; Plackett-Luce ranking of shuffled clips as a self-supervised temporal signal</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motion 3-to-4 — 3D Motion as a Bridge to 4D Video Pretraining</b> &mdash; uses estimated 3D motion as a pseudo-label to pretrain 4D video models</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learning to See Through a Baby's Eyes — Egocentric Developmental Pretraining</b> &mdash; pretrains on head-camera infant video to study the curriculum nature provides</span></li></ul>
+</div>
+
+<div class="fam" id="vt10">
+  <div class="famhd"><span class="famn">10</span><h3>Motion &amp; optical flow</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Optical flow &mdash; the dense per-pixel motion field between frames &mdash; is the most direct measurement of what changed and where. Estimating it accurately, fast, and from event cameras is still an active problem.</p>
+<p>Factored and unified flow models separate geometry from appearance motion, letting them generalize across domains.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Flow3r — Factored Optical Flow for Geometry-Aware Motion Estimation</b> &mdash; separates scene-flow and camera-motion factors for cleaner generalization</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus — Unified Latent Action World Model from Video</b> &mdash; learns latent actions as compact optical-flow surrogates to bridge video and robot data</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>NeuFlow-V2 — Lightweight Real-Time Optical Flow</b> &mdash; global-to-local flow at 30+ FPS on embedded hardware for real-time robot perception</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-NMSTFlow — Event-Based Non-Monotone Spatio-Temporal Flow</b> &mdash; non-monotone event integration for accurate flow from asynchronous event cameras</span></li></ul>
+</div>
+
+<div class="fam" id="vt11">
+  <div class="famhd"><span class="famn">11</span><h3>Event-based &amp; asynchronous vision</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Event cameras fire per-pixel when luminance changes, not at a fixed frame rate. The output is a stream of microsecond-precision events &mdash; no motion blur, high dynamic range, and a data rate proportional to scene activity.</p>
+<p>The challenge is that standard vision algorithms assume frames; adapting them to asynchronous, irregular event streams requires new architectures and representations.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Asynchronous Multi-Object Tracking with an Event Camera</b> &mdash; asynchronous event tracker maintains IDs at sub-millisecond resolution</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>EvMAPPER — Event-Camera Orthophoto Mapping</b> &mdash; event streams from a UAV build high-dynamic-range orthographic maps</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A New Stereo Fisheye Event Camera — Design and Calibration</b> &mdash; wide-angle stereo event camera design + calibration procedure</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Event-Based Sensing for High-Speed Robotic Tasks</b> &mdash; active illumination + event camera closes the loop for fast pick-and-place</span></li></ul>
+</div>
+
+<div class="fam" id="vt12">
+  <div class="famhd"><span class="famn">12</span><h3>Streaming &amp; online video</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Real-time applications &mdash; autonomous vehicles, live sports analytics, video conferencing &mdash; cannot wait for the full video before acting. Streaming models must process each frame causally, maintaining a fixed-size state.</p>
+<p>Token compression and learned dropping discard spatial redundancy to keep the state small without sacrificing temporal coherence.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>StreamingTOM — Streaming Token Compression for Online Video</b> &mdash; online token merging keeps streaming video transformer latency constant</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LongStream — Online Streaming Visual Geometry from Video</b> &mdash; causal geometry model processes streaming video without future lookahead</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InstantViR — Real-Time Video Restoration via Streaming Diffusion</b> &mdash; frame-by-frame diffusion restoration with propagated latent state for real-time quality</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FloodDiffusion — Streaming Motion Generation for Dynamic Scenes</b> &mdash; streaming denoising generates coherent long motion sequences without a fixed horizon</span></li></ul>
+</div>
+
+<div class="fam" id="vt13">
+  <div class="famhd"><span class="famn">13</span><h3>Video-language models</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Video-language models align visual tokens from video with language tokens from captions, questions, or instructions &mdash; enabling open-vocabulary recognition, captioning, and instruction following.</p>
+<p>The bottleneck is token count: a few seconds of video already produces thousands of visual tokens, overwhelming the language model's context window.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>OSMO — Open-Vocabulary Spatial-Motion Emotion Tracking from Video</b> &mdash; open-vocabulary emotion trajectory tracking across video with language grounding</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Variation-Aware Vision Token Dropping for Video LLMs</b> &mdash; drops spatially redundant tokens while preserving temporal variation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Unified Spatiotemporal Token Compression for Video LLMs</b> &mdash; joint spatial + temporal compression reduces video LLM FLOPs 3-5x</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InstAP — Instance-Aware Video Pretraining for Fine-Grained VLMs</b> &mdash; instance-level contrastive pretraining for object-centric video-language alignment</span></li></ul>
+</div>
+
+<div class="fam" id="vt14">
+  <div class="famhd"><span class="famn">14</span><h3>Video anomaly &amp; change detection</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Anomaly detection in video must flag rare, ill-defined events &mdash; a fall, a fight, an unexpected stop &mdash; without having seen most anomaly types at training time. The core tension is between sensitivity and false-alarm rate.</p>
+<p>MLLMs serve as zero-shot anomaly detectors because they carry common-sense about what is normal, reducing the need for annotated anomaly footage.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>The Road Less Seen — Weakly-Supervised Video Anomaly Detection</b> &mdash; multiple-instance learning from coarse clip-level labels for anomaly localization</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>No Need for Real Anomaly — MLLM Zero-Shot Video Anomaly Detection</b> &mdash; an MLLM judges normality from scene description without anomaly training data</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CC-STAR — Contact-State Anomaly Detection for Robot Assembly</b> &mdash; contact-state sequence model detects assembly anomalies from force/tactile signals</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RAID — Retrieval-Augmented Anomaly Detection for Video Surveillance</b> &mdash; retrieves normal prototypes at test time to measure deviation without retraining</span></li></ul>
+</div>
+
+<div class="fam" id="vt15">
+  <div class="famhd"><span class="famn">15</span><h3>Video prediction &amp; world models</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Predicting future frames or states forces a model to learn how the world works &mdash; physics, agent intent, scene dynamics &mdash; making prediction a general pretraining objective for world models used in planning.</p>
+<p>LiDAR-based and vision-language world models extend future prediction beyond RGB to 3D structure and language-specified goals.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GEM — Generative Environment Model from LiDAR for Autonomous Driving</b> &mdash; LiDAR-conditioned world model predicts future 3D point clouds for planning</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>NavForesee — Vision-Language World Model for Navigation Planning</b> &mdash; language-goal-conditioned future-frame prediction guides robot navigation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamics Modeling for High-Speed Off-Road Driving via Video Prediction</b> &mdash; video-prediction world model learns terrain dynamics for agile off-road driving</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Envisioning the Future One Step at a Time — Autoregressive Video World Models</b> &mdash; causal autoregressive video prediction as a general-purpose planning substrate</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Video and temporal understanding has made large gains &mdash; and is still far from done. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>Precision vs efficiency.</b> Accurate temporal models are expensive &mdash; 3D attention, dense optical flow &mdash; while streaming models that fit in real-time sacrifice context; no clean solution exists yet.</div>
+<div class="op"><b>Long-range scalability &amp; quadratic attention.</b> Attention over a full lecture or procedural video is prohibitive; memory and compression schemes lose information, and what to keep is question-dependent.</div>
+<div class="op"><b>Temporal memory &amp; compression.</b> Which frames and moments to store &mdash; and how to compress them without losing the event a future question will need &mdash; is still an open design problem.</div>
+<div class="op"><b>Correlation vs causality.</b> A model that memorizes &lsquo;rain precedes umbrellas&rsquo; is not learning causality; videos are full of temporal correlations that are not causal, and disentangling the two is unsolved.</div>
+<div class="op"><b>Occlusion &amp; re-identification.</b> Long occlusions defeat appearance-based re-ID; gait and motion as identity signals are promising but not yet reliable across view angle and clothing change.</div>
+<div class="op"><b>Annotation burden.</b> Temporal grounding, action detection, and procedure understanding all need fine-grained labels that take minutes per video to produce; scaling annotation is the practical wall.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Video &amp; Temporal Understanding explainer &middot; mechanism diagrams are live JavaScript (assets/vt-anim.js) &middot; the MCTrack tracking run is ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the eyes over time of the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/vt-anim.js"></script>
+</body></html>

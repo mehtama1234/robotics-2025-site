@@ -1,0 +1,332 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Medical &amp; Surgical Robotics, from first principles</title>
+<style>
+:root{--ink:#061412;--paper:#EAF4F2;--panel:#F4FAFA;--tint:#C9E9E5;--line:#AFDBD6;
+ --graphite:#3F5A57;--g2:#6E8C89;--accent:#0E8F86;--accent-deep:#0A6B64;--accent-lite:#4FC2B8;
+ --robo:#4E6172;--cvpr:#2F6F8B;--both:#0E8F86;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#06110F;color:#E2F4F2;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#EDFAF8}
+header p{color:#97C4C0;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#7AAEAA}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#0D2826;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#06110F;border:1px solid #122820;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#7AAEAA;margin-top:8px}
+.essay p{font-size:15.5px;color:#0D2826;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#06110F}
+.ranfig figcaption{font-size:13px;color:#0D2826;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#102422;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#0D2826;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#102422}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#102422}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#C9E9E5}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#0D2826;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#E4EAEF;color:#3A4A5A;border:1px solid #C6D2DC}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#C9E9E5;color:var(--accent-deep);border:1px solid #97D0CB}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#0D2826}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#102422;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#061412}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#102422}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Medical &amp; Surgical Robotics &middot; endoscopy · teleoperation · soft robots &middot; robotics + vision</div>
+  <h1>Inside the body: medical and surgical robotics from first principles</h1>
+  <p>The body gives almost no room, its tissue moves and deforms, the view is a narrow cone, and a mistake is irreversible. How robots see, reach, and act inside that workspace &mdash; from endoscopy and teleoperation to continuum tools and task autonomy &mdash; from first principles, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">seeing inside</a> &middot; <a href="#fp3">the surgeon&#x27;s hands</a> &middot; <a href="#fp4">soft &amp;amp; continuum</a> &middot; <a href="#fp5">toward autonomy</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why the body is the hardest workspace, how a camera inside a tube builds a map, how teleoperation scales and steadies motion, how continuum robots follow anatomy, and how autonomy is built one checked step at a time. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">1980s&ndash;90s</span><b>rigid teleoperated masters</b><p>robotic arms reproduce the surgeon's hand motions at scale; ROBODOC and AESOP are the prototypes.</p></div><div class="ln"><span class="lyr">1990s&ndash;2010</span><b>minimally-invasive + endoscopy</b><p>da Vinci extends dexterity through a port; laparoscopic and endoscopic techniques become the norm.</p></div><div class="ln"><span class="lyr">2010s</span><b>continuum &amp; steerable robots</b><p>flexible-backbone and magnetically steered tools reach targets rigid arms cannot; catheters become programmable.</p></div><div class="ln"><span class="lyr">2018&ndash;</span><b>learned surgical perception</b><p>deep networks segment anatomy, recognize phase, track deformable tissue, and build 3D maps from endoscope video.</p></div><div class="ln"><span class="lyr">2022&ndash;</span><b>task autonomy + surgical foundation models</b><p>learned policies close sutures, run subtasks, and large pretrained models begin encoding surgical knowledge.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>The stakes and the constraints</h2>
+  <figure class="instrument"><canvas data-mdanim="md_why" height="300"></canvas>
+    <figcaption>Inside the body there is almost no room, the tissue breathes and deforms, the view is a narrow cone through a single port, and everything must stay sterile. These four constraints together — not just the biology — are what make medical robotics a discipline of its own.</figcaption></figure>
+  <div class="essay"><p>Every other robotics domain works in open space. Medical robotics works inside a living, moving patient, through an opening that may be a few millimetres wide. That is not just a size constraint: the forces must be right because tissue tears, the geometry changes because the body breathes, and the view is partial because a wide incision is the injury you are trying to avoid.</p>
+<p>This is why medical robotics is not just miniaturized manipulation. The cost of a mistake is irreversible, the workspace deforms, specular highlights confuse vision, and every action must be planned around what the imaging shows at that instant. The rest of this explainer traces how the field answers those four hard constraints &mdash; sensing, actuation, autonomy, and learning &mdash; one at a time.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>The workspace is a compact subset W &sub; R&sup3; with a moving, deformable boundary; every planned trajectory must satisfy tissue force limits f &le; f_max at all times.</p>
+<p>Contact forces are viscoelastic: F(t) = k&delta;(t) + c&delta;&prime;(t) where &delta; is tissue deformation &mdash; stiffness k and damping c vary by tissue type and hydration state.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; seeing inside</div>
+  <h2>A camera in a tube</h2>
+  <figure class="instrument"><canvas data-mdanim="md_endo" height="300"></canvas>
+    <figcaption>An endoscope is a camera at the end of a flexible tube, looking out through a cone that is rarely more than 100°. The walls are wet, specular, and deforming. Building a stable 3D map of the lumen from that sequence of images is SLAM on hard mode.</figcaption></figure>
+  <div class="essay"><p>Perception in open environments is hard; perception through an endoscope is a different problem. The field of view is a narrow cone. The walls reflect light in bright, moving specular spots that confuse texture matching. The lumen itself deforms with every breath and heartbeat. And there is no GPS, no prior map, no static background.</p>
+<p>Reconstructing a useful 3D model from that stream requires simultaneous localization and mapping designed for this setting: monocular depth cues, photometric models that handle specular surfaces, and temporal filtering against breathing motion. When that reconstruction works, it gives the surgeon &mdash; and an autonomous system &mdash; a stable picture of space inside a constantly moving tube.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Endoscopic SLAM: minimize reprojection error over a deformable map &mdash; {T_i, D_j} = argmin &Sigma;_{i,j} &rho;( ||p_j &minus; &pi;(T_i, D_j)||&sup2; ) subject to a deformation prior.</p>
+<p>Specular reflection is Lambertian + Phong: L = k_d (n&middot;l) + k_s (r&middot;v)^n_s; detecting and masking specular pixels is a prerequisite for stable feature tracking.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; the surgeon's hands</div>
+  <h2>Scaling and steadying motion</h2>
+  <figure class="instrument"><canvas data-mdanim="md_teleop" height="300"></canvas>
+    <figcaption>Teleoperation moves the surgeon's gross hand motion through a mechanical translation: scale it down, filter out tremor, and the instrument tip moves with a precision no unassisted hand can hold. The remote center of motion keeps the pivot at the port — the tissue entry point — stationary.</figcaption></figure>
+  <div class="essay"><p>A surgeon's hand moves naturally at centimetre scale and with the tiny, involuntary oscillations of tremor. A teleoperated instrument maps that motion to sub-millimetre movement at the tip &mdash; typically a 3:1 to 10:1 reduction &mdash; while a tremor filter on the signal path removes the high-frequency component that does not correspond to intent.</p>
+<p>The kinematic constraint that makes port-based surgery possible is the <b>remote center of motion</b>: the arm is built, or controlled, so the shaft always pivots around a fixed point in space at the incision. This means the port opening does not tear as the surgeon moves. Every degree of freedom at the console becomes a degree of freedom at the instrument tip, with no force on the wound edge.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Motion scaling: x_instrument = x_console / s, where s &isin; [3,10] reduces tremor by a factor of s while also reducing bandwidth &mdash; the surgeon feels less force but also less noise.</p>
+<p>Remote center of motion (RCM): a kinematic constraint &Phi;(q) = p_port &minus; f(q) = 0 fixes the insertion point; enforced via constrained Jacobian J_c q&prime; = 0.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; soft &amp; continuum</div>
+  <h2>Robots that bend to fit</h2>
+  <figure class="instrument"><canvas data-mdanim="md_soft" height="300"></canvas>
+    <figcaption>A rigid-link robot arm cannot follow the winding channels of the body without tearing them. Continuum and steerable robots have no discrete joints — they bend continuously, like a catheter, and their shaft follows the path the tip traces. The body itself becomes the guide.</figcaption></figure>
+  <div class="essay"><p>The body's internal channels — the bronchi, the colon, the vasculature — are winding curves, not straight lines. A traditional serial robot arm, with a fixed number of rigid links and revolute joints, cannot follow them without applying large lateral forces that damage tissue. Continuum robots replace links with a flexible backbone that bends along its whole length, so the shape of the robot matches the path it takes.</p>
+<p>Controlling that shape is the hard part. The relationship between the actuator input (cable tension, pneumatic pressure, magnetic field) and the tip position is highly nonlinear and changes as the robot interacts with tissue. Learned models, Cosserat-rod mechanics, and vision-based estimation all contribute to steering the tip reliably to where the surgeon directs it.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Cosserat rod model: d/ds(n) = &minus;f, d/ds(m) = &minus;e_3 &times; n &minus; l; arc-length s, internal force n, moment m, distributed load f/l. Boundary conditions set by cable tensions at the base.</p>
+<p>Tip-position control solves the nonlinear BVP numerically; learned corrections &Delta;x = &pi;&theta;(q, x_desired) compensate for hysteresis and model error.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; toward autonomy</div>
+  <h2>Assisting, then acting</h2>
+  <figure class="instrument"><canvas data-mdanim="md_autonomy" height="300"></canvas>
+    <figcaption>Autonomy in surgery is a ladder, not a switch. At every rung the robot does more — steadying, then executing a subtask, then managing a full step — but every action is gated against the live imaging and a hard no-go boundary. Nothing moves past that boundary.</figcaption></figure>
+  <div class="essay"><p>Full autonomy in surgery is nowhere near deployment, and the reason is not technical capability alone: it is verification. Before a robot action can be accepted, the system must confirm that the instrument is where imaging says it is, that the motion will not breach a structure marked off-limits, and that the surgeon can stop it in time. This is why autonomy in medical robotics is built as a ladder: one supervised subtask proven safe, then extended.</p>
+<p>The tools that make each rung possible are the same across levels: real-time segmentation that knows where nerves, vessels, and tumour margins are; a safety envelope derived from that segmentation; and a planning layer that searches for motions inside the envelope only. The higher rungs add learned phase recognition &mdash; what step of the operation is this? &mdash; so the system knows which autonomy mode is appropriate right now.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Safety envelope as a control barrier function (CBF): h(x) &ge; 0 defines safe states; CBF constraint h&prime;(x) + &alpha;(h(x)) &ge; 0 guarantees forward invariance.</p>
+<p>Phase recognition as a sequence model: p(phase_t | obs_{1:t}) from a recurrent or attention-based classifier over image + kinematics &mdash; gating which autonomous subtask is active.</p></div></details>
+</section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div><img src="assets/endo2dtam/colon_recon_eval.png" alt="Endo-2DTAM colon surface reconstruction from endoscopic video"><figcaption>we ran <b>Endo-2DTAM</b>, a 2D-Gaussian-Splatting SLAM, reconstructing a colon surface from monocular endoscopic video &mdash; Part&nbsp;I&rsquo;s &lsquo;a camera in a tube&rsquo; made concrete, mapping a wet, deforming lumen. Our own run.</figcaption></figure></section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three ways a surgeon and robot share the work</h2>
+  <p class="intro">From unaided hands to teleoperated arms to task-autonomous systems &mdash; what changes at each step and what the trade-off is.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>Who acts</th><th>Precision</th><th>Autonomy</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Manual surgery</th><td>Surgeon alone, unaided</td><td>limited by tremor and fatigue</td><td>none</td><td>no scale reduction; ergonomically demanding</td></tr><tr class="hi"><th class="rn">Teleoperated robot (surgeon in loop)</th><td>Surgeon via robot, motion scaled + filtered</td><td>sub-millimetre</td><td>none (surgeon decides every move)</td><td>latency; cost; no safety envelope</td></tr><tr><th class="rn">Task-autonomous (supervised)</th><td>Robot executes subtask; surgeon monitors</td><td>machine precision</td><td>one supervised subtask at a time</td><td>verification is hard; approval pathways are long</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below delivers one or more of these &mdash; the recurring reasons medical robotics has moved from novelty to clinical standard.</p>
+  <div class="bens"><div class="ben"><h4>Precision beyond human tremor</h4><p>Motion scaling and tremor filtering bring instrument-tip accuracy to sub-millimetre levels &mdash; the difference between clipping a nerve and sparing it.</p></div>
+<div class="ben"><h4>Dexterity in confined spaces</h4><p>Continuum and steerable tools follow channels no rigid arm can reach, opening minimally-invasive paths to targets that once required open surgery.</p></div>
+<div class="ben"><h4>Ergonomics decoupled from the instrument</h4><p>The surgeon works seated at a console while the instruments move at the patient; remote telepresence extends that to any distance.</p></div>
+<div class="ben"><h4>Real-time tissue-aware adaptation</h4><p>Systems that read live imaging, segmentation, and force can adjust mid-motion when anatomy shifts, a breath displaces tissue, or resistance changes.</p></div>
+<div class="ben"><h4>Training without patient risk</h4><p>Simulators, phantoms, and synthetic data let surgeons practice rare procedures and let algorithms train without ever touching a patient.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every thread in medical &amp; surgical robotics</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip rb" href="#md1"><span class="cn">01</span>Surgical teleoperation</a><a class="fchip rb" href="#md2"><span class="cn">02</span>Endoscopy</a><a class="fchip rb" href="#md3"><span class="cn">03</span>Steerable needles</a><a class="fchip rb" href="#md4"><span class="cn">04</span>Continuum</a><a class="fchip rb" href="#md5"><span class="cn">05</span>Endovascular</a><a class="fchip bb" href="#md6"><span class="cn">06</span>Surgical phase</a><a class="fchip rb" href="#md7"><span class="cn">07</span>Surgical autonomy</a><a class="fchip rb" href="#md8"><span class="cn">08</span>Imaging-guided robotics</a><a class="fchip rb" href="#md9"><span class="cn">09</span>Robotic ultrasound</a><a class="fchip rb" href="#md10"><span class="cn">10</span>Rehabilitation</a><a class="fchip rb" href="#md11"><span class="cn">11</span>Capsule</a><a class="fchip vb" href="#md12"><span class="cn">12</span>Medical image segmentation</a><a class="fchip vb" href="#md13"><span class="cn">13</span>Pathology</a><a class="fchip vb" href="#md14"><span class="cn">14</span>Radiology reports</a><a class="fchip vb" href="#md15"><span class="cn">15</span>Medical image generation</a></div>
+  <div class="famgrid">
+<div class="fam" id="md1">
+  <div class="famhd"><span class="famn">01</span><h3>Surgical teleoperation &amp; interfaces</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The surgeon's console must translate intent into instrument motion &mdash; scaling, filtering, and adding haptic or visual feedback without introducing dangerous latency.</p>
+<p>Sensory gloves, augmented-reality overlays, and learned user models extend the interface beyond a joystick toward something closer to direct touch.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sensory Glove-Based Surgical Robot User Interface</b> &mdash; glove captures finger intent; mapped to instrument motion with haptic feedback</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>AR-Based Endoscope Control for Laparoscopic Surgery</b> &mdash; augmented-reality overlay guides the scope toward a target region</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MEDiC: Autonomous Exposure for Robotic Dissection</b> &mdash; learned policy autonomously positions tissue for the next dissection step</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DRL Semi-Autonomous Magnetic Micro-Robot Navigation</b> &mdash; deep RL shares control with the surgeon for micro-robot steering</span></li></ul>
+</div>
+
+<div class="fam" id="md2">
+  <div class="famhd"><span class="famn">02</span><h3>Endoscopy &amp; laparoscopy navigation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Building a stable 3D reconstruction of the lumen from a monocular endoscope &mdash; specular, wet, deforming &mdash; requires SLAM tuned for this setting, not ported from an outdoor camera.</p>
+<p>Gaussian splatting and dense depth networks have recently brought reconstruction quality close to what surgical planning needs.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Advancing Dense Endoscopic Reconstruction with Gaussian Splatting (Endo-2DTAM)</b> &mdash; 2D-Gaussian-SLAM reconstructs a deformable colon lumen from monocular endoscopic video</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bilateral Structural Intensity-Depth Registration for Flexible Endoscope</b> &mdash; coupled RGB and depth alignment compensates endoscope flex</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Remote: Real-Time Endoscope Ego-Motion Estimation</b> &mdash; fast monocular ego-motion for tool-in-lumen localization</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SLAM Assisted 3D Tracking for Laparoscopic Surgery</b> &mdash; SLAM-derived map priors stabilize instrument tracking under deformation</span></li></ul>
+</div>
+
+<div class="fam" id="md3">
+  <div class="famhd"><span class="famn">03</span><h3>Steerable needles</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>A bevel-tip needle bends as it advances through tissue; control that bending and you can steer around obstacles to reach deep targets without open surgery.</p>
+<p>Resolution-optimal planning and MPC make the path precise enough for lung biopsy and vascular access.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Steerable Tape-Spring Needle for Autonomous Sharp Turns</b> &mdash; tape-spring mechanism enables tight-radius turns unreachable by bevel-tip designs</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Resolution-Optimal Motion Planning for Needle Steering in Lung</b> &mdash; plans a path through lung that meets accuracy requirements with fewest control steps</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Model Predictive Control for 3D Steerable Needles</b> &mdash; MPC tracks planned paths in real tissue using online model updates</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ultrasound-Guided Robotic Blood Drawing</b> &mdash; image-guided autonomy localizes and punctures a vein without operator input</span></li></ul>
+</div>
+
+<div class="fam" id="md4">
+  <div class="famhd"><span class="famn">04</span><h3>Continuum &amp; soft medical robots</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>A flexible backbone bends continuously rather than at discrete joints, letting the robot follow winding anatomy. Tendon tension, pneumatics, or magnetic fields steer the shape.</p>
+<p>Hysteresis in tendon drives and nonlinear stiffness in soft bodies are the control challenges the field keeps returning to.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Accelerated Quasi-Static FEM for Continuum Robots</b> &mdash; fast FEM simulation enables real-time model-based control of soft bodies</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</b> &mdash; characterizes how hysteresis helps or hurts position tracking; design implications</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Variable-Stiffness Nasotracheal Intubation Robot</b> &mdash; stiffness tuning navigates the nasal passage without tissue trauma</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning-Based Tip Contact Force for FBG-Embedded Continuum Robots</b> &mdash; fiber-Bragg gratings sense shape; learned model recovers contact force at the tip</span></li></ul>
+</div>
+
+<div class="fam" id="md5">
+  <div class="famhd"><span class="famn">05</span><h3>Endovascular &amp; catheter navigation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Steering a catheter through branching vessels to a target in the heart or brain requires perception of vessel geometry from fluoroscopy and a controller that handles the catheter's compliance and the pulsatile flow.</p>
+<p>Simulation environments and RL have recently enabled closed-loop navigation in realistic vascular phantoms.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>VascularPilot3D: Autonomous Endovascular Navigation</b> &mdash; 3D vessel map + learned policy navigates to a target without manual steering</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sim4EndoR: Simulation for Endovascular Robotics with RL</b> &mdash; physics-accurate vascular simulator trains RL policies that transfer to real catheters</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Image-Based Compliance Control for Ferromagnetic Guidewire</b> &mdash; visual servoing compensates guidewire flex under magnetic steering</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Robust DRL Framework for Guidewire Navigation</b> &mdash; deep RL steers guidewire in branching phantoms; trained entirely in simulation</span></li></ul>
+</div>
+
+<div class="fam" id="md6">
+  <div class="famhd"><span class="famn">06</span><h3>Surgical phase &amp; workflow perception</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Knowing what step of the operation is happening &mdash; the surgical phase &mdash; is the prerequisite for any context-sensitive autonomy: the right tool, the right alert, the right autonomous mode.</p>
+<p>Large-scale surgical video datasets and self-supervised pretraining have made phase recognition reliable enough to gate assistance systems.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SurgPLAN++: Surgical Phase Localization and Anticipation</b> &mdash; localizes the current phase and predicts the next step from video + kinematics</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LEMON: Large Endoscopic Dataset and Foundation Model</b> &mdash; a large-scale benchmark and pretrained encoder for endoscopic understanding</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Stitch in Time: Self-Supervised Surgical Workflow Recognition</b> &mdash; self-supervised pretraining on surgical video without phase-label annotation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TRCoRSurg: Surgical Triplet Recognition for Workflow</b> &mdash; recognizes (instrument, verb, target) triplets in real time from laparoscopic video</span></li></ul>
+</div>
+
+<div class="fam" id="md7">
+  <div class="famhd"><span class="famn">07</span><h3>Surgical autonomy &amp; skill learning</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Closing a suture, completing a capsulorhexis, or repositioning tissue are tasks with clear start and end conditions, making them candidates for learned autonomous execution under supervision.</p>
+<p>Control barrier functions and force-vision integration are the safety tools that keep these policies inside acceptable bounds.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Suture Thread Modeling Using Control Barrier Functions</b> &mdash; CBF constraints on a learned suturing policy prevent unsafe thread tension</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Continuous Capsulorhexis via Force-Vision Control</b> &mdash; force-vision loop closes the capsular tear without surgeon guidance</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Bimanual Manipulation of Deformable Objects</b> &mdash; learned bimanual policy repositions soft tissue under visual feedback</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Suturing Method for Minimally Invasive Surgery</b> &mdash; end-to-end learned policy drives needle in, pulls thread through, and ties</span></li></ul>
+</div>
+
+<div class="fam" id="md8">
+  <div class="famhd"><span class="famn">08</span><h3>Imaging-guided robotics</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Intraoperative imaging &mdash; ultrasound, fluoroscopy, OCT, or MRI &mdash; gives the robot a live picture of tissue position that no preoperative plan can substitute for once the body is open and breathing.</p>
+<p>Differentiable rendering and deformation-aware registration close the gap between the image and what the instrument actually meets.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Deformation-Aware Subretinal Injection Under iOCT</b> &mdash; OCT tracks retinal deformation in real time; adapts injection depth on the fly</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-View 2D/3D Registration with Differentiable X-Ray Rendering</b> &mdash; differentiable DRR aligns intraoperative X-ray to the 3D plan without fiducials</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>UltraDP: Force-Aware Ultrasound Diffusion Policy</b> &mdash; diffusion policy integrates force and ultrasound for contact-rich scanning</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Series-Parallel Hybrid Robot for Prostate Transperineal Puncture</b> &mdash; hybrid kinematic structure keeps the needle on the US-guided target under prostate motion</span></li></ul>
+</div>
+
+<div class="fam" id="md9">
+  <div class="famhd"><span class="famn">09</span><h3>Robotic ultrasound &amp; palpation</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Ultrasound scanning requires maintaining probe contact, angle, and pressure against a moving body surface &mdash; a contact control problem, not just an imaging one.</p>
+<p>Adaptive controllers that read image quality as their feedback signal outperform fixed-trajectory scans.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robust Robotic Breast Ultrasound Scanning</b> &mdash; force-controlled scanning maintains contact and image quality across breast geometry</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Quality-Driven Adaptive Control for Robotic Ultrasound</b> &mdash; uses image quality metrics to adaptively adjust probe pose during the scan</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tactile-Guided Robotic Ultrasound for Intercostal Imaging</b> &mdash; tactile sensing finds rib gaps; positions probe without pre-planned trajectories</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shape Completion in Robotic Ultrasound Spine Imaging</b> &mdash; point-cloud shape completion fills in occluded vertebrae from partial US views</span></li></ul>
+</div>
+
+<div class="fam" id="md10">
+  <div class="famhd"><span class="famn">10</span><h3>Rehabilitation &amp; prosthetics</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>A prosthetic hand or exoskeleton must interpret the user's intent from residual signals &mdash; EMG, IMU, pressure &mdash; and translate them into motion that feels natural and does not fatigue.</p>
+<p>Multi-stage neural decoders and tactile feedback loops have improved intent-to-motion latency and grip accuracy.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Grasp Forces from EMG for Prosthetic Control</b> &mdash; CNN maps surface EMG to grip-force commands for a prosthetic hand</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-BAR: Elderly Assistance Robot</b> &mdash; mobile robot detects fall risk and assists walking without requiring a wearable</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Stage CNN-LSTM for Finger Angle Estimation from EMG</b> &mdash; cascaded network decodes individual finger angles from forearm EMG</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Walker with Tactile and IMU Sensing</b> &mdash; walker adjusts support in real time from gait phase estimated by IMU + tactile foot sensors</span></li></ul>
+</div>
+
+<div class="fam" id="md11">
+  <div class="famhd"><span class="famn">11</span><h3>Capsule &amp; micro-robots for medicine</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>A wireless capsule or magnetically steered micro-robot can reach sites no catheter or endoscope can access, but it gives up the mechanical connection that makes force control straightforward.</p>
+<p>External magnetic fields, acoustic streaming, and swarm coordination are the actuation options; PINN-based flow models help predict where the robot goes.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ensemble Control of a Capsule Robot Arm via External Fields</b> &mdash; external coil array steers an untethered capsule arm through a lumen</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Magnetic Microswarms in Liquid and Air</b> &mdash; coordinated swarms navigate both liquid and air-filled chambers under magnetic actuation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Flow-Aware Navigation of Magnetic Micro-Robots via PINN</b> &mdash; a physics-informed network predicts flow field; controller compensates for drift</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DNA Origami-Engineered Tetrahedral Nanorobots</b> &mdash; nanoscale origami structures navigate and release payload at a target site</span></li></ul>
+</div>
+
+<div class="fam" id="md12">
+  <div class="famhd"><span class="famn">12</span><h3>Medical image segmentation &amp; registration</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Segmenting anatomy in intraoperative images is the backbone of image-guided robotics: no accurate safety envelope without accurate masks, and no accurate masks without models that handle the domain.</p>
+<p>Foundation model adaptation and deformable registration address the data-scarce, rapidly shifting intraoperative setting.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Focus on Background: Few-Shot Medical Segmentation with SAM</b> &mdash; adapts SAM to medical imaging by re-weighting background context in few-shot settings</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Dynamic Stream Network for Deformable Medical Image Registration</b> &mdash; dual-stream network captures large and fine-scale deformations jointly</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Multi-View 2D/3D Registration with Differentiable X-Ray Rendering</b> &mdash; differentiable DRR enables gradient-based alignment of intraoperative X-ray to CT plan</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>INSID3: Training-Free In-Context 3D Medical Segmentation</b> &mdash; in-context prompting with a pretrained model segments 3D volumes without task-specific training</span></li></ul>
+</div>
+
+<div class="fam" id="md13">
+  <div class="famhd"><span class="famn">13</span><h3>Pathology &amp; medical foundation models</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Whole-slide pathology images are gigapixel; a model that reads them must aggregate evidence across scales, from cell-level morphology to tissue-level architecture.</p>
+<p>Self-supervised pretraining on large pathology corpora and topological priors are moving diagnostic accuracy toward and past human expert level.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>TopoSlide: Topological Whole-Slide Pathology Learning</b> &mdash; persistent homology captures tissue-level structure beyond bag-of-patches models</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MLLM-HWSI: Hierarchical Whole-Slide Image Interpretation</b> &mdash; multi-level language model reads WSIs from patch to slide with clinical language</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MASS: Mask-Guided Self-Supervision for 3D Medical Images</b> &mdash; self-supervised 3D pretraining via masked patches improves downstream segmentation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPECTRE: Volumetric CT Transformers for Diagnostic Prediction</b> &mdash; Transformer over 3D CT volumes for screening and staging tasks</span></li></ul>
+</div>
+
+<div class="fam" id="md14">
+  <div class="famhd"><span class="famn">14</span><h3>Radiology reports &amp; medical VLMs</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>A model that reads a scan and writes the report must be factually accurate: a hallucinated finding is a diagnostic error. RL and evidence grounding are the current tools for pushing accuracy past what supervised training alone achieves.</p>
+<p>Benchmarks that test complex multi-step reasoning expose how far the best models still are from a reliable second-reader.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>OraPO: Oracle-Educated RL for Factual Radiology Reports</b> &mdash; GRPO with oracle-supervised reward suppresses hallucinated findings in radiology reports</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>EMAD: Evidence-Grounded Medical AI Diagnosis</b> &mdash; model localizes image evidence before stating a diagnosis, making errors traceable</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LLaDA-MedV: Biomedical Diffusion VLM</b> &mdash; masked diffusion language model adapted for biomedical vision-language tasks</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Med-CMR: Complex Medical Reasoning Benchmark</b> &mdash; benchmark requiring multi-hop evidence integration across image, text, and clinical context</span></li></ul>
+</div>
+
+<div class="fam" id="md15">
+  <div class="famhd"><span class="famn">15</span><h3>Medical image generation &amp; synthesis</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Rare conditions have too few real images to train a diagnostic model. Generative models can fill that gap &mdash; but only if the generated images are anatomically correct: no spurious structures, no topological errors.</p>
+<p>Structure-aware diffusion and topology controls are the answers the field has found.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Sketch2CT: Structure-Aware 3D CT Volume Generation</b> &mdash; generates a full CT volume conditioned on a user-drawn anatomical sketch</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Anatomica: Topology-Controlled Anatomical Diffusion</b> &mdash; enforces anatomical topology (connectivity, nesting) during diffusion sampling</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Beyond Pixel Simulation: Pathology Image Generation</b> &mdash; diffusion model for histopathology trained on staining and diagnostic diversity</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Real2Sim2Real RetinalDepth-64K for Ophthalmic Surgery</b> &mdash; depth dataset from real retinal images + sim augmentation for surgical planning</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Medical robotics has changed surgery &mdash; and it is still far from the full autonomy the field aims at. What is genuinely still hard:</p>
+  <div class="opgrid"><div class="op"><b>Precision vs safety margins.</b> Sub-millimetre accuracy means the no-go boundary must also be sub-millimetre &mdash; but intraoperative segmentation is not yet that precise.</div>
+<div class="op"><b>Automation vs surgeon override.</b> Every autonomous step must be interruptible at any instant; designing control handoff that is safe in both directions is unsolved.</div>
+<div class="op"><b>Imaging latency vs tissue deformation.</b> Breathing and heartbeat move tissue faster than many imaging loops; prediction and compensation for that motion is still an open problem.</div>
+<div class="op"><b>Soft/continuum control vs stiffness.</b> A compliant tool that follows anatomy also resists being commanded precisely &mdash; the trade-off between safety and accuracy in soft bodies is not closed.</div>
+<div class="op"><b>Generalization vs anatomical specificity.</b> A model trained on one anatomy or procedure transfers poorly to another; medical AI still needs too much per-task data.</div>
+<div class="op"><b>Validation only on phantoms.</b> Most autonomous surgical methods are validated in phantom or cadaver studies; the evidence base for live-patient deployment remains thin.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Medical &amp; Surgical Robotics explainer &middot; mechanism diagrams are live JavaScript (assets/md-anim.js) &middot; the Endo-2DTAM colon reconstruction run is ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the perception of the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/md-anim.js"></script>
+</body></html>

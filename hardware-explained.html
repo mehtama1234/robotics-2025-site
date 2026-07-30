@@ -1,0 +1,331 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Robot Hardware, Actuation &amp; Design, from first principles</title>
+<style>
+:root{--ink:#0E1215;--paper:#EEF1F3;--panel:#F7F9FA;--tint:#D5DCE1;--line:#BEC8CF;
+ --graphite:#3D4D56;--g2:#7A8E98;--accent:#566573;--accent-deep:#3E4A56;--accent-lite:#93A0AD;
+ --robo:#6A5A3E;--cvpr:#2F6F8B;--both:#566573;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#0C1013;color:#E8EDF0;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#EEF2F5}
+header p{color:#8FA0AC;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#7A8E98}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#1A2329;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#0C1013;border:1px solid #1E2D36;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#7A9AAA;margin-top:8px}
+.essay p{font-size:15.5px;color:#18252D;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig figcaption{font-size:13px;color:#1A2329;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#1A2329;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#1A2329;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#18252D}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#18252D}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#D0DAE2}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#18252D;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#EDE8DF;color:#5A4A2E;border:1px solid #D4C8B0}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#D5DCE1;color:var(--accent-deep);border:1px solid #BEC8CF}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#18252D}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#18252D;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#0E1215}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#18252D}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Hardware &amp; Actuation &middot; actuators · compliance · morphology &middot; robotics + vision</div>
+  <h1>Robot hardware, actuation &amp; design: the physical substrate</h1>
+  <p>The smartest policy in the world moves nothing without a body built to execute it &mdash; actuators, structure, power, and sensing are design decisions as much as software ones. Morphology, compliance, soft bodies, and embodied sensing &mdash; from first principles, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">how it moves</a> &middot; <a href="#fp3">soft robots</a> &middot; <a href="#fp4">shape matters</a> &middot; <a href="#fp5">embodied sensing</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The physical substrate, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why hardware matters, how actuators trade force for speed, what soft bodies change, how morphology computes, and what embodied sensing requires. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">classical</span><b>rigid geared motors</b><p>precise, powerful DC or stepper motors through gearboxes &mdash; the foundation of industrial arms; high force but heavy and stiff.</p></div><div class="ln"><span class="lyr">1990s&ndash;2000s</span><b>series-elastic & compliant</b><p>springs in the drivetrain give force control and safe contact; SEA and variable-impedance joints open legged and co-robot applications.</p></div><div class="ln"><span class="lyr">2000s&ndash;10s</span><b>soft robotics & new actuators</b><p>pneumatic networks, dielectric elastomers, and cable-driven soft bodies bring compliance from material &mdash; not mechanics &mdash; and enable safe, deformable grippers.</p></div><div class="ln"><span class="lyr">2010s&ndash;20s</span><b>underactuated & bio-inspired</b><p>passive dynamics, tensegrity, and origami structures reduce actuator count while expanding capability; morphology does more of the computation.</p></div><div class="ln"><span class="lyr">2020s&ndash;</span><b>generative co-design</b><p>AI-driven search over body and control jointly; diffusion and evolutionary methods explore morphology spaces orders of magnitude faster than manual iteration.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>Software can't move without a body</h2>
+  <figure class="instrument"><canvas data-hwanim="hw_why" height="300"></canvas>
+    <figcaption>The physical substrate — actuators make force, structure carries load, power feeds it. Hardware decides what any controller can even attempt; the best policy in the world moves nothing without a body built to execute it.</figcaption></figure>
+  <div class="essay"><p>Every robot is software running on physics. The controller tells the system what to do, but it is the <b>actuator</b> that turns that command into motion, the <b>structure</b> that carries the load without buckling, and the <b>power supply</b> that keeps it going. Fail any of those and no algorithm saves you.</p>
+<p>Hardware sets the ceiling. A motor too slow for the task, a joint too stiff to absorb a shock, a frame too heavy to stay airborne &mdash; these are not things you tune away in software. Choosing the right body is the first design decision, and it shapes every control and planning choice that follows.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>System capability is bounded by hardware: a controller &pi; can only reach states s reachable under the plant dynamics f(s,a,&theta;), where &theta; encodes actuator limits, inertia, and power budget.</p>
+<p>Mechanical advantage sets the feasible force/speed space &mdash; gear ratio N trades speed for torque: &tau;_out = N&middot;&tau;_motor, &omega;_out = &omega;_motor/N.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; how it moves</div>
+  <h2>Motors, tendons, muscles</h2>
+  <figure class="instrument"><canvas data-hwanim="hw_actuator" height="300"></canvas>
+    <figcaption>Ways to turn energy into motion — electric (fast, precise, heavy), tendon (light, remote, hysteresis), fluidic muscle (soft, compliant, slow). Each is a trade of force, speed, weight, and give.</figcaption></figure>
+  <div class="essay"><p>An <b>electric motor</b> is the workhorse: high bandwidth, precise position control, straightforward to drive electronically &mdash; and relatively heavy, with a hard output shaft that hits whatever it touches. A <b>tendon drive</b> moves the motor away from the fingertip, trimming the moving mass, but the cable stretches and slips, leaving hysteresis you have to model or compensate.</p>
+<p><b>Fluidic and elastomeric actuators</b> (pneumatic muscles, electrohydraulic elastomers) are inherently compliant &mdash; they push and yield at the same time, making them safer around people &mdash; but they are slower, harder to control precisely, and need a compressor or pump nearby. No single type wins every trade; the job of mechanism design is picking the right combination for what the task demands.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Electric motor: torque &tau; &prop; current i; back-EMF &prop; speed &omega; &mdash; power = &tau;&omega; = fixed electrical limit, so max torque drops with speed.</p>
+<p>Tendon: cable tension T transmitted remotely; hysteresis from cable elasticity means the actual joint angle lags the commanded value by &Delta;&theta; = T&sdot;L/(EA), where E is cable modulus and A cross-section.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; soft robots</div>
+  <h2>Machines without rigid links</h2>
+  <figure class="instrument"><canvas data-hwanim="hw_soft" height="300"></canvas>
+    <figcaption>The body itself deforms. Compliance is built into the material — safe on contact but nonlinear and hard to model precisely. Soft robots get safety and adaptability from their structure, not from their control.</figcaption></figure>
+  <div class="essay"><p>Classical robots are chains of rigid links pinned at joints. Soft robots erase that distinction: the body is made of silicone, textile, or elastomeric chambers that <em>bend, stretch, and squeeze</em> along their full length. There are no point contacts with the environment, only distributed contact &mdash; which is why a soft gripper can grasp a ripe tomato that would shatter in a metal hand.</p>
+<p>The cost is modeling. A rigid link has six degrees of freedom; a soft body has infinitely many, and its behavior depends on material properties, geometry, and pressure in ways that are expensive to simulate. Controllers must either simplify the model aggressively or learn from data, because no analytic solution covers the general case.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>A soft continuum body has &infin; DOF; approximate with a Cosserat rod or FEM model &mdash; simulation cost O(N&sup3;) per time step for N finite elements.</p>
+<p>Compliance matrix K maps contact force to deformation; for a soft body K is full and configuration-dependent, unlike a rigid joint where K is diagonal and constant.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; shape matters</div>
+  <h2>The body computes too</h2>
+  <figure class="instrument"><canvas data-hwanim="hw_morph" height="300"></canvas>
+    <figcaption>Morphology does part of the work. A springy leg bounces almost for free; a series-elastic joint absorbs contact without a torque spike. The right body shape offloads computation that would otherwise fall on the controller.</figcaption></figure>
+  <div class="essay"><p>A rigid leg hitting the ground at speed transfers a force spike straight to the motor &mdash; the controller must react in milliseconds or the joint fails. A leg with a <b>series-elastic element</b> &mdash; a spring between motor and output &mdash; absorbs the spike, measures force from spring deflection, and lets the motor respond at a comfortable bandwidth. The spring is doing computation: it filters the signal and stores energy.</p>
+<p>This is <b>morphological computation</b>: the idea that a well-designed body can produce useful behavior with almost no control effort. Passive walkers can traverse a slope with no motor at all; they exploit gravity and their own dynamics. Adding control on top of a body already shaped for the task is far cheaper than fighting a body shaped wrong for it.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Series-elastic actuator: spring deflection &Delta;x = (F_contact&minus;F_motor)/k; force measured from &Delta;x gives bandwidth decoupled from motor bandwidth.</p>
+<p>Passive dynamic walking: energetics governed by pendulum inverted about the stance foot; no motor input needed on a slope &mdash; gravity replaces actuation for a full stride cycle.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; embodied sensing</div>
+  <h2>Skin, proprioception, and limits</h2>
+  <figure class="instrument"><canvas data-hwanim="hw_sense" height="300"></canvas>
+    <figcaption>A body must feel itself. Joint encoders, contact skin, and joint limits are not accessories — they are part of the design. The best hardware co-tunes the structure, the sensor placement, and the control loop together.</figcaption></figure>
+  <div class="essay"><p>A motor with no position sensor is an open-loop actuator: it pushes but does not know where it ended up. Add an <b>encoder</b> and the loop closes &mdash; but only at the joint. Add <b>tactile skin</b> and the loop closes at the contact point too, where the work actually happens. The richer the sensing, the more the controller can correct, adapt, and stay safe.</p>
+<p>Joint limits are not just mechanical stops; they are information. A well-designed robot exposes its limits to software so the planner never commands a configuration that would damage the hardware. The best designs treat sensing as part of the mechanical specification &mdash; sensor location, resolution, and bandwidth chosen to match what the controller needs &mdash; not as an afterthought bolted on later.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Encoder resolution &Delta;&theta; sets the minimum observable velocity: &omega;_min = &Delta;&theta;/T_sample; finer encoders or higher rates shrink the dead-band.</p>
+<p>Tactile array: each taxel measures local pressure p_i; distributed sensing gives contact location and normal force without a wrist force-torque sensor.</p></div></details>
+</section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge" style="background:var(--graphite)">&#9679; honest note</div><figcaption style="margin-top:0">This explainer <b>maps the physical substrate</b> &mdash; the actuators, structures, and sensors that give any controller something to work with. The diagrams are live JavaScript (assets/hw-anim.js) and the families are real papers from the ICRA/IROS and CVPR corpora. A hardware build &mdash; printing a gripper, winding a motor &mdash; is out of scope for a headless run.</figcaption></figure></section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three actuation families</h2>
+  <p class="intro">Where the force comes from, how precise it is, and what it costs on contact &mdash; the three dominant actuation strategies in one table.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it makes force</th><th>Precision</th><th>Safety on contact</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Rigid electric actuation</th><td>motor through gearbox to stiff output shaft</td><td>high — encoder feedback at the joint</td><td>low — hard contact transfers full impulse</td><td>heavy, stiff; dangerous at speed near people</td></tr><tr class="hi"><th class="rn">Compliant / series-elastic</th><td>motor + spring in series to the load</td><td>moderate — force from spring deflection</td><td>good — spring absorbs impact spikes</td><td>spring adds compliance that is hard to model precisely</td></tr><tr><th class="rn">Soft / fluidic</th><td>pneumatic or hydraulic pressure inflates elastic chamber</td><td>low — position sensing is difficult</td><td>very high — the body deforms on contact</td><td>slow, needs a compressor or pump; highly nonlinear</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits good hardware actually delivers</h2>
+  <p class="intro">Every family below trades on one or more of these &mdash; the recurring reasons to invest in mechanism design rather than leaving it to the controller.</p>
+  <div class="bens"><div class="ben"><h4>Reduced control complexity</h4><p>Good mechanics simplify the job the controller must do &mdash; a compliant leg absorbs impact, a tendon hand adapts grip, and the software handles what the body cannot.</p></div>
+<div class="ben"><h4>Energy efficiency from compliance</h4><p>Springs and elastic elements store and return energy &mdash; a robot that bounces does not pay for each step twice; passive dynamics cut motor demand significantly.</p></div>
+<div class="ben"><h4>Safety from softness</h4><p>A soft or compliant body absorbs contact forces that would damage a rigid system, and makes safe physical interaction with people and fragile objects tractable without elaborate sensing.</p></div>
+<div class="ben"><h4>Scalability through underactuation</h4><p>Fewer motors than degrees of freedom, with passive compliance filling the gap, means lighter, cheaper, and more reliable mechanisms &mdash; a hand with one actuator and many compliant fingers grasps a surprising range of shapes.</p></div>
+<div class="ben"><h4>Rapid iteration via generative design</h4><p>3D printing and generative design tools let designers explore thousands of morphologies in days, not months &mdash; hardware iteration speed now approaches software iteration speed.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every hardware and design family</h2>
+  <p class="intro">Fifteen families, each with approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip rb" href="#hw1"><span class="cn">01</span>Electric</a><a class="fchip rb" href="#hw2"><span class="cn">02</span>Soft robotics</a><a class="fchip rb" href="#hw3"><span class="cn">03</span>Series-elastic</a><a class="fchip rb" href="#hw4"><span class="cn">04</span>Grippers, hands</a><a class="fchip rb" href="#hw5"><span class="cn">05</span>Underactuated</a><a class="fchip rb" href="#hw6"><span class="cn">06</span>Mechanism design</a><a class="fchip rb" href="#hw7"><span class="cn">07</span>Origami, foldable</a><a class="fchip rb" href="#hw8"><span class="cn">08</span>Exoskeletons</a><a class="fchip rb" href="#hw9"><span class="cn">09</span>Tendon-driven</a><a class="fchip rb" href="#hw10"><span class="cn">10</span>Tactile sensors</a><a class="fchip rb" href="#hw11"><span class="cn">11</span>Bio-inspired</a><a class="fchip rb" href="#hw12"><span class="cn">12</span>Design optimization</a><a class="fchip vb" href="#hw13"><span class="cn">13</span>Simulation-ready asset generation</a><a class="fchip vb" href="#hw14"><span class="cn">14</span>Physics-aware modeling</a><a class="fchip vb" href="#hw15"><span class="cn">15</span>Structure</a></div>
+  <div class="famgrid">
+<div class="fam" id="hw1">
+  <div class="famhd"><span class="famn">01</span><h3>Electric & servo actuators</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Electric motors are the dominant prime mover in robotics &mdash; fast, precise, and easy to drive from electronics &mdash; but their friction, inertia, and compliance matter enormously in practice.</p>
+<p>Getting real physical behavior right in simulation is the core challenge that the papers below attack from several angles.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Self-Sensing Odometry of a Pipeline Robot Driven by Dielectric Elastomer Actuators</b> &mdash; uses the actuator's own capacitance as a position sensor — no separate encoder needed</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Extended Friction Models for Physics Simulation of Servo Actuators</b> &mdash; Stribeck + hysteresis models that close the sim-to-real gap for actuator friction</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stretchable Electrohydraulic Artificial Muscle for Antagonistic Joints</b> &mdash; high-energy-density electric actuator that mimics biological antagonist pairs</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CASARO — Compliant Actuated Single-Actuator Soft Rotorcraft</b> &mdash; one actuator drives a full soft rotorcraft through a compliant mechanical transmission</span></li></ul>
+</div>
+
+<div class="fam" id="hw2">
+  <div class="famhd"><span class="famn">02</span><h3>Soft robotics & pneumatic actuators</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Soft bodies get compliance from material rather than mechanism &mdash; silicone, fabric, and auxetic structures that deform safely on contact.</p>
+<p>The design challenge is controlling behavior that emerges from geometry and pressure rather than from discrete joints.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>eViper-2D — Thin Large-Area Soft Robotic Platform</b> &mdash; flat pneumatic network that produces crawling and steering from a single layer</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Large-Expansion Bi-Layer Auxetics for Soft Robotic Actuators</b> &mdash; auxetic geometry gives large, controlled shape change from modest pressure</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Soft Robot Worms Inspired by Living Worm Blobs</b> &mdash; peristaltic locomotion in a soft body — mechanics emergent from material coupling</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bio-Inspired Soft Magnetic Swimming Robot</b> &mdash; magnetically driven soft swimmer that navigates constrained fluidic channels</span></li></ul>
+</div>
+
+<div class="fam" id="hw3">
+  <div class="famhd"><span class="famn">03</span><h3>Series-elastic & compliant joints</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Putting a spring between motor and load separates force control from position control, absorbs impact, and makes the joint safe to touch.</p>
+<p>This one mechanical insight underlies most modern legged robots and co-robot arms.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bipedal Walking with Continuously Compliant Robotic Legs</b> &mdash; spring legs tuned to natural gait frequency cut motor demand across walking speeds</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Ankle-Foot Prosthesis with Passive Agonist-Antagonist Design</b> &mdash; two springs in opposition give energy return and push-off without active sensing</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Remote Center of Compliance for Peg-in-Hole Assembly</b> &mdash; mechanically passive compliance at the tool tip simplifies high-precision insertion</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stretchable Electrohydraulic Artificial Muscle for Antagonistic Joints</b> &mdash; soft antagonist pair that mimics the compliance profile of biological tendons</span></li></ul>
+</div>
+
+<div class="fam" id="hw4">
+  <div class="famhd"><span class="famn">04</span><h3>Grippers, hands & end-effectors</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The end-effector is where the robot touches the world, and its design almost entirely determines what tasks are reachable.</p>
+<p>Underactuation and passive compliance let a small number of motors grasp a large variety of object shapes.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Model Q-II — Underactuated Hand with Enhanced Grasping Modes</b> &mdash; single-tendon hand that switches between power and pinch grasp via passive routing</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Chain-Driven Adaptive Underactuated Fingers for Prosthetic Hands</b> &mdash; chain transmission gives adaptive finger closure without independent finger motors</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Precision Harvesting End Effector with Dual Camera Perception</b> &mdash; soft-rigid hybrid gripper tuned for delicate fruit without bruising</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tendon-Driven Three-Fingered Aerial Hand Using a Single Actuator</b> &mdash; one motor drives three compliant fingers for a drone-mounted grasper</span></li></ul>
+</div>
+
+<div class="fam" id="hw5">
+  <div class="famhd"><span class="famn">05</span><h3>Underactuated & passive mechanisms</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Fewer actuators than degrees of freedom forces compliance and passive dynamics to carry the difference &mdash; which can be a feature, not a bug.</p>
+<p>Passive mechanisms store and release energy in patterns that match the task, cutting both mass and power draw.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Model Q-II — Underactuated Hand with Enhanced Grasping Modes</b> &mdash; passive tendon routing adapts finger posture to object geometry without control</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dexterous Assembly Using a Planar Hand with Programmable Passive Compliance</b> &mdash; spring stiffness tuned at design time replaces active sensing for peg insertion</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Virtual Gravity Controller for Underactuated Biped Robots</b> &mdash; virtual gravity shapes passive dynamics so the robot walks on flat ground</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Peristaltic Wave for Multi-Legged Locomotion</b> &mdash; wave timing exploits passive leg compliance to coordinate locomotion cheaply</span></li></ul>
+</div>
+
+<div class="fam" id="hw6">
+  <div class="famhd"><span class="famn">06</span><h3>Mechanism design & morphology</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The shape of linkages, the choice of joint types, and the distribution of mass determine what motions are mechanically easy and which require high torque.</p>
+<p>Morphology is not just aesthetics &mdash; it is a design variable that changes what the controller needs to provide.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEVA — High-Mobility Legged Suspension Vehicle</b> &mdash; leg-suspension hybrid morphology that traverses rubble without active shock absorption</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Text2Robot — Evolutionary Robot Design from Text Descriptions</b> &mdash; natural-language specification drives evolutionary search over morphology space</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generative-AI-Driven Jumping Robot Design Using Diffusion Models</b> &mdash; diffusion model proposes body geometry optimized for jumping height and stability</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Implicit Articulated Robot Morphology with Configuration-Space Neural SDFs</b> &mdash; neural signed distance fields represent morphology for differentiable design optimization</span></li></ul>
+</div>
+
+<div class="fam" id="hw7">
+  <div class="famhd"><span class="famn">07</span><h3>Origami, foldable & deployable robots</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Folding turns flat sheets into three-dimensional mechanisms &mdash; deployable, reconfigurable, and manufacturable from cheap materials.</p>
+<p>Crease patterns encode the kinematics; the challenge is making them stiff enough to carry load once deployed.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Quarry-Bot — Reconfigurable Cable-Suspended Inspection Robot</b> &mdash; flat-folded frame deploys to a cable-suspended platform for confined-space inspection</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sea-U-Whale — Reconfigurable Marine Robot</b> &mdash; origami hull reconfigures between surface and underwater profiles without actuator change</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>TrofyBot — Transformable Rolling and Flying Robot</b> &mdash; fold sequence converts between ground and aerial morphology in the field</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stair Climbing of a Transformable Wheeled Robot</b> &mdash; body fold changes wheel geometry to step over risers without a leg mechanism</span></li></ul>
+</div>
+
+<div class="fam" id="hw8">
+  <div class="famhd"><span class="famn">08</span><h3>Exoskeletons & wearable hardware</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Wearable robots must conform to a body that moves in ways the device cannot fully predict &mdash; compliance and fit are load-bearing design requirements, not comfort features.</p>
+<p>Misalignment between the device joint axis and the biological joint causes forces that injure; the best designs accommodate or correct for it.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>In-Vivo Cable-Driven Rodent Ankle Exoskeleton for Gait Studies</b> &mdash; subcutaneous anchor points eliminate alignment error for precise torque delivery</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Wearable Soft Sensing Band for Wrist Torque and Gesture</b> &mdash; textile strain sensors that survive washing and conform to wrist anatomy</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Design Optimization of Passive Exoskeletons via Co-Design</b> &mdash; personalizes spring stiffness to each user's gait online without lab instrumentation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-BAR — Harness-Free Elderly Assistance Robot</b> &mdash; follows the user and applies assistive force without a body-attached harness</span></li></ul>
+</div>
+
+<div class="fam" id="hw9">
+  <div class="famhd"><span class="famn">09</span><h3>Tendon-driven & cable mechanisms</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Routing the motor away from the moving tip cuts the inertia that must be accelerated &mdash; essential for fast hands and lightweight arms &mdash; but cables stretch, wrap, and slip in ways that complicate control.</p>
+<p>Hysteresis from cable compliance is not always a nuisance; in continuum robots it can be a source of passive stiffness.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</b> &mdash; shows hysteresis acts as a damper that improves tip stability without extra sensors</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CAFEs — Cable-Driven Collaborative Floating End-Effectors</b> &mdash; two cable-driven arms cooperate to position a shared floating tool precisely</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Accelerated Quasi-Static FEM for Real-Time Continuum Robot Control</b> &mdash; GPU-accelerated finite element model runs fast enough to close the control loop</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shared Control for Cable Routing with Tactile Sensing</b> &mdash; tactile feedback guides cable routing through narrow passages in constrained surgery</span></li></ul>
+</div>
+
+<div class="fam" id="hw10">
+  <div class="famhd"><span class="famn">10</span><h3>Tactile sensors & sensorized skin</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Contact is where the robot and the world exchange information and force. Without sensing at the contact surface, the controller is blind to slip, texture, and the difference between a gentle touch and a damaging push.</p>
+<p>The engineering challenge is packing dense, waterproof, durable sensing into a form that survives repeated impact.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AnySkin — Plug-and-Play Replaceable Magnetic Tactile Skin</b> &mdash; replaceable magnetic skin that transfers grasp policies across sensor instances</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ACROSS — Cross-Modal Tactile Representation Learning</b> &mdash; shared embedding of vision and tactile signals for manipulation without retraining</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Spatial Sensitivity Equalization of ERT-Based Robotic Skin</b> &mdash; electrical resistance tomography skin with compensated spatial sensitivity</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Magnetic-Actuated Vision-Based Whisker Array for Flow Sensing</b> &mdash; camera-behind-whisker design turns optical flow into tactile contact estimation</span></li></ul>
+</div>
+
+<div class="fam" id="hw11">
+  <div class="famhd"><span class="famn">11</span><h3>Bio-inspired & biomimetic mechanisms</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Animals solve locomotion, manipulation, and sensing problems with mechanisms that evolution refined over millions of years &mdash; studying them reveals design principles that transfer to hardware.</p>
+<p>The key is extracting the principle, not copying the anatomy; the engineering material and the biological material are never the same.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Bioinspired Jumping Mechanism for Self-Takeoff of a Flapping-Wing Robot</b> &mdash; spring-latch energy storage mimics insect jump-and-fly transition</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tensiworm — Tensegrity Robot with Peristaltic Locomotion</b> &mdash; cable-tension network inspired by annelid muscle geometry for soft crawling</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ambient Flow Perception Using an Artificial Lateral Line Sensor</b> &mdash; pressure-sensor array that mimics fish lateral line for underwater obstacle detection</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Added Mass and Accuracy of the FF-SLIP Model for Legged Swimming</b> &mdash; spring-loaded inverted pendulum extended with fluid added mass for swimming gaits</span></li></ul>
+</div>
+
+<div class="fam" id="hw12">
+  <div class="famhd"><span class="famn">12</span><h3>Design optimization & co-design</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Optimizing body and control together finds configurations that neither discipline finds alone &mdash; a joint optimal that a sequential approach misses.</p>
+<p>The bottleneck is that evaluating a design requires running a simulation and sometimes a real-hardware trial; the search space is vast and expensive to query.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AI-Enhanced Automatic Design of Efficient Underwater Gliders</b> &mdash; multi-objective search over hull shape and buoyancy engine placement jointly</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Text2Robot — Evolutionary Robot Design from Text Descriptions</b> &mdash; evolutionary co-design driven by language specification of the task</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Efficient and Diverse Generative Robot Designs Using Evolution and Diffusion</b> &mdash; combines evolutionary selection with diffusion-based morphology generation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Design Optimization of Passive Exoskeletons</b> &mdash; Bayesian optimization personalizes spring parameters during a real walking session</span></li></ul>
+</div>
+
+<div class="fam" id="hw13">
+  <div class="famhd"><span class="famn">13</span><h3>Simulation-ready asset generation</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>A physics simulator is only as good as the object models inside it &mdash; mass, inertia, geometry, and contact properties must all be accurate for sim-to-real transfer to work.</p>
+<p>Building those assets by hand is slow; the papers here generate them automatically from images or videos.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysX-Anything — Simulation-Ready 3D Assets from a Single Image</b> &mdash; infers mass, friction, and joint type from a photo and exports a URDF</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Unposed-to-3D — Simulation-Ready Vehicle Models from Unposed Images</b> &mdash; no camera pose needed; reconstructs full vehicle geometry for physics engines</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ReWeaver — Topology-Accurate Garment Reconstruction for Simulation</b> &mdash; preserves cloth topology so collision and drape simulate correctly</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RealAppliance — Workable Appliance Assets for Manipulation Benchmarks</b> &mdash; extracts kinematic structure of everyday appliances from RGB video</span></li></ul>
+</div>
+
+<div class="fam" id="hw14">
+  <div class="famhd"><span class="famn">14</span><h3>Physics-aware modeling & material estimation</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Knowing the shape of an object is not enough; the controller also needs to know how it will deform, slide, or break when touched.</p>
+<p>These papers embed physical material properties into neural representations so that simulation and prediction stay grounded in real physics.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>NeuROK — Generative 4D Neural Object Kinematics</b> &mdash; predicts per-point motion under force from a single static observation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysSkin — Physics-Based Neural Skinning with Material Estimation</b> &mdash; estimates skin elasticity from video so that deformation stays physically plausible</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>UniPixie — Probabilistic 3D Physics via Normalizing Flow Matching</b> &mdash; samples a distribution over physical parameters from visual observations</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Haptic Neural Fields — Tactile Properties Embedded in 3D Scene Representations</b> &mdash; extends NeRF-style fields with stiffness and friction so a hand can feel before it touches</span></li></ul>
+</div>
+
+<div class="fam" id="hw15">
+  <div class="famhd"><span class="famn">15</span><h3>Structure & physical reconstruction from interaction</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Static geometry is not enough for a robot that will interact with a scene &mdash; it also needs to know which parts move, how they connect, and what happens when they are pushed.</p>
+<p>Interaction video reveals physical structure that passive observation misses.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>FUN REC — Functional 3D Scene Reconstruction from Interaction Video</b> &mdash; articulation and affordance from watching a person use the objects</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysGaia — Physics-Aware Dynamic Scene Generation Benchmark</b> &mdash; benchmark for scene models that obey conservation laws under interaction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianFluent — Fracture Physics with Gaussian Splatting</b> &mdash; embeds fracture mechanics into 3D Gaussian representations for breakable objects</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AssemblyBench — Physics-Aware Assembly of Industrial Objects</b> &mdash; tests whether scene models correctly predict force and constraint during assembly</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Hardware and mechanism design has made enormous strides &mdash; and has hard problems that software cannot paper over. What is genuinely still open:</p>
+  <div class="opgrid"><div class="op"><b>Precision vs compliance.</b> Soft and compliant mechanisms give safety and adaptability but lose the positional accuracy rigid systems offer. Getting both at once is not solved.</div>
+<div class="op"><b>Actuation density vs weight.</b> High-force actuators are heavy; lightweight designs sacrifice torque. Artificial muscles and new materials inch toward biological density but are not there yet.</div>
+<div class="op"><b>Task specialization vs generality.</b> A gripper tuned for one object class often fails another; general end-effectors trade off peak performance. Morphology that adapts at the task boundary is still an open problem.</div>
+<div class="op"><b>Simulation fidelity vs compute for co-design.</b> Accurate physical simulation of soft bodies, contacts, and materials is expensive; fast models introduce errors that mislead the optimizer. The two goals pull in opposite directions.</div>
+<div class="op"><b>Manufacturing tolerance vs performance.</b> Parts that perform as designed in CAD often do not after fabrication variation. Closing the design-to-hardware gap without expensive metrology is unsolved.</div>
+<div class="op"><b>The tactile hardware sim-to-real gap.</b> Tactile sensors in simulation do not match real sensor noise, hysteresis, and spatial resolution; policies trained with simulated touch often fail on the real sensor.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Hardware &amp; Actuation explainer &middot; mechanism diagrams are live JavaScript (assets/hw-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the physical substrate under the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/hw-anim.js"></script>
+</body></html>
