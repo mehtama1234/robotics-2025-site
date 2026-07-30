@@ -64,6 +64,15 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}
 .cat.bb{background:#EBE4FA;color:var(--accent-deep);border:1px solid #D3C6F0}
 .fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#241E33}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.gs{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#100C1C;border:1px solid #2A2140;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;color:#2C2640;margin:5px 0;line-height:1.5}.worked li b{color:var(--accent-deep)}
 .papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#332C44;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
@@ -191,10 +200,17 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <p class="intro">Fifteen families, each with the big-picture problem, the approaches, and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the growing <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
   <div class="famindex"><a class="fchip rb" href="#wm1"><span class="cn">01</span>Latent-dynamics model-based RL (Dreamer-style)</a><a class="fchip rb" href="#wm2"><span class="cn">02</span>Planning with learned dynamics (MPC)</a><a class="fchip vb" href="#wm3"><span class="cn">03</span>Video diffusion as a world simulator</a><a class="fchip vb" href="#wm4"><span class="cn">04</span>Controllable</a><a class="fchip bb" href="#wm5"><span class="cn">05</span>Driving world models</a><a class="fchip rb" href="#wm6"><span class="cn">06</span>Manipulation</a><a class="fchip bb" href="#wm7"><span class="cn">07</span>3D / Gaussian-splat world models</a><a class="fchip vb" href="#wm8"><span class="cn">08</span>Compact latent</a><a class="fchip vb" href="#wm9"><span class="cn">09</span>Physics-grounded prediction</a><a class="fchip vb" href="#wm10"><span class="cn">10</span>Long video: memory, horizon</a><a class="fchip rb" href="#wm11"><span class="cn">11</span>Object-centric</a><a class="fchip bb" href="#wm12"><span class="cn">12</span>World models for VLA</a><a class="fchip rb" href="#wm13"><span class="cn">13</span>Safety, uncertainty</a><a class="fchip rb" href="#wm14"><span class="cn">14</span>Sim-to-real learned simulators</a><a class="fchip bb" href="#wm15"><span class="cn">15</span>Measuring world models (evaluation)</a></div>
   <div class="famgrid">
-<div class="fam" id="wm1">
+<div class="fam rich" id="wm1">
   <div class="famhd"><span class="famn">01</span><h3>Latent-dynamics model-based RL (Dreamer-style)</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>The purest form: encode pixels to a latent state, learn the dynamics in that space, and train the whole policy inside imagined rollouts &mdash; touching the real robot only to keep the model honest. The prize is sample efficiency, which is what real hardware is starved for.</p>
-<p>The 2024&ndash;25 work pushes it onto real bodies and hard settings: legged locomotion, sparse rewards from pixels, and estimating hidden physics (mass, friction) so the dream matches reality.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Reinforcement learning is brutally data-hungry &mdash; a robot might need millions of trials to learn a skill, and every trial happens on real, breakable hardware in real, slow time. You simply cannot afford that many real attempts.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>The purest form: encode pixels to a latent state, learn the dynamics in that space, and train the whole policy inside imagined rollouts &mdash; touching the real robot only to keep the model honest. The prize is sample efficiency, which is what real hardware is starved for.</p>
+<p>The 2024&ndash;25 work pushes it onto real bodies and hard settings: legged locomotion, sparse rewards from pixels, and estimating hidden physics (mass, friction) so the dream matches reality.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_dreamer" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Act in the real world briefly</b> and record what the robot saw and did.</li>
+<li><b>Train the world model</b> on that log: predict the next latent state from the current state and action.</li>
+<li><b>Now stop touching reality.</b> From a remembered state, imagine thousands of rollouts under the current policy &mdash; all on the GPU.</li>
+<li><b>Improve the policy</b> on those imagined rollouts, nudging it toward higher predicted reward.</li>
+<li><b>Return to the real robot only occasionally</b> for fresh data to keep the model honest. Most of the learning happened in the dream.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Privileged-Dreamer</b> &mdash; a dual world model explicitly imagines hidden parameters (mass, friction) to adapt fast in sim-to-real</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>PIP-Loco</b> &mdash; a Dreamer module solves infinite-horizon MPC for quadruped locomotion over rough terrain</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>SR-AIF</b> &mdash; active inference + a world model cracks sparse-reward continuous control straight from pixels</span></li>
@@ -202,40 +218,68 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Mastering the Labyrinth</b> &mdash; selective reconstruction of just the physical state cuts real data from 5 hours to 1.5</span></li></ul>
 </div>
 
-<div class="fam" id="wm2">
+<div class="fam rich" id="wm2">
   <div class="famhd"><span class="famn">02</span><h3>Planning with learned dynamics (MPC)</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Instead of training a policy, keep the model and search: at every tick, roll many action sequences through the learned dynamics, score them, execute the best first step, and replan. This is model-predictive control with a neural (or physics-plus-residual) model.</p>
-<p>The recurring worry is the model wandering outside what it was trained on, so several papers bolt on novelty or uncertainty checks that veto risky imagined actions.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You have a decent model of how things will unfold, but the situation keeps changing under you. You need to decide what to do right now, act, and then reconsider the instant the world moves &mdash; not commit to a long plan blindly and hope.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Instead of training a policy, keep the model and search: at every tick, roll many action sequences through the learned dynamics, score them, execute the best first step, and replan. This is model-predictive control with a neural (or physics-plus-residual) model.</p>
+<p>The recurring worry is the model wandering outside what it was trained on, so several papers bolt on novelty or uncertainty checks that veto risky imagined actions.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_mpc" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>At this instant, sample ~1,000 candidate action sequences</b> for the next H steps.</li>
+<li><b>Roll each one through the learned model</b> and add up the reward it predicts.</li>
+<li><b>Keep the best sequence; execute only its first action.</b></li>
+<li><b>One tick later, discard the rest and replan</b> from the new state (receding horizon).</li>
+<li><b>If a novelty check says the model is guessing</b> outside its training data, fall back to a cautious action.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Planning with Adaptive World Models</b> &mdash; predicts agent-specific motion models, then rolls them out with MPC for driving</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bounding Distributional Shifts through Novelty Detection</b> &mdash; a VAE flags out-of-distribution actions before the MPC trusts the model on them</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Residual Model Learning</b> &mdash; learns a residual on top of physics so MPC adapts online to changing dynamics</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Active Tactile Perception through Belief-Space Control</b> &mdash; a generative world model drives information-seeking touch via belief-space MPC</span></li></ul>
 </div>
 
-<div class="fam" id="wm3">
+<div class="fam rich" id="wm3">
   <div class="famhd"><span class="famn">03</span><h3>Video diffusion as a world simulator</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>The vision lineage attacks the same problem from pixels: a video diffusion model, conditioned on an action or a prompt, generates the next frames &mdash; a watchable, photoreal simulation of the future. The insight driving the field is that a good enough video generator <em>is</em> a world model.</p>
-<p>Because the models are enormous, much of the work is making them fast and long enough to be usable &mdash; linearised attention, caching, and structured attention to cut the quadratic cost.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>The richest thing a camera gives you is video, and the vision field already has models that generate stunning video. The question: can that generator double as a <em>simulator</em> &mdash; showing you what the world would look like a second from now if you did X?</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>The vision lineage attacks the same problem from pixels: a video diffusion model, conditioned on an action or a prompt, generates the next frames &mdash; a watchable, photoreal simulation of the future. The insight driving the field is that a good enough video generator <em>is</em> a world model.</p>
+<p>Because the models are enormous, much of the work is making them fast and long enough to be usable &mdash; linearised attention, caching, and structured attention to cut the quadratic cost.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_viddiff" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Take the last few real frames</b> plus the action you are weighing.</li>
+<li><b>Start the future as pure noise.</b></li>
+<li><b>Denoise it step by step,</b> conditioned on those frames + the action, into a plausible next clip.</li>
+<li><b>Watch it</b> &mdash; a photoreal guess at what that action produces.</li>
+<li><b>Use it</b> as a test scenario, or as free training data for a policy.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Attention Surgery</b> &mdash; linearises a video diffusion transformer for ~6&times; faster generation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>VMonarch</b> &mdash; structured Monarch-matrix attention gives sub-quadratic video diffusion</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>D2Cache</b> &mdash; caches the smooth denoising trajectory for ~10&times; acceleration</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>VideoWorld 2</b> &mdash; decouples appearance (video diffusion) from latent action tokens for cross-domain transfer</span></li></ul>
 </div>
 
-<div class="fam" id="wm4">
+<div class="fam rich" id="wm4">
   <div class="famhd"><span class="famn">04</span><h3>Controllable &amp; interactive (&lsquo;playable&rsquo;) video</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>A simulator you can&rsquo;t steer is just a movie. This family makes the generated future <em>controllable</em> &mdash; per-object trajectories, camera moves, forces, or an agent&rsquo;s actions all become inputs the model obeys, turning video generation into something you can play like a game.</p>
-<p>The control signal ranges from language and points to explicit physics overlays, all mapped to what the model should render next.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A generated video you can only watch is a movie, not a simulator. To plan or play inside it, you have to be able to <em>steer</em> it &mdash; say what should happen, and have the generated future obey.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>A simulator you can&rsquo;t steer is just a movie. This family makes the generated future <em>controllable</em> &mdash; per-object trajectories, camera moves, forces, or an agent&rsquo;s actions all become inputs the model obeys, turning video generation into something you can play like a game.</p>
+<p>The control signal ranges from language and points to explicit physics overlays, all mapped to what the model should render next.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_control" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Give the model a starting image.</b></li>
+<li><b>Draw a path</b> (or press a direction) for the object or the camera.</li>
+<li><b>The model treats that path as a condition</b> and generates frames where the object follows it.</li>
+<li><b>Change the path</b> &rarr; get a different future, on demand.</li>
+<li><b>Chain these</b> to &lsquo;play&rsquo; the world like a game.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>FlexTraj</b> &mdash; point-trajectory control &mdash; dense or sparse &mdash; steers image-to-video generation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>TGT: Text-Grounded Trajectories</b> &mdash; text specifies per-object motion paths for local control</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>LAMP</b> &mdash; an LLM turns a request into a camera/motion DSL that deterministically drives 3D trajectories</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Goal Force</b> &mdash; encodes forces as visual overlays so the model obeys physics-conditioned goals</span></li></ul>
 </div>
 
-<div class="fam" id="wm5">
+<div class="fam rich" id="wm5">
   <div class="famhd"><span class="famn">05</span><h3>Driving world models &amp; 4D occupancy forecasting</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Self-driving wants to ask &lsquo;what will the street do next?&rsquo; &mdash; so it learns a world model of the scene and rolls it forward, either as future occupancy (what space is filled, over time) or as generated future video the planner can react to.</p>
-<p>The strong versions decouple <em>forecasting</em> (how the scene evolves) from <em>rendering</em> (what it looks like), and increasingly fuse language so you can prompt scenarios.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A self-driving car must answer, continuously: where will everything be a few seconds from now? Not just where things are, but where the space around the car will be <em>free to drive</em>.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Self-driving wants to ask &lsquo;what will the street do next?&rsquo; &mdash; so it learns a world model of the scene and rolls it forward, either as future occupancy (what space is filled, over time) or as generated future video the planner can react to.</p>
+<p>The strong versions decouple <em>forecasting</em> (how the scene evolves) from <em>rendering</em> (what it looks like), and increasingly fuse language so you can prompt scenarios.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_occ" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Fuse the car&rsquo;s cameras and LiDAR</b> into a top-down occupancy grid: which cells are filled now.</li>
+<li><b>Encode the grid</b> together with the ego&rsquo;s planned action.</li>
+<li><b>Predict the grid at t+1, t+2, &hellip;</b> &mdash; where cars, cyclists, and free space will be.</li>
+<li><b>Choose a path</b> through cells forecast to stay free.</li>
+<li><b>If a cell that should be free fills up,</b> replan immediately.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianDWM</b> &mdash; a 3D-Gaussian driving world model embeds language for unified scene understanding + generation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>GenieDrive</b> &mdash; 4D-occupancy-guided video generation; models how actions change occupancy</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RenderWorld</b> &mdash; Gaussian-splat self-supervises 3D occupancy, feeding an autoregressive 4D-occupancy world model</span></li>
@@ -243,30 +287,51 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>X-MOBILITY</b> &mdash; an autoregressive latent world model, decoupled from the policy, gives zero-shot sim-to-real navigation</span></li></ul>
 </div>
 
-<div class="fam" id="wm6">
+<div class="fam rich" id="wm6">
   <div class="famhd"><span class="famn">06</span><h3>Manipulation &amp; deformable dynamics</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>To plan a manipulation, a robot needs to predict how the <em>stuff</em> moves &mdash; a pushed pile, a folded cloth, a packed box. These world models learn object/particle dynamics from vision (and touch), then roll them out for planning.</p>
-<p>Graph and particle representations dominate because they capture contact and deformation that a single latent vector blurs away.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Most manipulation isn&rsquo;t rigid &mdash; cloth folds, cables tangle, piles shift. To plan a fold or a pack, the robot must predict how the <em>soft stuff itself</em> will move under its action, not just where its own gripper goes.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>To plan a manipulation, a robot needs to predict how the <em>stuff</em> moves &mdash; a pushed pile, a folded cloth, a packed box. These world models learn object/particle dynamics from vision (and touch), then roll them out for planning.</p>
+<p>Graph and particle representations dominate because they capture contact and deformation that a single latent vector blurs away.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_deform" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Represent the cloth as a graph of particles</b> joined by springs.</li>
+<li><b>Read its current shape</b> from RGB (and touch).</li>
+<li><b>Apply a candidate action</b> &mdash; grab this corner, pull here &mdash; and let the learned graph-dynamics predict the next shape.</li>
+<li><b>Score that predicted shape</b> against the goal (folded, packed).</li>
+<li><b>Execute the action whose prediction best reaches the goal;</b> re-observe; repeat.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoboPack</b> &mdash; a recurrent graph net learns visuo-tactile dynamics; MPC packs deformable objects with online adaptation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>High-Density Visual Particle Dynamics</b> &mdash; point-cloud transformers predict 100k+ particle scenes for bimanual manipulation</span></li>
 <li><span class="vbadge bb">BOTH</span><span class="pt"><b>Dynamic 3D Gaussian Tracking for Neural Dynamics</b> &mdash; 3D Gaussians + a GNN give action-conditioned prediction of rope/cloth</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Cloth-Splatting</b> &mdash; differentiable Gaussian rendering makes cloth state optimisable straight from RGB</span></li></ul>
 </div>
 
-<div class="fam" id="wm7">
+<div class="fam rich" id="wm7">
   <div class="famhd"><span class="famn">07</span><h3>3D / Gaussian-splat world models</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>If a world model needs geometry <em>and</em> appearance, a Gaussian splat is a natural body for it: predict how the blobs move, then render them to check against what the camera sees. The splat is simultaneously the state, the renderer, and the collision geometry.</p>
-<p>This is the seam where the Gaussian-splatting work and world models meet &mdash; several papers couple splats to physics particles or to a learned dynamics head.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A world model needs both to <em>look</em> right (so it matches the camera) and to <em>move</em> right (so it obeys physics). Keeping those two in sync &mdash; a photoreal renderer and a predictive physics model of the same scene &mdash; is the hard part.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>If a world model needs geometry <em>and</em> appearance, a Gaussian splat is a natural body for it: predict how the blobs move, then render them to check against what the camera sees. The splat is simultaneously the state, the renderer, and the collision geometry.</p>
+<p>This is the seam where the Gaussian-splatting work and world models meet &mdash; several papers couple splats to physics particles or to a learned dynamics head.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_splatwm" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Build a splat of the scene</b> and attach a shadow set of physics particles under the blobs.</li>
+<li><b>Apply an action;</b> the physics predicts how the particles move.</li>
+<li><b>Move the blobs with their particles</b> and render the predicted view.</li>
+<li><b>Compare that render to the real camera;</b> the mismatch is a &lsquo;visual force&rsquo; that nudges the particles back into agreement.</li>
+<li><b>Now the same splat predicts the future</b> and stays synced to reality.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Physically Embodied Gaussian Splatting</b> &mdash; twin particle+Gaussian state: particles do physics, Gaussians render; render-vs-observation error corrects the particles</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RenderWorld</b> &mdash; splat-supervised occupancy feeds a predictive world model</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>DGGT</b> &mdash; feed-forward 4D reconstruction of dynamic driving scenes from unposed images</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Differentiable Robot Rendering</b> &mdash; a kinematics-aware Gaussian robot lets gradients flow from images back to control</span></li></ul>
 </div>
 
-<div class="fam" id="wm8">
+<div class="fam rich" id="wm8">
   <div class="famhd"><span class="famn">08</span><h3>Compact latent &amp; tokenized dynamics</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Photoreal futures are overkill for deciding what to do next. This family compresses the world to the bare minimum &mdash; a handful of discrete tokens, a 3D trace, an optical-flow field &mdash; and predicts <em>that</em>, trading appearance for speed and cross-embodiment transfer.</p>
-<p>The bet: for control, semantics and geometry matter far more than pixels, and a tiny state rolls far ahead almost for free.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Predicting photoreal future frames is gorgeous but expensive &mdash; far too slow to roll out thousands of times for planning. But do you even need pixels to decide what to do? Usually you need the gist, not the picture.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Photoreal futures are overkill for deciding what to do next. This family compresses the world to the bare minimum &mdash; a handful of discrete tokens, a 3D trace, an optical-flow field &mdash; and predicts <em>that</em>, trading appearance for speed and cross-embodiment transfer.</p>
+<p>The bet: for control, semantics and geometry matter far more than pixels, and a tiny state rolls far ahead almost for free.</p></div></div>
+  <figure class="fdiag"><canvas data-wmanim="wmf_tokens" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Encode the whole scene into a handful of discrete tokens</b> &mdash; enough for what to do, not how it looks.</li>
+<li><b>Predict the next tokens</b> from the current tokens plus the action &mdash; a tiny sequence model.</li>
+<li><b>Roll the tokens far ahead cheaply;</b> there are no pixels to render.</li>
+<li><b>Plan on those token rollouts</b> &mdash; about 100&times; faster than pixel rollouts.</li>
+<li><b>Decode back to pixels only</b> if a human needs to see it.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Planning in 8 Tokens</b> &mdash; compresses the latent world to 8 discrete tokens for ~100&times; faster planning</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>TraceGen</b> &mdash; models the world in 3D trace space, learning from cross-embodiment video, 50&ndash;600&times; faster</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus</b> &mdash; optical flow as a universal action bridges unlabelled video and labelled robot data</span></li>
