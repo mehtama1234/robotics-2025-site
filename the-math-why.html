@@ -1,0 +1,243 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Mathematical Why — why the approaches actually work, from first principles</title>
+<style>
+ :root{--ink:#0C1020;--paper:#EEF0F6;--panel:#F8F9FC;--tint:#DCE0EC;--line:#C7CCDD;
+  --graphite:#454B60;--g2:#79809A;--accent:#3B4DA8;--accent-deep:#28368A;--accent-lite:#7A88D6;
+  --opt:#B5622A;--inf:#2E7D6B;--geo:#8A3FC0;--dyn:#B8436A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)}
+ .wrap{max-width:880px;margin:0 auto;padding:0 22px}
+ header{background:#080B16;color:#E9ECF6;padding:36px 0 26px;border-bottom:1px solid #000;
+  background-image:linear-gradient(90deg,rgba(59,77,168,.22),rgba(46,125,107,.14),rgba(138,63,192,.16))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#9FB0E0}
+ header h1{margin:10px 0 10px;font-family:var(--serif);font-size:33px;letter-spacing:-.02em;color:#F4F6FC;line-height:1.15}
+ header p{color:#B4BCD8;font-size:15.5px;margin:0 0 14px;max-width:74ch}
+ header nav{font-family:var(--mono);font-size:12px;color:#8894BE}header nav a{color:#9FB0E0;text-decoration:none}
+ .part{margin:34px 0 8px}
+ .part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+ .part h2{font-family:var(--serif);font-size:27px;letter-spacing:-.015em;margin:6px 0 8px}
+ .part .intro{font-size:16px;color:#232838;max-width:74ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+ h3.q{font-family:var(--serif);font-size:21px;margin:26px 0 4px;letter-spacing:-.01em}
+ .kick{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--g2)}
+ .body p{font-size:15.5px;color:#1D2233;margin:11px 0;max-width:74ch}.body em{font-style:italic}.body b{color:var(--accent-deep)}
+ .eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+ .lede{border-left:3px solid var(--accent);background:var(--panel);padding:14px 18px;border-radius:0 10px 10px 0;margin:16px 0}
+ .lede p{margin:0;font-size:15.5px;color:#232838}
+ .instrument{margin:18px 0;background:#080B16;border:1px solid #1E2740;border-radius:12px;padding:14px 14px 10px}
+ .instrument canvas{display:block;width:100%;height:auto}
+ .instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#94A0C8;margin-top:8px}
+ .why{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:11px;background:var(--panel);padding:15px 18px;margin:14px 0}
+ .why .wl{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:6px}
+ .why p{margin:8px 0;font-size:15px;color:#1D2233}.why b{color:var(--accent-deep)}
+ .sub{border-left:2px solid var(--tint);padding:2px 0 2px 16px;margin:14px 0}
+ .sub h4{font-family:var(--serif);font-size:17px;margin:12px 0 2px}
+ .sub p{font-size:14.5px;color:#232838;margin:6px 0;max-width:74ch}
+ .pap{font-family:var(--mono);font-size:12.5px;color:#333A4E;margin:7px 0 0;padding-left:16px;border-left:2px solid var(--opt)}
+ .pap b{color:var(--opt)}
+ .four{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+ @media(max-width:640px){.four{grid-template-columns:1fr}}
+ .fc{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:13px 15px;border-top:3px solid var(--c)}
+ .fc.o{--c:var(--opt)}.fc.i{--c:var(--inf)}.fc.g{--c:var(--geo)}.fc.d{--c:var(--dyn)}
+ .fc .rl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
+ .fc h4{font-family:var(--serif);font-size:17px;margin:5px 0 4px}.fc p{font-size:13.5px;color:#232838;margin:5px 0}
+ .toc{columns:2;gap:24px;font-size:14px;margin:14px 0}@media(max-width:640px){.toc{columns:1}}
+ .toc a{display:block;padding:3px 0;text-decoration:none;color:#232838}.toc a b{color:var(--accent-deep)}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ footer a{color:var(--graphite)}
+ .tag{font-family:var(--mono);font-size:10px;color:#fff;background:var(--accent);padding:2px 7px;border-radius:5px;letter-spacing:.06em}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the mathematical why &middot; from first principles</div>
+  <h1>The Mathematical Why</h1>
+  <p>Not what each method is &mdash; <em>why the mathematics forces it to work</em>. One problem sits under all of robotics; every theme is a different way of turning that problem into a piece of mathematics you can actually solve. This page takes the turn slowly: the big-picture problem, the single move that makes it tractable, and then &mdash; theme by theme, down to the individual paper &mdash; the reason the math cannot fail to do what it promises. <span class="tag">slice 1 of 22 &mdash; the pattern</span></p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-machine.html">the machine</a> &middot; <a href="math-explained.html">the math families</a></nav>
+</div></header>
+<div class="wrap">
+
+<section class="part">
+  <div class="pl">Part 0</div>
+  <h2>The one move under everything</h2>
+  <p class="intro">A robot is handed something messy and enormous &mdash; a wall of pixels, a tangle of contacts, a sentence &mdash; and must produce an action. It cannot reason about the mess directly; nothing can. So the first and only real move in the whole field is a <b>translation</b>: turn the intractable real problem into a mathematical problem you can solve, where the whole art is choosing a translation that (a) you can actually solve and (b) keeps the part that mattered. Everything below is a special case of that move.</p>
+  <p class="body">There turn out to be only four translations that keep coming back. Almost every method in the twenty-two themes is one of these, or a stack of them. Naming them once makes the rest of the page short, because from here on the question is never &ldquo;what is this method&rdquo; but &ldquo;which of the four is it using, and why does that one work here.&rdquo;</p>
+  <div class="four">
+    <div class="fc o"><div class="rl">translation 1</div><h4>Find the best &rarr; minimize a number</h4><p>Turn &ldquo;choose the good action&rdquo; into &ldquo;make one number as small as possible.&rdquo; <b>Why it works:</b> if you can score how wrong you are with a smooth number, its slope points the way to <em>less</em> wrong, and walking downhill reaches a bottom. Training, control, planning, calibration &mdash; all this. (Optimization.)</p></div>
+    <div class="fc i"><div class="rl">translation 2</div><h4>What&rsquo;s true &rarr; update a probability</h4><p>Turn &ldquo;what is real given noisy evidence&rdquo; into &ldquo;multiply what you believed by what you just saw.&rdquo; <b>Why it works:</b> probability is the only bookkeeping for partial information that never contradicts itself, so prior&times;evidence is the one honest update. (Inference.)</p></div>
+    <div class="fc g"><div class="rl">translation 3</div><h4>Where things are &rarr; vectors &amp; the moves on them</h4><p>Turn &ldquo;the layout of space&rdquo; into &ldquo;points and the transformations that carry them.&rdquo; <b>Why it works:</b> the world&rsquo;s rigidity <em>is</em> a group of moves (rotate, translate); a method that respects that group automatically works from every viewpoint. (Geometry / linear algebra.)</p></div>
+    <div class="fc d"><div class="rl">translation 4</div><h4>How it changes &rarr; a flow you can steer</h4><p>Turn &ldquo;how the situation evolves&rdquo; into &ldquo;a velocity at every state.&rdquo; <b>Why it works:</b> local rules integrate into global behavior, so staying safe or reaching a goal becomes a property of the flow &mdash; a set you never leave, an energy that only falls. (Dynamics.)</p></div>
+  </div>
+  <div class="lede"><p>Hold onto one sentence for the rest of the page: <b>you never solve the real problem &mdash; you build a surrogate you <em>can</em> solve whose solution transfers back.</b> Every &ldquo;why does it work&rdquo; below is really the same question: why does solving the surrogate give the right answer to the thing you actually care about?</p></div>
+  <div class="toc">
+    <a href="#gen"><b>A.</b> Generative &amp; diffusion policies &mdash; sampling a distribution you can&rsquo;t write down</a>
+    <a href="#ctl"><b>B.</b> Control &amp; MPC &mdash; deciding the whole future in a millisecond</a>
+    <a href="#saf"><b>C.</b> Safety &amp; guarantees &mdash; a promise without checking every case</a>
+    <a href="#fnd"><b>D.</b> Foundation models &mdash; why predicting the next token builds a world</a>
+  </div>
+</section>
+
+<!-- ============ A. GENERATIVE ============ -->
+<section class="part" id="gen">
+  <div class="pl">Theme A &middot; translation 1 + 4</div>
+  <h2>Generative &amp; diffusion policies</h2>
+  <p class="intro">The big-picture problem: at a given moment a robot often has <b>many equally good actions</b> &mdash; go left or right around the rock. Train a network to output &ldquo;the action&rdquo; by least-squares and it is pulled toward the <em>average</em> of left and right, which drives straight into the rock. The thing you actually need is not the best single action but the ability to <b>hold, and draw one sample from, a whole distribution of good actions</b>. That is a different mathematical object, and getting at it is the whole story.</p>
+
+  <div class="instrument"><canvas data-mathanim="mf_score_fp" height="300"></canvas>
+    <figcaption>The score field: at every point, an arrow toward higher data-density. Follow the arrows inward from noise and you land <em>on</em> the data &mdash; in one mode, never the average of two.</figcaption></div>
+
+  <h3 class="q">The core object</h3>
+  <p class="body">Call the distribution of good actions <span class="eq">p(a&nbsp;|&nbsp;obs)</span>. You cannot write it down &mdash; it lives in a high-dimensional space and you only have samples (expert demonstrations). But you do not need the density itself. You need its <b>gradient</b>, <span class="eq">&nabla; log p</span> &mdash; the direction, at any point, that makes an action <em>more</em> typical. This vector field is called the <em>score</em>. If you had it everywhere, you could always step toward the data.</p>
+
+  <div class="why"><div class="wl">why it works &mdash; the one identity that carries the field</div>
+    <p>You can&rsquo;t compute the score directly. But here is the move that makes everything possible: take a clean expert action, <b>add a known amount of Gaussian noise</b> of size <span class="eq">&sigma;</span>, and train a network to <b>undo it</b> &mdash; predict the noise you added (equivalently, predict the clean action back). This is an ordinary supervised task with free labels: <em>you</em> chose the noise, so you know the target exactly.</p>
+    <p>The miracle is what that denoiser secretly learns. The best possible correction &mdash; the average clean point given a noised one &mdash; equals the noised point plus <span class="eq">&sigma;&sup2;</span> times the score of the noised distribution (this is <b>Tweedie&rsquo;s identity</b>). Read it slowly: <b>learning to denoise <em>is</em> learning the score</b>, at no extra cost, without ever knowing p. An easy task you can supervise hands you the gradient of a density you could never write.</p>
+    <p>Now generation is just a walk. Start from pure noise &mdash; which is the data distribution smoothed until it is featureless, where the score is trivial &mdash; and repeatedly take a small step along the score while lowering <span class="eq">&sigma;</span>. That walk provably carries the noise distribution onto the data distribution (it is the time-reversal of the noising process &mdash; a reverse-time stochastic differential equation, or its deterministic twin, the probability-flow ODE). <b>Why it lands in one mode instead of averaging:</b> the score points to the <em>nearest</em> dense region, so a given noise seed flows into one basin &mdash; left <em>or</em> right &mdash; and a different seed picks the other. You never average, because you are following the gradient of the density, not minimizing distance to all the data at once.</p>
+  </div>
+
+  <h3 class="q">The subthemes, and why each is the same idea bent</h3>
+  <div class="sub">
+    <h4>Flow matching &mdash; straighten the walk</h4>
+    <p>Diffusion&rsquo;s walk is curved, so it needs many small steps. Flow matching learns a <b>straight-line</b> velocity field from noise to data instead. Why that needs fewer steps: a straight path has constant velocity, so a coarse step introduces no bending error &mdash; the same destination in ten steps instead of a hundred. The newest action policies use exactly this as the action head.</p>
+    <p class="pap"><b>&pi;-style flow VLAs</b> &mdash; a straight-path velocity field emits the action chunk in a few integration steps. &nbsp;<b>FlowMP / FlowNav</b> &mdash; planning and navigation as one ODE solve.</p>
+  </div>
+  <div class="sub">
+    <h4>Consistency models &mdash; jump to the end</h4>
+    <p>If the whole walk is deterministic, its endpoint is a fixed function of the start. Train a network to <b>agree with itself</b> along the path (any point maps to the same endpoint) and you can jump there in a single step. The guarantee is self-consistency, not a new distribution.</p>
+  </div>
+  <div class="sub">
+    <h4>Conditioning &amp; guidance &mdash; steer without a new model</h4>
+    <p>To honor a prompt, denoise twice &mdash; once told the prompt, once not &mdash; and step along the <em>difference</em>, amplified. Why that sharpens toward the prompt: the difference of the two scores is exactly <span class="eq">&nabla; log p(prompt&nbsp;|&nbsp;a)</span>, the Bayes correction that reweights the distribution toward actions the prompt would have produced. The guidance scale is just how hard you apply that correction.</p>
+    <p class="pap"><b>Diffusion Policy</b> &mdash; the action chunk is the sample, conditioned on the observation; multimodality is kept, not averaged away.</p>
+  </div>
+</section>
+
+<!-- ============ B. CONTROL ============ -->
+<section class="part" id="ctl">
+  <div class="pl">Theme B &middot; translation 1 + 4</div>
+  <h2>Control &amp; model-predictive control</h2>
+  <p class="intro">The big-picture problem: you have a plan &mdash; where you want the body to be over time &mdash; but the body has mass, joint limits, and a world that shoves it. A plan is a wish; something has to turn it into motion that actually follows, deciding what to command <b>now</b> so the whole future goes well, when you cannot see the whole future and must answer in a millisecond. Two mathematical objects do all the work: a <em>cost-to-go</em> and a <em>constrained minimization solved on a sliding window</em>.</p>
+
+  <div class="instrument"><canvas data-mathanim="mf_optimize" height="300"></canvas>
+    <figcaption>Every controller is a descent: score how wrong you are, and the slope points to a command that is less wrong. Feedback is this run continuously; MPC is this run over a short window of the future.</figcaption></div>
+
+  <div class="why"><div class="wl">why feedback works &mdash; reshaping the error&rsquo;s own flow</div>
+    <p>Track the error <span class="eq">e = x &minus; x_ref</span>, the gap between where you are and where you should be. Left alone it drifts. Choose the command <span class="eq">u = &minus;K&middot;e</span> &mdash; push back in proportion to the gap &mdash; and the error&rsquo;s <em>own</em> evolution becomes <span class="eq">&ecirc; = &minus;c&middot;e</span>, whose only resting point is zero. The reason a controller stabilizes is not magic: it rewrites the flow of the error into one that can do nothing but decay. You can certify this with an &ldquo;energy&rdquo; that is positive everywhere and strictly falling along the motion (a <b>Lyapunov function</b>); if such an energy exists, the system must roll to the bottom. (Translation 4: safety-and-convergence as a property of a flow.)</p>
+  </div>
+
+  <div class="why"><div class="wl">why MPC works &mdash; the far future stubbed, the present re-measured</div>
+    <p>Ideally you would choose the action that minimizes cost over the <em>entire</em> future. Bellman&rsquo;s principle says the best action now equals the immediate cost plus the best-possible-cost of wherever you land &mdash; a function of state called the <b>value</b>. In high dimensions you cannot compute that function. MPC&rsquo;s trade is to optimize <em>explicitly</em> over a short horizon, stub the far future with a rough terminal value, execute only the <b>first</b> action, then throw the rest away and re-solve next tick with a fresh measurement.</p>
+    <p><b>Why re-solving is the whole trick:</b> each re-solve injects the true new state, so modeling error over the horizon never gets a chance to accumulate &mdash; the closed loop contracts toward the optimal policy under a mild terminal-cost condition. The window length is the one real dial: longer sees further but takes longer to solve, and the solve must finish before the next control tick. That deadline, not the algorithm, is the binding constraint.</p>
+  </div>
+
+  <div class="why"><div class="wl">why the constraints are never violated &mdash; the shape of a convex problem</div>
+    <p>Write &ldquo;don&rsquo;t exceed this torque, don&rsquo;t enter that region&rdquo; as straight-line inequalities, and &ldquo;track the task&rdquo; as a bowl-shaped (convex quadratic) cost. Minimizing a bowl over a region cut out by straight lines has a <b>unique</b> answer that sits on the legal side of every inequality by construction &mdash; the optimality conditions (KKT) literally include the constraints. So a whole-body controller can juggle balance, a reach, and a joint limit at once: it is one such minimization, and the priorities are just weights. Nothing is checked after the fact; feasibility is baked into what &ldquo;the solution&rdquo; means.</p>
+  </div>
+
+  <h3 class="q">The subthemes, and why each is the same idea bent</h3>
+  <div class="sub">
+    <h4>Trajectory optimization / DDP &mdash; the value, locally</h4>
+    <p>You can&rsquo;t get the value function everywhere, but along one trajectory you can build a <em>local quadratic</em> model of it and sweep backward in time, and that sweep hands you feedback gains for free at every step. Why backward: the cost-to-go is defined from the end, so information about &ldquo;what&rsquo;s worth doing&rdquo; flows from the future to the present.</p>
+    <p class="pap"><b>Variational-integrator trajectory optimization</b> &mdash; discretize so energy is conserved exactly, which is why backflips stay physical over long horizons.</p>
+  </div>
+  <div class="sub">
+    <h4>Sampling MPC (MPPI) &mdash; when you can&rsquo;t take a gradient</h4>
+    <p>If the dynamics are too rough to differentiate, roll out many random command sequences, score each, and take the <b>exponentially-weighted</b> average <span class="eq">exp(&minus;cost)</span>. Why the exponential is the right weight and not, say, picking the single best: it is the unique reweighting that moves the distribution toward low cost while changing it the least &mdash; the maximum-entropy (Boltzmann) update. Massively parallel, so it runs whole-body in real time on a GPU.</p>
+    <p class="pap"><b>Real-Time Whole-Body Control with MPPI</b> &mdash; samples from the constraint manifold, distributes torques across the body.</p>
+  </div>
+  <div class="sub">
+    <h4>Koopman &amp; learning-augmented MPC &mdash; fix the model, keep the solver</h4>
+    <p>Koopman lifts a nonlinear system into coordinates (functions of the state) where its flow is <em>linear</em>, so a fast linear MPC applies exactly. Why lifting can work: a nonlinear flow is linear in the right observables &mdash; you trade a few extra dimensions for linearity. Learning-augmented MPC instead learns the <em>residual</em> between the textbook model and reality and feeds it back, so the same optimization sees true dynamics.</p>
+    <p class="pap"><b>Koopman MPC for quadruped trotting</b> &middot; <b>Dynamic Tube MPC</b> &mdash; learn the error tube, shrink the constraints by it, and worst-case safety survives disturbance.</p>
+  </div>
+</section>
+
+<!-- ============ C. SAFETY ============ -->
+<section class="part" id="saf">
+  <div class="pl">Theme C &middot; translation 4 + 2</div>
+  <h2>Safety &amp; formal guarantees</h2>
+  <p class="intro">The big-picture problem: a learned policy can produce almost any output, and you need a <b>promise</b> it won&rsquo;t do something catastrophic &mdash; without checking every possible situation, because there are far too many to check. The escape is to stop reasoning about individual cases and reason about <b>sets and symmetries</b> instead: a region you never leave, a set of futures you keep clear of, and a ranking that comes out uniform no matter the distribution.</p>
+
+  <div class="instrument"><canvas data-mathanim="mff_lyapunov" height="260"></canvas>
+    <figcaption>A safe set and the boundary condition that makes it a trap you can&rsquo;t exit: if your velocity never points outward at the edge, you are inside forever.</figcaption></div>
+
+  <div class="why"><div class="wl">why a safety filter works &mdash; you can&rsquo;t leave without crossing the edge</div>
+    <p>Pick a single number <span class="eq">h(x)</span> that is positive inside the safe set, zero on its boundary. Guarantee one thing: whenever you are <em>at</em> the boundary, your motion doesn&rsquo;t point outward &mdash; formally <span class="eq">&hdot; &ge; &minus;&alpha;&middot;h</span>, which forces <span class="eq">&hdot; &ge; 0</span> exactly when <span class="eq">h = 0</span>. Then you can <b>never</b> cross out. The proof is almost a tautology: to leave a set you must pass through its boundary heading outward, and you have forbidden precisely that (this is <b>Nagumo&rsquo;s theorem</b>; <span class="eq">h</span> is a <em>control barrier function</em>). The safety filter is then a tiny minimization: take the policy&rsquo;s desired command and nudge it the <b>least</b> amount needed to satisfy that inequality &mdash; the closest safe action to what the policy wanted.</p>
+  </div>
+
+  <div class="why"><div class="wl">why reachability works &mdash; danger, run backward until it stops growing</div>
+    <p>Which states are doomed? Start from the obstacle and ask &ldquo;from where could I be forced into it in one instant, for the <em>worst</em> disturbance?&rdquo; Apply that backward step over and over; it settles to a fixed set whose boundary separates &ldquo;can stay safe forever&rdquo; from &ldquo;will eventually be forced in.&rdquo; That fixed set is the solution of the <b>Hamilton-Jacobi</b> equation &mdash; Bellman&rsquo;s principle again, but as a min&ndash;max game between your control and the disturbance. The value function&rsquo;s zero level-set <em>is</em> the safe boundary; there is nothing to check case-by-case because the set already contains every case.</p>
+  </div>
+
+  <div class="why"><div class="wl">why conformal prediction works &mdash; a guarantee out of pure symmetry</div>
+    <p>This is the deepest and the simplest, and it needs almost nothing. Take <em>any</em> score of &ldquo;how strange is this prediction&rdquo; &mdash; any function at all. Compute it on your <span class="eq">N</span> calibration points and on the new test point. If the data are <b>exchangeable</b> (their order carries no information &mdash; weaker than independent-and-identical), then the test score is <em>equally likely to fall in any rank</em> among the <span class="eq">N+1</span> scores, by symmetry alone. So the chance it exceeds the <span class="eq">&lceil;(1&minus;&alpha;)(N+1)&rceil;</span>-th largest is at most <span class="eq">&alpha;</span> &mdash; whatever the model, whatever the distribution. That is why conformal prediction can wrap a black box you know nothing about and still hand you an honest coverage number. The guarantee comes from the symmetry of ranking, not from any assumption about the world.</p>
+  </div>
+
+  <h3 class="q">The subthemes, and why each is the same idea bent</h3>
+  <div class="sub">
+    <h4>Safe reinforcement learning &mdash; the price of a broken rule</h4>
+    <p>Put the safety cost into the objective with a multiplier and raise the multiplier until the constraint holds. Why it converges to a safe policy: the multiplier is the <em>shadow price</em> of the constraint &mdash; at the right price, the unconstrained optimum already obeys the limit (Lagrangian duality). The agent isn&rsquo;t told the rule; it&rsquo;s charged for breaking it until breaking it isn&rsquo;t worth it.</p>
+    <p class="pap"><b>Safe RL with adaptive conformal prediction</b> &mdash; size the safety margin from a distribution-free coverage bound instead of a guess.</p>
+  </div>
+  <div class="sub">
+    <h4>Runtime monitoring &mdash; a likelihood-ratio test in disguise</h4>
+    <p>An out-of-distribution monitor asks whether the current input is too unlikely under the training distribution; falling back when it is, is exactly a likelihood-ratio test with a chosen false-alarm rate. Why fall back rather than trust: outside the training support the learned model has no guarantee at all, so the honest move is to defer to something proven.</p>
+    <p class="pap"><b>System-Level Safety Monitoring &amp; Recovery</b> &middot; <b>SAFE-GIL</b> &mdash; inject worst-case disturbance <em>during</em> imitation so the policy has seen the edge of failure before it meets it.</p>
+  </div>
+  <div class="sub">
+    <h4>Conformalized reachability &mdash; two guarantees stacked</h4>
+    <p>Reachability is only as honest as its model; wrap the model&rsquo;s error with a conformal bound and the reachable set inherits a distribution-free coverage guarantee. Two different symmetries &mdash; the flow&rsquo;s invariance and ranking&rsquo;s exchangeability &mdash; compose into one promise.</p>
+    <p class="pap"><b>Conformalized Reachable Sets for Obstacle Avoidance</b> &middot; <b>Safe control on online Gaussian-splat maps</b> &mdash; a barrier function read off a learned 3D map.</p>
+  </div>
+</section>
+
+<!-- ============ D. FOUNDATION ============ -->
+<section class="part" id="fnd">
+  <div class="pl">Theme D &middot; translation 2 + 3</div>
+  <h2>Foundation models as the robot&rsquo;s brain</h2>
+  <p class="intro">The big-picture problem: robot data is scarce, but the web already recorded how the world works. The puzzle is why a model trained only to <b>predict the next word or patch</b> ends up able to plan, reason, and read an instruction &mdash; things nobody trained it to do. The answer is two mathematical facts: attention is a <em>content-addressed average</em>, and prediction is the same thing as <em>compression</em>.</p>
+
+  <div class="instrument"><canvas data-mathanim="mf_attention_fp" height="300"></canvas>
+    <figcaption>Attention: each token scores its similarity to every other, softmaxes those into weights, and returns the weighted average of their values &mdash; a soft, learnable lookup computed from the content itself.</figcaption></div>
+
+  <div class="why"><div class="wl">why attention works &mdash; a soft nearest-neighbor you can train</div>
+    <p>Each token forms a question (a <em>query</em>) and every token offers a tag (a <em>key</em>). Their dot-product is a similarity; softmax turns the similarities into weights that sum to one; the output is the weighted average of the tokens&rsquo; contents (their <em>values</em>). That is precisely <b>kernel regression</b> &mdash; a soft nearest-neighbor &mdash; where the neighborhood is chosen by content, not position. Why this is powerful: the averaging pattern is <em>computed from the data itself</em> and is differentiable, so the model learns <em>how to route information</em>, position to position. Stack it and information travels anywhere in the sequence in one hop.</p>
+  </div>
+
+  <div class="why"><div class="wl">why next-token prediction builds a world &mdash; prediction <em>is</em> compression</div>
+    <p>To predict the next token better than chance across a vast corpus, a model must capture the corpus&rsquo;s regularities &mdash; and capturing regularities is exactly what it means to <b>compress</b> (a good predictor yields a short code, by arithmetic coding; the two are the same quantity). Now the consequence: compressing text and images <em>about the physical world</em> forces internal structure that mirrors that world &mdash; objects, causes, quantities &mdash; because that structure is what makes the next token predictable in the first place. So a model trained only to predict inherits a usable model of the world as a <b>side effect</b>, and the robot adapts that instead of learning the world from its own scarce experience. (Translation 2: prediction as inference; translation 3: the learned representation carries the world&rsquo;s structure.)</p>
+    <p><b>Why in-context learning falls out for free:</b> a single forward pass over a prompt can itself implement a learning step &mdash; attention over the given examples can compute something like a nearest-neighbor or a gradient step across them &mdash; so showing examples reconfigures the computation without touching a single weight.</p>
+  </div>
+
+  <h3 class="q">The subthemes, and why each is the same idea bent</h3>
+  <div class="sub">
+    <h4>LLM planners &mdash; a learned heuristic over an astronomical space</h4>
+    <p>The number of possible plans is astronomical; classical search drowns in it. The model&rsquo;s learned prior over &ldquo;what step usually comes next&rdquo; is a heuristic that prunes almost all of that space to the few sensible branches. It doesn&rsquo;t replace search &mdash; it makes search finish.</p>
+    <p class="pap"><b>LLM-as-BT-Planner</b> &middot; <b>HBTP</b> &mdash; the model proposes a heuristic ordering; a behavior tree keeps it executable and correct.</p>
+  </div>
+  <div class="sub">
+    <h4>Code-as-policy &amp; VLA &mdash; tie the token stream to actions</h4>
+    <p>Point the same next-token machinery at a grounded output: a <em>program</em> whose execution touches the world, or <em>action tokens</em> in the same stream as words. Why it transfers: the web-learned structure over language and vision is reused wholesale; only a thin head is retrained to speak motion.</p>
+    <p class="pap"><b>Code-as-Policies</b> &middot; <b>RT-2</b> &mdash; action tokens emitted by the language model itself, so web knowledge flows straight to control.</p>
+  </div>
+  <div class="sub">
+    <h4>Retrieval-augmented memory &mdash; reweight the prior with evidence</h4>
+    <p>Fetch relevant facts and condition on them. Mathematically this is translation 2 again: the retrieved evidence multiplies the model&rsquo;s prior, concentrating it on what the facts support &mdash; the same Bayes update, applied to a language model&rsquo;s belief.</p>
+    <p class="pap"><b>ReMEmbR</b> &mdash; long-horizon spatio-temporal memory the policy queries, so a scarce-data robot reasons over an accumulated past.</p>
+  </div>
+</section>
+
+<section class="part">
+  <div class="pl">the through-line</div>
+  <h2>Why it is always the same four</h2>
+  <p class="body">Read the four themes back to back and the repetition is the point. Diffusion follows a <b>flow</b> whose velocity is the gradient of a log-density &mdash; translations 4 and 1. MPC is a <b>minimization</b> on a sliding window, certified by an energy that only falls &mdash; translations 1 and 4. Safety is a property of <b>sets and flows</b>, plus one guarantee squeezed out of pure symmetry &mdash; translations 4 and 2. Foundation models are <b>inference</b> (prediction as compression) carried by a representation that respects the world&rsquo;s structure &mdash; translations 2 and 3. Four themes, the same four moves, restacked.</p>
+  <p class="body">And under all of them, the one sentence from the top: <b>you never solve the real problem; you build a surrogate you can solve whose solution transfers back.</b> The score you can learn but the density you can&rsquo;t. The short horizon you can optimize but the infinite one you can&rsquo;t. The set you can prove invariant but the case list you can&rsquo;t enumerate. The next token you can predict but the world you can&rsquo;t hand-write. Every method in the collection is a clever choice of surrogate &mdash; and its correctness is always the claim that the surrogate&rsquo;s answer is the real one.</p>
+  <div class="lede"><p><b>This is slice 1 of 22.</b> The remaining eighteen themes &mdash; perception, grasping, locomotion, navigation, world models, multi-robot, tactile, and the rest &mdash; are each one more stacking of these four moves, and each has its own &ldquo;why the surrogate is exact.&rdquo; If this is the depth and shape you want, the same treatment fans out across every theme, subtheme, and key paper.</p></div>
+</section>
+
+</div>
+<footer><div class="wrap">
+  The mathematical why &middot; <a href="math-explained.html">the fifteen math families</a> &middot; <a href="the-machine.html">the machine, whole</a> &middot; <a href="index.html">Robotics 2025 home</a> &middot; live diagrams are JavaScript (assets/math-anim.js)
+</div></footer>
+<script src="assets/math-anim.js"></script>
+</body></html>
