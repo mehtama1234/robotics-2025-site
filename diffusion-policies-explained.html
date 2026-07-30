@@ -1,0 +1,335 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diffusion Policies, from first principles</title>
+<style>
+:root{--ink:#1B1013;--paper:#F5F0F1;--panel:#FCFAFA;--tint:#F0E2E6;--line:#E2D2D6;
+ --graphite:#635155;--g2:#93797F;--accent:#B8436A;--accent-deep:#8E2E4E;--accent-lite:#E68AA8;
+ --robo:#B4531F;--cvpr:#2F6F8B;--both:#B8436A;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#1A0D11;color:#F3E7EB;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#FBF2F5}
+header p{color:#C4AEB5;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#A78E95}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#3A2C30;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#160C10;border:1px solid #3A222B;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#B195A0;margin-top:8px}
+.essay p{font-size:15.5px;color:#2A1E22;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;height:auto;border-radius:8px;background:#160C10}
+.ranfig figcaption{font-size:13px;color:#3A2C30;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#33262B;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#3A2C30;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#33262B}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:680px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#33262B}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#F4E0E8}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#2A1E22;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#F6E9E1;color:#9A4419;border:1px solid #E6CDBE}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#F4E0E8;color:var(--accent-deep);border:1px solid #EAC9D6}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#2A1E22}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#33262B;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#22161a}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#33262B}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Diffusion Policies &middot; first principles &middot; robotics + vision</div>
+  <h1>Diffusion Policies, from first principles</h1>
+  <p>Why robots increasingly generate their actions by <em>denoising</em> &mdash; turning random noise into a decisive move &mdash; instead of predicting one. What it is, why it beats ordinary behavior cloning, and every way robotics and vision use it, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the trap</a> &middot; <a href="#fp2">the fix</a> &middot; <a href="#fp3">why it works</a> &middot; <a href="#fp4">in a loop</a> &middot; <a href="#fp5">the catch</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; the averaging trap that sinks naive cloning, the denoising fix, why sampling a distribution works, action chunking, and the speed problem. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">2020</span><b>DDPM</b><p>denoising diffusion masters image generation &mdash; start from noise, clean it up step by step.</p></div><div class="ln"><span class="lyr">2022</span><b>Diffuser</b><p>Janner et al. use diffusion to generate whole <em>trajectories</em> for planning &mdash; diffusion enters control.</p></div><div class="ln"><span class="lyr">2023</span><b>Diffusion Policy</b><p>Chi et al. denoise the <em>action</em> conditioned on vision &mdash; the breakout result; multimodal visuomotor control just works.</p></div><div class="ln"><span class="lyr">2024</span><b>DP3 · consistency · flow</b><p>3D-conditioned policies, plus consistency/flow-matching for real-time speed.</p></div><div class="ln"><span class="lyr">2025&ndash;</span><b>generalist &amp; VLA flow policies</b><p>cross-embodiment, language-conditioned, flow-matching VLAs &mdash; the families below.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the trap</div>
+  <h2>Why one-shot behavior cloning breaks</h2>
+  <figure class="instrument"><canvas data-dpanim="dp_multimodal" height="300"></canvas>
+    <figcaption>Many tasks have several equally good actions — grab the mug left or right. Train a network to output “the” action and it learns the average of the two, which reaches the empty space between them. The more flexible the task, the worse this gets.</figcaption></figure>
+  <div class="essay"><p>The obvious way to teach a robot from demonstrations is to fit a network that maps what it sees to the action a human took, minimizing the error. It works &mdash; until the task has more than one right answer.</p>
+<p>And most do. You can grab a mug from the left or the right; both are correct. Ordinary regression minimizes average error to &lsquo;the&rsquo; action, so it splits the difference and outputs the <em>mean</em> &mdash; a reach into the empty space between the two good grasps. This is the mode-averaging trap, and it is exactly what diffusion policies exist to escape.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Behavior cloning by regression minimizes E&#8342;&#8341;[&Vert;a &minus; f&#952;(s)&Vert;&sup2;], whose optimum is the conditional mean f&#952;(s)=E[a|s].</p>
+<p>If p(a|s) is multimodal (two good grasps), the mean sits between the modes &mdash; a point of near-zero probability. The regressor confidently outputs an invalid action.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; the fix</div>
+  <h2>Generate the action by denoising</h2>
+  <figure class="instrument"><canvas data-dpanim="dp_denoise" height="300"></canvas>
+    <figcaption>Borrow the trick behind image generators. Start from pure noise and refine it step by step into a clean action, with each step nudged by what the robot sees. Because you start from fresh randomness each time, you get one decisive action, not a blurred average.</figcaption></figure>
+  <div class="essay"><p>Diffusion policies steal the mechanism from image generation. Instead of directly outputting an action, the network learns to <b>denoise</b>: begin with a random noisy action, and repeatedly clean it up, each step conditioned on the current observation, until a crisp action emerges.</p>
+<p>The magic is that the process starts from fresh noise every time. So it can land on the left grasp <em>or</em> the right grasp on different runs &mdash; but never the impossible blend of the two. Prediction stops being &lsquo;find the one answer&rsquo; and becomes &lsquo;sample a good answer&rsquo;.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Reverse diffusion: start a&#8342; ~ N(0, I); for k=K&hellip;1, a&#8342;&#8331;&#8321; = denoise(a&#8342;, s, k).</p>
+<p>Train a noise predictor &epsilon;&#952;(a&#8342;, s, k) to match the noise added in the forward process: min E&Vert;&epsilon; &minus; &epsilon;&#952;(a&#8342;, s, k)&Vert;&sup2;. Conditioning on s enters via FiLM or cross-attention.</p>
+<p>This is equivalent to learning the score &nabla; log p(a|s) of the action distribution.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; why it works</div>
+  <h2>Model the whole distribution, then sample</h2>
+  <figure class="instrument"><canvas data-dpanim="dp_distribution" height="300"></canvas>
+    <figcaption>A regressor collapses every situation to one number; a diffusion policy learns the entire distribution of good actions. Sampling from a bimodal distribution lands on one peak or the other — the left grasp or the right — never the dead valley between them.</figcaption></figure>
+  <div class="essay"><p>Underneath, the shift is from learning a <em>function</em> (state &rarr; action) to learning a <em>distribution</em> (all the actions that would be good here). A regressor can only report the average of that distribution; a diffusion model represents its full, possibly many-humped shape.</p>
+<p>Once you have the distribution, you just draw a sample. For a two-grasp task the distribution has two peaks with a dead valley between; sampling lands on a peak, so the robot commits to a real grasp. This is why the field switched: multimodality goes from a failure mode to normal behavior. (Our Octo run below shows exactly this spread.)</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>The model represents the whole conditional p(a|s), not just its mean &mdash; so it captures every mode.</p>
+<p>Sampling draws a ~ p(a|s), landing on one mode. Classifier-free guidance sharpens conditioning: &epsilon;&#770; = &epsilon;&#952;(a,&empty;,k) + w&middot;(&epsilon;&#952;(a,s,k) &minus; &epsilon;&#952;(a,&empty;,k)).</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; in a loop</div>
+  <h2>Predict a chunk, act, replan</h2>
+  <figure class="instrument"><canvas data-dpanim="dp_chunk" height="300"></canvas>
+    <figcaption>Deciding one action at a time makes motion twitchy and lets errors pile up. Instead, predict a short trajectory of the next several actions, execute the first few, then replan — steady motion, and the policy can commit to a coherent plan.</figcaption></figure>
+  <div class="essay"><p>A policy that outputs a single action every tick tends to jitter and to drift: tiny errors compound because each decision is made in isolation. Diffusion policies almost always predict an <b>action chunk</b> &mdash; a short trajectory of the next several actions at once.</p>
+<p>The robot executes the first few, then replans a fresh chunk from where it ended up (receding horizon). The motion comes out smooth and the policy can commit to a short-term plan instead of second-guessing itself every millisecond.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Predict an action chunk a&#8348;&#8323;&#8348;&#8330;&#8341; (a short trajectory) instead of one a&#8348;; execute the first k, then replan &mdash; receding horizon.</p>
+<p>Chunking cuts the compounding-error rate and enforces temporal consistency; horizon length H trades reactivity against smoothness.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; the catch</div>
+  <h2>Making it fast enough to run</h2>
+  <figure class="instrument"><canvas data-dpanim="dp_speed" height="300"></canvas>
+    <figcaption>Denoising takes many steps — often ~50 network passes per action — which is too slow for a real control loop. The fixes: consistency models and flow matching that jump to the answer in one or two steps, trading a little quality for real-time speed.</figcaption></figure>
+  <div class="essay"><p>Diffusion&rsquo;s one real weakness is speed: cleaning up noise takes dozens of network evaluations per action, and a robot control loop needs an answer in milliseconds. Plain diffusion policies run at only a few hertz.</p>
+<p>So 2024&ndash;25 work is largely about <b>going faster</b>. <em>Consistency models</em> are distilled to jump almost straight from noise to the action in one or two steps; <em>flow matching</em> learns a velocity field you integrate in a handful of steps. Same multimodal expressiveness, now fast enough to run on a real robot &mdash; which is why flow matching is quietly taking over.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Plain DDPM sampling needs ~50&ndash;100 network evaluations (NFEs) per action &rarr; only a few Hz.</p>
+<p>Consistency models learn f(a&#8342;, k) &rarr; a&#8320; directly, so 1&ndash;4 NFEs suffice. Flow matching learns a velocity v&#952;(a, s, &tau;) and integrates the ODE da/d&tau; = v&#952; in 1&ndash;5 steps.</p>
+<p>Result: 10&times;&ndash;50&times; faster inference, into the 100s of Hz a control loop needs.</p></div></details>
+</section>
+<section class="fp">
+  <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
+  <img src="assets/octo/octo_diffusion.png" alt="Octo diffusion action-head samples spreading across valid actions">
+  <figcaption>We loaded <b>Octo-Small</b> &mdash; a real pretrained generalist robot policy with a diffusion action head (Ghosh, Walke, Pertsch et al., RSS 2024) &mdash; on a laptop CPU and asked its head for an action from one real camera frame, <b>32 times</b>. If it predicted a single number, all 32 dots would land on top of each other. They don&rsquo;t: they <b>spread</b> &mdash; that scatter <em>is</em> the diffusion head keeping several valid moves alive instead of averaging them into one dead compromise. This is Part I&rsquo;s &lsquo;model the distribution, then sample&rsquo;, in our own run.</figcaption></figure>
+</section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Diffusion policy vs the alternatives</h2>
+  <p class="intro">Three ways to turn an observation into an action. The diffusion bet: pay a little inference cost to <b>sample from the full distribution</b> of good actions, so you never average two right answers into a wrong one.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>How it makes an action</th><th>Multiple right answers?</th><th>Training</th><th>Speed</th><th>Best at</th></tr></thead><tbody><tr><th class="rn">Regression (MSE)</th><td>outputs one action = the mean</td><td>no — averages them into a wrong one</td><td>simple, stable</td><td>instant</td><td>genuinely single-answer tasks</td></tr><tr><th class="rn">GAN policy</th><td>a generator samples an action</td><td>yes, but prone to mode collapse</td><td>unstable, adversarial</td><td>fast</td><td>rarely used now</td></tr><tr class="hi"><th class="rn">Diffusion / flow policy</th><td>denoise noise into an action (or trajectory)</td><td>yes, natively</td><td>stable regression objective</td><td>slow, but fixable (1&ndash;5 steps)</td><td>multimodal, dexterous, real manipulation</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons the field switched to denoising actions, in the words the papers keep using.</p>
+  <div class="bens"><div class="ben"><h4>Handles multiple right answers</h4><p>The whole point: it models the full distribution of good actions and samples one, instead of averaging valid options into an invalid mean. &lsquo;Multimodal&rsquo; goes from failure mode to normal behavior.</p></div>
+<div class="ben"><h4>Stable to train</h4><p>Unlike GANs, the denoising objective is a simple regression that trains stably and doesn&rsquo;t mode-collapse &mdash; you reliably keep <em>all</em> the modes.</p></div>
+<div class="ben"><h4>Expressive, high-dimensional actions</h4><p>Denoising models rich, continuous action spaces &mdash; whole trajectories, bimanual and dexterous motions &mdash; that a single-output head can&rsquo;t represent.</p></div>
+<div class="ben"><h4>Smooth, committed motion</h4><p>Predicting an action chunk and replanning (receding horizon) gives temporally consistent motion and long-horizon follow-through instead of twitch.</p></div>
+<div class="ben"><h4>Steerable by conditioning</h4><p>Language, sketches, costs, and safety constraints plug in through classifier-free guidance or guided sampling &mdash; without retraining a new policy per task.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way the field uses it</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip rb" href="#dp1"><span class="cn">01</span>Imitation</a><a class="fchip rb" href="#dp2"><span class="cn">02</span>Action chunking</a><a class="fchip rb" href="#dp3"><span class="cn">03</span>3D</a><a class="fchip rb" href="#dp4"><span class="cn">04</span>Equivariant</a><a class="fchip bb" href="#dp5"><span class="cn">05</span>Fast sampling: consistency</a><a class="fchip bb" href="#dp6"><span class="cn">06</span>Language-conditioned</a><a class="fchip bb" href="#dp7"><span class="cn">07</span>Hierarchical</a><a class="fchip rb" href="#dp8"><span class="cn">08</span>Cross-embodiment</a><a class="fchip bb" href="#dp9"><span class="cn">09</span>Diffusion for planning</a><a class="fchip bb" href="#dp10"><span class="cn">10</span>Guided, constrained</a><a class="fchip rb" href="#dp11"><span class="cn">11</span>Dexterous, contact-rich</a><a class="fchip rb" href="#dp12"><span class="cn">12</span>Locomotion</a><a class="fchip vb" href="#dp13"><span class="cn">13</span>Human motion generation</a><a class="fchip vb" href="#dp14"><span class="cn">14</span>Trajectory forecasting — multimodal futures</a><a class="fchip bb" href="#dp15"><span class="cn">15</span>Diffusion + world models</a></div>
+  <div class="famgrid">
+<div class="fam" id="dp1">
+  <div class="famhd"><span class="famn">01</span><h3>Imitation &amp; multimodal behavior cloning</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>The base case and the reason diffusion policies exist: learn a manipulation skill from a few dozen demonstrations where several actions are valid, without collapsing to their average. Denoising captures the multimodality that sinks ordinary regression.</p>
+<p>The 2024&ndash;25 work scales it &mdash; bimanual, deformable, contact-rich &mdash; and grounds it better in 3D and semantics for sample efficiency.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Equivariant Diffusion Policy</b> &mdash; bakes SO(2) symmetry into denoising → 21.9% higher success on 6-DoF control, fewer demos</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ALOHA Unleashed</b> &mdash; large-scale bimanual imitation with diffusion policies on deformable, contact-rich tasks</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D Diffusion Policy (DP3)</b> &mdash; compact point-cloud conditioning → sample-efficient, viewpoint-robust from ~40 demos</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>GenDP</b> &mdash; 3D semantic fields lift unseen-object success from 20% to 93%</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generative Image as Action Models</b> &mdash; fine-tunes Stable Diffusion to draw the action as a joint trajectory on the image</span></li></ul>
+</div>
+
+<div class="fam" id="dp2">
+  <div class="famhd"><span class="famn">02</span><h3>Action chunking &amp; receding-horizon control</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Deciding one action at a time is twitchy and lets errors compound; predicting a short trajectory and replanning fixes both. This is the temporal backbone of nearly every deployed diffusion policy.</p>
+<p>The frontier is doing it <em>fast</em> &mdash; streaming or warm-started denoising so the chunk is ready inside a control tick.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Imitation to Refinement</b> &mdash; freezes a chunked BC policy and adds residual RL to fix distribution shift</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Streaming Diffusion Policy</b> &mdash; rolls over partially-denoised future actions to amortize inference cost</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-time Iteration Scheme for Diffusion Policy</b> &mdash; warm-starts each step from the previous solution, control-style</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RA-DP</b> &mdash; training-free high-frequency replanning via guidance injected at every denoising step</span></li></ul>
+</div>
+
+<div class="fam" id="dp3">
+  <div class="famhd"><span class="famn">03</span><h3>3D &amp; point-cloud-conditioned policies</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>A policy that reads raw pixels is fragile to viewpoint and lighting; conditioning the denoiser on 3D geometry (point clouds, scene tokens) makes it robust and sample-efficient.</p>
+<p>The denoiser predicts 3D poses/trajectories directly, fusing vision, language, and proprioception in one 3D space.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D Diffuser Actor</b> &mdash; a 3D denoising transformer predicts pose trajectories → +18.1% over prior SOTA</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>PointFlowMatch</b> &mdash; conditional flow matching on point clouds → 67.8% RLBench, 2× the next best</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DiffuView</b> &mdash; multi-view diffusion pretraining gives 3D-consistent features → 92.2% LIBERO</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Render and Diffuse</b> &mdash; renders the robot into the image and denoises the render → better spatial generalization</span></li></ul>
+</div>
+
+<div class="fam" id="dp4">
+  <div class="famhd"><span class="famn">04</span><h3>Equivariant &amp; symmetry-aware policies</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Manipulation has built-in geometry: rotate the scene and the right action rotates with it. Hard-coding that symmetry into the denoiser means the policy learns far more from each demo.</p>
+<p>The payoff is dramatic data efficiency &mdash; minutes of demonstrations generalizing across poses and scales.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Equivariant Diffusion Policy</b> &mdash; SO(2)-equivariant denoising for sample-efficient 6-DoF control</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>EquiBot</b> &mdash; SIM(3)-equivariance (scale+rotation+translation) → generalizes from 5 minutes of demos</span></li></ul>
+</div>
+
+<div class="fam" id="dp5">
+  <div class="famhd"><span class="famn">05</span><h3>Fast sampling: consistency &amp; flow matching</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Diffusion&rsquo;s Achilles&rsquo; heel is the many denoising steps; this family removes it. Consistency models distill the many-step process into one jump; flow matching learns a straight velocity field you integrate in a few steps.</p>
+<p>This is what moves diffusion policies from &lsquo;a few Hz&rsquo; into real-time control &mdash; and flow matching is fast becoming the default.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Consistency Policy</b> &mdash; consistency distillation → 10× faster inference for resource-constrained robots</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>PointFlowMatch</b> &mdash; flow matching skips iterative sampling entirely; 67.8% RLBench</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WAM-Flow</b> &mdash; discrete flow matching over trajectory tokens → 1-step 89.1 PDMS, 3× speedup</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MeanFuser</b> &mdash; one-step multi-modal trajectory generation at 59 FPS</span></li></ul>
+</div>
+
+<div class="fam" id="dp6">
+  <div class="famhd"><span class="famn">06</span><h3>Language-conditioned &amp; VLA policies</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Point the policy with words: a language instruction (or an LLM&rsquo;s reasoning) conditions the denoiser so one model does many tasks. The strongest versions add explicit intermediate reasoning before the action.</p>
+<p>This is where diffusion/flow policies meet the vision-language-action wave &mdash; language in, a denoised action out.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SemanticVLA</b> &mdash; explicit spatial waypoints + latent action tokens → 97% LIBERO, robust to rephrasing</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ACoT-VLA</b> &mdash; action chain-of-thought decomposes multi-step tasks before predicting actions</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multimodal Diffusion Transformer</b> &mdash; latent goal-conditioning → strong CALVIN results with <2% language labels</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACER</b> &mdash; a VLM supervisor issues recovery instructions to a language-conditioned diffusion actor</span></li></ul>
+</div>
+
+<div class="fam" id="dp7">
+  <div class="famhd"><span class="famn">07</span><h3>Hierarchical &amp; long-horizon planning</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Long tasks split into &lsquo;what/where&rsquo; (a high-level plan) and &lsquo;how&rsquo; (low-level control); diffusion is expressive at both tiers, generating subgoals or whole segment trajectories.</p>
+<p>Decomposition plus generative trajectories is what lets a single policy chain many steps without drifting.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Diffusion Meets Options</b> &mdash; LTL task decomposition + diffusion trajectory generation for temporally-extended tasks</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Diffusion Forcing Planner</b> &mdash; per-segment noise + history-annealed guidance → 90.3% nuPlan</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MetaFold</b> &mdash; language-guided point-cloud trajectory generation for multi-category garment folding</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Goal-Reaching from Non-Expert Observations</b> &mdash; a diffusion high-level policy proposes waypoint subgoals</span></li></ul>
+</div>
+
+<div class="fam" id="dp8">
+  <div class="famhd"><span class="famn">08</span><h3>Cross-embodiment &amp; generalist policies</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>One denoiser, many bodies: train across arms, quadrupeds, humanoids, even drones so a single policy transfers. Morphology-agnostic encoders let the same weights drive very different robots.</p>
+<p>This is the foundation-model bet for control &mdash; scale demonstrations across embodiments and let generalization do the rest.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>CrossFormer</b> &mdash; one policy over 20 embodiments / 900k trajectories matches specialists</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>One Policy to Run Them All</b> &mdash; morphology-agnostic encoders → zero-shot across quadrupeds, humanoids, hexapods</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Octo</b> &mdash; an open generalist policy with a diffusion action head (the one we run below)</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>PoCo</b> &mdash; composes diffusion policies across modalities (vision, depth, tactile) and domains</span></li></ul>
+</div>
+
+<div class="fam" id="dp9">
+  <div class="famhd"><span class="famn">09</span><h3>Diffusion for planning &amp; trajectory optimization</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Skip the explicit optimizer: let diffusion generate whole collision-free trajectories directly, conditioned on the scene, either as the plan or as seeds for a fast solver.</p>
+<p>Because it samples, it naturally proposes several distinct routes &mdash; useful for multimodal, cluttered planning.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DiffusionSeeder</b> &mdash; diffusion seeds a GPU motion optimizer → 12× average, 36× worst-case speedup</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Joint Localization and Planning Using Diffusion</b> &mdash; one diffusion model does global localization + SE(2) path planning from LiDAR</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GuideFlow</b> &mdash; constraint-guided flow matching embeds hard rules into the velocity field → SOTA NavSim</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Aerobatic Flight via Diffusion</b> &mdash; learns aerobatic primitives; classifier-guided batch sampling avoids obstacles</span></li></ul>
+</div>
+
+<div class="fam" id="dp10">
+  <div class="famhd"><span class="famn">10</span><h3>Guided, constrained &amp; safe generation</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Steer the sampler at inference: nudge each denoising step with a cost, a potential field, or a hard constraint so the generated action stays safe or on-preference &mdash; no retraining.</p>
+<p>This turns a single trained policy into a family of behaviors you can shape on the fly.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Potential Field-Guided Flow Matching</b> &mdash; potential-field guidance steers flow away from obstacles while keeping task success</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Physics-Informed Conditional Diffusion (drifting)</b> &mdash; physics-informed guidance adapts drifting across tire/road conditions</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Risk-Averse Diffusion Policies</b> &mdash; distributional diffusion + risk-averse optimization for offline RL</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>NaviDiffuser</b> &mdash; weight-range guidance for real-time multi-objective navigation trade-offs</span></li></ul>
+</div>
+
+<div class="fam" id="dp11">
+  <div class="famhd"><span class="famn">11</span><h3>Dexterous, contact-rich &amp; tactile</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>When fingers touch objects the dynamics turn discontinuous and vision alone stops being enough; folding touch into the denoiser gives fine force control for in-hand and assembly tasks.</p>
+<p>Tactile + diffusion consistently beats vision-only on fragile and occluded manipulation.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D-ViTac</b> &mdash; unified 3D visuo-tactile representation + diffusion → beats vision-only on fragile items</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Implicit Contact Diffuser</b> &mdash; latent diffusion over contact descriptors guides MPC past local minima</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ProDapt</b> &mdash; long-term contact-memory conditioning enables proprioception-only completion</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>PolyTouch</b> &mdash; multi-modal tactile (camera + acoustic) + tactile-diffusion policies</span></li></ul>
+</div>
+
+<div class="fam" id="dp12">
+  <div class="famhd"><span class="famn">12</span><h3>Locomotion &amp; whole-body control</h3><span class="cat rb">robotics</span></div>
+  <div class="essay fessay"><p>Legged control has many valid gaits and recovery moves &mdash; a natural fit for a distribution-modeling policy. Diffusion brings offline-learned, multimodal locomotion to real robots in real time.</p>
+<p>The trick is squeezing the sampler into the tight, high-rate loop a walking robot needs.</p></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DiffuseLoco</b> &mdash; first real-time legged control by diffusion from offline data; beats RL/BC on stability</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Preference-Aligned Diffusion Planner for Quadrupeds</b> &mdash; offline diffusion planner + preference refinement → zero-shot sim-to-real gaits</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Transferable Latent-to-Latent Locomotion</b> &mdash; a latent diffusion recovery module adapts one core across robots</span></li></ul>
+</div>
+
+<div class="fam" id="dp13">
+  <div class="famhd"><span class="famn">13</span><h3>Human motion generation</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>The vision side of the same idea: generate human motion &mdash; from text, sketch, or music &mdash; where countless motions fit one prompt. Diffusion captures that multimodality while respecting contacts and physics.</p>
+<p>Recent work makes it causal/streaming and physics-aware so the motion is both live and plausible.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Causal Motion Diffusion Models</b> &mdash; first causal diffusion for streaming motion → order-of-magnitude lower latency</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAMotion</b> &mdash; a physics-aware loss on object acceleration enforces contact consistency</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SceMoS</b> &mdash; scene-aware motion via a token planner grounded on per-frame heightmaps</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Retrieval-Guided Diffusion Noise Optimization</b> &mdash; retrieval-augmented noise init for highly-constrained motion</span></li></ul>
+</div>
+
+<div class="fam" id="dp14">
+  <div class="famhd"><span class="famn">14</span><h3>Trajectory forecasting — multimodal futures</h3><span class="cat vb">vision</span></div>
+  <div class="essay fessay"><p>Where will the pedestrian, cyclist, or car go? The future is genuinely multimodal &mdash; zigzag or straight, cautious or aggressive &mdash; and regression averages those into a useless middle path.</p>
+<p>Diffusion (and flow) forecast the full distribution of futures, which is exactly what an uncertainty-aware planner needs downstream.</p></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>MeanFuser</b> &mdash; one-step multi-modal trajectory generation without a fixed vocabulary, 59 FPS</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Gaussian-Mixture Latent Flow</b> &mdash; a GMM latent flow for diverse, accurate stochastic 3D human motion prediction</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PoseD-Flow</b> &mdash; guided flow on the rotation manifold → SOTA pose completion under occlusion</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WAM-Flow</b> &mdash; discrete flow matching over trajectory tokens for fast multimodal driving plans</span></li></ul>
+</div>
+
+<div class="fam" id="dp15">
+  <div class="famhd"><span class="famn">15</span><h3>Diffusion + world models &amp; RL fine-tuning</h3><span class="cat bb">both</span></div>
+  <div class="essay fessay"><p>Two frontier seams. Pair a diffusion policy with a world model &mdash; imagine futures, then act &mdash; or fine-tune the policy with RL and human preference so it improves past what the demos showed.</p>
+<p>Both push diffusion policies from &lsquo;copy the demos&rsquo; toward &lsquo;get better than the demos&rsquo;.</p></div>
+  <ul class="papers"><li><span class="vbadge bb">BOTH</span><span class="pt"><b>RehearseVLA</b> &mdash; a physically-consistent world model post-trains a VLA with <5 demos via safe RL</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>FDPP</b> &mdash; learns a reward from pairwise human preferences and fine-tunes a pretrained diffusion policy</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Diffusion Meets DAgger</b> &mdash; synthesizes out-of-distribution states with diffusion for eye-in-hand DAgger</span></li>
+<li><span class="vbadge bb">BOTH</span><span class="pt"><b>Chain-of-Imagination</b> &mdash; an MLLM + diffusion generate visual sub-goals the agent acts toward</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Diffusion (and now flow-matching) policies are the default recipe for learned manipulation. What is still hard:</p>
+  <div class="opgrid"><div class="op"><b>Real-time speed.</b> Even with consistency and flow, running a big multimodal policy inside a fast, high-rate control loop on modest hardware is still tight.</div>
+<div class="op"><b>Reliability &amp; failure detection.</b> Sampled actions occasionally go wrong; knowing <em>when</em> a diffusion policy is about to fail, at runtime, is unsolved.</div>
+<div class="op"><b>Beyond imitation.</b> Diffusion policies mostly copy demonstrations; improving past them (RL, preferences) without instability is early.</div>
+<div class="op"><b>Data still rules.</b> They are more sample-efficient than they were, but broad generalization still hinges on large, diverse demonstration sets.</div>
+<div class="op"><b>Guarantees.</b> Guided sampling nudges toward safety but rarely <em>guarantees</em> a hard constraint the way a classical solver can.</div>
+<div class="op"><b>Long horizons.</b> Chunking helps, but coherent behavior over very long, multi-stage tasks remains hard.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Diffusion Policies explainer &middot; mechanism diagrams are live JavaScript (assets/dp-anim.js), not video &middot; the Octo run is ours (see <a href="corl-deepdive.html">CoRL deep dive</a>) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; companion to the <a href="world-models-explained.html">World Models</a> and <a href="gaussian-splatting-explained.html">Gaussian Splatting</a> explainers, and the <a href="index.html">Robotics 2025</a> home.</div></footer>
+<script src="assets/dp-anim.js"></script>
+</body></html>
