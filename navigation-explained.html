@@ -78,6 +78,10 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#1B2721}.op b{color:var(--accent-deep)}
 .related{border-top:1px solid var(--line);margin-top:26px;padding:15px 0 2px;font-size:13px;line-height:1.9}.related b{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2);display:block;margin-bottom:5px}.related a{color:var(--accent-deep);text-decoration:none}.related a:hover{text-decoration:underline}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;max-width:520px;margin:0 auto;height:auto;border-radius:8px;background:#0C1218}
+.ranfig figcaption{font-size:13px;color:#1A2621;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
 footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
 </style></head><body>
 <header><div class="wrap">
@@ -148,6 +152,9 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Learn a policy &pi;&#952;(a | obs, goal) by imitation or RL; goal is an image, an object class, or language tokens.</p>
 <p>Vision-and-language navigation grounds instruction tokens against the visual stream step by step, emitting move / turn / stop until it reports done.</p></div></details>
 </section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
+<img src="assets/nv/rrt.gif" alt="An RRT growing a collision-free tree through an obstacle field and tracing a path to the goal">
+<figcaption>Planning, for real: we ran an <b>RRT</b> (rapidly-exploring random tree) through an obstacle field (CPU). It scatters random samples, grows a tree of short collision-free motions toward each one, and traces the first branch that reaches the goal &mdash; Part&nbsp;I&rsquo;s &lsquo;grow a tree of collision-free motions&rsquo; made concrete. The path is raw RRT output, before any smoothing. Our own run.</figcaption></figure></section>
 
 <div class="part">
   <div class="pl">how it compares</div><h2>Three ways to get there</h2>
