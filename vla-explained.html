@@ -316,67 +316,116 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SpaceDrive</b> &mdash; a geometric spatial encoder grounds the VLM&rsquo;s language in 3D for trajectory planning</span></li></ul>
 </div>
 
-<div class="fam" id="va9">
+<div class="fam rich" id="va9">
   <div class="famhd"><span class="famn">09</span><h3>Affordance &amp; manipulation grounding</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>Ground language not just to <em>objects</em> but to <em>how you interact with them</em> &mdash; where to grasp, which part moves, what constraint to respect. A VLM predicts affordances and interaction primitives from the instruction.</p>
-<p>This is the layer that turns &lsquo;open it&rsquo; into a hinge, an axis, and a pull.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>&lsquo;Open it&rsquo; is easy to say and hard to do &mdash; the robot must know this is a hinged door, where the axis is, and where to pull.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Ground language not just to <em>objects</em> but to <em>how you interact with them</em> &mdash; where to grasp, which part moves, what constraint to respect. A VLM predicts affordances and interaction primitives from the instruction.</p>
+<p>This is the layer that turns &lsquo;open it&rsquo; into a hinge, an axis, and a pull.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_afford" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Take the instruction and the object image.</b></li>
+<li><b>The VLM predicts the affordance:</b> this part is a handle, this is the hinge axis, it rotates.</li>
+<li><b>Convert that into a motion constraint</b> &mdash; an arc about the hinge, gripping the handle.</li>
+<li><b>Plan the action</b> to respect the constraint.</li>
+<li><b>The same reasoning transfers</b> to drawers, lids, and levers it never saw.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>A3VLM</b> &mdash; an articulation-structure VLM predicts affordances that transfer across embodiments</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoboEXP</b> &mdash; an LMM builds action-conditioned scene graphs through interactive exploration</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReKep</b> &mdash; spatio-temporal relational keypoint constraints from language, optimized in real time</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reasoning Grasping via MLLM</b> &mdash; the LLM reasons implicit intent into object/part-level grasp poses</span></li></ul>
 </div>
 
-<div class="fam" id="va10">
+<div class="fam rich" id="va10">
   <div class="famhd"><span class="famn">10</span><h3>Failure detection, recovery &amp; self-correction</h3><span class="cat rb">robotics</span></div>
-  <div class="essay fessay"><p>A VLM can watch execution, notice when it&rsquo;s going wrong, and take a correction &mdash; from its own progress estimate or from a human&rsquo;s spoken feedback. Language becomes a live repair channel.</p>
-<p>This is what makes a deployed VLA recoverable rather than silently failing.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Policies fail mid-task &mdash; a slipped grasp, a wrong object &mdash; and a policy that can&rsquo;t notice just barrels on.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>A VLM can watch execution, notice when it&rsquo;s going wrong, and take a correction &mdash; from its own progress estimate or from a human&rsquo;s spoken feedback. Language becomes a live repair channel.</p>
+<p>This is what makes a deployed VLA recoverable rather than silently failing.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_recover" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>As the robot acts, a VLM watches</b> the video against the goal.</li>
+<li><b>It estimates progress</b> and checks the outcome matches the intent.</li>
+<li><b>If they diverge, it flags a failure.</b></li>
+<li><b>A recovery behavior kicks in</b> &mdash; or a person says &lsquo;no, the other one&rsquo;.</li>
+<li><b>The policy incorporates that correction</b> and continues, instead of failing silently.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Yell At Your Robot</b> &mdash; hierarchical policies learn fine-grained corrections from spoken feedback mid-task</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACER</b> &mdash; learns recovery behaviors from rich language explanations of failure states</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sentinel</b> &mdash; consistency + VLM progress detection catches 18% more failures than single detectors</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Vocal Sandbox</b> &mdash; dialogue + keypoints + demos teach recoverable behaviors with 22% less supervision</span></li></ul>
 </div>
 
-<div class="fam" id="va11">
+<div class="fam rich" id="va11">
   <div class="famhd"><span class="famn">11</span><h3>Cross-embodiment &amp; transfer</h3><span class="cat bb">both</span></div>
-  <div class="essay fessay"><p>Share one policy across different robot bodies, or transfer a policy to a new robot with little data, by learning robot-agnostic representations or masking away the robot&rsquo;s appearance.</p>
-<p>The dream is a policy that treats a new arm the way an LLM treats a new topic &mdash; mostly already known.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A policy trained on robot A won&rsquo;t run on robot B &mdash; different arm, different camera &mdash; so every new robot means new data.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Share one policy across different robot bodies, or transfer a policy to a new robot with little data, by learning robot-agnostic representations or masking away the robot&rsquo;s appearance.</p>
+<p>The dream is a policy that treats a new arm the way an LLM treats a new topic &mdash; mostly already known.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_cross" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Take a policy (or demos) from the source robot.</b></li>
+<li><b>Mask out the source robot&rsquo;s appearance</b> in the images.</li>
+<li><b>Inpaint the target robot in its place</b> &mdash; or map both to a shared latent action space.</li>
+<li><b>The policy now sees &lsquo;its own&rsquo; body</b> and transfers zero-shot.</li>
+<li><b>A little target data</b> closes any remaining gap.</li></ol></div>
   <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>MIRAGE</b> &mdash; &lsquo;cross-painting&rsquo; inpaints the source robot over the target for zero-shot visual transfer</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoVi-Aug</b> &mdash; generative augmentation of robot identity + viewpoint &mdash; +30% on novel embodiments</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>Universal Manipulation Interface (UMI)</b> &mdash; hand-held-gripper demos teach policies with no robot in the loop</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learning a Unified Latent Action Space</b> &mdash; action-centric cycle consistency transfers across bodies, +20.1% over OpenVLA</span></li></ul>
 </div>
 
-<div class="fam" id="va12">
+<div class="fam rich" id="va12">
   <div class="famhd"><span class="famn">12</span><h3>Efficient &amp; fast VLA inference</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Big VLMs are slow &mdash; seconds per action &mdash; and a control loop needs milliseconds. This family distills, prunes, and re-architects VLAs to run on the robot in real time.</p>
-<p>Latency, not accuracy, is what keeps most VLAs off real hardware; this is the fix.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A 7-billion-parameter VLM takes seconds per action; a control loop needs an answer in milliseconds.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Big VLMs are slow &mdash; seconds per action &mdash; and a control loop needs milliseconds. This family distills, prunes, and re-architects VLAs to run on the robot in real time.</p>
+<p>Latency, not accuracy, is what keeps most VLAs off real hardware; this is the fix.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_fast" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Start from the big, accurate VLA.</b></li>
+<li><b>Distill it into a small student</b> that mimics its outputs.</li>
+<li><b>Prune and re-architect</b> for the robot&rsquo;s hardware.</li>
+<li><b>Run the small model in the control loop</b> at high rate.</li>
+<li><b>Keep most of the accuracy</b> at a fraction of the latency and memory.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SwiftVLA</b> &mdash; mask-and-reconstruct distillation &mdash; 18&times; faster, 12&times; less memory than a &pi;&#8320; baseline</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Evo-1</b> &mdash; a lightweight VLA that preserves semantic alignment for edge deployment</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>Fast-ThinkAct</b> &mdash; encodes reasoning as compact latent vectors instead of verbose text for low latency</span></li></ul>
 </div>
 
-<div class="fam" id="va13">
+<div class="fam rich" id="va13">
   <div class="famhd"><span class="famn">13</span><h3>Force-aware &amp; contact-rich VLAs</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Vision and language alone miss the moment of contact; folding force and touch into the VLA gives it the closed-loop feel needed for assembly, pressing, and wiping.</p>
-<p>It closes the VLM&rsquo;s blind spot on friction, compliance, and force.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Insertion, wiping, pressing &mdash; the moment of contact is where the task is decided, and a camera can&rsquo;t feel force.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Vision and language alone miss the moment of contact; folding force and touch into the VLA gives it the closed-loop feel needed for assembly, pressing, and wiping.</p>
+<p>It closes the VLM&rsquo;s blind spot on friction, compliance, and force.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_force" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Add force/torque and tactile sensors</b> to the robot.</li>
+<li><b>Feed those readings into the VLA</b> alongside vision and language.</li>
+<li><b>During contact, the model reads the force</b> and modulates the motion &mdash; press, comply, or back off.</li>
+<li><b>Blend force control with position control</b> in one policy.</li>
+<li><b>Now assembly and contact-rich tasks succeed</b> where vision-only fumbles.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ForceVLA2</b> &mdash; force-aware prompts + a cross-scale mixture-of-experts fuse force with vision &mdash; +48% over &pi;&#8320;</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>AT-VLA</b> &mdash; adaptive tactile injection modulates feedback reaction during manipulation</span></li>
 <li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D-ViTac</b> &mdash; a unified 3D visuo-tactile representation beats vision-only on fragile items</span></li></ul>
 </div>
 
-<div class="fam" id="va14">
+<div class="fam rich" id="va14">
   <div class="famhd"><span class="famn">14</span><h3>Active perception &amp; dynamic viewpoint</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>Drop the passive fixed-camera assumption: let the VLA decide where to look, zoom, or move the camera to resolve ambiguity, tracking history like a POMDP rather than a single snapshot.</p>
-<p>Seeing better on purpose beats reasoning harder over a bad view.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A fixed camera can&rsquo;t see behind the box or into the drawer &mdash; and the robot needs that information to act.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>Drop the passive fixed-camera assumption: let the VLA decide where to look, zoom, or move the camera to resolve ambiguity, tracking history like a POMDP rather than a single snapshot.</p>
+<p>Seeing better on purpose beats reasoning harder over a bad view.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_active" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Notice the view is ambiguous</b> or the target is occluded.</li>
+<li><b>The policy chooses where to look next</b> &mdash; move the camera, change the arm&rsquo;s viewpoint, or zoom.</li>
+<li><b>Take the new observation.</b></li>
+<li><b>Update its belief</b> with the fresh information (tracking history like a POMDP).</li>
+<li><b>Act once it can actually see</b> what it needs.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>AVA-VLA</b> &mdash; POMDP-style recurrent state + dynamic visual-token reweighting by task history</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>ActiveVLA</b> &mdash; multi-view projection + active view selection for precise 3D manipulation</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>EgoRoC</b> &mdash; task-agnostic diffusion hand-eye calibration aligns egocentric video to actions</span></li></ul>
 </div>
 
-<div class="fam" id="va15">
+<div class="fam rich" id="va15">
   <div class="famhd"><span class="famn">15</span><h3>Robustness, safety &amp; evaluation</h3><span class="cat vb">vision</span></div>
-  <div class="essay fessay"><p>VLAs that score 95% on clean benchmarks collapse below 30% under mild perturbations &mdash; so this family measures that honestly and hardens the models with RL post-training and diverse data.</p>
-<p>Knowing where a VLA breaks is now as active as building one.</p></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>VLAs that ace clean benchmarks collapse under a shifted camera, dimmer light, or a rephrased instruction &mdash; and you won&rsquo;t know until it fails.</p></div></div>
+  <div class="fsec"><span class="rl gs">the approaches</span><div class="essay fessay"><p>VLAs that score 95% on clean benchmarks collapse below 30% under mild perturbations &mdash; so this family measures that honestly and hardens the models with RL post-training and diverse data.</p>
+<p>Knowing where a VLA breaks is now as active as building one.</p></div></div>
+  <figure class="fdiag"><canvas data-vaanim="vaf_robust" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Stress-test the VLA:</b> perturb viewpoint, lighting, layout, and phrasing at increasing severity.</li>
+<li><b>Watch performance fall</b> &mdash; often from 95% to under 30%.</li>
+<li><b>Diagnose the weak spots:</b> over-reliance on fixed views, weak kinematics, shallow language use.</li>
+<li><b>Harden it:</b> diverse data, explicit spatial grounding, and RL post-training with dense reward.</li>
+<li><b>Re-test</b> until it holds up under the perturbations that matter.</li></ol></div>
   <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>LIBERO-Plus</b> &mdash; a 7-dimension perturbation benchmark; performance drops 95% &rarr; <30% under modest shifts</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>SRPO</b> &mdash; dense rewards from a latent world model &mdash; 48.9% &rarr; 99.2% LIBERO in 200 RL steps</span></li>
 <li><span class="vbadge vb">CVPR</span><span class="pt"><b>FlowHijack</b> &mdash; the first backdoor attack on flow-matching VLAs &mdash; a safety wake-up call</span></li>

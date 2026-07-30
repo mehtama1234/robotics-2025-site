@@ -226,6 +226,120 @@
     lab(ctx,'trades the brittle detect→track→plan cascade for grounded, explainable decisions',14,h-12,C.mut);
   };
 
+  // ===== per-family diagrams (wave 2b: families 9-15) =====
+
+  // F9 AFFORDANCE — predict the hinge/handle so "open it" becomes a constrained motion.
+  A.vaf_afford=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'“Open it” → predict the affordance: where the hinge is, where to pull',14,16,C.dim);
+    box(ctx,w*0.05,h*0.3,w*0.14,26,'“open it”',C.cyan);
+    // a hinged door
+    const hx=w*0.4,hy=h*0.42,dw=w*0.16,dh=h*0.34;
+    ctx.strokeStyle=C.mut;ctx.lineWidth=2;ctx.strokeRect(hx,hy,dw,dh);
+    // hinge axis (left)
+    ctx.strokeStyle=C.violet;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(hx,hy+dh);ctx.stroke();
+    lab(ctx,'hinge axis',hx-10,hy-8,C.violet,9.5);
+    // handle
+    dot(ctx,hx+dw-6,hy+dh/2,5,C.amber);lab(ctx,'handle',hx+dw+2,hy+dh/2,C.amber,9.5);
+    // open arc about hinge
+    const ang=saw(t,3)*0.9;ctx.strokeStyle=C.green;ctx.lineWidth=2;ctx.beginPath();ctx.arc(hx,hy+dh/2,dw,-0.2,ang,false);ctx.stroke();
+    arrow(ctx,hx+dw*Math.cos(ang),hy+dh/2+dw*Math.sin(ang),hx+dw*Math.cos(ang+0.1),hy+dh/2+dw*Math.sin(ang+0.1),C.green,1.6);
+    lab(ctx,'motion = arc about the hinge',w*0.62,hy+dh/2,C.green,10);
+    lab(ctx,'the same reasoning transfers to drawers, lids, and levers it never saw',14,h-12,C.mut);
+  };
+
+  // F10 FAILURE RECOVERY — a VLM watches, flags divergence, takes a correction, resumes.
+  A.vaf_recover=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'A VLM watches execution, flags failure, and recovers instead of barreling on',14,16,C.dim);
+    const x0=w*0.08,x1=w*0.92,yy=h*0.46,p=saw(t,5);
+    // intended (cyan) vs actual (amber diverges) then recovery (green)
+    ctx.strokeStyle=C.cyan;ctx.lineWidth=1.8;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);ctx.stroke();ctx.setLineDash([]);
+    lab(ctx,'intended',x0,yy-12,C.cyan,10);
+    const dv=x0+(x1-x0)*0.45, rc=x0+(x1-x0)*0.62;
+    ctx.strokeStyle=C.amber;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(dv,yy);ctx.lineTo(rc,yy+h*0.16);ctx.stroke();
+    // flag at divergence
+    if(p>0.45){dot(ctx,rc,yy+h*0.16,4,C.coral);lab(ctx,'⚑ failure detected',rc-10,yy+h*0.16+16,C.coral,10);
+      lab(ctx,'“no, the other one”',rc,yy+h*0.16-14,C.violet,9.5);}
+    // recovery back to green
+    if(p>0.62){ctx.strokeStyle=C.green;ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(rc,yy+h*0.16);ctx.lineTo(x1,yy);ctx.stroke();lab(ctx,'recover ✓',x1-40,yy-12,C.green,10);}
+    lab(ctx,'progress + outcome checks catch the slip; a recovery skill or a spoken correction fixes it',14,h-12,C.mut);
+  };
+
+  // F11 CROSS-EMBODIMENT — mask the source robot, inpaint the target; transfer zero-shot.
+  A.vaf_cross=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Transfer to a new robot: mask the source body, paint in the target',14,16,C.dim);
+    function panel(cx,lbl,col,drawArm){rrect(ctx,cx-w*0.11,h*0.34,w*0.22,h*0.34,8,C.line,null);lab(ctx,lbl,cx-w*0.09,h*0.32,col,9.5);
+      dot(ctx,cx-w*0.05,h*0.58,6,C.amber);/*object*/
+      if(drawArm){ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(cx+w*0.07,h*0.4);ctx.lineTo(cx+w*0.02,h*0.5);ctx.lineTo(cx-w*0.03,h*0.56);ctx.stroke();}}
+    panel(w*0.2,'source robot',C.cyan,true);
+    arrow(ctx,w*0.32,h*0.5,w*0.4,h*0.5,C.ink,1.4);
+    // masked
+    panel(w*0.5,'mask the robot',C.mut,false);ctx.fillStyle=hexA(C.mut,0.3);ctx.fillRect(w*0.5-w*0.01,h*0.38,w*0.1,h*0.22);
+    arrow(ctx,w*0.62,h*0.5,w*0.7,h*0.5,C.ink,1.4);
+    panel(w*0.8,'inpaint target',C.green,true);
+    lab(ctx,'the policy sees “its own” body → zero-shot transfer; a little target data closes the rest',14,h-12,C.mut);
+  };
+
+  // F12 EFFICIENT — distill a big slow VLM into a small fast one for the control loop.
+  A.vaf_fast=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Big VLMs are too slow for control — distill into a small, fast VLA',14,16,C.dim);
+    box(ctx,w*0.08,h*0.4,w*0.22,h*0.24,'big VLM (7B)',C.coral,hexA(C.coral,0.05));
+    lab(ctx,'≈ 2 s / action',w*0.1,h*0.7,C.coral,10);
+    arrow(ctx,w*0.31,h*0.52,w*0.44,h*0.52,C.ink,1.6);lab(ctx,'distill + prune',w*0.31,h*0.44,C.dim,9.5);
+    box(ctx,w*0.46,h*0.44,w*0.16,h*0.16,'small VLA',C.green,hexA(C.green,0.06));
+    lab(ctx,'≈ 10 ms / action',w*0.46,h*0.66,C.green,10);
+    // latency bars
+    ctx.fillStyle=C.coral;ctx.fillRect(w*0.7,h*0.42,w*0.24,10);lab(ctx,'big: slow',w*0.7,h*0.38,C.coral,9.5);
+    ctx.fillStyle=C.green;ctx.fillRect(w*0.7,h*0.56,w*0.02,10);lab(ctx,'small: real-time',w*0.73,h*0.6,C.green,9.5);
+    lab(ctx,'keep most of the accuracy at a fraction of the latency and memory',14,h-12,C.mut);
+  };
+
+  // F13 FORCE-AWARE — add force/tactile so contact is felt; blend force + position control.
+  A.vaf_force=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Vision can’t feel contact — add force/tactile for insertion, pressing, wiping',14,16,C.dim);
+    box(ctx,w*0.05,h*0.32,w*0.16,24,'vision',C.cyan);box(ctx,w*0.05,h*0.5,w*0.16,24,'force / tactile',C.amber);
+    arrow(ctx,w*0.22,h*0.44,w*0.3,h*0.44,C.ink,1.4);box(ctx,w*0.31,h*0.36,w*0.12,h*0.16,'VLA',C.violet);
+    arrow(ctx,w*0.44,h*0.44,w*0.5,h*0.44,C.green,1.4);
+    // peg-in-hole
+    ctx.strokeStyle=C.mut;ctx.lineWidth=2;ctx.strokeRect(w*0.56,h*0.5,w*0.2,h*0.16);ctx.clearRect(w*0.64,h*0.5,w*0.04,h*0.1);
+    const py=h*0.3+saw(t,3)*h*0.16;ctx.fillStyle=C.green;ctx.fillRect(w*0.645,py,w*0.03,h*0.14);
+    lab(ctx,'peg → hole',w*0.58,h*0.44,C.mut,9.5);
+    // force curve rising at contact
+    ctx.strokeStyle=C.amber;ctx.lineWidth=1.6;ctx.beginPath();for(let i=0;i<=30;i++){const u=i/30,x=w*0.56+w*0.36*u,y=h*0.86-(u<0.6?2:(u-0.6)*70);ctx.lineTo(x,y);}ctx.stroke();
+    lab(ctx,'force: spikes at contact → press, comply, or back off',w*0.56,h*0.9,C.mut,9.5);
+    lab(ctx,'blend force control with position control in one policy',14,h-12,C.mut);
+  };
+
+  // F14 ACTIVE PERCEPTION — move the camera to see the occluded thing before acting.
+  A.vaf_active=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'Don’t assume you can see everything — move to look, then act',14,16,C.dim);
+    // target occluded behind a box
+    const ox=w*0.55,oy=h*0.55;ctx.fillStyle=hexA(C.mut,0.3);ctx.fillRect(ox-30,oy-30,44,60);lab(ctx,'occluder',ox-30,oy+44,C.mut,9);
+    dot(ctx,ox+30,oy,7,C.amber);lab(ctx,'target',ox+22,oy+22,C.amber,9.5);
+    // camera moves from fixed (blocked) to active (sees)
+    const p=saw(t,4);
+    const c1=[w*0.2,h*0.4],c2=[w*0.82,h*0.4];
+    // fixed view (line-of-sight blocked)
+    ctx.strokeStyle=hexA(C.coral,0.6);ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(c1[0],c1[1]);ctx.lineTo(ox-20,oy);ctx.stroke();ctx.setLineDash([]);
+    dot(ctx,c1[0],c1[1],5,C.coral);lab(ctx,'fixed view: blocked ✗',c1[0]-10,c1[1]-14,C.coral,9.5);
+    // active view (clear)
+    if(p>0.4){ctx.strokeStyle=C.green;ctx.beginPath();ctx.moveTo(c2[0],c2[1]);ctx.lineTo(ox+30,oy);ctx.stroke();dot(ctx,c2[0],c2[1],6,C.green);lab(ctx,'active view: sees it ✓',c2[0]-40,c2[1]-14,C.green,9.5);}
+    lab(ctx,'choose where to look next, update belief (POMDP-style), then act once you can see',14,h-12,C.mut);
+  };
+
+  // F15 ROBUSTNESS — clean scores collapse under perturbation; RL + grounding recover part of it.
+  A.vaf_robust=function(ctx,w,h,t){clear(ctx,w,h);
+    lab(ctx,'VLAs ace clean benchmarks, then crash under mild perturbation',14,16,C.dim);
+    const bx=w*0.12,by=h*0.82,bw=w*0.18,gap=w*0.06;
+    const bars=[['clean',0.95,C.green],['perturbed',0.28,C.coral],['+ RL / grounding',0.62,C.amber]];
+    const grow=Math.min(1,saw(t,4)*1.4);
+    bars.forEach((b,i)=>{const x=bx+i*(bw+gap),bh=(by-h*0.28)*b[1]*grow;ctx.fillStyle=b[2];ctx.fillRect(x,by-bh,bw,bh);
+      lab(ctx,Math.round(b[1]*100)+'%',x+bw/2,by-bh-10,b[2],11,'center');lab(ctx,b[0],x+bw/2,by+14,C.mut,9.5,'center');});
+    // axis
+    ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(bx-8,by);ctx.lineTo(bx+3*(bw+gap),by);ctx.stroke();
+    lab(ctx,'success rate',bx-8,h*0.24,C.dim,9.5);
+    lab(ctx,'perturb viewpoint / light / phrasing → diagnose weak spots → harden with data + grounding + RL',14,h-12,C.mut);
+  };
+
   // ---- boot ----
   const running=new Map();
   function start(cv){if(running.has(cv))return;const anim=A[cv.dataset.vaanim];if(!anim)return;
