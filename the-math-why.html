@@ -66,6 +66,16 @@
  .mderiv ol{margin:6px 0 9px;padding-left:22px}.mderiv ol li{font-size:14px;color:#232838;margin:8px 0;max-width:74ch;line-height:1.6}
  .mderiv .dpunch{font-size:14.5px;color:#1D2233;margin:6px 0 0;font-style:italic}.mderiv .dpunch b{font-style:normal;color:var(--accent-deep)}
  .derivpaper{font-family:var(--mono);font-size:14px;color:var(--accent-deep)}
+
+ .themenav{position:fixed;top:74px;left:calc((100% - 880px)/2 - 172px);width:158px;max-height:82vh;overflow:auto;
+   font-family:var(--mono);font-size:10.5px;line-height:1.3;padding:4px 0;z-index:40}
+ .themenav .tnh{color:var(--g2);letter-spacing:.1em;text-transform:uppercase;font-size:9px;margin:0 0 6px 8px}
+ .themenav a{display:block;color:var(--graphite);text-decoration:none;padding:2.5px 8px;border-left:2px solid transparent}
+ .themenav a b{color:var(--accent-deep);display:inline-block;width:12px}
+ .themenav a:hover{color:var(--ink);background:var(--panel)}
+ .themenav a.on{border-left-color:var(--accent);color:var(--ink);background:var(--panel)}
+ .themenav .tntop{margin-top:8px;color:var(--g2)}
+ @media(max-width:1260px){.themenav{display:none}}
 </style></head><body>
 <header><div class="wrap">
   <div class="bug">the mathematical why &middot; from first principles</div>
@@ -73,6 +83,7 @@
   <p>Not what each method is &mdash; <em>why the mathematics forces it to work</em>. One problem sits under all of robotics; every theme is a different way of turning that problem into a piece of mathematics you can actually solve. This page takes the turn slowly: the big-picture problem, the single move that makes it tractable, and then &mdash; theme by theme, down to the individual paper &mdash; the reason the math cannot fail to do what it promises. <span class="tag">the whole map &mdash; 21 themes, from first principles</span></p>
   <nav><a href="index.html">home</a> &middot; <a href="the-machine.html">the machine</a> &middot; <a href="math-explained.html">the math families</a></nav>
 </div></header>
+<nav class="themenav"><div class="tnh">the 21 themes</div><a href="#gen" data-nav="gen"><b>A</b> diffusion</a><a href="#ctl" data-nav="ctl"><b>B</b> control</a><a href="#saf" data-nav="saf"><b>C</b> safety</a><a href="#fnd" data-nav="fnd"><b>D</b> foundation</a><a href="#gs" data-nav="gs"><b>E</b> splatting</a><a href="#pe" data-nav="pe"><b>F</b> 3D perception</a><a href="#ov" data-nav="ov"><b>G</b> open-vocab</a><a href="#wm" data-nav="wm"><b>H</b> world models</a><a href="#vla" data-nav="vla"><b>I</b> VLA</a><a href="#dp" data-nav="dp"><b>J</b> diffusion policy</a><a href="#gr" data-nav="gr"><b>K</b> manipulation</a><a href="#ta" data-nav="ta"><b>L</b> tactile</a><a href="#lo" data-nav="lo"><b>M</b> locomotion</a><a href="#hw" data-nav="hw"><b>N</b> hardware</a><a href="#nv" data-nav="nv"><b>O</b> navigation</a><a href="#mr" data-nav="mr"><b>P</b> multi-robot</a><a href="#dr" data-nav="dr"><b>Q</b> driving</a><a href="#md" data-nav="md"><b>R</b> medical</a><a href="#se" data-nav="se"><b>S</b> sim-to-real</a><a href="#rl" data-nav="rl"><b>T</b> RL</a><a href="#vt" data-nav="vt"><b>U</b> video</a><a href="#top" class="tntop">&uarr; top</a></nav>
 <div class="wrap">
 
 <section class="part">
@@ -985,4 +996,12 @@
   The mathematical why &middot; <a href="math-explained.html">the fifteen math families</a> &middot; <a href="the-machine.html">the machine, whole</a> &middot; <a href="index.html">Robotics 2025 home</a> &middot; live diagrams are JavaScript (assets/math-anim.js)
 </div></footer>
 <script src="assets/mathwhy-anim.js"></script>
+<script>
+(function(){var links=[].slice.call(document.querySelectorAll('.themenav a[data-nav]'));
+var map={};links.forEach(function(a){map[a.dataset.nav]=a;});
+var secs=links.map(function(a){return document.getElementById(a.dataset.nav);}).filter(Boolean);
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){
+links.forEach(function(a){a.classList.remove('on');});var a=map[e.target.id];if(a)a.classList.add('on');}});},
+{rootMargin:'-40% 0px -55% 0px'});secs.forEach(function(s){io.observe(s);});})();
+</script>
 </body></html>
