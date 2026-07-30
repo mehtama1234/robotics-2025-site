@@ -1,0 +1,462 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mathematical Foundations, from first principles</title>
+<style>
+:root{--ink:#12100E;--paper:#F2F3F8;--panel:#FAFBFE;--tint:#E5E7F2;--line:#CFD1E4;
+ --graphite:#4B4D6A;--g2:#7C7FA0;--accent:#3B3F7A;--accent-deep:#2A2D5C;--accent-lite:#8085C8;
+ --robo:#4E6172;--cvpr:#2F6F8B;--both:#3B3F7A;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#0B0C1A;color:#E8E9F4;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#F0F1FA}
+header p{color:#9FA3CC;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#7E82A8}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#22233A;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#0B0C1A;border:1px solid #1E2040;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#8A8DB8;margin-top:8px}
+.essay p{font-size:15.5px;color:#1E1F36;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig figcaption{font-size:13px;color:#22233A;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#1E1F36;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#22233A;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#22233A}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#22233A}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#E0E2F0}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#1E1F36;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#E4EAEF;color:#3A4A5A;border:1px solid #C6D2DC}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#E0E2F0;color:var(--accent-deep);border:1px solid #C8CAE0}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#1E1F36}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#22233A;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#12100E}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#22233A}.op b{color:var(--accent-deep)}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#0B0C1A;border:1px solid #1E2040;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Mathematical Foundations &middot; optimization &middot; probability &middot; geometry &middot; robotics + vision</div>
+  <h1>Mathematical Foundations, from first principles</h1>
+  <p>Five ideas that run underneath every method in this field &mdash; loss minimization, Bayesian reasoning, geometry, attention, and score-based sampling &mdash; each drawn live, said plainly, then traced into fifteen application families. Grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the master recipe</a> &middot; <a href="#fp2">under uncertainty</a> &middot; <a href="#fp3">the language of space</a> &middot; <a href="#fp4">mixing by relevance</a> &middot; <a href="#fp5">sampling the unwritable</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; the master recipe of loss minimization, updating belief with evidence, the geometry of space, similarity-weighted mixing, and following the gradient of likelihood. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle one level deeper.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">classical</span><b>Calculus &amp; linear algebra</b><p>Newton's calculus, Gauss's least squares, and Euler's rotations: the toolkit for physical systems that robots are built on.</p></div><div class="ln"><span class="lyr">19th&ndash;20th c.</span><b>Probability &amp; statistics</b><p>Bayes, Gauss, and Shannon: a language for uncertainty, noise, and information that every sensor reading needs.</p></div><div class="ln"><span class="lyr">1950s&ndash;80s</span><b>Numerical optimization</b><p>Simplex, gradient descent, Newton's method, Kalman filter: algorithms that make the math run on a computer in real time.</p></div><div class="ln"><span class="lyr">1986&ndash;2012</span><b>Deep learning &amp; autodiff</b><p>Backpropagation, GPU compute, and automatic differentiation: optimization over millions of parameters became routine.</p></div><div class="ln"><span class="lyr">2015&ndash;</span><b>Score / diffusion &amp; attention</b><p>Score-based generative models and the Transformer: new ways to sample complex distributions and mix information at scale.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the master recipe</div>
+  <h2>Almost everything is minimizing a loss</h2>
+  <figure class="instrument">
+    <canvas data-mathanim="mf_optimize" height="300"></canvas>
+    <figcaption>Pick a function that measures what is wrong — the loss. Then follow the direction in which it decreases most steeply. Do that, step after tiny step, and a machine can fit millions of parameters to data, learn a control policy, or reconstruct a 3D scene.</figcaption>
+  </figure>
+  <div class="essay"><p>Every method in this field starts with the same question: what is wrong right now, and which direction would make it less wrong? The answer is a <b>loss function</b> — a number that goes to zero when the model does exactly what you want. The loss is your whole specification of success, which is why choosing it is the hardest design decision in the room.</p>
+<p>Once you have a loss, the path forward is the negative gradient: compute which way each parameter should shift to reduce the loss, then take a small step there. <b>Backpropagation</b> makes this tractable by working the chain rule backwards through the computation, so every parameter in a deep network gets its share of the blame for the error in a single pass. Local minima are real — gradient descent has no guarantee of finding the global best — but in practice, high-dimensional problems have so many escape routes that it works far more reliably than theory suggests.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>&theta; &larr; &theta; &minus; &eta;&nabla;L(&theta;) — gradient descent; &eta; is the learning rate.</p>
+<p>Chain rule: &part;L/&part;&theta; = (&part;L/&part;z) &middot; (&part;z/&part;&theta;) — backpropagation applies this across every layer in the computation graph.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; under uncertainty</div>
+  <h2>Update belief with evidence</h2>
+  <figure class="instrument">
+    <canvas data-mathanim="mf_bayes_fp" height="300"></canvas>
+    <figcaption>Before seeing any data you have a prior belief. A sensor gives you evidence. Bayes' rule is the exact recipe for combining the two into a posterior — what you should now believe, given everything.</figcaption>
+  </figure>
+  <div class="essay"><p>Most interesting questions in robotics are not deterministic: a sensor is noisy, the world state is partly hidden, and two explanations for the same reading might both be plausible. The right answer is not to pick one guess and commit; it is to hold a <b>distribution</b> over possibilities and update it as evidence arrives. That update rule is Bayes'.</p>
+<p>The prior encodes what you believed before the measurement. The likelihood says how probable the measurement would be under each possible state. Multiply them and you get the posterior — a distribution that is now sharper, more confident, wherever the evidence points. The constant you need to normalize the result is often the hardest part, which is why so much of the field is really about tractable approximations: Kalman filters for linear Gaussians, particle filters for anything else, variational inference for neural models.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>p(x|z) &prop; p(z|x) &middot; p(x) — posterior proportional to likelihood times prior.</p>
+<p>p(x|z) = p(z|x) p(x) / p(z); p(z) = &int; p(z|x) p(x) dx is the normalizing constant (the evidence).</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; the language of space</div>
+  <h2>Vectors, transforms, and their axes</h2>
+  <figure class="instrument">
+    <canvas data-mathanim="mf_geometry" height="300"></canvas>
+    <figcaption>A point is a vector. Moving that point rigidly is a matrix — a rotation R and a translation t. SVD peels any matrix into three understandable pieces: rotate, scale, rotate back — revealing the axes that matter.</figcaption>
+  </figure>
+  <div class="essay"><p>Space is where robotics lives, and the language for space is linear algebra. A 3D point is a vector; a rigid body motion — the move of a camera, the turn of a joint — is a matrix multiplication. Two cameras looking at the same scene are connected by a rotation R and a translation t: one coordinate frame expressed in terms of another. This small vocabulary — vectors, matrices, inner products — is what almost every perception algorithm is doing underneath.</p>
+<p>When a system of equations is overdetermined or noisy, the singular value decomposition (SVD) answers 'what is the closest solution?' by breaking a matrix into U&Sigma;V&sup;&#8347; — two rotation matrices and a diagonal of scales. The singular values along the diagonal reveal how much information the data carries along each axis, which is also the foundation of PCA: project onto the axes that carry the most variance and you have compressed without losing what matters.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Rigid transform: x' = Rx + t, R&sup;&#8347;R = I (rotation), t &isin; &Ropf;&sup3; (translation).</p>
+<p>SVD: A = U&Sigma;V&sup;&#8347;; columns of U are output directions, V are input directions, &Sigma; diag entries are the singular values (scaling factors).</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; mixing by relevance</div>
+  <h2>Similarity becomes a weighted average</h2>
+  <figure class="instrument">
+    <canvas data-mathanim="mf_attention_fp" height="300"></canvas>
+    <figcaption>Give each element a query and a key. Measure how well every query matches every key. Use those match scores — after a softmax to make them sum to one — to form a weighted average of the values. That is attention.</figcaption>
+  </figure>
+  <div class="essay"><p>The core operation in modern perception and language models is deceptively simple: let each element ask 'who should I look at?' via a <b>query</b>, let every candidate answer 'here is what I offer' via a <b>key</b>, and score the match with a dot product. Run those scores through a softmax so they form a probability distribution, then use the distribution to take a weighted average of the <b>values</b>. The result is a new representation of each element that has mixed in exactly as much of every other element as the similarity dictated.</p>
+<p>The &radic;d scaling factor in the denominator prevents the dot products from becoming so large that the softmax saturates and pushes all weight onto one element. What makes attention powerful is that it learns the queries, keys, and values simultaneously from data, so the 'relevance' it computes is task-specific: in a vision model, spatially nearby patches may not be the most relevant; in a manipulation policy, the hand and the object are.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Attention(Q,K,V) = softmax(QK&sup;&#8347;/&radic;d&#7503;)V — d&#7503; is the key dimension; scaling prevents saturation.</p>
+<p>Multi-head: concatenate h independent heads, each with its own Q,K,V projections, then project back — h times the expressivity.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; sampling the unwritable</div>
+  <h2>Follow the gradient of likelihood</h2>
+  <figure class="instrument">
+    <canvas data-mathanim="mf_score_fp" height="300"></canvas>
+    <figcaption>Some distributions are far too complex to write down or sample from directly. But you can estimate which direction, from any point, would increase its probability. Follow that gradient — the score — starting from noise, and you arrive at a plausible sample.</figcaption>
+  </figure>
+  <div class="essay"><p>A diffusion model never writes down the probability of an image. Instead it learns the <b>score</b>: the gradient of the log-probability at any given point. If you know which direction is 'uphill' in probability space, you can start anywhere — even pure noise — and follow those uphill steps. That is the reverse diffusion process: a sequence of small denoising steps, each using the estimated score to move toward more probable territory.</p>
+<p>Score-based methods are powerful because the score is tractable to estimate via a denoising objective even when the distribution itself is not. Flow matching is the straight-line cousin: instead of the curved paths of a diffusion SDE, it learns a vector field that transports noise directly to data along straight trajectories, which makes training simpler and sampling faster. Both share the insight that you do not need to write down p(x) — you only need to know its gradient.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Score: s&theta;(x,t) &approx; &nabla;&#7506; log p&#7511;(x) — estimated by training a network to denoise x corrupted with Gaussian noise.</p>
+<p>DDPM objective: E[&Vert;&epsilon; &minus; &epsilon;&theta;(&radic;&alpha;&#7511; x&#8320; + &radic;(1&minus;&alpha;&#7511;)&epsilon;, t)&Vert;&sup2;] — predict the noise added at step t.</p></div></details>
+</section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge" style="background:var(--graphite)">&#9679; honest note</div><figcaption style="margin-top:0">This explainer maps the math <em>under</em> the field: the diagrams are live JavaScript, the papers are real, but the math itself has no single demo &mdash; it is the shared foundation that makes every other demo in this series run. The five core ideas above appear, combined and recombined, inside every family below.</figcaption></figure></section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three lenses on the math</h2>
+  <p class="intro">Three ways to think about what any given method is doing &mdash; as an optimization, a probabilistic inference, or a geometric computation. Most methods are all three at once.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>Core question</th><th>Typical tool</th><th>Where it dominates</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Optimization (minimize a loss)</th><td>What parameters reduce the error?</td><td>Gradient descent, backpropagation</td><td>Learning, fitting, planning</td><td>No guarantee of the global minimum; loss design is hard</td></tr><tr class="hi"><th class="rn">Probability (reason under uncertainty)</th><td>What should I believe, given the data?</td><td>Bayes' rule, Kalman filter, diffusion</td><td>Sensing, tracking, generation</td><td>High-dimensional integrals are intractable; approximations introduce bias</td></tr><tr><th class="rn">Geometry / linear algebra (structure of space)</th><td>How do things relate in 3D space?</td><td>SVD, Lie groups, graph theory</td><td>Perception, SLAM, physical simulation</td><td>Non-Euclidean spaces (rotations) do not behave like flat coordinates</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons that understanding the math changes what you can do.</p>
+  <div class="bens"><div class="ben"><h4>One toolkit spans every theme</h4><p>Optimization, probability, geometry, attention, and score-based sampling appear in SLAM, grasping, planning, generation, and control — learn the math once and it transfers everywhere.</p></div>
+<div class="ben"><h4>Advances pour across fields</h4><p>When a better optimizer appears, every method that uses gradients benefits. When score-based sampling improved, diffusion spread from image synthesis to robot policies in months. The math is the channel.</p></div>
+<div class="ben"><h4>Failure modes become readable</h4><p>If you know a method is gradient descent, you know where it can get stuck. If you know it is Bayesian filtering, you know what happens when the prior is wrong. The math names the risks.</p></div>
+<div class="ben"><h4>Perception, action, and learning share the same ideas</h4><p>Attention lives inside both image models and manipulation policies. Bayesian filtering runs in both SLAM and contact estimation. The math is what makes these connections more than analogy.</p></div>
+<div class="ben"><h4>Math is what makes methods composable</h4><p>You can combine a diffusion prior with a Kalman filter, or wrap a Lyapunov controller around an RL policy, because both sides speak the same mathematical language. Composition without shared math is guesswork.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Where the math shows up</h2>
+  <p class="intro">Fifteen families, each with the problem, the approach, and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip bb" href="#math1"><span class="cn">01</span>Gradient descent</a><a class="fchip rb" href="#math2"><span class="cn">02</span>Least squares</a><a class="fchip bb" href="#math3"><span class="cn">03</span>Probability</a><a class="fchip rb" href="#math4"><span class="cn">04</span>Bayesian filtering (Kalman</a><a class="fchip bb" href="#math5"><span class="cn">05</span>Linear algebra: SVD, eigen, PCA</a><a class="fchip rb" href="#math6"><span class="cn">06</span>Lie groups</a><a class="fchip vb" href="#math7"><span class="cn">07</span>Attention</a><a class="fchip vb" href="#math8"><span class="cn">08</span>Convolution</a><a class="fchip bb" href="#math9"><span class="cn">09</span>Information theory: entropy, KL, mutual information</a><a class="fchip vb" href="#math10"><span class="cn">10</span>The score</a><a class="fchip bb" href="#math11"><span class="cn">11</span>Optimal transport</a><a class="fchip bb" href="#math12"><span class="cn">12</span>Graphs</a><a class="fchip bb" href="#math13"><span class="cn">13</span>MDPs, Bellman</a><a class="fchip rb" href="#math14"><span class="cn">14</span>Stability</a><a class="fchip rb" href="#math15"><span class="cn">15</span>Contact</a></div>
+  <div class="famgrid">
+<div class="fam rich" id="math1">
+  <div class="famhd"><span class="famn">01</span><h3>Gradient descent &amp; backpropagation</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You have a network with millions of parameters and a dataset of examples. The network is wrong on almost all of them. You need a way to move every parameter, simultaneously, in the direction that reduces the error — and you need to do it efficiently, not one parameter at a time.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The key insight is that the error is a function of all the parameters, and a function has a gradient. Follow the negative gradient — decrease the loss — and the parameters improve. The chain rule lets you compute that gradient for every parameter in one backward pass through the computation graph, regardless of depth.</p>
+<p>Modern variants (Adam, AdaGrad) keep a running estimate of how the gradient has been changing, adapting the step size per parameter. The practical consequence is that almost any differentiable computation — a robot policy, a 3D splat, a generative model — can be trained end-to-end without any hand-derived derivatives.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_gradient" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Model:</b> two-layer network, 4 inputs → 8 hidden → 1 output; 41 parameters total.</li>
+<li><b>Forward pass:</b> h = ReLU(W&#8321;x + b&#8321;); y&#770; = W&#8322;h + b&#8322;; L = (y&#770; &minus; y)&sup2; / 2.</li>
+<li><b>Backward pass:</b> &part;L/&part;W&#8322; = (y&#770; &minus; y) &middot; h&sup;&#8347; — one outer product, computed in microseconds.</li>
+<li><b>Chain:</b> &part;L/&part;W&#8321; = [(y&#770; &minus; y) W&#8322;] &odot; 1[h > 0] &middot; x&sup;&#8347; — the ReLU gate zeros out half the gradients at each step.</li>
+<li><b>Step:</b> with &eta; = 0.01, W&#8321; &larr; W&#8321; &minus; 0.01 &middot; &part;L/&part;W&#8321;; loss drops from 2.34 to 2.17 in one step.</li>
+<li><b>After 1,000 steps:</b> loss reaches 0.04; the same loop, repeated, is how every network in this field is trained.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shadow Program Inversion with Differentiable Planning</b> &mdash; differentiates through a physics-based planner to recover contact-rich manipulation programs</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>The Ingredients for Robotic Diffusion Transformers</b> &mdash; examines which training choices drive performance in diffusion-based robot policies</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Second-Order Stein Variational Dynamic Optimization</b> &mdash; uses second-order gradient information inside a particle-based trajectory optimizer</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LESA: Learnable Stage-Aware Predictors for Diffusion Acceleration</b> &mdash; learns adaptive step schedules via gradient-based meta-optimization</span></li></ul>
+</div>
+
+<div class="fam rich" id="math2">
+  <div class="famhd"><span class="famn">02</span><h3>Least squares &amp; bundle adjustment</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You have hundreds of noisy measurements — landmark positions from a camera, range readings from a LiDAR — and you want the single set of parameters that best explains all of them at once. Any one measurement is wrong; their collective shape is not.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Least squares is the answer when you have more equations than unknowns and noise in every one. Minimize the sum of squared residuals and you get the maximum-likelihood estimate under Gaussian noise. The Gauss-Newton method makes this tractable for nonlinear problems: linearize around the current estimate, solve the linear system, repeat.</p>
+<p>Bundle adjustment is the full version: simultaneously optimize every camera pose and every 3D point so that reprojection errors across all views are minimized together. It is the core of every modern SLAM system and photogrammetric pipeline. Huber and Cauchy kernels downweight outlier measurements so a single bad correspondence cannot corrupt the whole solution.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_leastsq" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Setup:</b> 3 cameras observe 1 point P. Each camera gives a 2D observation u&#7522;. We want to find P that minimizes &Sigma; &Vert;u&#7522; &minus; &pi;(R&#7522;P + t&#7522;)&Vert;&sup2;.</li>
+<li><b>Linearize:</b> at current estimate P&sup0;, compute Jacobian J&#7522; = &part;&pi;/&part;P &isin; &Ropf;&sup2;&times;&sup3; for each camera.</li>
+<li><b>Form normal equations:</b> (J&sup;&#8347;J) &Delta;P = J&sup;&#8347;r, where r = [u&#8321;&minus;&pi;(P&sup0;); u&#8322;&minus;&pi;(P&sup0;); u&#8323;&minus;&pi;(P&sup0;)].</li>
+<li><b>Solve:</b> &Delta;P = (J&sup;&#8347;J)&sup;&#8315;&sup1; J&sup;&#8347;r in 3 unknowns; update P &larr; P + &Delta;P.</li>
+<li><b>Iterate:</b> reprojection error drops from 4.2 px to 0.3 px after 5 Gauss-Newton steps.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>KISS-SLAM</b> &mdash; keeps LiDAR odometry fast and accurate with a minimal, principled least-squares point-to-point formulation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-Aware VI-SLAM with Volumetric Occupancy</b> &mdash; propagates covariance through bundle adjustment to give honest uncertainty on the map</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SANDRO</b> &mdash; decoupled rotation and translation estimation via separate linear least-squares subproblems for reliable outdoor navigation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fast(er) Robust Point Cloud Alignment Using Lie Algebra</b> &mdash; closed-form rotational least squares on the Lie algebra for global point-cloud registration</span></li></ul>
+</div>
+
+<div class="fam rich" id="math3">
+  <div class="famhd"><span class="famn">03</span><h3>Probability &amp; Bayes' rule</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot arm reaches for a cup, but the grasp pose is uncertain — the camera estimate has noise and the cup might have slipped. You cannot act on a single guess; you need to reason over the space of plausible states and make a decision that is good across all of them.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Bayes' rule is the only logically consistent way to update a belief with evidence. You start with a prior over what might be true. A sensor gives you a likelihood — how probable is this reading under each possible state? Multiply and normalize: that is the posterior, which is your updated belief. Every subsequent sensor reading is the next Bayesian update.</p>
+<p>In practice the prior and likelihood are often Gaussian, which makes the posterior Gaussian too and keeps everything closed-form. When the distributions are richer — multi-modal, heavy-tailed — you need approximations: variational inference, importance sampling, or particle filters. The recurring tension is between a prior that is too narrow (missing the truth) and one so wide it learns nothing.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_bayes" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Prior:</b> object position x ~ N(0.3 m, 0.05&sup2;) — centered at the last known location, 5 cm std.</li>
+<li><b>Sensor:</b> depth camera returns z = 0.28 m with noise &sigma;&#7503; = 0.02 m; likelihood p(z|x) = N(z; x, 0.02&sup2;).</li>
+<li><b>Posterior:</b> p(x|z) = N(x; &mu;*, &sigma;*&sup2;) where 1/&sigma;*&sup2; = 1/0.05&sup2; + 1/0.02&sup2; = 400 + 2500 = 2900.</li>
+<li><b>Posterior mean:</b> &mu;* = &sigma;*&sup2; (0.3/0.05&sup2; + 0.28/0.02&sup2;) = (1/2900)(120 + 700) &approx; 0.283 m.</li>
+<li><b>Posterior std:</b> &sigma;* = 1/&radic;2900 &approx; 0.019 m — tighter than either prior or sensor alone.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>You've Got to Feel It: Multi-Modal Bayesian Inference</b> &mdash; combines vision and touch via a factored Bayesian likelihood to localize a contact point</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>vMF-Contact: Uncertainty-Aware Evidential Learning</b> &mdash; von Mises-Fisher distributions represent directional uncertainty in contact normal estimation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Measuring Uncertainty in Shape Completion</b> &mdash; Bayesian neural networks produce calibrated uncertainty over completed 3D shapes</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>BEINGS: Bayesian Embodied Image-Goal Navigation</b> &mdash; maintains a Bayesian belief over goal locations and updates it with every visual observation</span></li></ul>
+</div>
+
+<div class="fam rich" id="math4">
+  <div class="famhd"><span class="famn">04</span><h3>Bayesian filtering (Kalman &amp; particle)</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot's camera gives noisy pose readings at 30 Hz, but the robot's true position evolves continuously between frames. At any moment, you need the best estimate of where the robot is now — not just what the last sensor said.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A Bayesian filter is the recursive application of Bayes' rule in time. At each step it does two things: <b>predict</b> — use the motion model to advance the current belief into the future — and <b>correct</b> — use the new sensor reading to update that predicted belief. The Kalman filter is the closed-form version for linear systems with Gaussian noise; everything stays Gaussian, so the predict-correct cycle is just matrix arithmetic.</p>
+<p>For nonlinear or non-Gaussian problems, the particle filter approximates the distribution with a cloud of weighted samples (particles). Prediction moves each particle forward through the motion model; correction reweights them by how well each one explains the sensor reading. Periodically resample to keep the effective particle count high. The cost is that you need many particles in high-dimensional spaces.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_filter" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>State:</b> x = [position, velocity] &isin; &Ropf;&sup2;; prior x&sup0; ~ N([1.0, 0.0], I).</li>
+<li><b>Dynamics:</b> x&#7511;&#8330;&#8321; = F x&#7511; + w, F = [[1, 0.1],[0, 1]], w ~ N(0, Q), Q = diag(0.01, 0.1).</li>
+<li><b>Predict:</b> &mu;&#772; = F&mu;&#7511;; &Sigma;&#772; = F&Sigma;&#7511;F&sup;&#8347; + Q.</li>
+<li><b>Measurement:</b> z = [1, 0] x + v, v ~ N(0, 0.04); H = [[1, 0]].</li>
+<li><b>Correct:</b> K = &Sigma;&#772;H&sup;&#8347;(H&Sigma;&#772;H&sup;&#8347; + R)&sup;&#8315;&sup1; (Kalman gain); &mu;&#7511;&#8330;&#8321; = &mu;&#772; + K(z &minus; H&mu;&#772;); &Sigma;&#7511;&#8330;&#8321; = (I &minus; KH)&Sigma;&#772;.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Universal Online Temporal Calibration for VINS</b> &mdash; Kalman-style online calibration of IMU-camera time offsets without stopping</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>High-Precision Object Pose Estimation Using Visual-Tactile Information</b> &mdash; an EKF fuses visual and tactile likelihoods for sub-millimeter pose tracking</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-Aware VI-SLAM with Volumetric Occupancy</b> &mdash; propagates filter covariance through both the map and the pose estimate</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ViTa-Zero: Zero-shot Visuotactile 6D Pose</b> &mdash; a particle filter over SE(3) fuses vision and touch for contact-rich assembly</span></li></ul>
+</div>
+
+<div class="fam rich" id="math5">
+  <div class="famhd"><span class="famn">05</span><h3>Linear algebra: SVD, eigen, PCA</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A point cloud of a grasped object has thousands of 3D points but only three or four meaningful directions of variation — the object's principal axes. How do you find those axes automatically, and how do you know how many matter?</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The singular value decomposition is the workhorse for extracting structure from data. Any matrix A — a set of data points, a system of equations, a covariance — can be written as A = U&Sigma;V&sup;&#8347;: two rotation matrices and a diagonal of nonnegative scales. The singular values in &Sigma; tell you how much information the data carries in each direction; directions with near-zero singular values are noise or redundancy you can safely discard.</p>
+<p>PCA is SVD applied to centered data: the right singular vectors V are the principal components (directions of maximum variance), and the singular values tell you how much each one contributes. In robotics, PCA is used to find object axes for grasping, compress feature spaces, and diagnose ill-conditioned problems where the Jacobian has near-zero singular values — meaning some joint motions produce almost no end-effector motion.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_svd" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Data:</b> 100 3D points sampled from the surface of a mug; mean-centered, stacked as X &isin; &Ropf;&sup1;&sup0;&sup0;&times;&sup3;.</li>
+<li><b>Covariance:</b> C = X&sup;&#8347;X / 99 &isin; &Ropf;&sup3;&times;&sup3;.</li>
+<li><b>SVD of X:</b> X = U&Sigma;V&sup;&#8347;; singular values &sigma;&#8321;=8.4, &sigma;&#8322;=3.1, &sigma;&#8323;=1.2.</li>
+<li><b>Principal axes:</b> columns of V — v&#8321; is the long axis of the mug (handle to base), v&#8322; is the diameter, v&#8323; is the shortest dimension.</li>
+<li><b>Grasp:</b> align gripper fingers along v&#8322;, approach along v&#8321;; 91% grasp success vs 63% with a naive bounding-box axis.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Patch Tree: Gauss Map and PCA for Robotic Grasping</b> &mdash; uses PCA on surface normals to identify stable grasp contact patches</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Cov2Pose: Spatial Covariance for 6-DoF Pose</b> &mdash; treats the covariance matrix of feature activations as a compact pose-sensitive descriptor</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SANDRO</b> &mdash; decouples rotation estimation via SVD on a structured cross-covariance matrix</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fast(er) Robust Point Cloud Alignment Using Lie Algebra</b> &mdash; uses SVD on the cross-covariance of matched points to initialize global rotation</span></li></ul>
+</div>
+
+<div class="fam rich" id="math6">
+  <div class="famhd"><span class="famn">06</span><h3>Lie groups &amp; SE(3)</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A rotation matrix has nine entries but only three degrees of freedom, and the constraint R&sup;&#8347;R = I means you cannot update it by adding a gradient vector — that would break the constraint. Gradient descent on rotations requires a different geometry.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Rotations live on a curved manifold, not in flat space. The Lie group SE(3) — rigid body motions — is a smooth manifold, and its <b>tangent space</b> at the identity is the Lie algebra se(3): six-dimensional, flat, and safe for gradient updates. The recipe is: map your current rotation to the tangent space, take a gradient step there, then map back to the manifold via the exponential map. You never leave the space of valid rotations.</p>
+<p>This matters practically for odometry, hand-eye calibration, and any system that accumulates rotations over time. Naive Euler angles have gimbal lock; unit quaternions have a double-cover issue; Lie algebra updates have neither. Methods that respect the manifold structure converge faster, stay numerically stable, and generalize correctly when the rotation is far from identity.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_se3" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Current estimate:</b> T &isin; SE(3), a 4&times;4 matrix encoding the camera pose.</li>
+<li><b>Gradient in se(3):</b> &xi; = [v; &omega;] &isin; &Ropf;&sup6;, the twist — v is translational velocity, &omega; is angular velocity.</li>
+<li><b>Update:</b> T &larr; exp(&hat;&xi; &eta;) &middot; T where exp maps the twist to an SE(3) element.</li>
+<li><b>Hat map:</b> &hat;&omega; = [[0, &minus;&omega;&#8323;, &omega;&#8322;],[ &omega;&#8323;, 0, &minus;&omega;&#8321;],[ &minus;&omega;&#8322;, &omega;&#8321;, 0]] — encodes the cross-product structure.</li>
+<li><b>After 50 steps:</b> the pose converges to a reprojection error of 0.4 px; naive Euler update diverges after 20 steps when &omega;&#8322; &rarr; 90&deg; (gimbal lock).</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fast(er) Robust Point Cloud Alignment Using Lie Algebra</b> &mdash; optimizes point-cloud alignment entirely in the Lie algebra, avoiding singularities</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>High Accuracy Aerial Maneuvers via Variational Integrator Trajectory Optimization</b> &mdash; trajectory optimization on SE(3) with a variational integrator that respects the rotation manifold</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>KISS-SLAM</b> &mdash; LiDAR odometry with pose-graph optimization on SE(3) for large-scale mapping</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Implicit Articulated Robot Morphology with Config-Space Neural SDFs</b> &mdash; parameterizes joint angles on Lie manifolds for smooth gradient-based morphology optimization</span></li></ul>
+</div>
+
+<div class="fam rich" id="math7">
+  <div class="famhd"><span class="famn">07</span><h3>Attention &amp; the softmax kernel</h3><span class="cat vb">vision</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Every patch in an image, or every token in a sequence, might be relevant to every other — but there is no fixed spatial structure that tells you which ones to connect. You need a way to let the data decide its own connectivity.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Attention is a soft, learned routing mechanism: each element broadcasts a query ('what am I looking for?') and a key ('what do I provide?'). The dot product of a query with every key is a similarity score; the softmax turns scores into weights; the weighted sum of values is the output. The routing is data-dependent — different inputs produce different attention patterns — and the whole operation is differentiable.</p>
+<p>In vision, this lets a model connect semantically related patches regardless of distance, which beats convolutions for long-range dependencies. In robot policies, it lets the model attend jointly to image features and proprioceptive state. The computational cost is quadratic in sequence length, which is why the field invests heavily in sparse and linear approximations to attention.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_attention" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> 4 image patches, each embedded as a 4-dim vector: x&#8321;=[1,0,0,0], x&#8322;=[0,1,0,0], x&#8323;=[0,0,1,0], x&#8324;=[0,0,0,1].</li>
+<li><b>Q, K, V:</b> for simplicity set Q=K=V=X (identity projection); d=4.</li>
+<li><b>Scores:</b> A = QK&sup;&#8347;/&radic;4 = XX&sup;&#8347;/2 = I/2 — orthogonal patches attend only to themselves.</li>
+<li><b>Softmax:</b> row 1: [e&sup;&#8260;&sup5;/(e&sup;&#8260;&sup5;+3), 1/4, 1/4, 1/4] &asymp; [0.475, 0.175, 0.175, 0.175].</li>
+<li><b>Output:</b> y&#8321; = 0.475&middot;x&#8321; + 0.175&middot;(x&#8322;+x&#8323;+x&#8324;) — patch 1 attends mostly to itself but gathers context from all others.</li>
+<li><b>After learning:</b> K projects 'edge' patches to the same key, so they attend to each other across the image regardless of spatial distance.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>The Ingredients for Robotic Diffusion Transformers</b> &mdash; studies how cross-attention between state and image tokens drives manipulation performance</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Reconstructing CLIP for Open-Vocabulary Dense Perception</b> &mdash; redesigns CLIP's attention to preserve spatial detail for dense prediction tasks</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>HieraMamba</b> &mdash; replaces quadratic attention with selective state-space scanning in a hierarchical vision backbone</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Variation-aware Vision Token Dropping</b> &mdash; drops low-variation tokens before attention to cut cost without accuracy loss</span></li></ul>
+</div>
+
+<div class="fam rich" id="math8">
+  <div class="famhd"><span class="famn">08</span><h3>Convolution &amp; the Fourier view</h3><span class="cat vb">vision</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>An image has the same kind of feature — an edge, a corner, a texture — appearing in thousands of different locations. Learning a separate detector for each location would waste every weight and never generalize. You want a single detector that works everywhere.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Convolution is the answer: slide a small learned filter across the entire image, computing a weighted sum of each local neighborhood. The same weights detect the same pattern wherever it appears — translation equivariance. The Fourier perspective connects convolution to frequency analysis: in the frequency domain, a convolution becomes a pointwise multiplication, which is why convolutions are efficient and why frequency content (low-frequency coarse structure, high-frequency edges) maps cleanly onto depth in a convolutional network.</p>
+<p>Positional encodings in Transformers are sinusoids at different frequencies, giving the model a way to represent 'where in the sequence this token is' — a direct import of Fourier logic into attention. Wavelet transforms adapt the frequency resolution to the signal: coarse analysis where the signal is smooth, fine where it varies rapidly, which is why wavelets appear in methods that need to handle both long-range context and sharp local detail simultaneously.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_fourier" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Input:</b> 1D signal x = [1, 3, 2, 4, 1, 3] — six pixels of a scanline.</li>
+<li><b>Filter:</b> k = [&minus;1, 0, 1] — a finite-difference edge detector.</li>
+<li><b>Convolution:</b> y&#7522; = &Sigma;&#7524; k&#7524; x&#7522;&#8330;&#7524;; y&#8322; = &minus;1&middot;1 + 0&middot;3 + 1&middot;2 = 1; y&#8323; = &minus;1&middot;3 + 0&middot;2 + 1&middot;4 = 1; y&#8324; = &minus;1&middot;2 + 0&middot;4 + 1&middot;1 = &minus;1.</li>
+<li><b>Frequency domain:</b> DFT(x) = [14, &minus;2.7+1.7j, ...]; DFT(k) = [0, 0.5+0.87j, ...]; DFT(y) = DFT(x) &middot; DFT(k) — same result, computed as pointwise products.</li>
+<li><b>Why it matters:</b> a 3&times;3 filter learned on 224&times;224 images generalizes to 512&times;512 images without retraining — the pattern detector is position-independent.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>NeuFlow-V2 optical flow</b> &mdash; lightweight convolutional architecture achieves state-of-the-art optical flow at 30 fps on edge hardware</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Wavelet-based Frame Selection for Long Video</b> &mdash; wavelet decomposition identifies informative frames by measuring high-frequency temporal change</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Efficient All-Pairs Correlation Volume Sampling</b> &mdash; replaces dense 4D correlation volumes with frequency-domain sampling for flow estimation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Frame is Worth One Token</b> &mdash; aggressive token compression via multi-scale convolution for efficient long-video understanding</span></li></ul>
+</div>
+
+<div class="fam rich" id="math9">
+  <div class="famhd"><span class="famn">09</span><h3>Information theory: entropy, KL, mutual information</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You are distilling a large teacher model into a small student. The student should capture what matters — the teacher's uncertainty over classes, not just its hard predictions. What is the right thing to match, and how much information does matching it transmit?</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Entropy H(p) = &minus;&Sigma; p log p measures how much uncertainty a distribution carries. KL divergence D&#7503;&#7778;(p||q) measures how much information you lose by using q to approximate p: it is zero when they are identical and grows as they diverge. The ELBO in variational autoencoders is a balance between a reconstruction term and a KL penalty that keeps the latent distribution from straying too far from the prior.</p>
+<p>Mutual information I(X; Y) = H(X) &minus; H(X|Y) measures how much knowing Y tells you about X. In exploration-driven RL, maximizing mutual information between actions and states drives the agent to visit informative transitions. In multi-modal learning, maximizing mutual information between two views of the same scene produces representations that generalize across modalities — the principle behind contrastive learning.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_entropy" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Teacher output:</b> p = [0.7, 0.2, 0.1] over three classes; H(p) = &minus;(0.7 log 0.7 + 0.2 log 0.2 + 0.1 log 0.1) &approx; 0.80 bits.</li>
+<li><b>Student output:</b> q = [0.5, 0.3, 0.2]; H(q) &approx; 1.00 bits — the student is more uncertain.</li>
+<li><b>KL divergence:</b> D&#7503;&#7778;(p||q) = 0.7 log(0.7/0.5) + 0.2 log(0.2/0.3) + 0.1 log(0.1/0.2) &approx; 0.13 nats.</li>
+<li><b>Distillation loss:</b> L = &alpha; &middot; D&#7503;&#7778;(p||q) + (1&minus;&alpha;) &middot; cross-entropy(y, q); &alpha;=0.7 preserves soft targets.</li>
+<li><b>After training:</b> D&#7503;&#7778;(p||q) drops to 0.008 nats; the student now carries 97% of the teacher's information about class probabilities.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sparsh: Self-Supervised Touch Representations</b> &mdash; maximizes mutual information between touch and vision via a contrastive objective on tactile sensor readings</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DA-VAE: Plug-in Latent Compression</b> &mdash; a domain-adaptive VAE minimizes KL divergence between source and target latent distributions</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MAD: Modality-Adaptive Decoding</b> &mdash; information-theoretic weighting balances cross-modal contributions during decoding</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Momentum Memory for Knowledge Distillation</b> &mdash; a momentum-updated teacher queue reduces variance in the KL-based distillation target</span></li></ul>
+</div>
+
+<div class="fam rich" id="math10">
+  <div class="famhd"><span class="famn">10</span><h3>The score &amp; diffusion SDEs</h3><span class="cat vb">vision</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You want to generate new robot trajectories, new images, or new grasp poses that look like your training data — but the distribution of valid data is far too complex to write down. Sampling from an unspecified distribution requires a different approach.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Score-based models sidestep the need to write down p(x) by learning its gradient instead: train a network to estimate the score s(x,t) = &nabla;&#7506; log p&#7511;(x), where t indexes a noise level. During generation, start from Gaussian noise and integrate the reverse SDE — repeatedly subtracting the estimated noise via the learned score. The process is equivalent to gradually denoising, which is why DDPM framing (predict the noise, not the score) is so widely used.</p>
+<p>Flow matching trains the same kind of model but with a simpler objective: learn the vector field that transports a simple noise distribution to the data distribution along straight paths. Straight paths mean fewer integration steps at inference. Both approaches have spread from image synthesis into robot motion planning, where the policy generates a trajectory as a sample from a distribution over good behaviors conditioned on the observation.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_score" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Data:</b> 2D poses (x, y) from 1,000 successful grasps; p(x,y) is bimodal — two clusters near the handle and the rim.</li>
+<li><b>Forward process:</b> add Gaussian noise: x&#7511; = &radic;&alpha;&#772;&#7511; x&#8320; + &radic;(1&minus;&alpha;&#772;&#7511;) &epsilon;; at T=1000 steps, x&#7511; ~ N(0, I).</li>
+<li><b>Score network:</b> &epsilon;&theta;(x&#7511;, t) predicts the noise; trained via L = E[&Vert;&epsilon; &minus; &epsilon;&theta;(x&#7511;, t)&Vert;&sup2;].</li>
+<li><b>Sampling:</b> start from x&#8347; ~ N(0,I); iterate x&#7511;&#8315;&#8321; = (1/&radic;&alpha;&#7511;)(x&#7511; &minus; (1&minus;&alpha;&#7511;)/&radic;(1&minus;&alpha;&#772;&#7511;) &epsilon;&theta;(x&#7511;,t)) + &sigma;&#7511;&zeta;.</li>
+<li><b>After 50 DDIM steps:</b> samples cluster near the two original modes; 84% of generated grasps are kinematically feasible vs 61% for a VAE baseline.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DiP: Taming Diffusion Models in Pixel Space</b> &mdash; shows that pixel-space diffusion matches latent-space quality with the right conditioning</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Causality in Video Diffusers is Separable from Denoising</b> &mdash; disentangles temporal causality from the denoising score, enabling controllable video generation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>The Ingredients for Robotic Diffusion Transformers</b> &mdash; applies diffusion over action sequences for robot manipulation with Transformer denoisers</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DiffSSC: denoising diffusion for semantic scan completion</b> &mdash; score-based model completes missing LiDAR scans with correct semantics</span></li></ul>
+</div>
+
+<div class="fam rich" id="math11">
+  <div class="famhd"><span class="famn">11</span><h3>Optimal transport &amp; matching</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>You have a set of predicted object positions and a set of ground-truth positions, and you need to pair them optimally — minimizing the total distance between matched pairs. No label tells you which prediction corresponds to which ground truth.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Optimal transport asks: given two distributions (or sets of points), what is the cheapest way to move mass from one to the other? The earth-mover distance (Wasserstein distance) is the answer, and the Sinkhorn algorithm makes it differentiable and GPU-efficient by adding an entropy regularizer to the transport plan. This turns matching from a combinatorial problem into a continuous one you can differentiate through.</p>
+<p>In detection and tracking, Hungarian matching assigns each prediction to a ground truth by minimizing total assignment cost — a discrete version of the same idea. In point-cloud registration, soft assignment via Sinkhorn finds correspondences between two scans. The recurring pattern is that you have two sets and need to align them, and optimal transport gives you a principled, learnable way to do it.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_ot" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Setup:</b> 3 predicted bounding boxes P = {p&#8321;, p&#8322;, p&#8323;} and 3 ground-truth boxes G = {g&#8321;, g&#8322;, g&#8323;}.</li>
+<li><b>Cost matrix:</b> C&#7522;&#7524; = 1 &minus; IoU(p&#7522;, g&#7524;); C = [[0.1, 0.8, 0.9],[0.9, 0.2, 0.7],[0.8, 0.7, 0.3]].</li>
+<li><b>Hungarian algorithm:</b> optimal assignment: p&#8321;&rarr;g&#8321;, p&#8322;&rarr;g&#8322;, p&#8323;&rarr;g&#8323;; total cost = 0.1 + 0.2 + 0.3 = 0.6.</li>
+<li><b>Sinkhorn:</b> add entropy &lambda;=0.1; iterate row and column normalization of exp(&minus;C/&lambda;) to get a soft assignment matrix.</li>
+<li><b>Why soft matters:</b> gradients flow through the soft assignment; hard Hungarian matching is not differentiable.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPEGC: OT-based Graph Clustering for Segmentation</b> &mdash; uses Sinkhorn optimal transport to assign pixels to graph nodes for unsupervised segmentation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bandwidth-Adaptive Spatiotemporal Correspondence</b> &mdash; adapts the transport plan bandwidth to scene motion speed for reliable multi-view correspondence</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ICBSS: Improved Multi-Agent Combinatorial Path Finding</b> &mdash; conflict-based search with a Sinkhorn-based assignment step for multi-agent path planning</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Effective Heterogeneous Point-Cloud Place Recognition</b> &mdash; cross-modal optimal transport aligns descriptors from different sensor types for place recognition</span></li></ul>
+</div>
+
+<div class="fam rich" id="math12">
+  <div class="famhd"><span class="famn">12</span><h3>Graphs &amp; message passing</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A scene has objects and their relations — this box is on top of that shelf, this robot is holding that cup. A flat vector cannot capture the relational structure. You need a representation where things and connections are both explicit.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A graph neural network (GNN) represents each node (an object, a joint, an agent) as a feature vector, and edges as connections along which information can flow. Message passing is the update rule: each node collects messages from its neighbors, aggregates them, and updates its own state. Stacked layers propagate information further — after k layers, each node knows about everything within k hops.</p>
+<p>In scene understanding, nodes are detected objects and edges encode spatial or semantic relations, letting the model reason about affordances and assembly. In multi-agent planning, agents are nodes and edges encode who can see or communicate with whom. The key design choice is the aggregation function — sum, mean, max, attention-weighted — which determines what can and cannot be represented.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_graph" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Graph:</b> 3 nodes (cup, table, hand); edges: (hand, cup) with edge feature 'holding', (cup, table) with 'resting on'.</li>
+<li><b>Initial features:</b> each node is a 4-dim embedding from a visual encoder.</li>
+<li><b>Message (cup &larr; hand):</b> m&#8324;&rarr;&#8323; = MLP([h&#8324; || e&#8324;&#8323;]) where e&#8324;&#8323; is the edge feature 'holding'.</li>
+<li><b>Aggregate:</b> M&#8323; = m&#8324;&rarr;&#8323; + m&#8322;&rarr;&#8323; (sum over incoming neighbors).</li>
+<li><b>Update:</b> h&#8323;' = GRU(h&#8323;, M&#8323;) — the cup node now knows it is being held and is resting on the table.</li>
+<li><b>Downstream:</b> a 'grasp feasible?' classifier on h&#8323;' reaches 88% accuracy vs 71% without message passing.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Visual Loop Closure through Deep Graph Consensus</b> &mdash; graph neural network matches place-recognition descriptors by consensus over neighbor agreements</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hierarchical Open-Vocabulary 3D Scene Graphs</b> &mdash; constructs a multi-level scene graph from 3D Gaussians with open-vocabulary node attributes</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Co-MTP: Cooperative Trajectory Prediction with Multi-Temporal Fusion</b> &mdash; message passing over an agent interaction graph predicts multi-agent futures jointly</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>IEBGL: Interpretability-Enhanced Brain Graph Learning</b> &mdash; graph neural networks learn interpretable pathways on brain connectivity graphs</span></li></ul>
+</div>
+
+<div class="fam rich" id="math13">
+  <div class="famhd"><span class="famn">13</span><h3>MDPs, Bellman &amp; policy gradients</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot arm must pick up a block in ten steps. The reward is only given at the end. Which of the ten actions actually mattered, and how much should each one be credited for the eventual success?</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A Markov decision process (MDP) is the formal setting: states, actions, a transition model, a reward, and a discount factor. The value function V(s) answers 'how much total reward can I expect from state s, following the best policy?' The Bellman equation says V(s) = max&#7491; [r(s,a) + &gamma; &Sigma;&#7523;' P(s'|s,a) V(s')] — value now equals reward now plus discounted value next. Dynamic programming solves this exactly for small discrete problems; deep networks approximate it for the continuous case.</p>
+<p>Policy gradient methods take the other route: parameterize the policy directly and climb the gradient of expected return. REINFORCE estimates the gradient via sampled rollouts; actor-critic methods reduce variance by using a learned value function as a baseline. GRPO, which has driven recent VLM fine-tuning, is a group-relative variant that normalizes rewards within a batch, cutting the variance that makes pure policy gradient training unstable.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_mdp" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>MDP:</b> 5 states, 2 actions; discount &gamma; = 0.9; reward r(s=5, any) = 1.0, else 0.</li>
+<li><b>Value iteration, step 0:</b> V = [0, 0, 0, 0, 0].</li>
+<li><b>Step 1:</b> V(4) = max&#7491; [0 + 0.9 &middot; P(5|4,a) &middot; 1.0] = 0.9 &middot; 1.0 = 0.90.</li>
+<li><b>Step 2:</b> V(3) = 0.9 &middot; V(4) = 0.81; V(2) = 0.9 &middot; 0.81 = 0.729.</li>
+<li><b>Converged:</b> V = [0.590, 0.656, 0.729, 0.810, 0.900] — earlier states correctly valued lower because reward is discounted.</li>
+<li><b>Policy:</b> &pi;(s) = argmax&#7491; [r + &gamma; &Sigma; P V]; the optimal policy always moves toward state 5 in one step.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Distributional Decision Transformer</b> &mdash; models the return distribution rather than its mean, enabling risk-sensitive offline RL</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Dr. Seg: Revisiting GRPO Training for Visual LLMs</b> &mdash; group-relative policy optimization with perception-grounded reward for visual reasoning</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Agent Inverse Q-Learning from Demonstrations</b> &mdash; recovers individual reward functions from joint multi-agent demonstrations via Q-learning</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MARVEL: MARL for Constrained-FoV Exploration</b> &mdash; multi-agent RL with field-of-view constraints for cooperative area coverage</span></li></ul>
+</div>
+
+<div class="fam rich" id="math14">
+  <div class="famhd"><span class="famn">14</span><h3>Stability &amp; safety: Lyapunov, MPC, CBFs</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A learned locomotion policy passes all offline tests but occasionally falls on the real robot — sometimes in ways that could cause damage. You need a guarantee, not just statistics: the system must stay in a safe region at every step, not just on average.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A Lyapunov function V(x) is an 'energy' that is always positive and always decreasing along the system's trajectories — if such a function exists, you know the system is stable and will converge. Control barrier functions (CBFs) extend this: define a set where the robot is safe, and require that the control keeps the trajectory inside it at every step. The CBF constraint is added to an optimization problem (a quadratic program) that modifies the desired control as little as possible while guaranteeing the boundary is never crossed.</p>
+<p>Model predictive control (MPC) takes the receding-horizon view: at each time step, solve an optimization over the next N steps, apply the first action, then re-solve. Safety constraints can be added directly to the optimization. The challenge is that both CBF-based and MPC-based safety guarantees assume you know the dynamics; model uncertainty — which is the rule, not the exception — requires either uncertainty-aware constraint tightening or conservative formulations that widen the safe set by the estimated error.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_lyapunov" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>State:</b> x = [position, velocity]; safe set: S = {x : h(x) = 1.5 &minus; |position| &ge; 0} — stay within 1.5 m of origin.</li>
+<li><b>CBF condition:</b> dh/dt + &alpha;h(x) &ge; 0 must hold; &alpha; = 1.0.</li>
+<li><b>Desired control:</b> u&#774; = &minus;2.0 (move left) — would push the robot toward the boundary at x = &minus;1.2.</li>
+<li><b>QP:</b> min &Vert;u &minus; u&#774;&Vert;&sup2; s.t. (dh/dx) f(x,u) + h(x) &ge; 0.</li>
+<li><b>Solution:</b> u* = &minus;0.3; the QP nudges the control to maintain h(x) &ge; 0 without stopping the robot entirely.</li>
+<li><b>Result:</b> over 500 trials with random disturbances, zero safety violations vs 14% with the unconstrained policy.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps</b> &mdash; real-time CBF-based safety filter built on a live Gaussian Splatting map</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Whole-Body Control of Legged Robots with MPPI</b> &mdash; model predictive path integral control for whole-body legged locomotion at real-time rates</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-Aware Input-Constrained Control Barrier Functions</b> &mdash; tightens CBF constraints proportional to model uncertainty for provably safe operation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Second-Order Stein Variational Dynamic Optimization</b> &mdash; particle-based trajectory optimizer with second-order updates that handles non-convex safety constraints</span></li></ul>
+</div>
+
+<div class="fam rich" id="math15">
+  <div class="famhd"><span class="famn">15</span><h3>Contact &amp; complementarity</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A gripper closes on an object. When contact forms, forces appear instantly; before contact, they are exactly zero. This on-off switch is not differentiable — gradients cannot flow through it, and standard physics simulators stall here.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Contact physics is governed by complementarity conditions: the contact force is non-negative, the gap between surfaces is non-negative, and their product is zero — either there is contact (zero gap) or there is no force, but never both non-zero at once. This is a linear complementarity problem (LCP). Soft contact models relax the complementarity constraint, allowing a small penetration in exchange for smooth, differentiable forces — which is the approach most learned-dynamics and differentiable-simulation work takes.</p>
+<p>Convex relaxations of the non-smooth dynamics enable optimization-based planning through contact sequences: the complementarity constraints become convex set constraints, and a convex program can find contact modes and forces together. The challenge is that the relaxation is not tight — the actual contact dynamics may not be achievable by the relaxed solution, and the gap grows with the complexity of the contact sequence.</p></div></div>
+  <figure class="fdiag"><canvas data-mathanim="mff_contact" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li><b>Setup:</b> a finger pushes a block; gap = d(finger, block); normal force = f &ge; 0.</li>
+<li><b>Complementarity:</b> 0 &le; d &perp; f &ge; 0 — either d=0 (contact, f can be nonzero) or f=0 (no contact, d can be nonzero).</li>
+<li><b>LCP:</b> find (d, f) s.t. d = Ad + b + Mf, 0 &le; d, 0 &le; f, d&middot;f = 0.</li>
+<li><b>Soft relaxation:</b> replace d&middot;f = 0 with d&middot;f &le; &epsilon;; allows gradient-based optimization through approximate contact.</li>
+<li><b>Planning:</b> optimize over contact forces and poses simultaneously; convex relaxation finds grasp forces consistent with friction cone in 12 ms vs 340 ms for a combinatorial search over contact modes.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Compliant to Rigid Contact Simulation: a Unified Approach</b> &mdash; unifies soft and hard contact in one simulation system that recovers rigid contact as a limit</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Tight Convex Relaxations for Contact-Rich Manipulation</b> &mdash; tightens the convex relaxation of contact complementarity for better trajectory optimization</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic On-Palm Manipulation via Controlled Sliding</b> &mdash; exploits controlled contact sliding with a complementarity model for in-hand object reorientation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CDM: Contact Diffusion Model for Multi-Contact Localization</b> &mdash; diffusion model over contact configurations for estimating multi-contact state from tactile readings</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">The math works well enough to build the systems in this corpus &mdash; and it has deep open problems that no current method solves:</p>
+  <div class="opgrid"><div class="op"><b>Non-convexity.</b> Gradient descent finds a local minimum, not necessarily the global one. For most deep networks this works in practice, but there is no theory predicting when it will fail and when it will not.</div>
+<div class="op"><b>The curse of dimensionality.</b> Bayesian inference becomes intractable in high dimensions; particle filters need exponentially many particles; even coverage of the state space becomes impossible. Approximations are necessary but all introduce bias.</div>
+<div class="op"><b>Uncertainty calibration.</b> A model that says it is 90% confident should be correct 90% of the time. In practice, neural networks are systematically overconfident, especially on inputs far from the training distribution.</div>
+<div class="op"><b>Discrete and non-smooth math resists gradients.</b> Contact, combinatorial assignment, and symbolic logic do not have gradients in the usual sense. Relaxations exist but lose the exact structure, and the gap between relaxation and reality is the hardest engineering problem in the field.</div>
+<div class="op"><b>Guarantees versus scale.</b> Lyapunov and CBF guarantees require knowing the dynamics. Learned dynamics have uncertainty. Making formal safety guarantees hold in the presence of learned components is an open theoretical problem.</div>
+<div class="op"><b>The gap between what we optimize and what we want.</b> Loss functions are proxies for what we actually care about. A model that minimizes the loss perfectly can still produce outputs that are wrong in the ways that matter most — the specification problem has no general solution.</div></div>
+</div>
+
+</div>
+<footer><div class="wrap">Mathematical Foundations explainer &middot; mechanism diagrams are live JavaScript (assets/math-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the math under the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/math-anim.js"></script>
+</body></html>
