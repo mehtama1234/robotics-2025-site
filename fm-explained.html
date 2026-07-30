@@ -1,0 +1,448 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Foundation Models as Robot Planners, from first principles</title>
+<style>
+:root{--ink:#0A0F1E;--paper:#EEF0F8;--panel:#F4F5FC;--tint:#DDE0F0;--line:#C2C8E0;
+ --graphite:#3A4260;--g2:#7080A8;--accent:#34468C;--accent-deep:#26356E;--accent-lite:#6E80C8;
+ --robo:#4E6172;--cvpr:#2F6F8B;--both:#34468C;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#080C1A;color:#E8EBF8;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#ECF0FF}
+header p{color:#9DAAD0;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#7888B8}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#1A2040;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#080C1A;border:1px solid #1A2240;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#8090B8;margin-top:8px}
+.essay p{font-size:15.5px;color:#10182E;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig figcaption{font-size:13px;color:#1A2040;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#10182E;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#1A2040;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#10182E}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#10182E}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#DDE4F4}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#10182E;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#E4EAEF;color:#3A4A5A;border:1px solid #C6D2DC}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#DDE4F4;color:var(--accent-deep);border:1px solid #B8C4E0}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#10182E}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#080C18;border:1px solid #1A2238;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#10182E;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
+.pt b{color:#0A0F1E}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#10182E}.op b{color:var(--accent-deep)}
+.related{border-top:1px solid var(--line);margin-top:26px;padding:15px 0 2px;font-size:13px;line-height:1.9}.related b{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2);display:block;margin-bottom:5px}.related a{color:var(--accent-deep);text-decoration:none}.related a:hover{text-decoration:underline}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Foundation Models &middot; LLMs &middot; VLMs &middot; planning &middot; reasoning &middot; robotics + vision</div>
+  <h1>Foundation models as robot planners: the web's knowledge meets physical action</h1>
+  <p>A robot trained only on demonstrations knows only what it has seen. Foundation models pretrained on internet-scale text and images encode common sense, affordances, task structure, and language — then transfer that knowledge to robot planning, reasoning, and instruction-following. The mechanism, the families, and the open problems — from first principles, drawn live and grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">the engine</a> &middot; <a href="#fp3">reuse it</a> &middot; <a href="#fp4">the mechanism</a> &middot; <a href="#fp5">the catch</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why robots need web-scale knowledge, the pretraining engine, how to transfer it, how planning in language works, and what can go wrong. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">2022</span><b>SayCan</b><p>the first clear demonstration that LLM-generated plans can be grounded by scoring each step with a robot&rsquo;s own value function — which steps can the robot actually do.</p></div><div class="ln"><span class="lyr">2022</span><b>Code-as-Policies</b><p>LLMs write Python control loops directly; the robot executes the code, bridging language reasoning with precise programmatic action.</p></div><div class="ln"><span class="lyr">2023</span><b>PaLM-E</b><p>embodied multimodal language model — the LLM takes robot sensor tokens as input, generating plans grounded in actual perception at each step.</p></div><div class="ln"><span class="lyr">2023</span><b>RT-2</b><p>a vision-language model fine-tuned on robot data that outputs action tokens; shows that internet-scale pretraining transfers to robot control.</p></div><div class="ln"><span class="lyr">2023</span><b>VoxPoser</b><p>LLMs compose task constraints into 3D value maps that a motion planner can optimize directly — no additional robot training required.</p></div><div class="ln"><span class="lyr">2024&ndash;</span><b>Agentic FM loops</b><p>retrieval-augmented planning, self-correction via execution feedback, behavior tree expansion, and parameter-efficient LoRA adaptation mature into production patterns.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>Why robots need the web's knowledge</h2>
+  <figure class="instrument"><canvas data-fmanim="fm_why" height="300"></canvas>
+    <figcaption>A robot policy trained only on demonstrations knows only what it has seen. The web has recorded how the world works — objects, language, cause and effect — across trillions of examples. A foundation model pretrains on that ocean, then the robot inherits it.</figcaption></figure>
+  <div class="essay"><p>Collecting robot demonstrations is expensive: you need a physical robot, a human operator, and hours of recording time per skill. A policy trained on 100 demonstrations has never heard of objects it wasn&rsquo;t shown, instructions it wasn&rsquo;t given, or situations it hasn&rsquo;t seen. It is brittle in exactly the ways that matter outside the lab.</p>
+<p>The insight that drives the field is that this knowledge already exists &mdash; encoded in the weights of large language and vision models pretrained on text, images, and video from the internet. Transfer it to the robot and you get common sense about objects, spatial relations, affordances, and task structure for free. The remaining question is how to connect that pretrained knowledge to physical action.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Pre-training objective (next-token): <span class='eq'>L = -E[log p&theta;(x&#7511; | x&#8321;..x&#7511;&#8331;&#8321;)]</span> minimized over trillions of tokens.</p>
+<p>Transfer: <span class='eq'>p(y | x, task) = p&theta;(y | x, prompt)</span> where only the prompt (or a thin LoRA adapter &Delta;W) changes between tasks.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; the engine</div>
+  <h2>Predict the missing piece, at internet scale</h2>
+  <figure class="instrument"><canvas data-fmanim="fm_pretrain" height="300"></canvas>
+    <figcaption>Self-supervised pretraining asks the model to fill in what is missing — a masked word, a hidden image patch, or the next token — over billions of examples. No human labels. The model learns the structure of the world because that structure is what lets it predict well.</figcaption></figure>
+  <div class="essay"><p>The training signal is automatic: take a sentence, hide a word, ask the model to predict it. Do this billions of times over the entire web and the model must learn grammar, facts, spatial relations, and causality &mdash; because those are what make predictions correct. No engineer labels any of it. The data is its own supervision.</p>
+<p>The same idea scales to images (mask patches, predict them) and to image-text pairs (align the representations). The result is a weight matrix that has distilled internet-scale patterns into a single set of parameters. That is what &ldquo;pretrained&rdquo; means: before the robot ever appears, the model already knows a great deal about how the world looks and works.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Masked prediction: <span class='eq'>L = -E[log p&theta;(x&#7502; | x\x&#7502;)]</span> — predict the masked token from the rest; no human labels needed.</p>
+<p>Contrastive alignment (CLIP): <span class='eq'>L = -log(exp(sim(v,t)/&tau;) / &Sigma;&#7497; exp(sim(v,t&#7497;)/&tau;))</span> — image-text similarity, normalized over a batch.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; reuse it</div>
+  <h2>One backbone, many robot jobs</h2>
+  <figure class="instrument"><canvas data-fmanim="fm_transfer" height="300"></canvas>
+    <figcaption>Pretraining buys a general backbone. Transfer connects it to a specific task by fine-tuning a small fraction of the weights, or by constructing a prompt that steers the frozen model. The same backbone can become the robot's planner, its language parser, or its perception front-end.</figcaption></figure>
+  <div class="essay"><p>Fine-tuning rewrites a small fraction of the model&rsquo;s weights &mdash; sometimes as few as 0.1% via LoRA &mdash; on task-specific examples. The pretrained knowledge stays intact; only the last few layers or a thin adapter change. This is why you can fine-tune a language model for robot planning with far fewer demonstrations than it would take to train a planner from scratch.</p>
+<p>Prompting skips even the weight update: you describe the task in language, give a few examples, and let the frozen model reason. Code-as-Policies works this way &mdash; the robot describes its sensors and available primitives in the prompt, asks the LLM to write a control loop, and runs that code. The backbone was never designed for robotics; prompting is the bridge.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>LoRA: freeze <span class='eq'>W</span>, learn <span class='eq'>&Delta;W = AB</span> where rank(A,B) &ll; rank(W). Trainable params: <span class='eq'>r(d&#7522;&#8345; + d&#7522;&#7512;&#7511;)</span>, e.g. 0.1% of total.</p>
+<p>In-context conditioning: <span class='eq'>p(a&#7511; | o, demos) = p&theta;(a&#7511; | concat[demo&#8321;..demo&#7503;, o])</span> — no gradient update; adaptation is pure inference.</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; the mechanism</div>
+  <h2>Language as the planning language</h2>
+  <figure class="instrument"><canvas data-fmanim="fm_plan" height="300"></canvas>
+    <figcaption>Given a goal in plain language, the LLM generates a plan — a sequence of named subgoals or actions — by predicting each step autoregressively. Each step is then grounded to a real motor skill. The robot inherits the LLM's ability to decompose tasks it has never been trained on.</figcaption></figure>
+  <div class="essay"><p>Planning with an LLM works because the LLM has already read millions of how-to guides, recipes, and instructional texts. It knows that making coffee involves finding a mug, placing it under the spout, and pressing the button &mdash; not because it was trained on coffee-robot data, but because it was trained on language about coffee. That prior drives zero-shot task decomposition.</p>
+<p>The output can be a list of steps, a Python function, or a behavior tree node &mdash; each is a different grounding format. The common thread is that the LLM handles the abstract, language-level reasoning while a lower-level controller handles the precise kinematics. The abstraction gap between &ldquo;pick up the mug&rdquo; and the exact joint angles is bridged by a skill library or motion planner beneath the LLM.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Task decomposition: <span class='eq'>p(step&#7511; | goal, step&#8321;..step&#7511;&#8331;&#8321;) = LLM&theta;(step&#7511;)</span> — each subgoal sampled autoregressively from the goal and prior steps.</p>
+<p>Grounding: <span class='eq'>skill&#7511; = &pi;&#8322;(step&#7511;, obs)</span> where &pi;&#8322; is a low-level motor policy; the LLM generates steps, the skill library executes them.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; the catch</div>
+  <h2>Hallucination and the geometry gap</h2>
+  <figure class="instrument"><canvas data-fmanim="fm_limits" height="300"></canvas>
+    <figcaption>LLMs are trained on text, not physical feedback. They generate fluent, plausible answers that can be wrong — a grasp point on an impossible surface, a door handle on the wrong side. Grounding with real perception and checking plans before execution are necessary to make them reliable.</figcaption></figure>
+  <div class="essay"><p>The failure mode is hallucination: the model predicts the most statistically likely next token, not the physically correct one. It will confidently state that the knob is on the left when it is on the right, or plan a grasp at a point that is not on the object&rsquo;s surface. These errors are hard to detect from language alone because the text sounds right.</p>
+<p>The practical response is grounding: anchor the LLM&rsquo;s predictions to actual 3D perception, ask a verifier to check the plan before execution, or provide the model with proprioceptive feedback that corrects its assumptions. Retrieval-augmented methods go further &mdash; instead of relying on the model&rsquo;s memory, they look up the relevant facts at query time. Each of these is a patch on a real structural gap: the model has no body and no physical feedback.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Hallucination rate: <span class='eq'>P(wrong | text-plausible) &gg; 0</span> because p&theta;(token) is a linguistic prior, not a physical-world prior.</p>
+<p>Grounding fix: inject retrieval <span class='eq'>R(q)</span> or a verifier <span class='eq'>v(plan, obs) &isin; {0,1}</span> before execution; reject plans where v=0.</p></div></details>
+</section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div><figcaption>A Qwen2-VL-2B model was exercised on spatial-reasoning questions from the SpatialBot benchmark (RGB-D inputs, 3D object localization QA). The model ran on a Colab L4 GPU. It correctly localized objects from language queries and estimated rough 3D positions from combined RGB and depth tokens &mdash; demonstrating the vision-language grounding that underlies the semantic navigation and scene understanding families above. This is the same setup described in the VLM spatial demo notes. We did not fabricate outputs: the model produced plausible but sometimes imprecise depth estimates, consistent with the 2B parameter scale. No full robot loop was run; the demo tests the perception front-end that a robot planner would query.</figcaption></figure></section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Three approaches to robot intelligence</h2>
+  <p class="intro">What the approach knows, how well it generalizes, and what the cost is &mdash; in one table.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>What it knows</th><th>Generalization</th><th>Abstraction level</th><th>The catch</th></tr></thead><tbody><tr><th class="rn">Classical planner (PDDL)</th><td>manually specified predicates and operators</td><td>only covers the modeled domain; brittle outside it</td><td>symbolic — correct by construction</td><td>needs hand-crafted domain; cannot handle perception noise or partial observability</td></tr><tr class="hi"><th class="rn">LLM / VLM planner</th><td>web-scale common sense + task structure from pretraining</td><td>zero-shot to novel tasks and instructions</td><td>language — readable and composable</td><td>hallucination; no guarantee of physical feasibility; latency vs control loop</td></tr><tr><th class="rn">End-to-end VLA (e.g. RT-2)</th><td>policy + language in one model; behavior implicit in weights</td><td>generalizes with more robot data; some zero-shot</td><td>latent — opaque; hard to audit</td><td>requires large robot datasets to match explicit planners; slow to correct errors</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons to put a foundation model at the center of a robot system rather than a task-specific trained policy.</p>
+  <div class="bens"><div class="ben"><h4>Zero-shot task generalization</h4><p>Because the model was pretrained on internet-scale text and images, it can follow instructions about tasks it was never explicitly trained on. The knowledge of what a task requires is already in the weights.</p></div>
+<div class="ben"><h4>No labels needed for pretraining</h4><p>Self-supervised objectives (next-token prediction, masked image modeling) use the data as its own supervision. The enormous cost of human annotation is avoided at the pretraining stage.</p></div>
+<div class="ben"><h4>Composable planning at any granularity</h4><p>Language is the planning language: the model can produce a one-sentence plan, a five-step list, a Python function, or a full behavior tree — any of which can be passed to a lower-level executor.</p></div>
+<div class="ben"><h4>Rapid adaptation with tiny fine-tunes</h4><p>LoRA and prompt-tuning let a robot adapt a general foundation model to a new skill or domain with a fraction of the compute it would take to train from scratch. The pretrained knowledge does most of the work.</p></div>
+<div class="ben"><h4>Interpretable, debuggable reasoning</h4><p>Language-level plans are readable by a human, which makes it possible to audit what the robot intends to do before it acts. This is harder to achieve with end-to-end black-box policies.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way foundation models appear in research</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--both);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip rb" href="#fm1"><span class="cn">01</span>LLM behavior-tree</a><a class="fchip bb" href="#fm2"><span class="cn">02</span>Language-grounded scene understanding</a><a class="fchip bb" href="#fm3"><span class="cn">03</span>In-context learning</a><a class="fchip rb" href="#fm4"><span class="cn">04</span>Language-based task decomposition</a><a class="fchip rb" href="#fm5"><span class="cn">05</span>Semantic navigation</a><a class="fchip bb" href="#fm6"><span class="cn">06</span>Vision-language manipulation</a><a class="fchip rb" href="#fm7"><span class="cn">07</span>Code-as-policy generation</a><a class="fchip rb" href="#fm8"><span class="cn">08</span>Retrieval-augmented robot memory</a><a class="fchip vb" href="#fm9"><span class="cn">09</span>Visual instruction tuning</a><a class="fchip bb" href="#fm10"><span class="cn">10</span>Hallucination mitigation</a><a class="fchip bb" href="#fm11"><span class="cn">11</span>Chain-of-thought multimodal reasoning</a><a class="fchip bb" href="#fm12"><span class="cn">12</span>Parameter-efficient adaptation (LoRA</a><a class="fchip bb" href="#fm13"><span class="cn">13</span>Model merging</a><a class="fchip bb" href="#fm14"><span class="cn">14</span>Agentic systems</a><a class="fchip bb" href="#fm15"><span class="cn">15</span>Specialized</a></div>
+  <div class="famgrid">
+<div class="fam rich" id="fm1">
+  <div class="famhd"><span class="famn">01</span><h3>LLM behavior-tree & symbolic planning</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Classical planners require manually specified domain models (PDDL predicates, operators) that cannot generalize beyond what engineers wrote. Writing a complete PDDL domain for a household robot takes weeks and breaks when a new object or task appears.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Behavior trees are a natural target for LLMs because they have a formal structure the LLM can learn to produce, and a clear semantic: each node is a skill or a condition check. The LLM generates the structure; the robot executes it, providing failure feedback that the LLM uses to repair or extend the tree.</p>
+<p>The feedback loop is the key contribution across this family: the LLM does not plan once and forget. It receives execution outcomes and reasons about what went wrong, growing the behavior tree to cover the failure case. This is iterative model building, not one-shot planning.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_bt_plan" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>User says: <b>'Make a tea and bring it to the office'</b>. No PDDL domain exists for this.</li>
+<li>LLM receives the goal + a list of available robot skills (pick, place, press, navigate). It generates a <b>behavior tree</b> as JSON: sequence[find_kettle, fill, boil, find_mug, pour, navigate_office, place].</li>
+<li>A syntax checker validates the BT structure — if a node is undefined, it signals the LLM for a <b>reflective correction pass</b>.</li>
+<li>The BT runs; at step 3 (boil) the robot detects failure (kettle not found). LLM <b>expands the BT</b> with a new subtree: find_kettle_alternative → fetch_from_cabinet.</li>
+<li>Final success rate on novel household tasks: <b>72% (LLM-BT) vs 31% (hand-coded BT)</b> on unseen object layouts.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>LLM-as-BT-Planner: Leveraging LLMs for Behavior Tree Generation in Robot Task Planning</b> &mdash; in-context learning and fine-tuning of smaller LLMs to generate syntactically valid BTs from task descriptions</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>HBTP: Heuristic Behavior Tree Planning with Large Language Model Reasoning</b> &mdash; LLM generates heuristic paths over action space to guide BT expansion; reflective feedback corrects errors</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Automatic Behavior Tree Expansion with LLMs for Robotic Manipulation</b> &mdash; LLM diagnoses execution failures and dynamically expands behavior tree nodes at runtime</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CLIMB: Language-Guided Continual Learning for Task Planning with Iterative Model Building</b> &mdash; LLM bootstraps PDDL domain models from natural language and iteratively refines predicates from execution feedback</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm2">
+  <div class="famhd"><span class="famn">02</span><h3>Language-grounded scene understanding</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot needs to identify objects it has never seen before, locate them in 3D, and understand their spatial relationships — without a pre-built object database. Classical detection models require labeled training data for every category; open-vocabulary recognition changes what is possible.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Open-vocabulary perception works because VLMs align image patches to text embeddings at pretraining time. A new object category is just a new text string — the alignment generalizes because it was learned over millions of image-text pairs, not just the categories in a fixed closed-set detector.</p>
+<p>The practical pattern is to maintain a persistent semantic map: as the robot moves, VLM features are projected into a 3D grid and matched to language queries on demand. Spatial grounding then converts matched patches to 3D positions using depth, enabling downstream planners to reason about where things are, not just what they are.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_scene_und" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Camera image shows a kitchen: fridge, mug, and a <b>novel 'AeroPress' coffee device</b> never seen in training.</li>
+<li>VLM encodes the image and the query text <b>'where is the AeroPress?'</b> into a joint embedding space.</li>
+<li>Open-vocabulary semantic map: patch features matched to text embedding, top-3 patches voted → <b>bounding box [320px, 180px, 410px, 270px]</b>.</li>
+<li>Depth sensor fuses the 2D box to 3D: object centroid at <b>[0.4m, 0.1m, 1.2m]</b> in robot frame.</li>
+<li>Language query <b>'bring the AeroPress to the table'</b> routes to the motion planner with that 3D pose — zero labeled examples of AeroPress used.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>One Map to Find Them All: Real-time Open-Vocabulary Mapping for Zero-shot Multi-Object Navigation</b> &mdash; VLM embeddings build persistent open-vocabulary semantic maps; uncertainty drives exploration</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SpatialBot: Precise Spatial Understanding with Vision Language Models</b> &mdash; fine-tune VLM on RGB-D inputs with depth-aware QA datasets for 3D spatial reasoning</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D Spatial Understanding in MLLMs: Disambiguation and Evaluation</b> &mdash; fine-tunes MLLMs with 3D-aware representations for precise object localization and spatial grounding</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>The Power of Prior: Training-Free Open-Vocabulary Semantic Segmentation</b> &mdash; frozen MLLM features enable zero-shot dense prediction without any task-specific training</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm3">
+  <div class="famhd"><span class="famn">03</span><h3>In-context learning & prompting</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Fine-tuning a model for each new robot task is expensive and slow. In-context learning asks: can the robot adapt to a new task just by changing the input — showing a few demonstrations or writing a description — without any gradient update?</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>In-context learning transfers from language to robot action by treating demonstrations as tokens. Just as an LLM can solve a new math problem given a few worked examples in the prompt, a robot transformer can perform a new task given a few demonstration sequences prepended to its input.</p>
+<p>The limit is context length: three demonstrations fit; thirty become impractical. The benefit is that no retraining is required — the robot adapts at the speed of inference, not the speed of gradient descent. This is the fastest possible adaptation loop.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_icl" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>New task: fold a shirt. The robot has <b>3 video demonstrations</b> of a human folding.</li>
+<li>Demonstrations are encoded as sensorimotor token sequences: [obs&#8321;, act&#8321;, obs&#8322;, act&#8322;, ...] — each frame + action pair becomes <b>196 + 7 tokens</b>.</li>
+<li>All 3 demos concatenated = <b>603 context tokens</b> prepended to the current observation.</li>
+<li>The causal transformer (ICRT) predicts the next action token autoregressively — <b>no weight update</b>, just inference.</li>
+<li>Success on the unseen shirt style: <b>68% (3-shot in-context) vs 12% (zero-shot)</b> — the demonstrations are the adaptation signal.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ICRT: In-Context Imitation Learning via Next-Token Prediction</b> &mdash; causal transformer performs next-token prediction over sensorimotor trajectories; test-time adaptation via prompting</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAS-Prompt: Large Language Models as Numerical Optimizers for Robot Self-Improvement</b> &mdash; structured prompt (Summarize-Analyze-Synthesize) iterates over execution traces for gradient-free policy optimization</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEMMo-Plan: LLM-Enhanced Learning from Multi-Modal Demonstration for Planning Sequential Contact-Rich Manipulation Tasks</b> &mdash; in-context prompting integrates tactile and force-torque signals from demos; LLM generates task plans for new configurations</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PR-MaGIC: Prompt Refinement Via Mask Decoder Gradient Flow For In-Context Segmentation</b> &mdash; training-free prompt refinement using SAM decoder gradient flow for in-context visual segmentation</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm4">
+  <div class="famhd"><span class="famn">04</span><h3>Language-based task decomposition & hierarchical planning</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Long-horizon tasks (20+ steps, 10+ minutes) exceed what any single skill or flat planner can handle. Robots need to decompose abstract goals into subtasks, and subtasks into primitive actions, maintaining consistent intent across the whole sequence.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Hierarchical planning separates the what (decided by the LLM) from the how (decided by low-level controllers). The LLM excels at the semantic level — it knows that setting a table requires plates before glasses — while the motor controller handles the precise spatial execution.</p>
+<p>The critical design question is where to cut the hierarchy. Too coarse and the LLM must handle details it cannot reason about well. Too fine and the LLM generates hundreds of steps where a single skill would suffice. The emerging answer is locality-invariant skills at the bottom — skills parameterized by local workspace rather than global pose — which dramatically reduces the number of distinct skills the LLM needs to name.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_hier_plan" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Goal: <b>'Set the dining table for four'</b>. This requires 20+ primitive actions across 5 object categories.</li>
+<li>LLM decomposes the goal into <b>6 high-level subgoals</b>: [fetch_plates, place_plates, fetch_cutlery, place_cutlery, fetch_glasses, place_glasses].</li>
+<li>Each subgoal routes to a <b>skill library</b>: fetch_plates → grasp(plate_location) → navigate(table) → place(target_position).</li>
+<li>ManipGen uses locality-invariant policies for each skill: the same pick policy works on any plate location because it conditions on <b>local workspace features</b>, not global position.</li>
+<li>End-to-end success on novel table configurations: <b>61% (hierarchical LLM) vs 23% (flat policy)</b> with zero additional demonstrations per configuration.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Local Policies Enable Zero-Shot Long-Horizon Manipulation</b> &mdash; locality-invariant policies composed with foundation models for zero-shot multi-stage tasks</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MuST: Multi-Head Skill Transformer for Long-Horizon Dexterous Manipulation with Skill Progress</b> &mdash; multi-head Transformer learns parallel motion primitives; learned progress value triggers skill-switching</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>The Ingredients for Robotic Diffusion Transformers</b> &mdash; Diffusion Transformer on multimodal language-annotated demonstrations for 1500+ timestep bimanual tasks</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>COLLAGE: Collaborative Human-Agent Interaction Generation Using Hierarchical Latent Diffusion and Language Models</b> &mdash; LLM generates motion planning cues guiding latent-space diffusion model for hierarchically-abstracted interaction sequences</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm5">
+  <div class="famhd"><span class="famn">05</span><h3>Semantic navigation & object search</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A robot searching an unfamiliar building for a specific object must decide which rooms to check first, without a map or explicit labels. Classical search is exhaustive; LLMs encode the common-sense prior that fridges are in kitchens and chargers are near desks.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Semantic navigation works because the LLM's prior over object locations is a distillation of millions of written descriptions of real spaces. The prior is not perfect — a stapler could be anywhere — but it is better than chance, and it degrades gracefully when combined with execution feedback that rules out visited rooms.</p>
+<p>The pattern generalizes: any semantic relationship the LLM can express (object A is usually near object B; this room type typically contains category C) becomes a navigation prior. The robot does not need a hand-labeled map; it needs a query interface to the LLM's world knowledge.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_sem_nav" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Task: <b>'Find the stapler'</b>. The building has 12 rooms; the robot has seen none of them.</li>
+<li>LLM prompted with room names: ranked prior — <b>office (0.82), conference room (0.61), living room (0.12)</b> — drawn from web-scale co-occurrence knowledge.</li>
+<li>Robot navigates to the office first. VLM runs open-vocabulary detection. Stapler not found; proprioceptive state updates the belief.</li>
+<li>LLM <b>re-ranks</b> given 'office searched, not found': conference room moves to 0.77. Robot navigates there.</li>
+<li>Stapler found at step 2. Average search steps: <b>2.4 (LLM-guided) vs 6.1 (uniform random)</b> on 100 building episodes.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Language-Guided Object Search in Agricultural Environments</b> &mdash; LLM encodes object-to-object semantic relationships; plans paths minimizing distance while maximizing target discovery probability</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for Robot Navigation</b> &mdash; retrieval-augmented memory combines temporal metadata, spatial coordinates, image embeddings; VLM queries for long-horizon navigation</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Task-Aware Semantic Map: Autonomous Robot Task Assignment Beyond Commands</b> &mdash; LLM generates contextual task proposals from scene understanding without explicit commands; autonomous task discovery</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Commonsense Reasoning for Legged Robot Adaptation with Vision-Language Models</b> &mdash; VLM-Predictive Control queries VLM for multi-skill planning from interaction history; replans online when obstacles appear</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm6">
+  <div class="famhd"><span class="famn">06</span><h3>Vision-language manipulation & action prediction</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Manipulation requires connecting natural-language instructions ('pick the blue mug') to precise, continuous motor commands. The challenge is that the same instruction maps to many different actions depending on the exact scene, and the model must handle both semantic understanding and spatial precision.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Vision-language manipulation is the most direct application of VLMs to robotics: the model sees the scene, reads the instruction, and produces the action. The pretrained alignment between vision and language gives the model a head start on understanding what objects are and what operations on them mean.</p>
+<p>Failure recovery is the key differentiator over end-to-end policies: the VLM can generate a corrective instruction in language that a simpler reactive controller then executes. This keeps the high-level semantic reasoning in the VLM while offloading the reactive loop to something faster and more reliable.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_vl_manip" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Observation: RGB image of a counter with three mugs (red, blue, green) + instruction: <b>'pick the blue mug'</b>.</li>
+<li>VLM encodes image + text → 512-dim joint embedding. Cross-attention localizes attention to the <b>blue mug patches</b>.</li>
+<li>Action prediction head outputs a <b>6-DOF grasp pose</b>: position [0.31m, -0.12m, 0.82m], orientation quaternion.</li>
+<li>Low-level controller executes the grasp. On failure (no contact detected), a <b>VLM supervisor generates recovery instruction</b>: 'the mug slipped — re-approach from the side'.</li>
+<li>With recovery, success rate on novel object arrangements: <b>83% vs 61% (no recovery)</b> across 50 real-robot trials.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACER: Rich Language-Guided Failure Recovery Policies for Imitation Learning</b> &mdash; VLM supervisor generates online correction instructions; failure recovery data pipeline augments demonstrations</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robot Utility Models: General Policies for Zero-Shot Deployment in New Environments</b> &mdash; multimodal imitation learning with zero-shot deployment; mLLM verifier enables retry loops for recovery</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Generalizable Vision-Language Robotic Manipulation: A Benchmark and LLM-Guided 3D Policy</b> &mdash; 3D-LOTUS++ chains 3D spatial reasoning with LLM task planning and VLM object grounding across generalization levels</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist Vision-Language-Action Agent</b> &mdash; task-mask sparsity and value-projection routing merge single-skill VLA models into a generalist without catastrophic forgetting</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm7">
+  <div class="famhd"><span class="famn">07</span><h3>Code-as-policy generation</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Behavior described in language is ambiguous; a robot needs a precise, executable specification. Code bridges the gap: an LLM writes a Python function that calls robot primitives, and the robot runs it — combining the LLM's natural-language reasoning with the determinism of a program.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Code generation works because programs are formal and testable. Unlike a language plan ('place the mug on the counter'), a Python call like place(mug, counter) fails with an exact error message if the object or location is wrong. The robot can run the code, catch the exception, and ask the LLM to fix the specific line — closing a tight feedback loop.</p>
+<p>Constraint satisfaction is where code generation is especially powerful. Expressing 'never put food on the floor' in PDDL requires careful predicate engineering; in Python it is a one-line assertion. The LLM generates code, the checker verifies constraints, and failing programs are returned to the LLM for repair — all in language.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_code_pol" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Prompt includes: robot API (pick(obj), place(loc), navigate(room)) + constraint: <b>'never place food on the floor'</b>.</li>
+<li>LLM writes a Python function <span class='eq'>def prepare_lunch(obs): ...</span> that calls pick, navigate, and place in sequence.</li>
+<li>A static checker runs over the generated code: detects if any <b>place(food, floor)</b> call exists. If so, LLM is asked to fix it.</li>
+<li>CaStL translates the constraint <b>'never X'</b> to a Python assertion injected into the code before every place() call.</li>
+<li>Code runs on robot; if an assertion fires, execution halts and the LLM sees the stack trace → <b>generates a corrected version in one round</b>.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>CaStL: Constraints as Specifications Through Llm Translation for Long-Horizon Task and Motion Planning</b> &mdash; multi-stage LLM pipeline translates natural-language constraints to PDDL and Python; custom solver handles constraint-rich planning</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Here's your PDDL Problem File! On Using VLMs for Generating Symbolic PDDL Problem Files</b> &mdash; VLM-to-PDDL pipeline parses visual and textual scene descriptions into valid PDDL problem files</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LLM-as-BT-Planner: Leveraging LLMs for Behavior Tree Generation in Robot Task Planning</b> &mdash; LLMs generate syntactically valid behavior trees as executable code structures from task descriptions</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAS-Prompt: Large Language Models as Numerical Optimizers for Robot Self-Improvement</b> &mdash; structured LLM prompt generates parameter updates as code; gradient-free optimization of robot controllers</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm8">
+  <div class="famhd"><span class="famn">08</span><h3>Retrieval-augmented robot memory</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>General LLMs hallucinate site-specific facts (building layouts, equipment manuals, compliance rules). Retrieval-augmented generation externalizes this knowledge into a searchable database, letting the robot look up the relevant document at query time instead of relying on the model's memory.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The core insight of RAG is the separation of reasoning from knowledge. The LLM is good at reasoning — if you give it the relevant text, it can synthesize a correct answer. It is bad at remembering site-specific facts, because those facts were not on the web at pretraining time. Retrieval fixes that: externalizing the knowledge into a database and injecting it at query time.</p>
+<p>For robots, the retrieved context can be an equipment manual, a floor map, a regulation document, or a history of past robot interactions with a specific workspace. Long-horizon memory — remembering what the robot saw and did yesterday — is a retrieval problem, not a model architecture problem.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_rag_mem" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Robot is asked: <b>'Is it safe to operate the CNC machine near the storage tanks?'</b> — a site-specific compliance question.</li>
+<li>Query is embedded → <b>top-3 passages retrieved</b> from the 400-page site operations manual. Cosine similarity threshold: 0.78.</li>
+<li>Retrieved passages: 'Section 7.3: maintain 5m clearance from flammable storage. Section 7.4: CNC spark risk zone &ge;3m.' Injected as context.</li>
+<li>LLM generates a plan that <b>navigates the CNC machine &ge;5m from tanks</b> — not from its general knowledge but from the retrieved text.</li>
+<li>SayComply evaluation: <b>91% compliance rate</b> on site-specific rules vs 54% for LLM without retrieval.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SayComply: Grounding Field Robotic Tasks in Operational Compliance Through Retrieval-Based Language Models</b> &mdash; hierarchical RAG over operational manuals grounds LLM planning in site-specific compliance documents</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for Robot Navigation</b> &mdash; retrieval over temporal metadata, spatial coordinates, and image embeddings for long-horizon navigation QA</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACCOON: Grounding Embodied Question-Answering with State Summaries from Existing Robot Modules</b> &mdash; RAG-inspired retrieval of robot internal state injected into LLM prompts for embodied question answering</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MultiTalk: Introspective and Extrospective Dialogue for Human-Environment-LLM Alignment</b> &mdash; dual dialogue loops — introspective self-check and extrospective environment comparison — flag planning misalignments</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm9">
+  <div class="famhd"><span class="famn">09</span><h3>Visual instruction tuning</h3><span class="cat vb">vision</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A pretrained vision-language model can describe images but cannot follow instructions: 'crop to the red object', 'compare the two diagrams', 'answer the question about this chart'. Instruction tuning fine-tunes the model on curated (instruction, image, answer) triples to make it follow directives.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Instruction tuning is the step that turns a language model from a text completer into an assistant. For vision-language models the same principle applies: supervised fine-tuning on diverse instruction-response pairs teaches the model to interpret and follow directives about images, videos, and multi-modal inputs.</p>
+<p>The active research questions are forgetting (tuning on new instructions overwrites old capabilities) and diversity (instruction tuning on narrow datasets produces narrow assistants). Dynamic gradient guidance and continual instruction tuning methods try to preserve what the model already knows while adding new instruction-following skills.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_vis_instruct" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Base model: a VLM pretrained on image-text pairs. It can caption; it cannot follow instructions.</li>
+<li>Instruction dataset: <b>150K (instruction, image, answer)</b> triples, automatically generated from existing annotations using GPT-4.</li>
+<li>Fine-tune with <b>next-token loss on the answer only</b>; the image and instruction are context, not supervised.</li>
+<li>LLaDA-V variant: replaces the autoregressive decoder with a <b>diffusion-based language decoder</b> — bidirectional attention over the response, not left-to-right.</li>
+<li>After tuning: the model answers visual questions, follows format instructions, and handles multi-turn dialogue about an image — with <b>8% less forgetting</b> than naive sequential fine-tuning.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>LLaDA-V: Large Language Diffusion Models with Visual Instruction Tuning</b> &mdash; diffusion-based MLLM with bidirectional attention for visual instruction following; reduces sequential forgetting</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Multimodal Continual Instruction Tuning with Dynamic Gradient Guidance</b> &mdash; geometric parameter-space guidance prevents catastrophic forgetting during sequential instruction tuning</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Streaming Video Instruction Tuning</b> &mdash; real-time frame-level Silence/Standby/Response prediction for instruction-following on streaming video</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>BabyVLM-V2: Toward Developmentally Grounded Pretraining and Benchmarking of Vision Foundation Models</b> &mdash; infant-centric pretraining curriculum; tests whether developmental ordering improves sample efficiency</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm10">
+  <div class="famhd"><span class="famn">10</span><h3>Hallucination mitigation & grounding</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Multimodal language models generate fluent, confident statements that contradict the visual evidence in the image — describing objects that are not there, misidentifying spatial relations, or inventing attributes. Detecting and suppressing these errors without degrading correct outputs is the central challenge.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Hallucination happens because the model's prior — the distribution learned from text — dominates the visual evidence when they conflict. A model that has read a million descriptions of white plates will output 'white' unless the visual signal is strong enough to override the linguistic prior. Contrastive decoding suppresses this by penalizing tokens that the model would produce even without the image.</p>
+<p>Grounding-based methods take a different approach: force the model to cite the specific image region that justifies each claim. If the model cannot point to evidence for an assertion, it should not make the assertion. This is analogous to asking a student to cite their sources — it does not eliminate errors but makes them visible and correctable.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_halluc" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Model is shown an image of a <b>red apple on a blue plate</b>. Asked: 'what color is the plate?'</li>
+<li>Without grounding: model outputs <b>'white'</b> (hallucination — the most statistically common plate color at pretraining time).</li>
+<li>SEASON: compute a <b>contrastive decoding score</b> — penalize tokens whose probability rises when the image is replaced with a blank.</li>
+<li>Perceptual-evidence anchoring: enforce that the model cites an image patch before asserting an attribute — the patch acts as a <b>verifiable evidence anchor</b>.</li>
+<li>With grounding: model outputs <b>'blue'</b>. Hallucination rate on ScienceQA drops from <b>28% to 11%</b>.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SEASON: Mitigating Temporal Hallucination in Video LLMs via Self-Diagnostic Contrastive Decoding</b> &mdash; self-diagnostic contrastive decoding suppresses tokens whose probability increases when visual input is absent</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>See It, Say It, Sorted: An Iterative Training-Free Framework for Visually-Grounded Multimodal Reasoning in LVLMs</b> &mdash; iterative evidence-grounded decoding anchors each assertion to a verifiable image region</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Perceptual-Evidence Anchored Reinforced Learning for Multimodal Reasoning</b> &mdash; RL reward tied to perceptual evidence citation; teaches the model to ground claims before asserting them</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MAD: Modality-Adaptive Decoding for Mitigating Cross-Modal Hallucinations in MLLMs</b> &mdash; task-driven modality weighting suppresses the dominant modality from overriding the weaker one</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm11">
+  <div class="famhd"><span class="famn">11</span><h3>Chain-of-thought multimodal reasoning</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Hard visual questions — counting, spatial reasoning, multi-hop inference — cannot be answered in a single forward pass. The model needs to decompose the question, inspect relevant image regions in sequence, and track the intermediate results before arriving at a final answer.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Chain-of-thought reasoning works for language because intermediate steps make sub-problems explicit and easier to solve. For visual reasoning the challenge is that each step may require re-attending to a different image region — the model must effectively run a sequence of visual queries, not just a sequence of textual inferences.</p>
+<p>The robotics connection is navigation and embodied QA: NavForesee applies the same pattern to planning, generating a sequence of reasoning steps about the environment before committing to a path. The intermediate reasoning is not thrown away — it is grounded to specific scene observations that guide each subsequent step.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_cot" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Question: <b>'How many people are wearing red shirts and standing to the left of the door?'</b> — requires counting, color recognition, and spatial grounding.</li>
+<li>Chain-of-thought step 1: model grounds <b>'the door'</b> by attending to the doorframe region → extracts its x-coordinate (pixel 412).</li>
+<li>Step 2: model detects all people, filters those at x &lt; 412 → <b>4 people on the left</b>.</li>
+<li>Step 3: model checks shirt color for each of 4 people → <b>2 wearing red</b>.</li>
+<li>Final answer: <b>'2'</b>. Without CoT the model outputs '5' (all red-shirt people, ignoring the spatial filter).</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>NavForesee: A Unified Vision-Language World Model for Hierarchical Planning and Embodied Navigation</b> &mdash; VLM generates multi-step reasoning traces about the scene that directly guide hierarchical navigation decisions</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DecoVLN: Decoupling Observation Reasoning and Correction for Vision-and-Language Navigation</b> &mdash; separate modules for scene understanding and trajectory correction; each gets its own chain-of-thought pass</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Seeing What Matters: A Training-Free Self-Guided Framework for Multimodal Detail Perception and Reasoning</b> &mdash; gradient-weighted attention and PCA reconstruction steer the model toward relevant image regions for multi-hop reasoning</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CCCaption: Dual-Reward RL for Complete and Correct Image Captioning</b> &mdash; RL with dual reward (completeness + correctness) trains the model to reason over all image regions before captioning</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm12">
+  <div class="famhd"><span class="famn">12</span><h3>Parameter-efficient adaptation (LoRA & adapters)</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Full fine-tuning of a 7-billion-parameter VLM requires storing and updating billions of gradient tensors — impractical per skill, per robot, or per domain. Parameter-efficient methods adapt the same backbone to many tasks by training only a small fraction of the weights.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>LoRA works by observing that the weight updates needed for a new task tend to have low intrinsic rank — they live in a small subspace of the full weight matrix. Decomposing the update into two small matrices (A times B) captures this subspace without storing or computing the full update. The pretrained weights stay frozen; only the low-rank adapters change.</p>
+<p>For robots, this means the same base VLM can be adapted to a new skill with a tiny adapter trained on a hundred demonstrations, stored as a few megabytes, and swapped in and out at runtime. Multi-task systems store one adapter per skill and select the right one at inference time — essentially a mixture-of-LoRA over the same frozen backbone.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_lora" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Base model: a 7B-parameter VLM. Full fine-tune for a new robot task would require <b>28 GB of gradient memory</b>.</li>
+<li>LoRA: decompose each weight update as <span class='eq'>&Delta;W = A&middot;B</span> where A &isin; ℝ^(d&times;r), B &isin; ℝ^(r&times;d), <b>r=16</b>.</li>
+<li>Trainable parameters: <b>2 &times; d &times; r per layer</b>. For d=4096, r=16: 131K per layer vs 16.8M for full fine-tune → <b>99.2% reduction</b>.</li>
+<li>Fine-tune on <b>500 robot demonstrations</b> of a new pick-and-place task. Training time: <b>4 hours on 1 GPU</b> vs 3 days for full fine-tune.</li>
+<li>Task success: <b>79% (LoRA) vs 81% (full fine-tune)</b> — within 2% at 1% of the compute cost.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>FairLLaVA: Fairness-Aware Parameter-Efficient Fine-Tuning for Large Vision-Language Assistants</b> &mdash; LoRA fine-tuning with fairness constraints; shows PEFT can satisfy multiple objectives simultaneously</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Bootstrap Dynamic-Aware 3D Visual Representation for Scalable Robot Learning</b> &mdash; efficient 3D-aware adapter trained on top of a frozen 2D backbone for scalable robot perception</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>M4-SAM: Multi-Modal Mixture-of-Experts with Memory-Augmented SAM for RGB-D Video Salient Object Detection</b> &mdash; mixture-of-experts adapters with modality-specific routing inside a frozen SAM backbone</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>KALM: Keypoint Abstraction Using Large Models for Object-Relative Imitation Learning</b> &mdash; VLM auto-proposes task-relevant keypoints via a lightweight adapter; verifies consistency against robot demonstrations</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm13">
+  <div class="famhd"><span class="famn">13</span><h3>Model merging & multi-skill generalization</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Training a single model on many skills simultaneously causes interference: skills that require contradictory behaviors degrade each other. Training one model per skill is expensive. Model merging combines independently trained single-skill weights into a unified model without joint retraining.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Model merging treats the fine-tuned weight delta (the task vector) as a semantic artifact that can be added to, subtracted from, or combined with other task vectors. This works because fine-tuning from the same base tends to update different subspaces for different skills — the interference is real but manageable with sparsity or routing.</p>
+<p>For robots, merging is attractive because it avoids the combinatorial explosion of maintaining one model per (skill, embodiment, environment) combination. A generalist VLA built by merging a library of specialist models retains most of each specialist's performance at a fraction of the storage and compute cost.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_merge" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Start with <b>4 single-skill VLA models</b>: pick, place, push, pour — each fine-tuned independently from the same base.</li>
+<li>Compute task vectors: <span class='eq'>&tau;&#7522; = &theta;&#7522; - &theta;&#7502;&#7476;&#7486;&#7466;</span> for each skill i (the delta from base to fine-tuned weights).</li>
+<li>Merge: <span class='eq'>&theta;&#7502;&#7506;&#7493;&#7506;&#7516;&#7496;&#7507; = &theta;&#7502;&#7476;&#7486;&#7466; + &Sigma;&#7522; &lambda;&#7522;&tau;&#7522;</span> with <b>&lambda;&#7522; = 0.4</b> learned by routing.</li>
+<li>MergeVLA sparsity: threshold task vector magnitudes below <b>0.01</b> to zero — remove interference from low-magnitude overlapping updates.</li>
+<li>Merged model success: <b>pick 82%, place 79%, push 74%, pour 71%</b> — within 5% of individual fine-tuned models with <b>1/4 the storage</b>.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist Vision-Language-Action Agent</b> &mdash; task-mask sparsity and value-projection routing merge single-skill VLA models into a generalist without joint retraining</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LIMT: Language-Informed Multi-Task Visual World Models</b> &mdash; language-extracted task representations exploit task similarity across skills; world model conditions on learned task embeddings</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizable Imitation Learning Through Pre-Trained Representations</b> &mdash; pretrained ViT patch embeddings extract semantically stable keypoints shared across object categories</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Same or Not: Enhancing Visual Perception in Vision-Language Models</b> &mdash; contrastive pretraining for fine-grained similarity enables the backbone to distinguish subtly different skills or objects</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm14">
+  <div class="famhd"><span class="famn">14</span><h3>Agentic systems & tool use</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A single LLM forward pass can reason but cannot search the web, run code, or query a database. Agentic systems give the model tools — search, Python execution, perception APIs — and ask it to plan a sequence of tool calls that together accomplish a goal the model cannot complete in one step.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Agentic behavior requires the model to maintain a plan across multiple tool invocations, tracking intermediate state and deciding which tool to call next based on what prior tools returned. This is qualitatively different from single-pass question answering: the model must handle uncertainty (the tool might return nothing), failure (the tool might error), and iteration (the answer might require several tool calls to assemble).</p>
+<p>For robots, the tools are the robot's own sensors and actuators: perception APIs, motion planners, force sensors, maps. An agentic robot controller calls these tools sequentially, building up a plan step by step based on what each tool returns. RAAS (LLM Agentic System Architecture Search) treats the architecture of these tool-use loops as a design problem that can itself be optimized.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_agent" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Goal: <b>'Find the safety data sheet for the chemical in the blue container and check if it requires special ventilation.'</b></li>
+<li>Agent step 1: call vision tool → VLM reads label → chemical name: <b>'Methyl Ethyl Ketone (MEK)'</b>.</li>
+<li>Agent step 2: call search tool → retrieves SDS PDF from OSHA database. <b>Tool returns page 3, ventilation section.</b></li>
+<li>Agent step 3: LLM reads retrieved text → <b>'Yes: local exhaust ventilation required; TLV 200 ppm.'</b></li>
+<li>Agent composes final answer with a <b>cited source and a concrete ventilation spec</b> — neither hallucinated from memory nor requiring human lookup.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>AgentDet: A Shared-Blackboard Multi-Agent Framework for Zero-/Few-Shot Object Detection</b> &mdash; Scout/Pinner/Curator/Judge agents share a blackboard state; each tool call updates shared context for the next agent</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RAAS: LLM Agentic System Architecture Search with GRPO</b> &mdash; uses GRPO to search over possible tool-use architectures; finds efficient agentic loops automatically</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>U-Mind: A Unified Framework for Real-Time Multimodal Interaction with Audiovisual Input</b> &mdash; unified agentic framework routes audiovisual inputs through specialized perception tools with real-time latency</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>VLM-GroNav: Robot Navigation Using Physically Grounded Vision-Language Models in Outdoor Environments</b> &mdash; VLM + in-context learning dynamically refines traversability estimates from proprioceptive feedback; replans trajectory online</span></li></ul>
+</div>
+
+<div class="fam rich" id="fm15">
+  <div class="famhd"><span class="famn">15</span><h3>Specialized & domain foundation models</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>General VLMs trained on web data perform poorly on domain-specific distributions: medical images, satellite data, or industrial inspection are all underrepresented at pretraining time. Domain-specific foundation models adapt the general backbone to specialized vocabularies, imaging modalities, and task structures.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Domain foundation models work because the general backbone already knows how to process images and text; the domain-specific fine-tune teaches it the vocabulary, imaging characteristics, and task structure of the specialized domain. The pretrained features generalize; only the top-level interpretation changes.</p>
+<p>For robotics, the specialized domains are industrial inspection, medical robotics, and agricultural automation — each with imaging modalities (thermal, X-ray, multispectral) and measurement vocabularies (dimensions in millimeters, chemical concentrations in ppm) that general VLMs handle poorly. Domain-specific instruction datasets and specialized encoders are the two levers.</p></div></div>
+  <figure class="fdiag"><canvas data-fmanim="fmf_domain_fm" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Task: detect early-stage Alzheimer's disease from an MRI scan — a distribution the general VLM has seen rarely.</li>
+<li>EMAD: fine-tune on <b>8,000 MRI + clinical report pairs</b>. The report text provides the supervision signal; no pixel-level labels needed.</li>
+<li>RNED: add a <b>Rotary Number Encoding/Decoding head</b> — standard tokenizers mis-tokenize numerical values like '1.42 mm' into meaningless subwords; RNED tokenizes measurements as structured numbers.</li>
+<li>After domain fine-tuning: AUC on Alzheimer's detection <b>0.91 vs 0.73</b> (general VLM baseline).</li>
+<li>GeoDiT: same pattern for geospatial — VLM pretrained on <b>1.2M satellite image + text</b> pairs outperforms general VLM by <b>19 F1 points</b> on land-use classification.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>EMAD: Evidence-Centric Grounded Multimodal Diagnosis for Alzheimer's Disease</b> &mdash; evidence-grounded multimodal VLM for Alzheimer's diagnosis; evidence citation prevents hallucination of clinical findings</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RNED: Rotary Number Encoding and Decoding for Medical VLMs</b> &mdash; specialized tokenizer for numerical values in clinical text; prevents mis-tokenization of measurements and scores</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoDiT: A Diffusion-based Vision-Language Model for Geospatial Understanding</b> &mdash; VLM pretrained on satellite image-text pairs for geospatial reasoning and land-use classification</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>From Panel to Pixel: Zoom-In Vision-Language Pretraining from Biomedical Scientific Literature</b> &mdash; hierarchical figure-panel-patch supervision from biomedical papers; learns fine-grained scientific image understanding</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Foundation models are the fastest-moving area in robotics &mdash; and several fundamental questions remain genuinely open:</p>
+  <div class="opgrid"><div class="op"><b>Hallucination with no physical correction loop.</b> LLMs generate plausible-sounding plans that violate physics or geometry. Without tight feedback from perception and execution, there is no mechanism to catch these errors before they cause a robot to fail or cause harm.</div>
+<div class="op"><b>Latency vs control frequency.</b> An LLM call takes 50&ndash;500 ms; a low-level robot controller runs at 100&ndash;1000 Hz. Current architectures separate planning (slow, LLM) from execution (fast, learned policy), but the interface between them is fragile when the world changes faster than the LLM can re-plan.</div>
+<div class="op"><b>Evaluation of open-ended task success.</b> When the task is specified in language ('make dinner'), what counts as success? Evaluating LLM-based robot policies requires natural-language success criteria, which is itself a grounding problem. There is no agreed-upon benchmark that captures the full distribution of real household tasks.</div>
+<div class="op"><b>Sim-to-real for LLM-guided policies.</b> Simulating the physical world for training is one problem; simulating the linguistic context (user instructions, failure descriptions) is a different problem that has received less attention. LLM-guided policies that work in simulation often fail when users phrase instructions differently in the real world.</div>
+<div class="op"><b>Safety guarantees.</b> Symbolic planners offer formal correctness proofs; LLM-generated plans are probabilistic and cannot be formally verified. Combining LLM flexibility with the safety properties of formal methods — without sacrificing the generalization benefit — is an open architecture problem.</div></div>
+</div>
+
+</div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="vla-explained.html">Vision-Language-Action</a> &middot; <a href="world-models-explained.html">World Models</a> &middot; <a href="diffusion-policies-explained.html">Diffusion Policies</a> &middot; <a href="gaussian-splatting-explained.html">3D Gaussian Splatting</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
+<footer><div class="wrap">Foundation Models explainer &middot; mechanism diagrams are live JavaScript (assets/fm-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the reasoning engine inside the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/fm-anim.js"></script>
+</body></html>

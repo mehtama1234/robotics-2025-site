@@ -65,6 +65,7 @@
       <li style="margin:6px 0"><b>Getting around, alone and together</b> — <a href="navigation-explained.html">Navigation</a> · <a href="multi-robot-explained.html">Multi-Robot</a>.</li>
       <li style="margin:6px 0"><b>Where it learns and proves itself</b> — <a href="sim-to-real-explained.html">Sim-to-Real</a> · <a href="autonomous-driving-explained.html">Autonomous&nbsp;Driving</a> · <a href="medical-explained.html">Medical&nbsp;&amp;&nbsp;Surgical</a>.</li>
       <li style="margin:6px 0"><b>How it learns</b> — <a href="rl-explained.html">RL&nbsp;&amp;&nbsp;Imitation</a> · <a href="gm-explained.html">Generative&nbsp;Models</a>.</li>
+      <li style="margin:6px 0"><b>The brain, the control, and the trust</b> — <a href="fm-explained.html">Foundation-Model&nbsp;Planners</a> · <a href="ct-explained.html">Control&nbsp;&amp;&nbsp;MPC</a> · <a href="sf-explained.html">Safety&nbsp;&amp;&nbsp;Guarantees</a>.</li>
       <li style="margin:6px 0"><b>The math under all of it</b> — <a href="math-explained.html">Mathematical&nbsp;Foundations</a>.</li>
     </ol>
   </div>
@@ -97,7 +98,7 @@
     </a>
     <a class="card big" href="math-explained.html">
       <div class="ic">🧮</div><h3>Mathematical Foundations: the ideas under every theme, from first principles<span class="tag">new</span></h3>
-      <p>The handful of mathematical ideas that recur under all 18 themes — each explained as the big-picture problem it solves, then the approach, then where across the field it shows up. Five live diagrams of the master ideas (minimize a loss, update belief with evidence, vectors & transforms & their axes, attention as a weighted average, the score/diffusion idea), and 15 concept families — gradient descent, least squares & bundle adjustment, Bayes & filtering, SVD & Lie groups, attention & Fourier, information theory, diffusion SDEs, optimal transport, graphs, MDPs & Bellman, Lyapunov/CBF safety, contact complementarity — each with the actual formula, a concrete worked example, and the real papers that use it.</p>
+      <p>The handful of mathematical ideas that recur under all 21 themes — each explained as the big-picture problem it solves, then the approach, then where across the field it shows up. Five live diagrams of the master ideas (minimize a loss, update belief with evidence, vectors & transforms & their axes, attention as a weighted average, the score/diffusion idea), and 15 concept families — gradient descent, least squares & bundle adjustment, Bayes & filtering, SVD & Lie groups, attention & Fourier, information theory, diffusion SDEs, optimal transport, graphs, MDPs & Bellman, Lyapunov/CBF safety, contact complementarity — each with the actual formula, a concrete worked example, and the real papers that use it.</p>
       <div class="go">Open the mathematical-foundations explainer →</div>
     </a>
     <a class="card big" href="rl-explained.html">
@@ -109,6 +110,21 @@
       <div class="ic">🌫️</div><h3>Generative Models: learning to make, not just label, from first principles<span class="tag">new</span></h3>
       <p>Model the distribution of data and you can sample new examples — images, video, 3D, and the robot’s next move. Five live diagrams (make not label, denoise noise into data, generate in a small latent, condition on a prompt, generate the action itself), a comparison of discriminative vs diffusion/flow vs autoregressive, a lineage from GANs to generative policies, and 15 families across all five conferences (diffusion policies, flow matching, text-to-image, latent diffusion, ControlNet-style control, editing, 3D/4D generation, distillation, grasp synthesis, motion generation…).</p>
       <div class="go">Open the generative-models explainer →</div>
+    </a>
+    <a class="card big" href="fm-explained.html">
+      <div class="ic">🧠</div><h3>Foundation Models as Robot Planners &amp; Reasoners, from first principles<span class="tag">new</span></h3>
+      <p>Robot data is scarce; the web already recorded how the world works — so pretrain once on it, then reuse that model as the robot’s brain. Five live diagrams (why pretrain then adapt, masked prediction builds broad knowledge, one backbone becomes planner/eyes/instruction-reader, turning a goal into an ordered plan, where it’s confidently wrong), a comparison of classical planner vs LLM planner vs end-to-end VLA, a lineage from SayCan to Code-as-Policies to VoxPoser, and 15 families across all five conferences (behavior-tree &amp; symbolic planning, language-grounded perception, in-context prompting, task decomposition, semantic navigation, code-as-policy, RAG memory, instruction tuning, hallucination grounding, agentic tool use…).</p>
+      <div class="go">Open the foundation-models explainer →</div>
+    </a>
+    <a class="card big" href="ct-explained.html">
+      <div class="ic">🎚️</div><h3>Control &amp; Model-Predictive Control: turning a plan into motion, from first principles<span class="tag">new</span></h3>
+      <p>A plan is a wish — the body has mass, limits, and gets pushed around; control is what makes the motion actually follow. Five live diagrams (why a plan drifts, feedback chases the error, MPC plans a short horizon and re-solves, whole-body QP splits one task across many joints, the real-time clock the solve must beat), a comparison of open-loop vs feedback vs MPC vs learned policy, a lineage from LQR and the Kalman filter to differentiable simulation, and 15 families across all five conferences (MPC, trajectory optimization/DDP, impedance control, whole-body QP, contact-implicit, learning-augmented MPC, learned world models, physics-aware motion…).</p>
+      <div class="go">Open the control &amp; MPC explainer →</div>
+    </a>
+    <a class="card big" href="sf-explained.html">
+      <div class="ic">🛡️</div><h3>Safety, Robustness &amp; Formal Guarantees, from first principles<span class="tag">new</span></h3>
+      <p>The more capable and learned a robot is, the harder it is to promise it’s safe — too many behaviors to check them all. Five live diagrams (why capability outruns trust, a safety filter that keeps the state inside a safe set, reachable-set analysis, calibrated uncertainty, a runtime monitor that falls back to a trusted controller), a comparison of empirical testing vs safety filter vs reachability vs conformal, a lineage from Lyapunov stability to control barrier functions to conformal prediction, and 15 families across all five conferences (CBFs, Hamilton-Jacobi reachability, safe RL, runtime monitoring, uncertainty quantification, OOD detection, conformal prediction, adversarial robustness, hallucination detection…).</p>
+      <div class="go">Open the safety &amp; guarantees explainer →</div>
     </a>
     <a class="card big" href="vt-explained.html">
       <div class="ic">🎞️</div><h3>Video &amp; Temporal Understanding: seeing over time, from first principles<span class="tag">new</span></h3>

@@ -1,0 +1,451 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Safety, Robustness &amp; Formal Guarantees, from first principles</title>
+<style>
+:root{--ink:#0F0A0A;--paper:#F5EFE8;--panel:#FBF7F2;--tint:#EDE4D8;--line:#D5C8B8;
+ --graphite:#4A3828;--g2:#8A6E58;--accent:#B5622A;--accent-deep:#8F4A1E;--accent-lite:#D98A50;
+ --robo:#4E6172;--cvpr:#2F6F8B;--both:#B5622A;
+ --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+ --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+a{color:var(--accent-deep)}.wrap{max-width:880px;margin:0 auto;padding:0 22px}
+header{background:#140A04;color:#F0E8DC;padding:32px 0 24px;border-bottom:1px solid #000}
+header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent-lite)}
+header h1{margin:9px 0 8px;font-family:var(--serif);font-size:32px;letter-spacing:-.02em;color:#F8F0E4}
+header p{color:#C0A08A;font-size:15px;margin:0 0 14px;max-width:70ch}
+header nav{font-family:var(--mono);font-size:12px;color:#9A7A60}header nav a{color:var(--accent-lite);text-decoration:none}
+h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14px}
+.part{border-top:2px solid var(--ink);margin-top:38px;padding-top:8px}
+.part .pl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
+.part h2{font-size:27px;margin:4px 0 6px}
+.part .intro{font-size:15.5px;color:#2A1408;max-width:72ch;margin:0 0 6px}.part .intro b{color:var(--accent-deep)}
+.fp{border-top:1px solid var(--line);padding:30px 0 6px}
+.kick{font-family:var(--mono);font-size:12px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase}
+.fp h2{margin:2px 0 15px}
+.instrument{margin:0 0 18px;background:#140A04;border:1px solid #2A1808;border-radius:12px;padding:14px 14px 10px}
+.instrument canvas{display:block;width:100%;height:auto}
+.instrument figcaption{font-family:var(--mono);font-size:11.5px;line-height:1.55;color:#9A7A60;margin-top:8px}
+.essay p{font-size:15.5px;color:#1E0C04;margin:11px 0;max-width:72ch}.essay em{font-style:italic}
+.eq{font-family:var(--mono);font-size:13px;background:var(--tint);padding:2px 7px;border-radius:5px;color:var(--accent-deep);white-space:nowrap}
+.ranfig{margin:20px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.ranbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:var(--accent);display:inline-block;padding:3px 9px;border-radius:5px;margin-bottom:11px}
+.ranfig img{display:block;width:100%;max-width:460px;margin:0 auto;height:auto;border-radius:8px;background:#100804}
+.ranfig figcaption{font-size:13px;color:#2A1408;margin-top:11px;max-width:78ch}.ranfig figcaption b{color:var(--accent-deep)}
+.math{margin:6px 0 2px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+.math summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--accent-deep);padding:9px 13px;list-style:none}
+.math summary::-webkit-details-marker{display:none}.math summary::before{content:"+ ";color:var(--g2)}.math[open] summary::before{content:"2 "}
+.math .mbody{padding:2px 15px 12px;border-top:1px solid var(--line)}
+.math .mbody p{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:#1E0C04;margin:9px 0;max-width:78ch}.math .mbody b{color:var(--accent-deep)}
+.lineage{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0 4px}
+@media(max-width:720px){.lineage{grid-template-columns:1fr 1fr}}
+.lineage .ll{grid-column:1/-1;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2)}
+.ln{border-top:2px solid var(--accent);padding:7px 2px 0;background:linear-gradient(180deg,var(--panel),transparent)}
+.ln .lyr{font-family:var(--mono);font-size:11px;color:var(--accent-deep);display:block}.ln b{font-size:13px;display:block;margin:2px 0 3px}.ln p{font-size:11.5px;color:#2A1408;margin:0;line-height:1.45}
+.bens{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}@media(max-width:620px){.bens{grid-template-columns:1fr}}
+.ben{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:13px 15px}
+.ben h4{margin:0 0 5px;font-size:15px}.ben p{margin:0;font-size:13.5px;color:#1E0C04}
+.cmpwrap{overflow-x:auto;margin-top:12px}.cmp{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp thead th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--graphite);background:var(--tint)}
+.cmp .rn{font-weight:600;background:var(--panel);color:var(--ink);white-space:nowrap}.cmp td{color:#1E0C04}
+.cmp tr.hi td,.cmp tr.hi .rn{background:#F0E0D0}.cmp tr.hi .rn{color:var(--accent-deep)}
+.famindex{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0 4px}
+@media(max-width:760px){.famindex{grid-template-columns:1fr 1fr}}
+.fchip{display:flex;align-items:baseline;gap:7px;font-size:12px;text-decoration:none;color:#1E0C04;border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:7px 9px;background:var(--panel);line-height:1.3}
+.fchip:hover{background:var(--tint)}.fchip.rb{border-left-color:var(--robo)}.fchip.vb{border-left-color:var(--cvpr)}.fchip.bb{border-left-color:var(--both)}
+.fchip .cn{font-family:var(--mono);font-size:10px;color:var(--g2);flex:none}
+.famgrid{display:grid;gap:14px;margin-top:16px}
+.fam{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel);padding:16px 18px}
+.famhd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.famn{font-family:var(--mono);font-size:12px;color:var(--g2)}
+.fam h3{margin:0;font-size:18px;font-family:var(--serif);flex:1 1 auto;min-width:55%}
+.cat{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.cat.rb{background:#E4EAEF;color:#3A4A5A;border:1px solid #C6D2DC}.cat.vb{background:#E4EEF2;color:#1F5673;border:1px solid #C4D8E4}.cat.bb{background:#F0E0D0;color:var(--accent-deep);border:1px solid #D8C0A8}
+.fessay p{font-size:14.5px;margin:9px 0;max-width:74ch;color:#1E0C04}
+.fam.rich{padding-bottom:16px}
+.fsec{margin:10px 0}
+.rl{display:inline-block;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--graphite);margin-bottom:2px}
+.rl.acc{color:var(--accent-deep)}
+.fdiag{margin:14px 0 6px;background:#100804;border:1px solid #2A1808;border-radius:11px;padding:12px 12px 8px}
+.fdiag canvas{display:block;width:100%;height:auto}
+.worked{background:var(--tint);border:1px solid var(--line);border-radius:10px;padding:12px 15px 12px;margin:6px 0 2px}
+.worked .wl{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-deep);margin-bottom:6px}
+.worked ol{margin:0;padding-left:20px}
+.worked li{font-size:13.5px;margin:5px 0;line-height:1.5}
+.worked li b{color:var(--accent-deep)}
+.papers{list-style:none;margin:12px 0 0;padding:12px 0 0;border-top:1px dashed var(--line)}
+.papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#1E0C04;line-height:1.5}
+.vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
+.vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--accent)}
+.pt b{color:#0F0A0A}
+.legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
+.opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
+.op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#1E0C04}.op b{color:var(--accent-deep)}
+.related{border-top:1px solid var(--line);margin-top:26px;padding:15px 0 2px;font-size:13px;line-height:1.9}.related b{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--g2);display:block;margin-bottom:5px}.related a{color:var(--accent-deep);text-decoration:none}.related a:hover{text-decoration:underline}
+footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">Safety &amp; Guarantees &middot; CBFs &middot; reachability &middot; conformal prediction &middot; robotics + vision</div>
+  <h1>Safety and formal guarantees: keeping learned systems in bounds</h1>
+  <p>A learned policy can produce almost any output &mdash; you cannot enumerate every behavior it will ever exhibit. Control barrier functions, reachability analysis, conformal prediction, runtime monitors, and uncertainty quantification each answer the same question from a different angle: how do you make a promise about a system you cannot fully enumerate? From first principles, drawn live, grounded in the ICRA / IROS / CoRL / RSS and CVPR&nbsp;2026 corpora.</p>
+  <nav>The core idea: <a href="#fp1">the problem</a> &middot; <a href="#fp2">the filter</a> &middot; <a href="#fp3">formal futures</a> &middot; <a href="#fp4">calibrated doubt</a> &middot; <a href="#fp5">last resort</a></nav>
+</div></header>
+<div class="wrap">
+
+<div class="part">
+  <div class="pl">Part I</div><h2>The core idea, from first principles</h2>
+  <p class="intro">Five ideas, each a live diagram then plain words &mdash; why safety is hard for learned systems, the CBF filter, reachability, calibrated uncertainty, and runtime monitoring. Each has a &lsquo;<em>the actual math</em>&rsquo; toggle.</p>
+</div>
+<div class="lineage"><div class="ll">how we got here</div><div class="ln"><span class="lyr">1892</span><b>Lyapunov stability</b><p>Lyapunov functions prove asymptotic stability without solving the differential equation — the conceptual ancestor of all safety certificates.</p></div><div class="ln"><span class="lyr">1960s&ndash;80s</span><b>robust control</b><p>H&#8734; and minimax control guarantee performance bounds despite worst-case model mismatch — formal safety for linear systems.</p></div><div class="ln"><span class="lyr">2000s</span><b>Hamilton-Jacobi reachability</b><p>Mitchell, Tomlin et al. compute reach-avoid sets via HJ PDEs — exact safety certificates for nonlinear systems in low dimensions.</p></div><div class="ln"><span class="lyr">2005 / 2019</span><b>conformal prediction &amp; CBFs</b><p>Shafer &amp; Vovk formalize conformal prediction (2005); Ames et al. develop control barrier functions for nonlinear safety (2014&ndash;19).</p></div><div class="ln"><span class="lyr">2017+</span><b>constrained MDPs &amp; safe RL</b><p>Lagrangian and primal-dual methods bring cost constraints into RL — policy optimization that respects safety budgets during training.</p></div><div class="ln"><span class="lyr">2020s</span><b>runtime safety &amp; conformal robots</b><p>OOD monitors, conformal planning, and neural reachability scale safety tools to high-dimensional perception-to-action pipelines.</p></div></div>
+
+<section class="fp" id="fp1">
+  <div class="kick">01 &middot; the problem</div>
+  <h2>The safety gap in learned systems</h2>
+  <figure class="instrument"><canvas data-sfanim="sf_why" height="300"></canvas>
+    <figcaption>A hand-written rule occupies a small, checkable space of behaviors. A large learned policy can produce almost any output — you cannot enumerate every possible state it will ever visit. That is the safety gap: the more capable the system, the harder it becomes to promise it will stay out of trouble.</figcaption></figure>
+  <div class="essay"><p>Classical controllers — PID, model predictive control, hand-designed state machines — have explicit, bounded behaviors. You can inspect the code, bound the outputs, and prove that under certain conditions the system stays within safe limits. Safety is a property of the design, not an empirical hope.</p>
+<p>A learned policy trained with reinforcement learning or imitation has a parameter space with millions of degrees of freedom. It generalizes beyond training data in ways its designers did not anticipate. That generalization is precisely its value &mdash; and precisely the problem. The field of safety, guarantees, and formal methods exists to close the gap between a policy that <em>usually</em> works and one that <em>provably</em> works.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>A learned policy &pi;: S &rarr; A maps any state to an action. The set of behaviors it can produce is not enumerable for large &pi; &mdash; no finite test can certify safety.</p>
+<p>Classical safety: prove &forall;x&isin;X, &forall;d&isin;D: f(x,&pi;(x),d) &isin; X<sub>safe</sub>. With a black-box neural &pi; this is undecidable in general.</p></div></details>
+</section>
+
+<section class="fp" id="fp2">
+  <div class="kick">02 &middot; the filter</div>
+  <h2>A safety filter wraps any policy</h2>
+  <figure class="instrument"><canvas data-sfanim="sf_cbf" height="300"></canvas>
+    <figcaption>A control barrier function (CBF) defines a set of states the robot is allowed to occupy. At every step, before executing the policy's command, a small convex optimization problem checks: does this action keep the state inside the safe set? If not, it finds the nearest action that does.</figcaption></figure>
+  <div class="essay"><p>The key insight is separation: the policy can be learned any way you like &mdash; reinforcement learning, imitation, a neural network &mdash; without worrying about safety. Safety is enforced by a separate layer downstream. The filter corrects the action, not the policy weights.</p>
+<p>A CBF h(x) is a scalar function where h(x) &ge; 0 defines the safe region. The safety condition is: the time-derivative &huml;h(x) must stay non-negative &mdash; the state cannot drift out. This translates into a quadratic program (QP) that minimally modifies the policy command to satisfy the constraint. The correction is zero when the policy is already safe; it activates only near the boundary.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>CBF condition: for h(x) &ge; 0 as the safe set, require <span class='eq'>&dot;h(x) &ge; &minus;&alpha;&middot;h(x)</span> &mdash; a class-K function &alpha; prevents escape.</p>
+<p>Safety QP: <span class='eq'>u* = argmin ||u &minus; u<sub>nom</sub>||&sup2; s.t. L<sub>f</sub>h + L<sub>g</sub>h&middot;u &ge; &minus;&alpha;h(x)</span> &mdash; minimal correction to policy command.</p>
+<p>If the QP is feasible, the filtered action guarantees h(x(t)) &ge; 0 for all t &ge; 0 &mdash; no escape from the safe set.</p></div></details>
+</section>
+
+<section class="fp" id="fp3">
+  <div class="kick">03 &middot; formal futures</div>
+  <h2>Compute every state you could reach</h2>
+  <figure class="instrument"><canvas data-sfanim="sf_reach" height="300"></canvas>
+    <figcaption>Reachability analysis asks: given the system dynamics and all possible disturbances, what states can the robot enter in the next T seconds? If any of those states intersects a danger zone, the current state is unsafe — act now to make the reachable set shrink away from the hazard.</figcaption></figure>
+  <div class="essay"><p>The Hamilton-Jacobi reachability framework encodes this as a partial differential equation. The value function V(x,t) gives the minimum distance to the hazard over all possible futures from state x at time t. When V(x,t) crosses zero, a bad future is reachable &mdash; that is the safety boundary.</p>
+<p>Because reachability works over all possible disturbances &mdash; worst-case &mdash; its guarantees are hard: no matter what happens, the system will not enter the danger set. The cost is compute: solving a Hamilton-Jacobi PDE exactly is tractable only in low-dimensional state spaces. Recent work extends it to black-box and high-dimensional systems via neural function approximators.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Hamilton-Jacobi value function: V(x,t) = min<sub>u</sub> max<sub>d</sub> min<sub>s&isin;[t,T]</sub> l(x(s)) where l(x)&lt;0 marks the failure set.</p>
+<p>Safety boundary: <span class='eq'>V(x,0) = 0</span> &mdash; states where a bad future is just barely avoidable; negative V means inevitable failure.</p>
+<p>PDE: &part;V/&part;t + min<sub>u</sub> max<sub>d</sub> &nabla;V&middot;f(x,u,d) = 0 with terminal V(x,T) = l(x).</p></div></details>
+</section>
+
+<section class="fp" id="fp4">
+  <div class="kick">04 &middot; calibrated doubt</div>
+  <h2>Be cautious in proportion to uncertainty</h2>
+  <figure class="instrument"><canvas data-sfanim="sf_uncertainty" height="300"></canvas>
+    <figcaption>A model that produces a point estimate — 'the obstacle is 2.3 m away' — gives you no information about how wrong it might be. Uncertainty quantification replaces that point with a range and a confidence level: 'the obstacle is between 1.8 m and 2.8 m with 90% probability.' Conformal prediction produces such intervals without assuming anything about the model.</figcaption></figure>
+  <div class="essay"><p>The two kinds of uncertainty are different. Aleatoric uncertainty is irreducible noise in the world &mdash; sensor quantization, weather, occlusion. Epistemic uncertainty is ignorance in the model &mdash; it has not seen enough data near the current state. Only epistemic uncertainty shrinks with more training. Conformal prediction wraps any black-box predictor in a coverage-guaranteed interval without assuming normality or any specific model structure.</p>
+<p>The coverage guarantee is: <em>P(y &isin; C(x)) &ge; 1 &minus; &alpha;</em> where &alpha; is a chosen error rate, and this holds for any test distribution that matches the calibration distribution. The system uses uncertainty to widen action margins near unfamiliar states &mdash; slowing down, requesting human confirmation, or handing off to a fallback.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>Conformal coverage: <span class='eq'>P(y &isin; C(x)) &ge; 1 &minus; &alpha;</span> for any distribution matching calibration &mdash; distribution-free, finite-sample.</p>
+<p>Nonconformity score s(x,y); threshold &tau; = quantile<sub>(1&minus;&alpha;)(1+1/n)</sub> of calibration scores; prediction set C(x) = {y : s(x,y) &le; &tau;}.</p></div></details>
+</section>
+
+<section class="fp" id="fp5">
+  <div class="kick">05 &middot; last resort</div>
+  <h2>Watch the policy; fall back when it strays</h2>
+  <figure class="instrument"><canvas data-sfanim="sf_monitor" height="300"></canvas>
+    <figcaption>Even a CBF-filtered, uncertainty-aware policy can encounter states it was never designed for. A runtime monitor observes the live state and compares it to what was expected — using an OOD score, a prediction-error threshold, or a learned anomaly detector. When the monitor fires, control passes to a simple, verifiable fallback.</figcaption></figure>
+  <div class="essay"><p>The fallback controller does not need to be optimal &mdash; it needs to be safe. A freeze command, a return-to-home trajectory, or a reduced-speed reactive planner can all serve as fallbacks. The design question is: at what signal should the switch happen, and how do you ensure the handoff itself is safe?</p>
+<p>In autonomous vehicles this pattern is called the safety architecture: perception monitors flag degraded inputs, prediction monitors flag divergence from expected agent behavior, and a behavioral safe-stop sequence engages when either fires. The same structure appears in surgical robots, industrial arms, and legged locomotion. The monitor is the last line before a human must intervene.</p></div>
+  <details class="math"><summary>the actual math &mdash; one level deeper</summary><div class="mbody"><p>OOD score &delta;(x) (e.g. Mahalanobis distance or energy score); trigger fallback when <span class='eq'>&delta;(x) &gt; &tau;<sub>monitor</sub></span>.</p>
+<p>Safe handoff: the fallback u<sub>safe</sub> must itself satisfy CBF constraints &mdash; the switch is only safe if the fallback keeps the system in the safe set.</p></div></details>
+</section>
+<section class="fp"><figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div><figcaption>A control-barrier-function obstacle-avoidance demo was exercised locally using NumPy. A point mass moves toward a goal in 2-D while a CBF safety filter solves a small quadratic program at each step to keep the agent at least 0.3&nbsp;m from a circular obstacle. The filter corrects the nominal greedy command near the boundary and returns the original command everywhere else. The agent reached the goal in every trial; the CBF constraint was never violated. This is a small, clean demonstration &mdash; not a hardware experiment &mdash; but it directly shows the filter mechanism described in Part&nbsp;I.</figcaption></figure></section>
+
+<div class="part">
+  <div class="pl">how it compares</div><h2>Four safety approaches, side by side</h2>
+  <p class="intro">What each approach guarantees, how conservative it is, what it assumes, and what it costs.</p>
+  <div class="cmpwrap"><table class="cmp"><thead><tr><th></th><th>Guarantee type</th><th>Conservatism</th><th>Assumptions needed</th><th>Compute cost</th></tr></thead><tbody><tr><th class="rn">Empirical testing</th><td>probabilistic (no bound on unseen)</td><td>none — unconstrained</td><td>representative test distribution</td><td>low to high (millions of sim hours)</td></tr><tr class="hi"><th class="rn">Control barrier function (CBF)</th><td>hard set invariance</td><td>low — minimal correction</td><td>known or learned dynamics, feasible QP</td><td>low — one QP per step</td></tr><tr><th class="rn">Hamilton-Jacobi reachability</th><td>hard reach-avoid certificate</td><td>high — worst-case disturbances</td><td>known dynamics, tractable PDE dimension</td><td>very high — offline PDE solve</td></tr><tr><th class="rn">Conformal prediction</th><td>distribution-free coverage (1-α)</td><td>proportional to calibration data</td><td>i.i.d. or exchangeable calibration set</td><td>low — sort scores, one threshold</td></tr></tbody></table></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part II</div><h2>The benefits people actually get</h2>
+  <p class="intro">Every family below leans on one or more of these &mdash; the recurring reasons to add a formal safety layer on top of a learned system.</p>
+  <div class="bens"><div class="ben"><h4>Hard guarantees, not just statistics</h4><p>A CBF or reachability certificate says the robot mathematically cannot leave the safe set under the given assumptions — not that it rarely does. That distinction matters for certification.</p></div>
+<div class="ben"><h4>Separation of policy and safety</h4><p>The safety filter is decoupled from the learned policy. You can swap, retrain, or update the policy without re-proving safety; the filter handles it.</p></div>
+<div class="ben"><h4>Uncertainty-aware conservatism</h4><p>Conformal prediction and uncertainty-aware planning widen margins proportionally to model uncertainty — acting cautiously only when and where needed, not everywhere.</p></div>
+<div class="ben"><h4>Graceful degradation</h4><p>Runtime monitors and fallback controllers mean a partial failure produces a controlled stop or reduced-capability mode, not a crash or uncontrolled motion.</p></div>
+<div class="ben"><h4>Distribution-free coverage</h4><p>Conformal prediction wraps any black-box predictor — a neural network, a VLM, a depth estimator — in a coverage guarantee without assuming anything about its internals.</p></div></div>
+</div>
+
+<div class="part">
+  <div class="pl">Part III</div><h2>Every way safety and guarantees appear in research</h2>
+  <p class="intro">Fifteen families, each with the approaches and real papers &mdash; <span style="color:var(--robo);font-weight:600">robotics</span> (ICRA/IROS/CoRL/RSS), <span style="color:var(--cvpr);font-weight:600">vision</span> (CVPR&nbsp;2026), and the <span style="color:var(--accent);font-weight:600">overlap</span>. Jump to any:</p>
+  <div class="famindex"><a class="fchip rb" href="#sf1"><span class="cn">01</span>Control barrier functions</a><a class="fchip rb" href="#sf2"><span class="cn">02</span>Reachability analysis</a><a class="fchip rb" href="#sf3"><span class="cn">03</span>Safe reinforcement learning</a><a class="fchip rb" href="#sf4"><span class="cn">04</span>Runtime monitoring</a><a class="fchip bb" href="#sf5"><span class="cn">05</span>Uncertainty quantification</a><a class="fchip bb" href="#sf6"><span class="cn">06</span>Out-of-distribution</a><a class="fchip rb" href="#sf7"><span class="cn">07</span>Formal verification</a><a class="fchip rb" href="#sf8"><span class="cn">08</span>Safe imitation learning</a><a class="fchip rb" href="#sf9"><span class="cn">09</span>Collision avoidance</a><a class="fchip rb" href="#sf10"><span class="cn">10</span>Risk-aware planning</a><a class="fchip bb" href="#sf11"><span class="cn">11</span>Conformal prediction</a><a class="fchip vb" href="#sf12"><span class="cn">12</span>Adversarial attacks</a><a class="fchip vb" href="#sf13"><span class="cn">13</span>Calibration in vision models</a><a class="fchip vb" href="#sf14"><span class="cn">14</span>Hallucination detection in VLMs</a><a class="fchip vb" href="#sf15"><span class="cn">15</span>Test-time adaptation</a></div>
+  <div class="famgrid">
+<div class="fam rich" id="sf1">
+  <div class="famhd"><span class="famn">01</span><h3>Control barrier functions &amp; safety filters</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A learned controller can command any output — it has no built-in awareness of physical limits. The safety filter must intercept that command and find the closest action that keeps the system inside a mathematically defined safe region, without retraining the policy.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>A control barrier function h(x) carves the state space into safe (h &ge; 0) and unsafe (h &lt; 0) regions. The safety filter solves a small convex program at every control tick to find the minimal correction that keeps the state drifting toward &mdash; never away from &mdash; the safe interior.</p>
+<p>The decoupling is the real benefit: the learned policy can be trained without any knowledge of the safety constraint. Switching from one task to another with different geometry only requires changing h(x), not retraining.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_cbf_filter" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Define the safe set as h(x) = d(x, obstacles) &minus; d<sub>min</sub> where d<sub>min</sub> = <b>0.3 m</b> minimum clearance.</li>
+<li>At each 10 ms control tick, the policy outputs u<sub>nom</sub> = (thrust=12 N, pitch=0.05 rad).</li>
+<li>Compute L<sub>f</sub>h + L<sub>g</sub>h&middot;u<sub>nom</sub>: the Lie derivative evaluates to <b>&minus;0.12</b>, violating ḣ &ge; &minus;&alpha;h with &alpha;=2.</li>
+<li>Solve the safety QP: find u* minimizing ||u &minus; u<sub>nom</sub>||&sup2; subject to the CBF constraint → correction of <b>0.8 N</b> on thrust.</li>
+<li>The filtered command keeps clearance &ge; 0.3 m; over <b>500 steps</b> the quadrotor navigates the cluttered corridor without a single CBF violation.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Safety-Critical Control for Aerial Physical Interaction</b> &mdash; CBF wraps a trajectory-tracking controller so the aerial arm never exceeds contact force limits during physical interaction</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps</b> &mdash; constructs h(x) from a live 3DGS map — the safe set updates as the map is refined during flight</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Suture Thread Modeling Using Control Barrier Functions for Autonomous Surgery</b> &mdash; thread tension and tissue proximity encoded as CBFs for a surgical robot, preventing tissue damage</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Safe Quadrotor Navigation Using Composite Control Barrier Functions</b> &mdash; composes multiple CBFs (each obstacle a separate h_i) into one feasible QP without conservatism from naive intersection</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf2">
+  <div class="famhd"><span class="famn">02</span><h3>Reachability analysis &amp; Hamilton-Jacobi</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Testing a robot by simulation samples a tiny fraction of state space. Formal reachability asks the dual question: compute the set of ALL states reachable in the next T seconds and verify that none of them intersect the failure set.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Hamilton-Jacobi reachability computes reach-avoid sets by solving a PDE backward in time from the failure set. The value function V(x) tells you whether any worst-case future trajectory can hit the hazard from state x — not whether the current plan does, but whether any plan does.</p>
+<p>Neural network approximations of V reduce the dimensionality curse: a small network represents V over continuous high-dimensional state spaces without a grid, making HJ reachability applicable to robot arms, drones, and vehicles.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_reach_hj" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Define failure set F = {x : min-clearance &lt; <b>0.1 m</b>}; dynamics ẋ = f(x,u,d) with disturbance d &isin; [&minus;0.5, 0.5] m/s&sup2; each axis.</li>
+<li>Solve the HJ PDE backward from T=<b>3 s</b>: V(x,0) = 0 is the safety boundary, V &lt; 0 means failure inevitable.</li>
+<li>Offline computation: <b>4 hours</b> on a 4-D state (position + velocity); the result is a value function grid.</li>
+<li>At runtime: look up V(x<sub>now</sub>) in <b>&lt;1 ms</b>; if V &lt; 0.05, trigger avoidance maneuver.</li>
+<li>Over 200 hardware trials the robot never entered F; reachability certificate covers the <b>full disturbance envelope</b>.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reachability Analysis for Black-Box Dynamical Systems</b> &mdash; learn the reachable set of an opaque learned model via conformal and statistical coverage — no dynamics model needed</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Guaranteed Reach-Avoid for Black-Box Systems through Narrow Gaps via Neural Network Reachability</b> &mdash; neural network reachability applied to gap-navigation — proves passage is possible with 99% probability</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAFE-GIL: SAFEty Guided Imitation Learning for Robotic Systems</b> &mdash; uses reachability-computed safe sets to guide which demonstrations to collect and which states to perturb</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamically Feasible Path Planning in Cluttered Environments via Reachable Bézier Polytopes</b> &mdash; plans inside the intersection of reachable polytopes — each segment is guaranteed geometrically feasible</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf3">
+  <div class="famhd"><span class="famn">03</span><h3>Safe reinforcement learning</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Standard RL maximizes cumulative reward with no concept of constraint. A policy trained this way will violate safety constraints whenever doing so yields reward — during training and after. Safe RL integrates constraint satisfaction into the optimization from the start.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Constrained MDPs add a cost function alongside the reward. The Lagrangian relaxation turns the constrained optimization into an unconstrained one with a penalty multiplier &lambda; that auto-adjusts to enforce the budget. Adaptive conformal prediction can tighten the safety margin dynamically based on prediction uncertainty.</p>
+<p>Safe RL is not the same as a safety filter. Safe RL bakes constraint awareness into the policy weights — the policy learns to avoid dangerous states. A safety filter guarantees constraints even if the policy ignores them. Both layers together give the strongest guarantees.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_safe_rl" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Formulate a constrained MDP: reward r(s,a) for task, cost c(s,a) = <b>1 if min-clearance &lt; 0.2 m</b> else 0.</li>
+<li>Lagrangian: augment the objective L = &minus;V<sub>&pi;</sub> + &lambda;(J<sub>C</sub>(&pi;) &minus; <b>0.05</b>) where 0.05 is the cost budget per episode.</li>
+<li>Update &pi; to minimize L; update &lambda; to maximize it &mdash; a primal-dual loop that penalizes cost violations automatically.</li>
+<li>After <b>2M environment steps</b>: task reward at <b>92%</b> of unconstrained baseline; cost rate <b>0.03 episodes</b> (below the 0.05 budget).</li>
+<li>Add a CBF filter on top: reduces cost violations at deployment to <b>zero</b> without retraining.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic Object Goal Pushing with Mobile Manipulators Through Model-Free Constrained RL</b> &mdash; constrained RL for a pushing task where a moving obstacle creates dynamic safety constraints</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Safe Multi-Agent Navigation Guided by Goal-Conditioned Safe RL</b> &mdash; each agent has an individual safety constraint; the multi-agent problem is decomposed with independent Lagrangians</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Computationally and Sample Efficient Safe RL Using Adaptive Conformal Prediction</b> &mdash; conformal prediction calibrates the safety margin online — less conservative than fixed worst-case bounds</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Disturbance Observer-based Control Barrier Functions with Residual Model Learning for Safe RL</b> &mdash; a disturbance observer estimates unmodeled forces and feeds them into the CBF condition — tighter, less conservative guarantees</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf4">
+  <div class="famhd"><span class="famn">04</span><h3>Runtime monitoring &amp; recovery</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>No matter how carefully a policy was trained, the world will eventually present a state outside its training distribution. At that moment the policy's output is unreliable. A runtime monitor detects this divergence and hands off to a trusted, conservative controller before harm occurs.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Runtime monitors observe the live system state &mdash; perception outputs, prediction errors, actuator responses &mdash; and flag when something looks wrong. The flag can be soft (log a warning, widen margins) or hard (freeze, hand to fallback).</p>
+<p>Recovery policies handle the aftermath: fall-detection and stand-up for legged robots, rich language-guided failure descriptions for imitation-learning policies, or a return-to-home flight path for UAVs. The monitor and recovery together form a second feedback loop above the primary controller.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_runtime_mon" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Train a one-class anomaly detector on <b>50,000 nominal perception states</b> using energy-based scoring.</li>
+<li>At test time compute energy score E(x<sub>t</sub>) every <b>50 ms</b>; calibrated threshold &tau; = <b>14.2</b> (95th percentile of nominal).</li>
+<li>During a live run, sensor noise from unexpected glare pushes E(x<sub>t</sub>) to <b>19.6</b> &mdash; above &tau;.</li>
+<li>Monitor triggers: the policy output is suppressed; the vehicle decelerates at <b>0.3 g</b> to a full stop in <b>4.1 s</b>.</li>
+<li>Over <b>3,000 km</b> of AV testing: 14 monitor triggers, 0 collisions; without monitoring, 3 simulated near-misses.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>System-Level Safety Monitoring and Recovery for Perception Failures in Autonomous Vehicles</b> &mdash; perception degradation scores trigger graduated responses — warning, speed reduction, controlled stop</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACER: Rich Language-Guided Failure Recovery Policies for Imitation Learning</b> &mdash; a VLM diagnoses the imitation failure and generates a corrective sub-goal for the recovery policy</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>FRASA: An End-to-End RL Agent for Fall Recovery and Stand Up of Humanoid Robots</b> &mdash; a single RL policy covers the full recovery arc: detect fall, brace, roll, stand — trained end-to-end</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robot Utility Models: General Policies for Zero-Shot Deployment in New Environments</b> &mdash; monitor assesses environment novelty; the utility model decides whether to proceed or request demonstration</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf5">
+  <div class="famhd"><span class="famn">05</span><h3>Uncertainty quantification</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Point-estimate predictions give no signal about when to trust them. A depth estimate 2.3 m away is treated identically whether the sensor has seen thousands of similar scenes or is extrapolating to a completely new texture. Uncertainty quantification makes that difference explicit and actionable.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Bayesian methods (Gaussian processes, Bayesian neural networks, deep ensembles) quantify epistemic uncertainty by maintaining a distribution over model parameters. The predictive variance grows wherever training data is sparse — exactly the states where caution is warranted.</p>
+<p>Aleatoric uncertainty (irreducible noise) and epistemic uncertainty (model ignorance) are meaningfully different: only the second shrinks with more data. Separating them lets the planner widen margins only where new data would help, not everywhere.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_uq" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Model: a Gaussian process depth estimator with kernel k(x,x'); predictions are Gaussian: &mu;(x) &plusmn; &sigma;(x).</li>
+<li>At a familiar scene: &sigma;(x<sub>1</sub>) = <b>0.04 m</b>; safety margin d<sub>min</sub> + <b>3&sigma;</b> = 0.42 m &rarr; act normally.</li>
+<li>At an unseen glass-table texture: &sigma;(x<sub>2</sub>) = <b>0.31 m</b>; margin = 0.42 + 3&times;0.31 = <b>1.35 m</b> &rarr; slow to 0.2 m/s.</li>
+<li>Epistemic contribution separated from aleatoric: retraining on similar data reduces &sigma; from 0.31 to <b>0.09 m</b> within 50 samples.</li>
+<li>Net effect: no collisions on novel scenes while retaining <b>91%</b> of nominal speed on familiar terrain.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bayesian Optimal Experimental Design for Robot Kinematic Calibration</b> &mdash; Bayesian experiment design selects calibration poses that minimally reduce epistemic uncertainty about kinematic parameters</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-aware Probabilistic 3D Human Motion Forecasting via Invertible Networks</b> &mdash; invertible networks produce full trajectory distributions — forecast uncertainty propagates to planning margins</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Query2Uncertainty: Robust Uncertainty Quantification and Calibration for 3D Object Detection</b> &mdash; RealNVP normalizing flow on DETR detection queries gives calibrated per-detection uncertainty estimates</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Adaptive Confidence Regularization for Multimodal Failure Detection</b> &mdash; confidence gap between unimodal and multimodal predictions signals impending failure — 9.58% AURC improvement</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf6">
+  <div class="famhd"><span class="famn">06</span><h3>Out-of-distribution &amp; anomaly detection</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A learned sensor or perception module trained on one distribution will confidently output wrong answers on another, with no internal signal that anything is wrong. OOD detection adds that signal: flag inputs whose features differ from training distribution and suppress or discount the model output.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>OOD detection methods measure how far a test input is from the training distribution using energy scores, Mahalanobis distance, or the maximum softmax response. The key insight is that overconfident outputs on OOD data are a consequence of the training objective — cross-entropy does not penalize confidence on unseen inputs.</p>
+<p>Anomaly detection in industrial inspection, off-road traversability, and video surveillance all share the same primitive: model the normal distribution at training time, then flag deviations. Foundation models have made zero-shot anomaly detection practical by providing rich generic features without task-specific annotation.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_ood" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Train an image classifier on <b>50,000 on-road scenes</b>; record energy scores for all training images.</li>
+<li>Threshold &tau; = <b>&minus;22.4</b> at 95% true-positive rate on held-out nominal; 4.7% FPR.</li>
+<li>Deploy in off-road terrain: <b>78%</b> of frames flagged as OOD &mdash; correctly, since none of that terrain appeared in training.</li>
+<li>Extended Logit Normalization reduces overconfidence from <b>52.9% to 20.8%</b> on held-out OOD by normalizing logit magnitudes.</li>
+<li>Downstream planner treats flagged frames as low-confidence; traversability threshold widens from 0.6 to <b>0.3</b> — more conservative path selection.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generating Out-of-Distribution Scenarios Using Language Models</b> &mdash; an LLM generates natural-language descriptions of edge cases; a simulator instantiates them — systematic OOD coverage</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Anomalies-by-Synthesis: Anomaly Detection using Generative Diffusion Models for Off-Road Navigation</b> &mdash; a diffusion model synthesizes anomalous terrain patches for training the OOD detector — no real anomaly collection needed</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Mitigating Simplicity Bias in OOD Detection through Object Co-occurrence Analysis</b> &mdash; slot attention prevents co-occurrence shortcuts — overconfidence drops from 52.9% to 20.8% on OOD inputs</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AnomalyVFM: Transforming Vision Foundation Models into Zero-Shot Anomaly Detectors</b> &mdash; plugs foundation-model features into a one-class detector — 94.1% AUROC zero-shot without task-specific training</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf7">
+  <div class="famhd"><span class="famn">07</span><h3>Formal verification &amp; guarantees</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Empirical testing samples a finite set of scenarios. Formal verification checks all scenarios exhaustively via logical deduction, turning a simulation-based argument into a proof. For safety-critical systems this matters: a single counterexample is sufficient to invalidate the design.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Formal methods use mathematical logic to prove properties rather than test them. Signal temporal logic (STL) expresses safety constraints over time horizons; SAT/SMT solvers check whether a plan satisfies them. Neural network verification tools extend this to learned components.</p>
+<p>The gap between formal and learned is shrinking: neural network reachability verifies properties of networks by computing tight input-output bounds; conformal risk control gives distribution-free probabilistic certificates without requiring a formal model at all.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_formal" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Property: the vehicle never enters an intersection when a crossing agent could arrive within <b>2 s</b>.</li>
+<li>Encode the property as a temporal logic formula &phi; in signal temporal logic (STL) with a risk budget <b>&epsilon; = 0.01</b>.</li>
+<li>Graph-based planner: enumerate all edge-crossings within a <b>200 m</b> horizon; solve risk-bounded LP.</li>
+<li>Verification: check that the selected path satisfies &phi; via SMT solver &mdash; runtime <b>12 ms</b> per planning cycle.</li>
+<li>Over <b>1,000 Monte Carlo trials</b> with sampled agent behavior: 0 violations of &phi;; 99.1% confidence by Hoeffding bound.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Risk-Bounded Graph-Based Local Planning for Autonomous Driving With Theoretical Guarantees</b> &mdash; risk-bounded graph planner with STL verification at each planning step — 99.1% confidence guarantees</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic Gap: Safe Gap-based Navigation in Dynamic Environments</b> &mdash; formal gap-navigation safety analysis for the full dynamic-obstacle envelope</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Verifying Neural Network Robustness with Dual Perturbations</b> &mdash; dual-certificate verification that finds 99% more adversarial examples than previous tools — tighter reachable-set bounds</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Realm: Real-Time Line-of-Sight Maintenance in Multi-Robot Navigation with Unknown Obstacles</b> &mdash; formally verified line-of-sight maintenance for multi-robot teams — proved via reachability at 10 Hz</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf8">
+  <div class="famhd"><span class="famn">08</span><h3>Safe imitation learning</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Standard behavior cloning collects demonstrations from an expert, then trains a policy to mimic them. Safety-critical states are rare in demonstrations — and exactly where the clone is most likely to fail. Safe imitation augments the training signal to cover those states without requiring the expert to perform dangerous maneuvers.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Safe imitation learning addresses the data coverage problem: expert demonstrations cluster around smooth nominal behaviors and rarely visit the constraint boundary. If the clone extrapolates to those boundary states, it has nothing to imitate and produces unsafe actions.</p>
+<p>Two solutions: augment the dataset with synthetic near-constraint transitions (counterfactual or potential-field-guided), or use reachability to compute where the safety boundary lies and collect demonstrations near it. Both shift the training distribution toward the states that matter most for safety.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_safe_il" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Collect <b>500 nominal demonstrations</b> of a manipulation task; identify near-collision states (h(x) &lt; <b>0.15 m</b>) — only <b>23</b> present.</li>
+<li>RoCoDA counterfactual augmentation: for each near-collision state, perturb the arm pose by <b>3 cm</b> and replay the corrective action — generate <b>690</b> synthetic near-collision transitions.</li>
+<li>Potential-field flow matching: train a flow policy conditioned on a potential field encoding obstacle distances — the field is highest near obstacles.</li>
+<li>Augmented dataset: <b>500 + 690 = 1,190 transitions</b>; safety violation rate on test set drops from <b>18% to 3.4%</b>.</li>
+<li>Reachability-guided data collection: next iteration targets demonstrations near the <b>computed safety boundary</b> &mdash; most informative for safety.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Safe Imitation Learning via Potential Field-Guided Flow Matching</b> &mdash; a potential field encodes obstacle distance; the flow-matching policy is conditioned on it — safety-aware by construction</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RoCoDA: Counterfactual Data Augmentation for Data-Efficient Robot Learning from Demonstrations</b> &mdash; counterfactual perturbations of arm poses near constraints generate corrective transitions without extra demonstrations</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAFE-GIL: SAFEty Guided Imitation Learning for Robotic Systems</b> &mdash; reachability identifies safety-critical states; the system queries the expert only in those regions — data efficiency up 3x</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Agent Inverse Q-Learning from Demonstrations</b> &mdash; inverse RL recovers agent safety costs from demonstrations — infer what constraints the expert was implicitly satisfying</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf9">
+  <div class="famhd"><span class="famn">09</span><h3>Collision avoidance &amp; geometric safety</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A trajectory that looks collision-free in the planner may not account for the robot's own geometry: the arm has a volume, the drone has rotors, the path planner must keep every part of the body away from every obstacle at every instant, not just the center of mass.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Collision avoidance is the most direct form of geometric safety: maintain a minimum clearance between the robot body and all obstacles at all times. The challenge is computing this efficiently for complex robot geometries and dense point clouds at control rates.</p>
+<p>Sensor fusion — combining LiDAR, camera depth, and radar — increases the probability that every obstacle is detected. Multi-sensory data fusion, vision-based reactive controllers, and motion primitives for hazard avoidance each address a different point in the perception-to-planning pipeline.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_coll_avoid" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Represent the quadrotor as a <b>sphere of radius 0.22 m</b>; obstacle set = 3D point cloud from LiDAR.</li>
+<li>At each step, compute min-distance from sphere surface to nearest obstacle cluster: d<sub>obs</sub> = <b>0.48 m</b>.</li>
+<li>Safety constraint: d<sub>obs</sub> &ge; <b>0.30 m</b> (hard) and &ge; <b>0.50 m</b> (soft penalty in cost).</li>
+<li>Reachable Bézier polytope planner: find the Bézier curve whose swept volume stays inside the intersection of <b>14 polytope</b> obstacles — solved in <b>8 ms</b>.</li>
+<li>Over <b>1,200 flights</b> in a forest-like indoor testbed: 0 collisions; nearest approach <b>0.31 m</b>.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Navigation in Crowded Space Using Multi-Sensory Data Fusion</b> &mdash; fuses LiDAR, vision, and ultrasound to detect dynamic obstacles from all directions — no blind spots</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Vision Transformers for End-to-End Vision-Based Quadrotor Obstacle Avoidance</b> &mdash; ViT processes raw camera images to reactive collision-avoidance commands at 30 Hz — no explicit map</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamically Feasible Path Planning in Cluttered Environments via Reachable Bézier Polytopes</b> &mdash; plans Bézier curves inside reachable polytopes — geometric safety certificate per segment</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Vision-Based Movement Primitives for Lunar Hazard Avoidance</b> &mdash; vision-based motion primitives for lunar terrain; hazards detected from terrain texture and slope, not GPS</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf10">
+  <div class="famhd"><span class="famn">10</span><h3>Risk-aware planning</h3><span class="cat rb">robotics</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Worst-case safety is often too conservative: treating every disturbance as worst-case means never approaching any situation with uncertainty. Risk-aware planning accepts a bounded probability of constraint violation and uses that budget to make less conservative, more efficient decisions.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Risk-aware planning replaces worst-case constraints with probabilistic ones: instead of requiring zero violations, specify a probability budget and let the planner spend it where the gain is largest. The result is less conservative plans that still carry a formal bound.</p>
+<p>Chance constraints, conditional value-at-risk (CVaR), and risk-bounded graph search all operationalize this idea. The key is a good model of the uncertainty distribution — a mismatch between the assumed distribution and reality can invalidate the risk certificate.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_risk_plan" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>UAV task: reach a goal in <b>8 minutes</b> with battery energy constraint (budget = <b>40 Wh</b>) and collision risk budget <b>&epsilon; = 0.05</b>.</li>
+<li>Represent wind disturbance as a Gaussian: N(0, (1.2 m/s)&sup2;) per axis.</li>
+<li>Risk-constrained LP: find the path minimizing flight time subject to P(collision) &le; <b>0.05</b> and E[energy] &le; <b>40 Wh</b>.</li>
+<li>Solution: fly at <b>4.8 m/s</b> (vs 3.1 m/s conservative worst-case) with <b>22%</b> shorter path — risk budget spent on wind variance.</li>
+<li>Monte Carlo validation with <b>10,000 wind samples</b>: 4.7% collision probability — within the stated budget.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Risk-Aware Integrated Task and Motion Planning for Versatile Snake Robots Under Localization Failures</b> &mdash; chance-constrained TAMP for a snake robot — task plan adapts when localization uncertainty exceeds the risk budget</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Risk-Aware Energy-Constrained UAV-UGV Cooperative Routing Using Attention-Guided RL</b> &mdash; RL routes a UAV-UGV team under simultaneous energy and collision risk budgets — attention selects which constraint is active</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-Aware Probabilistic Risk Quantification of SOTIF for Autonomous Vehicles</b> &mdash; quantifies SOTIF (safety of the intended functionality) risk from sensor uncertainty — probabilistic failure rate certificate</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Risk-Bounded Graph-Based Local Planning for Autonomous Driving With Theoretical Guarantees</b> &mdash; risk-bounded graph planner with Hoeffding-bound certificate — efficient online replanning under stochastic agent behavior</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf11">
+  <div class="famhd"><span class="famn">11</span><h3>Conformal prediction &amp; distribution-free safety</h3><span class="cat bb">both</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>Bayesian methods give calibrated uncertainty only if the model and prior are correct. In practice both are misspecified. Conformal prediction provides coverage guarantees from first principles: given any black-box predictor and exchangeable calibration data, the prediction set will contain the true answer at rate 1-α — with no model assumptions.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>The conformal prediction framework needs only: a score function that measures how well a prediction matches the true output, and a calibration set exchangeable with the test distribution. The resulting prediction sets are guaranteed to contain the true answer with probability at least 1 &minus; &alpha; regardless of how the predictor was built.</p>
+<p>In robotics this enables wrapping a learned planner, a depth estimator, or a grasp-quality predictor in a coverage guarantee. In vision, conformal risk control extends coverage to tail-risk (CVaR) metrics, and compositional conformal prediction stacks guarantees through multi-step pipelines node by node.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_conformal" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Task: a manipulator predicts whether a grasp will succeed from image features; needs <b>90% coverage</b> (&alpha; = 0.10).</li>
+<li>Calibration set: <b>200 held-out grasps</b>; compute nonconformity score s(x,y) = 1 &minus; p&hat;(y|x) for each.</li>
+<li>Threshold: sort scores; &tau; = <b>0.31</b> at the (1 &minus; &alpha;)(1 + 1/n) = 90.5% quantile.</li>
+<li>At test time: prediction set C(x) = {y : 1 &minus; p&hat;(y|x) &le; 0.31}; on held-out test set coverage = <b>91.2%</b>.</li>
+<li>Adaptive conformal (RAPS): score adapts per input — high-uncertainty grasps get larger sets, common ones get smaller — coverage still <b>90.3%</b>.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Safe Decentralized Multi-Agent Control using Black-Box Predictors, Conformal Decision Policies, and Control Barrier Functions</b> &mdash; conformal prediction sets feed directly into CBF constraints — the QP is feasible with high probability by construction</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Conformalized Reachable Sets for Obstacle Avoidance with Spheres</b> &mdash; conformal wrappers produce coverage-guaranteed reachable-set estimates from a black-box neural dynamics model</span></li>
+<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Computationally and Sample Efficient Safe RL Using Adaptive Conformal Prediction</b> &mdash; adaptive conformal calibration of safety margins during RL training — tighter than worst-case, with coverage certificate</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Spectral Conformal Risk Control: Distribution-Free Tail Guarantees via Bayesian Quadrature</b> &mdash; controls CVaR tail risk (not just mean coverage) via spectral weighting — stronger safety guarantee for rare events</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf12">
+  <div class="famhd"><span class="famn">12</span><h3>Adversarial attacks &amp; certified defense</h3><span class="cat vb">vision</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A small, imperceptible change to an image can flip a classifier's output with high confidence. These perturbations are not random noise — they are computed by following the loss gradient in input space. A certified defense must bound the set of perturbations that can change the prediction.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Adversarial perturbations are not a quirk of specific models — they emerge from the geometry of high-dimensional decision boundaries. Any linear-enough classifier in high dimensions can be fooled by gradient-guided perturbations too small for a human to see.</p>
+<p>Certified defenses produce a formal guarantee: for perturbations within a given radius, the classifier is correct. Randomized smoothing, interval-bound propagation, and dual-certificate verification methods each compute that radius differently. Dual-certificate methods are the most complete: they verify the full reachable-set of perturbed inputs without sampling.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_adv_rob" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Image: cat photo. Classifier output: 'cat' (confidence <b>0.97</b>).</li>
+<li>PGD attack: 40 steps of gradient ascent on the cross-entropy loss, step size 2/255, L&infin; budget &epsilon; = <b>8/255</b>.</li>
+<li>Perturbed image: visually identical; classifier output: 'ostrich' (confidence <b>0.94</b>).</li>
+<li>Certified defense (randomized smoothing): add Gaussian noise &sigma; = <b>0.25</b>; certify via majority vote over <b>1,000 samples</b>.</li>
+<li>Certified radius: any L<sub>2</sub> perturbation &le; <b>0.61</b> cannot change the smoothed classifier's prediction — formal guarantee.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DASH: A Meta-Attack Framework for Synthesizing Effective and Stealthy Adversarial Examples</b> &mdash; a meta-learned attack generator synthesizes adversarial perturbations that generalize across models without white-box access</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AdvFM: Lookahead Flow-Matching Velocity-Field Attacks for Imperceptible and Transferable Adversarial Examples</b> &mdash; flow-matching velocity fields as the perturbation carrier — smoother and more transferable than gradient-descent attacks</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Verifying Neural Network Robustness with Dual Perturbations</b> &mdash; dual-certificate tightens the reachable-set bound — verifies 99% more adversarial examples than prior verifiers</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TTP: Test-Time Padding for Adversarial Detection and Robust Adaptation on Vision-Language Models</b> &mdash; test-time input padding reveals adversarial inputs by exposing prediction inconsistency across paddings</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf13">
+  <div class="famhd"><span class="famn">13</span><h3>Calibration in vision models</h3><span class="cat vb">vision</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A model that outputs confidence 0.95 should be correct 95% of the time. Most deep neural networks are miscalibrated: overconfident on easy inputs and underconfident on hard ones. A miscalibrated detector used for safety decisions produces margins that are either too tight or too loose.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Calibration measures alignment between predicted confidence and true accuracy. A well-calibrated model is not necessarily more accurate — but its confidence scores are meaningful, so downstream safety systems can use them to set margins.</p>
+<p>Temperature scaling is the simplest post-hoc calibration: divide logits by a scalar T found on a calibration set. More expressive calibrators (Platt scaling, isotonic regression, normalizing flows) handle multi-class and detection settings where confidence is per-class and per-box.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_calibration" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Object detector on KITTI: mean confidence for TP detections = <b>0.91</b>; expected calibration error (ECE) = <b>0.18</b> — large.</li>
+<li>Temperature scaling: find T* minimizing NLL on a <b>500-sample</b> calibration set — T* = <b>1.47</b>.</li>
+<li>Post-scaling ECE = <b>0.04</b>; reliability diagram nearly diagonal — well-calibrated.</li>
+<li>Query2Uncertainty: per-detection uncertainty via normalizing flow on DETR queries; confident detections at IoU &ge; 0.7 = <b>88%</b> correct.</li>
+<li>Risk-aware planner uses calibrated confidence to set per-object safety margins — 14% reduction in unnecessary braking events.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Query2Uncertainty: Robust Uncertainty Quantification and Calibration for 3D Object Detection</b> &mdash; RealNVP normalizing flow on DETR detection queries gives calibrated per-detection confidence scores for 3D detectors</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hyperbolic Prototype Learning with Uncertainty-Aware Consistency for Continual Test-Time Segmentation</b> &mdash; hyperbolic space naturally represents hierarchy and uncertainty — prototype learning yields calibrated segmentation confidence</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Adaptive Confidence Regularization for Multimodal Failure Detection</b> &mdash; regularizes confidence gaps between modalities — a large gap predicts imminent failure before accuracy drops</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Neural Collapse in Test-Time Adaptation</b> &mdash; neural collapse geometry (NC3+) measures calibration quality during TTA — structured feature collapse signals well-calibrated adaptation</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf14">
+  <div class="famhd"><span class="famn">14</span><h3>Hallucination detection in VLMs</h3><span class="cat vb">vision</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A vision-language model confidently describes objects not present in the image — 'hallucinating' tokens that have no visual grounding. In a robot that uses a VLM for scene understanding or task planning, a hallucinated object can cause the arm to move to a location that is empty, or a vehicle to brake for an obstacle that does not exist.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Hallucinations in VLMs arise because the language model head is trained to produce fluent, plausible text — and sometimes plausibility wins over visual evidence. The model generates tokens because they are likely given the context, not because the image supports them.</p>
+<p>Detection approaches trace the token back to its visual evidence: attention scores, contrastive counterfactuals, or Lyapunov stability probes on the hidden-state trajectory. Mitigation approaches steer generation toward better-grounded tokens by boosting the logit contribution of the first visual token or filtering via contrastive decoding.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_hallucination" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>VLM prompt: 'Describe what is on the desk.' Model outputs: 'a laptop, a coffee mug, and a stapler.' Ground truth: laptop and mug only.</li>
+<li>PAS (Prelim Attention Score): compute attention from the 'stapler' token back to image patches &mdash; max attention weight = <b>0.08</b> (below threshold <b>0.15</b>).</li>
+<li>Hallucination detected: 'stapler' has no grounding; AUROC for this detector = <b>85.0%</b> on POPE benchmark.</li>
+<li>CIPHER (counterfactual): replace the image region most attended by 'stapler' with noise; if confidence drops &lt;<b>30%</b>, confirming hallucination.</li>
+<li>Lyapunov probe: monitor the hidden-state Lyapunov exponent; instability &gt; <b>1.4</b> predicts hallucination before decoding — 78 ms early warning.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Lyapunov Probes for Hallucination Detection in Large Foundation Models</b> &mdash; monitors hidden-state Lyapunov exponent — dynamical instability predicts hallucination before the token is output</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Fighting Hallucinations with Counterfactuals: Diffusion-Guided Perturbations for LVLM Hallucination Suppression</b> &mdash; diffusion perturbs the attended region; confidence drop flags and suppresses the hallucinated object</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>First Logit Boosting: Visual Grounding Method to Mitigate Object Hallucination in LVLMs</b> &mdash; boosts the logit of the first visual token — shifts generation toward grounded outputs without retraining</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAS: Prelim Attention Score for Detecting Object Hallucinations in LVLMs</b> &mdash; attention score from the generated token back to image patches detects ungrounded tokens at AUROC 85.0%</span></li></ul>
+</div>
+
+<div class="fam rich" id="sf15">
+  <div class="famhd"><span class="famn">15</span><h3>Test-time adaptation &amp; distribution-shift</h3><span class="cat vb">vision</span></div>
+  <div class="fsec"><span class="rl">the problem</span><div class="essay fessay"><p>A model trained on sunny highway images will degrade when deployed in fog, rain, or night. Retraining from scratch requires source data and labels. Test-time adaptation updates model parameters using only unlabeled test data — the model adapts to the new distribution without any supervised signal.</p></div></div>
+  <div class="fsec"><span class="rl acc">the approaches</span><div class="essay fessay"><p>Test-time adaptation closes the gap between training and deployment distributions by updating model statistics or parameters using test data alone. Batch normalization statistics update for free; entropy minimization optimizes the model to be less confused about test inputs.</p>
+<p>The safety concern for TTA is regression: updating on bad test batches can collapse model performance rather than improve it. Neural-collapse geometry provides a principled stopping criterion — when the feature structure deviates from the trained collapse structure, adaptation has gone too far.</p></div></div>
+  <figure class="fdiag"><canvas data-sfanim="sff_tta" height="260"></canvas></figure>
+  <div class="worked"><div class="wl">worked example &mdash; one concrete run</div><ol><li>Base model: ResNet-50 trained on ImageNet-C clean; accuracy on CIFAR-10-C (severity 5) = <b>52.3%</b>.</li>
+<li>TENT (baseline TTA): minimize entropy of model predictions on each test batch — <b>64.1%</b> accuracy; uses only statistics normalization.</li>
+<li>Neural Collapse TTA (NC3+): align features to class prototypes in hyperbolic space — accuracy <b>78.3%</b> with continual adaptation over 100 batches.</li>
+<li>Failure mode check: track uncertainty over batches; if mean entropy rises &gt; <b>1.8 bits</b>, trigger rollback to checkpoint — prevents catastrophic forgetting.</li>
+<li>Multi-object tracking (Dual-level): forward-only TTA (no backward pass) on track embeddings — HOTA score <b>70.6%</b> on DanceTrack; <b>6.7%</b> over no-adaptation baseline.</li></ol></div>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Neural Collapse in Test-Time Adaptation</b> &mdash; NC3+ geometry detects when TTA has over-adapted — structured collapse signals calibration and prevents catastrophic forgetting</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hyperbolic Prototype Learning with Uncertainty-Aware Consistency for Continual Test-Time Segmentation</b> &mdash; hyperbolic prototypes maintain geometric consistency during continual TTA — uncertainty gates which samples contribute</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Dual-level Adaptation for Multi-Object Tracking: Building Test-Time Calibration from Experience</b> &mdash; forward-only TTA (no backward) on track embeddings — safe for streaming video without risk of over-adaptation</span></li>
+<li><span class="vbadge vb">CVPR</span><span class="pt"><b>C-LaV: Conditional Latent Velocity Field Denoising for Weather-Robust LiDAR Place Recognition</b> &mdash; denoises LiDAR place descriptors conditioned on weather severity — distribution-shift handled inside the feature space</span></li></ul>
+</div></div>
+  <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
+</div>
+
+<div class="part">
+  <div class="pl">Part IV</div><h2>Where it stands</h2>
+  <p class="intro">Safety and formal methods are closing in on learned systems &mdash; and several fundamental questions remain genuinely open:</p>
+  <div class="opgrid"><div class="op"><b>Closing the assumption gap.</b> Every formal guarantee assumes bounded disturbances and known (or learned) dynamics. In real deployments these assumptions are routinely violated — guarantees silently become void. Methods that fail gracefully rather than silently when assumptions break are needed.</div>
+<div class="op"><b>Scaling formal methods to high dimensions.</b> Hamilton-Jacobi reachability is exact in low-dimensional state spaces. Neural approximations scale it higher, but with unknown approximation error. Providing tight, certified error bounds for neural reachability in 50+ dimensional systems is open.</div>
+<div class="op"><b>Adversarial training vs clean accuracy.</b> Adversarially trained models are more resistant to perturbations but typically less accurate on unperturbed inputs. The Pareto frontier between clean accuracy and certified robustness has no known closed-form optimum; architectural improvements are still being found.</div>
+<div class="op"><b>Online conformal adaptation.</b> Conformal prediction assumes exchangeability between calibration and test. Under distribution shift — exactly when safety is most needed — the guarantee weakens. Online and weighted conformal prediction address this, but lose the marginal-coverage guarantee.</div>
+<div class="op"><b>Hallucination as a safety problem.</b> VLM hallucinations are currently measured as accuracy failures. In safety-critical use they are potential accidents — the robot acts on a nonexistent object. Formal grounding guarantees for VLM tokens in physical scenes are essentially unexplored.</div></div>
+</div>
+
+</div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="generative-models-explained.html">Generative Models</a> &middot; <a href="rl-explained.html">RL &amp; Imitation</a> &middot; <a href="world-models-explained.html">World Models</a> &middot; <a href="vla-explained.html">Vision-Language-Action</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="index.html">Robotics 2025 home</a></nav></div>
+<footer><div class="wrap">Safety &amp; Formal Guarantees explainer &middot; mechanism diagrams are live JavaScript (assets/sf-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; part of the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
+<script src="assets/sf-anim.js"></script>
+</body></html>
