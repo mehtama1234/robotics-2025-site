@@ -76,7 +76,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#0A1E20;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#080E10}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#0A1E20}.op b{color:var(--accent-deep)}
@@ -185,10 +191,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Cost: sum of squared CoM deviation from gait target, weighted Q=diag(100,100,50), R=diag(1,1,1).</li>
 <li>Solve: OSQP warm-started from last solution; typical solve in <b>0.3&ndash;0.7 ms</b> — fits 20 ms budget.</li>
 <li>Disturbance: lateral push at t=0.5 s; next solve at t=0.52 s absorbs the new state — robot recovers within <b>3 steps</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Whole-Body Control of Legged Robots with Model-Predictive Path Integral Control</b> &mdash; GPU-parallel MPPI sampling applied to full legged-robot whole-body control at real-time rates</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Flying Quadrotors in Tight Formations Using Learning-Based Model Predictive Control</b> &mdash; neural network augments a first-principles model inside the MPC solve for tighter formation flying</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic Tube MPC: Learning Tube Dynamics with Massively Parallel Simulation for Robust Safety in Practice</b> &mdash; learns the tube — the envelope of model error — via massive simulation to give safety guarantees at runtime</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Parallel-Constraint Model Predictive Control: Exploiting Parallel Computation for Improving Safety</b> &mdash; parallelizes constraint evaluation across the horizon to scale MPC to dense obstacle fields</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Real-Time Whole-Body Control of Legged Robots with Model-Predictive Path Integral Control</b> &mdash; GPU-parallel MPPI sampling applied to full legged-robot whole-body control at real-time rates</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Flying Quadrotors in Tight Formations Using Learning-Based Model Predictive Control</b> &mdash; neural network augments a first-principles model inside the MPC solve for tighter formation flying</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Dynamic Tube MPC: Learning Tube Dynamics with Massively Parallel Simulation for Robust Safety in Practice</b> &mdash; learns the tube — the envelope of model error — via massive simulation to give safety guarantees at runtime</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Parallel-Constraint Model Predictive Control: Exploiting Parallel Computation for Improving Safety</b> &mdash; parallelizes constraint evaluation across the horizon to scale MPC to dense obstacle fields</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct2">
@@ -202,10 +208,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Forward pass: apply the new gains forward, update the trajectory. Typically <b>5&ndash;15 iterations</b> converge.</li>
 <li>Result: feedforward + feedback gains at every step. Total solve: <b>2&ndash;4 ms</b> for a 6-DOF, 100-step problem.</li>
 <li>Symplectic variant (variational integrator): energy drift over long horizons drops from <b>0.8%</b> to &lt;0.01%.</b></li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>High Accuracy Aerial Maneuvers on Legged Robots using Variational Integrator Discretized Trajectory Optimization</b> &mdash; symplectic discretization keeps energy exactly conserved, enabling precise backflip planning on hardware</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Endpoint-Explicit Differential Dynamic Programming via Exact Resolution</b> &mdash; closes the DDP loop with an exact endpoint constraint rather than a terminal cost penalty — cleaner convergence</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Near Time-Optimal Hybrid Motion Planning for Timber Cranes</b> &mdash; applies DDP to hybrid dynamics (cable slack/taut switching) for near-minimum-time crane motions</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Time-Optimal Online Replanning for Distributed Model Predictive Contouring Control of Quadrotors</b> &mdash; DDP-based replanning at the trajectory level, distributed across a quadrotor swarm for time-optimal contouring</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>High Accuracy Aerial Maneuvers on Legged Robots using Variational Integrator Discretized Trajectory Optimization</b> &mdash; symplectic discretization keeps energy exactly conserved, enabling precise backflip planning on hardware</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Endpoint-Explicit Differential Dynamic Programming via Exact Resolution</b> &mdash; closes the DDP loop with an exact endpoint constraint rather than a terminal cost penalty — cleaner convergence</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Near Time-Optimal Hybrid Motion Planning for Timber Cranes</b> &mdash; applies DDP to hybrid dynamics (cable slack/taut switching) for near-minimum-time crane motions</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Time-Optimal Online Replanning for Distributed Model Predictive Contouring Control of Quadrotors</b> &mdash; DDP-based replanning at the trajectory level, distributed across a quadrotor swarm for time-optimal contouring</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct3">
@@ -219,10 +225,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Contact force at misalignment of 0.3 mm: F = 200 &times; 0.0003 = <b>0.06 N</b> — small enough not to jam.</li>
 <li>The error-driven lateral force nudges the peg into alignment; axial stiffness drives the insertion.</li>
 <li>Success rate on 1000 trials: impedance control <b>97%</b> vs position control <b>61%</b> at this clearance.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Passivity Filters for Bilateral Teleoperation with Variable Impedance Control</b> &mdash; passivity filters guarantee energy stability in teleoperation even when the operator varies stiffness mid-task</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bipedal Walking with Continuously Compliant Robotic Legs</b> &mdash; spring-leg dynamics are modeled as variable impedance to absorb ground irregularities without explicit terrain sensing</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Watch Less, Feel More: Sim-to-Real RL for Generalizable Articulated Object Manipulation via Motion Adaptation and Impedance Control</b> &mdash; RL learns the impedance profile from simulation; impedance control bridges the sim-to-real gap at contact</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Optimal Framework for Constrained Admittance Path-Following Control</b> &mdash; admittance control with path-following constraints combines compliance with precision trajectory tracking</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Passivity Filters for Bilateral Teleoperation with Variable Impedance Control</b> &mdash; passivity filters guarantee energy stability in teleoperation even when the operator varies stiffness mid-task</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Bipedal Walking with Continuously Compliant Robotic Legs</b> &mdash; spring-leg dynamics are modeled as variable impedance to absorb ground irregularities without explicit terrain sensing</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Watch Less, Feel More: Sim-to-Real RL for Generalizable Articulated Object Manipulation via Motion Adaptation and Impedance Control</b> &mdash; RL learns the impedance profile from simulation; impedance control bridges the sim-to-real gap at contact</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Optimal Framework for Constrained Admittance Path-Following Control</b> &mdash; admittance control with path-following constraints combines compliance with precision trajectory tracking</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct4">
@@ -236,10 +242,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Constraints: &tau;<sub>min</sub> &le; &tau; &le; &tau;<sub>max</sub>; contact wrench in friction cone (8-face linearization).</li>
 <li>Solver: OSQP on 32-variable, 64-constraint QP in <b>0.4 ms</b> on embedded CPU.</li>
 <li>Result: robot tracks hand target with <b>&lt;2 cm</b> error while maintaining balance and staying within torque limits.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reduced-Order Model Guided Contact-Implicit Model Predictive Control for Humanoid Locomotion</b> &mdash; reduced-order model (lip+flywheel) guides a full-body QP, separating planning timescale from control timescale</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps</b> &mdash; CBF safety constraint embedded in the QP so the robot cannot enter the occupancy map, even at kHz rates</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>On the Synthesis of Reactive Collision-Free Whole-Body Robot Motions: A Complementarity-Based Approach</b> &mdash; complementarity conditions encode collision avoidance inside the QP without mode-switching logic</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>BODex: Scalable and Efficient Robotic Dexterous Grasp Synthesis Using Bilevel Optimization</b> &mdash; bilevel QP: outer loop selects grasp approach, inner loop solves whole-hand contact QP for each candidate</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Reduced-Order Model Guided Contact-Implicit Model Predictive Control for Humanoid Locomotion</b> &mdash; reduced-order model (lip+flywheel) guides a full-body QP, separating planning timescale from control timescale</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>A Control Barrier Function for Safe Navigation with Online Gaussian Splatting Maps</b> &mdash; CBF safety constraint embedded in the QP so the robot cannot enter the occupancy map, even at kHz rates</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>On the Synthesis of Reactive Collision-Free Whole-Body Robot Motions: A Complementarity-Based Approach</b> &mdash; complementarity conditions encode collision avoidance inside the QP without mode-switching logic</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>BODex: Scalable and Efficient Robotic Dexterous Grasp Synthesis Using Bilevel Optimization</b> &mdash; bilevel QP: outer loop selects grasp approach, inner loop solves whole-hand contact QP for each candidate</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct5">
@@ -253,10 +259,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Koopman operator: lift 12-dim nonlinear state to <b>64-dim</b> linear state; MPC solve becomes a convex QP in &lt;0.5 ms.</li>
 <li>Slippery terrain: friction coefficient drops from 0.8 to 0.3; the QP automatically reduces horizontal force commands to stay in cone.</li>
 <li>Stability metric: CoP remains inside support polygon <b>98% of steps</b> on icy terrain; naive MPC fails 40% of steps.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Koopman Operator Based Linear Model Predictive Control for Quadruped Trotting</b> &mdash; lifts nonlinear quadruped dynamics to a linear Koopman space; MPC becomes a convex QP solved at 200 Hz</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Optimal Torque Distribution via Dynamic Adaptation for Quadrupedal Locomotion on Slippery Terrains</b> &mdash; adapts the friction cone constraint online from a friction estimate, keeping the QP feasible on ice</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bipedal Walking with Continuously Compliant Robotic Legs</b> &mdash; spring-leg compliant dynamics replace rigid contact models — the foot absorbs impact passively</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Beyond Robustness: Learning Unknown Dynamic Load Adaptation for Quadruped Locomotion on Rough Terrain</b> &mdash; meta-learning adapts gait gains to unknown payloads without slowing the control tick</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Koopman Operator Based Linear Model Predictive Control for Quadruped Trotting</b> &mdash; lifts nonlinear quadruped dynamics to a linear Koopman space; MPC becomes a convex QP solved at 200 Hz</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Optimal Torque Distribution via Dynamic Adaptation for Quadrupedal Locomotion on Slippery Terrains</b> &mdash; adapts the friction cone constraint online from a friction estimate, keeping the QP feasible on ice</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Bipedal Walking with Continuously Compliant Robotic Legs</b> &mdash; spring-leg compliant dynamics replace rigid contact models — the foot absorbs impact passively</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Beyond Robustness: Learning Unknown Dynamic Load Adaptation for Quadruped Locomotion on Rough Terrain</b> &mdash; meta-learning adapts gait gains to unknown payloads without slowing the control tick</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct6">
@@ -270,10 +276,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Inner loop: attitude PID at <b>1 kHz</b>. Tracks &theta;<sub>des</sub> via body-rate commands to each motor.</li>
 <li>Formation: 4 quadrotors each run a learning-based MPC that predicts neighbors' future positions from their state broadcasts.</li>
 <li>Spacing error: open-loop predicts 0.8 m spacing variance; learning-based MPC reduces to <b>0.09 m</b> variance in tight formation.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Flying Quadrotors in Tight Formations Using Learning-Based Model Predictive Control</b> &mdash; neural network predicts aerodynamic coupling between drones; MPC uses the prediction to maintain tight spacing</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shape-Adaptive Planning and Control for a Deformable Quadrotor</b> &mdash; deformable frame changes the vehicle's inertia; MPC updates the dynamic model online as the shape changes</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multirotor Target Tracking through Policy Iteration for Visual Servoing</b> &mdash; policy iteration turns the visual-servoing loop into an MPC over image-space error — avoids camera projection singularities</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>NDOB-Based Control of a UAV with Delta-Arm Considering Manipulator Dynamics</b> &mdash; nonlinear disturbance observer compensates for the moving arm's effect on the UAV's rotational dynamics</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Flying Quadrotors in Tight Formations Using Learning-Based Model Predictive Control</b> &mdash; neural network predicts aerodynamic coupling between drones; MPC uses the prediction to maintain tight spacing</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Shape-Adaptive Planning and Control for a Deformable Quadrotor</b> &mdash; deformable frame changes the vehicle's inertia; MPC updates the dynamic model online as the shape changes</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Multirotor Target Tracking through Policy Iteration for Visual Servoing</b> &mdash; policy iteration turns the visual-servoing loop into an MPC over image-space error — avoids camera projection singularities</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>NDOB-Based Control of a UAV with Delta-Arm Considering Manipulator Dynamics</b> &mdash; nonlinear disturbance observer compensates for the moving arm's effect on the UAV's rotational dynamics</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct7">
@@ -287,10 +293,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Contact-implicit: replace binary contact with smooth complementarity constraint g(x)(f&middot;n) = 0, &epsilon;=<b>0.01</b> smoothing.</li>
 <li>Single nonlinear program solved in <b>340 ms</b> (offline); produces a trajectory that automatically selects 3 of 5 contacts.</li>
 <li>Hardware: the trajectory executes open-loop with a 50 Hz feedback stabilizer; lateral speed improves <b>2.1&times;</b> over manual contact design.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reduced-Order Model Guided Contact-Implicit Model Predictive Control for Humanoid Locomotion</b> &mdash; wraps contact-implicit optimization inside MPC; the reduced-order model keeps the solve tractable at locomotion rates</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Optimal Trajectory Planning in a Vertically Undulating Snake Locomotion using Contact-implicit Optimization</b> &mdash; contact-implicit OCP automatically discovers the ground-contact schedule for efficient serpentine motion</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Vegetable Peeling: A Case Study in Constrained Dexterous Manipulation</b> &mdash; contact-implicit planning finds the sequence of blade-vegetable contacts needed for consistent peeling strokes</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Smooth Analytical Formulation of Collision Detection and Rigid Body Dynamics With Contact</b> &mdash; analytically differentiable contact model enables gradient-based contact-implicit trajectory optimization</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Reduced-Order Model Guided Contact-Implicit Model Predictive Control for Humanoid Locomotion</b> &mdash; wraps contact-implicit optimization inside MPC; the reduced-order model keeps the solve tractable at locomotion rates</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Optimal Trajectory Planning in a Vertically Undulating Snake Locomotion using Contact-implicit Optimization</b> &mdash; contact-implicit OCP automatically discovers the ground-contact schedule for efficient serpentine motion</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Vegetable Peeling: A Case Study in Constrained Dexterous Manipulation</b> &mdash; contact-implicit planning finds the sequence of blade-vegetable contacts needed for consistent peeling strokes</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>A Smooth Analytical Formulation of Collision Detection and Rigid Body Dynamics With Contact</b> &mdash; analytically differentiable contact model enables gradient-based contact-implicit trajectory optimization</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct8">
@@ -304,10 +310,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Augmented model: f<sub>aug</sub>(x,u) = f<sub>phys</sub>(x,u) + f<sub>NN</sub>(x,u). Prediction error drops to <b>3.1 cm</b>.</li>
 <li>MPC runs at 50 Hz with augmented model; neural residual inference takes <b>0.2 ms</b> — negligible vs solve time.</li>
 <li>Generalization: new payload adds 150 g; residual adapts online via 20-sample online fine-tune; tracking error &lt;<b>5 cm</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic Tube MPC: Learning Tube Dynamics with Massively Parallel Simulation for Robust Safety in Practice</b> &mdash; learns the tube — the set of states reachable under model error — using GPU simulation, giving safety certificates</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autotuning Bipedal Locomotion MPC with GRFM-Net for Efficient Sim-to-Real Transfer</b> &mdash; a ground-reaction-force model network predicts foot forces; MPC uses them to auto-tune gait parameters</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Efficient Online Learning of Contact Force Models for Connector Insertion</b> &mdash; online Gaussian process learns the contact force model during the first few insertions; MPC exploits it immediately</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DroneDiffusion: Robust Quadrotor Dynamics Learning with Diffusion Models</b> &mdash; diffusion model over state transitions captures multimodal aerodynamic uncertainty; MPC samples the distribution</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Dynamic Tube MPC: Learning Tube Dynamics with Massively Parallel Simulation for Robust Safety in Practice</b> &mdash; learns the tube — the set of states reachable under model error — using GPU simulation, giving safety certificates</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Autotuning Bipedal Locomotion MPC with GRFM-Net for Efficient Sim-to-Real Transfer</b> &mdash; a ground-reaction-force model network predicts foot forces; MPC uses them to auto-tune gait parameters</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Efficient Online Learning of Contact Force Models for Connector Insertion</b> &mdash; online Gaussian process learns the contact force model during the first few insertions; MPC exploits it immediately</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DroneDiffusion: Robust Quadrotor Dynamics Learning with Diffusion Models</b> &mdash; diffusion model over state transitions captures multimodal aerodynamic uncertainty; MPC samples the distribution</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct9">
@@ -321,10 +327,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Adaptive loop: estimate &mu; from measured foot slip using least-squares over last <b>20 steps</b>; update MPC model every 100 ms.</li>
 <li>After 0.5 s, estimate converges to &mu;=<b>0.31</b>; tube constraint relaxes to match; speed recovers to 90% of nominal.</li>
 <li>Failure rate without adaptation: <b>18%</b> slip events per 100 steps. With adaptation: <b>3%</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robust Model Predictive Control for Quadruped Locomotion Under Model Uncertainties and External Disturbances</b> &mdash; tube MPC with a learned tube size — the tube adapts to the measured disturbance level, reducing conservatism</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Optimal Torque Distribution via Dynamic Adaptation for Quadrupedal Locomotion on Slippery Terrains</b> &mdash; online friction estimation feeds directly into the QP constraint set; adaptation rate tuned to gait frequency</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Self-Supervised Meta-Learning for All-Layer DNN-Based Adaptive Control with Stability Guarantees</b> &mdash; meta-learned adaptive controller with a Lyapunov stability certificate embedded in the meta-loss</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DroneDiffusion: Robust Quadrotor Dynamics Learning with Diffusion Models</b> &mdash; diffusion-based uncertainty model captures non-Gaussian aerodynamic disturbances for more accurate tube computation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Robust Model Predictive Control for Quadruped Locomotion Under Model Uncertainties and External Disturbances</b> &mdash; tube MPC with a learned tube size — the tube adapts to the measured disturbance level, reducing conservatism</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Optimal Torque Distribution via Dynamic Adaptation for Quadrupedal Locomotion on Slippery Terrains</b> &mdash; online friction estimation feeds directly into the QP constraint set; adaptation rate tuned to gait frequency</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Self-Supervised Meta-Learning for All-Layer DNN-Based Adaptive Control with Stability Guarantees</b> &mdash; meta-learned adaptive controller with a Lyapunov stability certificate embedded in the meta-loss</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DroneDiffusion: Robust Quadrotor Dynamics Learning with Diffusion Models</b> &mdash; diffusion-based uncertainty model captures non-Gaussian aerodynamic disturbances for more accurate tube computation</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct10">
@@ -338,10 +344,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Variational (Verlet-type) integrator: symplectic structure preserves energy to &lt;<b>0.01%</b>; trajectory executes cleanly.</li>
 <li>Second-order Stein variational (SVDO): 256 particles explore the optimization landscape in parallel; find the global minimum in <b>12 iterations</b> vs 40 for gradient descent.</li>
 <li>Hardware: backflip success rate with variational planner <b>87%</b> vs <b>51%</b> with Euler-integrated plan.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>High Accuracy Aerial Maneuvers on Legged Robots using Variational Integrator Discretized Trajectory Optimization</b> &mdash; symplectic discretization achieves energy-exact planning for aerial phase of legged-robot backflips</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Second-Order Stein Variational Dynamic Optimization</b> &mdash; particle-based trajectory optimizer on a Riemannian manifold — escapes local minima without gradient-descent restarts</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CrowdSurfer: Sampling Optimization Augmented with Vector-Quantized VAE for Dense Crowd Navigation</b> &mdash; quantized latent sampling provides diverse trajectory proposals for SVDO in dense pedestrian environments</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CC-STAR: Contact State Transition Estimation Using Reconstruction-Based Anomaly Detection for Peg-in-Hole Assembly</b> &mdash; monitors mechanical energy signals to detect contact-state transitions, feeding the variational planner</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>High Accuracy Aerial Maneuvers on Legged Robots using Variational Integrator Discretized Trajectory Optimization</b> &mdash; symplectic discretization achieves energy-exact planning for aerial phase of legged-robot backflips</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Second-Order Stein Variational Dynamic Optimization</b> &mdash; particle-based trajectory optimizer on a Riemannian manifold — escapes local minima without gradient-descent restarts</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>CrowdSurfer: Sampling Optimization Augmented with Vector-Quantized VAE for Dense Crowd Navigation</b> &mdash; quantized latent sampling provides diverse trajectory proposals for SVDO in dense pedestrian environments</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>CC-STAR: Contact State Transition Estimation Using Reconstruction-Based Anomaly Detection for Peg-in-Hole Assembly</b> &mdash; monitors mechanical energy signals to detect contact-state transitions, feeding the variational planner</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct11">
@@ -355,10 +361,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Collision constraint: each robot adds the neighbor predictions as moving obstacle constraints in its own QP.</li>
 <li>Iterate: after <b>3 consensus rounds</b> (12 ms total), trajectories are mutually collision-free.</li>
 <li>Formation error: distributed vs centralized — spacing std 0.12 m vs 0.09 m. Centralized is better; distributed is <b>real-time feasible</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Time-Optimal Online Replanning for Distributed Model Predictive Contouring Control of Quadrotors</b> &mdash; each quadrotor learns to replan its contouring path in real time; neighbors' predicted paths are soft constraints</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Decentralized Uncertainty-Aware Multi-Agent Collision Avoidance With Model Predictive Path Integral</b> &mdash; each agent's MPPI samples include neighbor uncertainty ellipsoids — avoidance that accounts for prediction error</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Cooperative Distributed Model Predictive Control for Embedded Systems: Experiments with Hovercraft Formations</b> &mdash; full distributed MPC running on embedded microcontrollers; consensus solved in 3 iterations on-chip</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Constrained Learning for Decentralized Multi-Objective Coverage Control</b> &mdash; coverage objective decomposed across agents; each learns its local policy subject to joint coverage constraints</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Time-Optimal Online Replanning for Distributed Model Predictive Contouring Control of Quadrotors</b> &mdash; each quadrotor learns to replan its contouring path in real time; neighbors' predicted paths are soft constraints</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Decentralized Uncertainty-Aware Multi-Agent Collision Avoidance With Model Predictive Path Integral</b> &mdash; each agent's MPPI samples include neighbor uncertainty ellipsoids — avoidance that accounts for prediction error</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Cooperative Distributed Model Predictive Control for Embedded Systems: Experiments with Hovercraft Formations</b> &mdash; full distributed MPC running on embedded microcontrollers; consensus solved in 3 iterations on-chip</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Constrained Learning for Decentralized Multi-Objective Coverage Control</b> &mdash; coverage objective decomposed across agents; each learns its local policy subject to joint coverage constraints</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct12">
@@ -372,10 +378,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Planning: sample 512 action sequences of length <b>8 steps</b>; score each with the learned model; select max-reward sequence.</li>
 <li>Inference: 512 &times; 8 model calls in <b>1.8 s</b> on GPU — feasible for a 2 s planning budget.</li>
 <li>Zero-shot transfer: train only in simulation; test on real robot; success rate <b>61%</b> vs 18% for a simulator-only planner.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>POINTWORLD: Scaling 3D World Models for In-The-Wild Robotic Manipulation</b> &mdash; point-flow state representation enables zero-shot real-world transfer after pure simulation training</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus: A Unified Latent Action World Model</b> &mdash; optical flow as universal latent action — the model predicts future frames conditioned on flow, not joint commands</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RehearseVLA: Simulated Post-Training for VLAs with Physically-Consistent World Model</b> &mdash; physically consistent world model acts as a simulator for post-training a vision-language-action model</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DreamSAC: Learning Hamiltonian World Models via Symmetry Exploration</b> &mdash; Hamiltonian formulation enforces energy conservation in the learned world model — better extrapolation to unseen energies</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>POINTWORLD: Scaling 3D World Models for In-The-Wild Robotic Manipulation</b> &mdash; point-flow state representation enables zero-shot real-world transfer after pure simulation training</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Motus: A Unified Latent Action World Model</b> &mdash; optical flow as universal latent action — the model predicts future frames conditioned on flow, not joint commands</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RehearseVLA: Simulated Post-Training for VLAs with Physically-Consistent World Model</b> &mdash; physically consistent world model acts as a simulator for post-training a vision-language-action model</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DreamSAC: Learning Hamiltonian World Models via Symmetry Exploration</b> &mdash; Hamiltonian formulation enforces energy conservation in the learned world model — better extrapolation to unseen energies</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct13">
@@ -389,10 +395,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Visual-RRT: from current state, sample frontier configurations; for each compute visual loss L = ||I(q)&minus;I<sub>goal</sub>||<sup>2</sup>.</li>
 <li>Gradient tree expansion: at each frontier, take <b>5 gradient steps</b> on q using &part;L/&part;q to move toward the visual goal.</li>
 <li>Path: successful in <b>8 RRT expansions</b> where gradient-free RRT required 61 expansions on the same scene.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Visual-RRT: Finding Paths toward Visual-Goals via Differentiable Rendering</b> &mdash; frontier RRT with inertial gradient tree expansion using differentiable rendering — escapes local minima in image space</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>D-Prism: Differentiable Primitives for Structured Dynamic Modeling</b> &mdash; decomposes dynamic scenes into differentiable 3D primitives so gradients flow through the geometry</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysHead: Simulation-Ready Gaussian Head Avatars</b> &mdash; Gaussian avatar whose physics parameters are differentiable — enables gradient-based control of head motion</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysSkin: Real-Time and Generalizable Physics-Based Animation via Self-Supervised Neural Skinning</b> &mdash; neural skinning weights are differentiable — enables trajectory optimization through deformable body dynamics</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Visual-RRT: Finding Paths toward Visual-Goals via Differentiable Rendering</b> &mdash; frontier RRT with inertial gradient tree expansion using differentiable rendering — escapes local minima in image space</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>D-Prism: Differentiable Primitives for Structured Dynamic Modeling</b> &mdash; decomposes dynamic scenes into differentiable 3D primitives so gradients flow through the geometry</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>PhysHead: Simulation-Ready Gaussian Head Avatars</b> &mdash; Gaussian avatar whose physics parameters are differentiable — enables gradient-based control of head motion</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>PhysSkin: Real-Time and Generalizable Physics-Based Animation via Self-Supervised Neural Skinning</b> &mdash; neural skinning weights are differentiable — enables trajectory optimization through deformable body dynamics</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct14">
@@ -406,10 +412,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Physics loss: L<sub>phys</sub> = ||m&middot;a<sub>obj</sub>&minus;F<sub>contact</sub>||<sup>2</sup>; add to the diffusion denoising score with weight &lambda;=<b>0.3</b>.</li>
 <li>Euler-Lagrange contact (InterPhys): damped-spring contact model embedded in the score — foot contact forces satisfy F<sub>contact</sub> = k<sub>s</sub>(g&minus;h) + b<sub>d</sub>&dot;h.</li>
 <li>Result: foot-floor interpenetration drops from <b>4.2 cm</b> to <b>0.3 cm</b>; contact force plausibility score improves <b>2.4&times;</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAMotion: Physics-Aware Motion Generation for Full-Body Interaction with Multiple Objects</b> &mdash; object acceleration as differentiable contact signal — enforces Newton's laws inside the diffusion generation loop</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InterPhys: Physics-aware Human Motion Synthesis in a Dynamic Scene</b> &mdash; Euler-Lagrange dynamics with damped-spring contact embedded directly into the motion score function</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAD-Hand: Physics-Aware Diffusion for Hand Motion Recovery</b> &mdash; Euler-Lagrange residuals as virtual observables — physics residuals guide hand pose estimation from monocular video</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Contact-Aware Neural Dynamics</b> &mdash; co-trains sim and rendered-contact with real tactile data — aligns sim and real without explicit parameter identification</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>PAMotion: Physics-Aware Motion Generation for Full-Body Interaction with Multiple Objects</b> &mdash; object acceleration as differentiable contact signal — enforces Newton's laws inside the diffusion generation loop</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>InterPhys: Physics-aware Human Motion Synthesis in a Dynamic Scene</b> &mdash; Euler-Lagrange dynamics with damped-spring contact embedded directly into the motion score function</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>PAD-Hand: Physics-Aware Diffusion for Hand Motion Recovery</b> &mdash; Euler-Lagrange residuals as virtual observables — physics residuals guide hand pose estimation from monocular video</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Contact-Aware Neural Dynamics</b> &mdash; co-trains sim and rendered-contact with real tactile data — aligns sim and real without explicit parameter identification</div></li></ul>
 </div>
 
 <div class="fam rich" id="ct15">
@@ -423,10 +429,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Sample K=<b>64 parameter sets</b> from the flow; for each, run an MPM (material point method) solver for 0.5 s.</li>
 <li>Aggregate: weighted mean of 64 predictions. Coverage: <b>92%</b> of real outcomes fall inside the 90% credible interval.</li>
 <li>Point-prediction baseline: <b>61%</b> coverage — catastrophically overconfident for novel materials.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>UniPixie: Unified and Probabilistic 3D Physics Learning via Flow Matching</b> &mdash; flow matching over material parameter distributions with MPM/LBS/Spring-Mass solvers — covers epistemic uncertainty</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>NS-Diff: Fluid Navier-Stokes Guided Video Diffusion via RL</b> &mdash; Navier-Stokes solver guides video diffusion; RL fine-tunes to match real fluid recordings</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Goal Force: Teaching Video Models To Accomplish Physics-Conditioned Goals</b> &mdash; 3-channel force/goal/mass ControlNet tensor as physics conditioning — 75-100% visual planning accuracy on manipulation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InterPrior: Scaling Generative Control for Physics-Based Human-Object Interactions</b> &mdash; imitation expert feeds a goal-conditioned VAE, then RL fine-tunes — combines stable training with generalization</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>UniPixie: Unified and Probabilistic 3D Physics Learning via Flow Matching</b> &mdash; flow matching over material parameter distributions with MPM/LBS/Spring-Mass solvers — covers epistemic uncertainty</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>NS-Diff: Fluid Navier-Stokes Guided Video Diffusion via RL</b> &mdash; Navier-Stokes solver guides video diffusion; RL fine-tunes to match real fluid recordings</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Goal Force: Teaching Video Models To Accomplish Physics-Conditioned Goals</b> &mdash; 3-channel force/goal/mass ControlNet tensor as physics conditioning — 75-100% visual planning accuracy on manipulation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>InterPrior: Scaling Generative Control for Physics-Based Human-Object Interactions</b> &mdash; imitation expert feeds a goal-conditioned VAE, then RL fine-tunes — combines stable training with generalization</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -442,7 +448,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="world-models-explained.html">World Models</a> &middot; <a href="gm-explained.html">Generative Models</a> &middot; <a href="diffusion-policies-explained.html">Diffusion Policies</a> &middot; <a href="vla-explained.html">Vision-Language-Action</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#ctl">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="world-models-explained.html">World Models</a> &middot; <a href="gm-explained.html">Generative Models</a> &middot; <a href="diffusion-policies-explained.html">Diffusion Policies</a> &middot; <a href="vla-explained.html">Vision-Language-Action</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Control &amp; MPC explainer &middot; mechanism diagrams are live JavaScript (assets/ct-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the execution layer of the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/ct-anim.js"></script>
 </body></html>

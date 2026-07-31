@@ -77,7 +77,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#1E1030;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#0F0A1A}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#1E1030}.op b{color:var(--accent-deep)}
@@ -186,10 +192,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Run <b>100 denoising steps</b> of the score model εθ(z_k, k, obs), subtracting predicted noise each step.</li>
 <li>After step 100, z₀ is a clean <b>16-step action chunk</b> — execute the first 8 steps on the robot.</li>
 <li>Repeat: re-condition on the new observation, denoise a fresh chunk — <b>receding horizon</b> control.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ProDapt: Proprioceptive Adaptation Using Long-Term Memory Diffusion</b> &mdash; diffusion over contact memory — long-horizon state feeds the denoiser for stable, precise manipulation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DARE: Diffusion Policy for Autonomous Robot Exploration</b> &mdash; adds entropy-based exploration bonuses into the diffusion action distribution</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fast Policy Synthesis with Variable Noise Diffusion Models</b> &mdash; variance schedule adapts per state to cut denoising steps without quality loss</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Compliance Policy: Learning to Be Compliant via Diffusion</b> &mdash; diffusion-guided compliance — the policy generates the force profile, not just the position</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>ProDapt: Proprioceptive Adaptation Using Long-Term Memory Diffusion</b> &mdash; diffusion over contact memory — long-horizon state feeds the denoiser for stable, precise manipulation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DARE: Diffusion Policy for Autonomous Robot Exploration</b> &mdash; adds entropy-based exploration bonuses into the diffusion action distribution</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Fast Policy Synthesis with Variable Noise Diffusion Models</b> &mdash; variance schedule adapts per state to cut denoising steps without quality loss</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Adaptive Compliance Policy: Learning to Be Compliant via Diffusion</b> &mdash; diffusion-guided compliance — the policy generates the force profile, not just the position</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm2">
@@ -203,10 +209,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>At inference: integrate the ODE dx/dt = vθ(x,t) using <b>10 Euler steps</b> from t=0 to t=1.</li>
 <li>The result is a sampled trajectory; cost is <b>10× cheaper</b> than 100-step DDPM with matching quality.</li>
 <li>For motion forecasting: different noise seeds → <b>diverse future paths</b> from the same present state.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>FlowNav: Flow Matching for Efficient Robot Navigation</b> &mdash; flow + depth for goal-conditioned navigation; straight ODE paths cut inference latency</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>FlowMP: Learning Motion Fields for Efficient Robot Motion Planning</b> &mdash; motion fields as the flow target — planning becomes a single ODE solve</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>TrajFlow: Multi-Modal Trajectory Prediction via Conditional Flow Matching</b> &mdash; flow matching over agent futures; diversity comes from different noise seeds</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Robotic Manipulation Policies from Point Clouds with Conditional Flow Matching</b> &mdash; point-cloud conditioning for 3D manipulation; flow matching fits irregular geometry well</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>FlowNav: Flow Matching for Efficient Robot Navigation</b> &mdash; flow + depth for goal-conditioned navigation; straight ODE paths cut inference latency</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>FlowMP: Learning Motion Fields for Efficient Robot Motion Planning</b> &mdash; motion fields as the flow target — planning becomes a single ODE solve</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>TrajFlow: Multi-Modal Trajectory Prediction via Conditional Flow Matching</b> &mdash; flow matching over agent futures; diversity comes from different noise seeds</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Robotic Manipulation Policies from Point Clouds with Conditional Flow Matching</b> &mdash; point-cloud conditioning for 3D manipulation; flow matching fits irregular geometry well</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm3">
@@ -220,10 +226,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Both tracks run <b>simultaneously</b> for T steps; merge by adding draft + residual at each step.</li>
 <li>Final image reconstructed in <b>~half the sequential steps</b>; SSIM improves by 0.04 over single-track.</li>
 <li>DiP ablation: removing the VAE and denoising directly in pixel space recovers <b>+1.2 FID</b> when arch is right.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DRiffusion: Draft-and-Refine Parallel Denoising for High-Quality Image Generation</b> &mdash; denoises a coarse draft and a fine residual in parallel — reduces sequential steps without quality loss</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DiP: Taming Diffusion Models in Pixel Space</b> &mdash; shows diffusion works well directly in pixel space when the architecture is right, without a VAE</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Causality in Video Diffusers is Separable from Denoising</b> &mdash; finds that temporal causality and denoising are orthogonal properties — guides cleaner architecture choices</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LESA: Learnable Stage-Aware Acceleration for Diffusion Models</b> &mdash; assigns budget to denoising stages adaptively — bigger steps where the signal is low-frequency, finer where detail forms</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>DRiffusion: Draft-and-Refine Parallel Denoising for High-Quality Image Generation</b> &mdash; denoises a coarse draft and a fine residual in parallel — reduces sequential steps without quality loss</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DiP: Taming Diffusion Models in Pixel Space</b> &mdash; shows diffusion works well directly in pixel space when the architecture is right, without a VAE</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Causality in Video Diffusers is Separable from Denoising</b> &mdash; finds that temporal causality and denoising are orthogonal properties — guides cleaner architecture choices</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>LESA: Learnable Stage-Aware Acceleration for Diffusion Models</b> &mdash; assigns budget to denoising stages adaptively — bigger steps where the signal is low-frequency, finer where detail forms</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm4">
@@ -237,10 +243,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>At inference: one call f(z_T, T) gives the clean image — <b>1 NFE</b> (neural function evaluation).</li>
 <li>BiFM adds a backward map g: z_0 → z_T, enabling <b>inversion-free editing</b>: perturb the ODE midpoint.</li>
 <li>Flash-DMD co-trains with a reward model: <b>4 steps</b>, reward-aligned output, FID within 2 of 50-step teacher.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Delta Rectified Flow Sampling: Inversion-Free Editing via Flow Perturbation</b> &mdash; perturbs the flow path to edit images without inversion — no encoder pass needed</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>BiFM: Bidirectional Flow Matching for Image Editing</b> &mdash; maps forward and backward simultaneously so edits are consistent and reversible</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Phased Distribution Matching Distillation for Few-Step Synthesis</b> &mdash; distills a multi-step diffusion model phase by phase, preserving distribution shape at each stage</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FloodDiffusion: Streaming Temporal Motion via Causal Flow</b> &mdash; causal flow matching for streaming video — generates frame by frame without storing a full sequence</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Delta Rectified Flow Sampling: Inversion-Free Editing via Flow Perturbation</b> &mdash; perturbs the flow path to edit images without inversion — no encoder pass needed</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>BiFM: Bidirectional Flow Matching for Image Editing</b> &mdash; maps forward and backward simultaneously so edits are consistent and reversible</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Phased Distribution Matching Distillation for Few-Step Synthesis</b> &mdash; distills a multi-step diffusion model phase by phase, preserving distribution shape at each stage</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>FloodDiffusion: Streaming Temporal Motion via Causal Flow</b> &mdash; causal flow matching for streaming video — generates frame by frame without storing a full sequence</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm5">
@@ -254,10 +260,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Layer-wise binding: at each U-Net layer, token 'mug' attends <b>only to the left 50%</b> of the spatial map.</li>
 <li>Denoising: 50 steps in latent space (64×64); each step respects the token-to-region binding.</li>
 <li>Decode the latent: <b>512×512 image</b> with mug correctly placed left, vase right — no attribute blending.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SeeThrough3D: Occlusion-Aware 3D Control for Text-to-Image Diffusion</b> &mdash; injects 3D structure as a conditioning signal so the model respects occlusions</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DynFusion: Multi-Conditional Fusion for Dynamic Scene Generation</b> &mdash; fuses text, depth, and motion conditioning in a single denoising pass</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>VisionDirector: VLM-Guided Diffusion Refinement</b> &mdash; a VLM critiques each sample and feeds corrections back into the denoiser</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FailureAtlas: Mapping Text-to-Image Failure Modes</b> &mdash; systematic taxonomy of where T2I models fail — wrong counts, spatial relations, attributes</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>SeeThrough3D: Occlusion-Aware 3D Control for Text-to-Image Diffusion</b> &mdash; injects 3D structure as a conditioning signal so the model respects occlusions</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DynFusion: Multi-Conditional Fusion for Dynamic Scene Generation</b> &mdash; fuses text, depth, and motion conditioning in a single denoising pass</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>VisionDirector: VLM-Guided Diffusion Refinement</b> &mdash; a VLM critiques each sample and feeds corrections back into the denoiser</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>FailureAtlas: Mapping Text-to-Image Failure Modes</b> &mdash; systematic taxonomy of where T2I models fail — wrong counts, spatial relations, attributes</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm6">
@@ -271,10 +277,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>DA-VAE: add a high-frequency alignment loss between encoder feature and decoder target — <b>+0.8 PSNR</b>.</li>
 <li>Latent diffusion runs the U-Net on the <b>64×64</b> latent for 50 steps — 64× cheaper than pixel-space.</li>
 <li>Decoder fires once, upsampling back to <b>512×512</b>; total compute is dominated by the single decode pass.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DA-VAE: Detail-Aligned Latent Compression for High-Fidelity Image Generation</b> &mdash; aligns high-frequency detail between encoder output and decoder target — sharper reconstructions</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Vision Foundation Models Can Be Good Tokenizers for Image Generation</b> &mdash; shows that features from a pretrained vision model make a strong VAE without task-specific design</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SceneTok: Learning a 3D Scene Token Space for Generation</b> &mdash; maps 3D scenes to discrete tokens — the latent space captures geometry, not just appearance</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CaTok: Causal 1D Tokenization for Autoregressive Image Generation</b> &mdash; a single causal token sequence replaces 2D patch grids, enabling autoregressive generation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>DA-VAE: Detail-Aligned Latent Compression for High-Fidelity Image Generation</b> &mdash; aligns high-frequency detail between encoder output and decoder target — sharper reconstructions</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Vision Foundation Models Can Be Good Tokenizers for Image Generation</b> &mdash; shows that features from a pretrained vision model make a strong VAE without task-specific design</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SceneTok: Learning a 3D Scene Token Space for Generation</b> &mdash; maps 3D scenes to discrete tokens — the latent space captures geometry, not just appearance</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>CaTok: Causal 1D Tokenization for Autoregressive Image Generation</b> &mdash; a single causal token sequence replaces 2D patch grids, enabling autoregressive generation</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm7">
@@ -288,10 +294,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>DARTS: route attention along <b>semantic axes</b> (color, shape separately) — prevents color bleeding across objects.</li>
 <li>V-RGBX: decompose the noisy latent into albedo z_a + shading z_s; edit z_a only → <b>color change, no shape change</b>.</li>
 <li>Verify: DINO similarity of the edited region vs target phrase <b>rises 0.12</b> over unmasked cross-attention baseline.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Layer-wise Instance Binding for Regional Control in Text-to-Image Generation</b> &mdash; binds each text token to a spatial region at each layer — precise multi-object placement</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SeeThrough3D: Occlusion-Aware 3D Control for Text-to-Image Diffusion</b> &mdash; 3D bounding-box conditioning that propagates depth order through the denoiser</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>V-RGBX: Intrinsic-Property Video Editing via Decomposed Diffusion</b> &mdash; decomposes video into albedo, shading, and roughness; edits one without changing others</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DARTS: Directional Attention Routing for Text-Guided Synthesis</b> &mdash; routes attention along the prompt&rsquo;s semantic axes — avoids blending attributes across objects</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Layer-wise Instance Binding for Regional Control in Text-to-Image Generation</b> &mdash; binds each text token to a spatial region at each layer — precise multi-object placement</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SeeThrough3D: Occlusion-Aware 3D Control for Text-to-Image Diffusion</b> &mdash; 3D bounding-box conditioning that propagates depth order through the denoiser</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>V-RGBX: Intrinsic-Property Video Editing via Decomposed Diffusion</b> &mdash; decomposes video into albedo, shading, and roughness; edits one without changing others</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DARTS: Directional Attention Routing for Text-Guided Synthesis</b> &mdash; routes attention along the prompt&rsquo;s semantic axes — avoids blending attributes across objects</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm8">
@@ -305,10 +311,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Integrate the perturbed ODE dx/dt = v + Δv for <b>10 steps</b> from t=0.3 (mid-trajectory), not from t=1.</li>
 <li>Decode the result: edited image in <b>10 steps total</b> — no inversion, no paired noise needed.</li>
 <li>Temporal extension: apply the same Δv with causal attention across frames → <b>temporally consistent</b> video edit.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Delta Rectified Flow Sampling: Inversion-Free Editing via Flow Perturbation</b> &mdash; skips inversion by perturbing the flow field directly — one forward pass</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Coupled Diffusion Sampling for Consistent Multi-View Editing</b> &mdash; shares noise across views during denoising to keep geometry consistent after edits</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Scaling Instruction-Based Video Editing via Temporal Diffusion</b> &mdash; temporal attention + instruction conditioning applied frame-coherently at scale</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>VIVA: VLM-Guided Video-to-Video Adaptation</b> &mdash; a VLM plans the edit; a diffusion model executes it — separating intent from synthesis</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Delta Rectified Flow Sampling: Inversion-Free Editing via Flow Perturbation</b> &mdash; skips inversion by perturbing the flow field directly — one forward pass</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Coupled Diffusion Sampling for Consistent Multi-View Editing</b> &mdash; shares noise across views during denoising to keep geometry consistent after edits</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Scaling Instruction-Based Video Editing via Temporal Diffusion</b> &mdash; temporal attention + instruction conditioning applied frame-coherently at scale</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>VIVA: VLM-Guided Video-to-Video Adaptation</b> &mdash; a VLM plans the edit; a diffusion model executes it — separating intent from synthesis</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm9">
@@ -322,10 +328,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Train a 2D diffusion model on the triplane stack: denoise all three planes in <b>50 steps</b> jointly.</li>
 <li>Feed triplane features into a small NeRF MLP → volume-render at any camera → <b>FID 28.4</b> on ShapeNet cars.</li>
 <li>For 4D: add a time axis; each triplane gets a <b>temporal positional encoding</b>; 4D motion is the 4th channel.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Text-Image Conditioned 3D Generation via Triplane Diffusion</b> &mdash; diffuses over triplane feature maps — compact 3D representation, image-like denoising</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GIFSplat: Feed-Forward Gaussian Splatting from Sparse Views</b> &mdash; predicts 3D Gaussian parameters in one forward pass from a few input images — no optimization loop</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Catalyst4D: 3D-to-4D Scene Editing via Video Diffusion</b> &mdash; lifts static 3D edits to temporally consistent 4D by diffusing in video space</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Scaling4D: Novel-View Synthesis via 4D Video Diffusion</b> &mdash; trains a 4D diffusion model on large video corpora — any camera path at generation time</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Text-Image Conditioned 3D Generation via Triplane Diffusion</b> &mdash; diffuses over triplane feature maps — compact 3D representation, image-like denoising</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GIFSplat: Feed-Forward Gaussian Splatting from Sparse Views</b> &mdash; predicts 3D Gaussian parameters in one forward pass from a few input images — no optimization loop</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Catalyst4D: 3D-to-4D Scene Editing via Video Diffusion</b> &mdash; lifts static 3D edits to temporally consistent 4D by diffusing in video space</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Scaling4D: Novel-View Synthesis via 4D Video Diffusion</b> &mdash; trains a 4D diffusion model on large video corpora — any camera path at generation time</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm10">
@@ -339,10 +345,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Student sees phase input z_t and directly predicts z_{t−10T/5} — supervised by <b>teacher's 2-step output</b>.</li>
 <li>Repeat until each phase is <b>1 step</b>: student now takes 5 steps total vs teacher's 50.</li>
 <li>Flash-DMD adds RL: reward model scores student samples; policy gradient nudges the <b>4-step</b> output toward high reward.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Flash-DMD: Few-Step Diffusion with Joint RL Alignment</b> &mdash; distills to 4 steps and co-optimizes with a reward model in one training loop</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InstantViR: Real-Time Video Inverse Rendering via Distilled Diffusion</b> &mdash; distills a video diffusion model to single-step for real-time material estimation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Uni-DAD: Unified Distillation and Adaptation for Diffusion Models</b> &mdash; one distillation system handles multiple adapters without per-adapter retraining</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Phased Distribution Matching Distillation for Few-Step Synthesis</b> &mdash; matches the full output distribution phase by phase — fewer artifacts than single-shot distillation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Flash-DMD: Few-Step Diffusion with Joint RL Alignment</b> &mdash; distills to 4 steps and co-optimizes with a reward model in one training loop</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>InstantViR: Real-Time Video Inverse Rendering via Distilled Diffusion</b> &mdash; distills a video diffusion model to single-step for real-time material estimation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Uni-DAD: Unified Distillation and Adaptation for Diffusion Models</b> &mdash; one distillation system handles multiple adapters without per-adapter retraining</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Phased Distribution Matching Distillation for Few-Step Synthesis</b> &mdash; matches the full output distribution phase by phase — fewer artifacts than single-shot distillation</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm11">
@@ -356,10 +362,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>For each texture, render <b>50 virtual views</b> at random camera poses — 400 extra training images with no new collection.</li>
 <li>KALIE: generate <b>synthetic object images</b> via diffusion, fine-tune the VLM on those — policy generalizes to unseen objects.</li>
 <li>Train the policy on 10 real + 400 synthetic: pick success rate rises from <b>62% → 89%</b> on held-out objects.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SplatSim: Gaussian Splat Simulation for Robot Manipulation Sim-to-Real</b> &mdash; renders manipulation scenes as 3D Gaussians — photorealistic sim-to-real transfer without a full physics model</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>KALIE: Fine-Tuning VLMs on Novel Objects Without Real Robot Data</b> &mdash; generates synthetic object images via diffusion and fine-tunes the VLM on those — no robot data needed</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SynthDrive: Real-to-Sim-to-Real Assets for Autonomous Driving</b> &mdash; diffusion generates synthetic driving assets from real captures and feeds them back as training data</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Domain Randomization for Object Detection in Manufacturing Environments</b> &mdash; randomizes texture, lighting, and pose in a renderer to fill the gap between factory sim and factory floor</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>SplatSim: Gaussian Splat Simulation for Robot Manipulation Sim-to-Real</b> &mdash; renders manipulation scenes as 3D Gaussians — photorealistic sim-to-real transfer without a full physics model</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>KALIE: Fine-Tuning VLMs on Novel Objects Without Real Robot Data</b> &mdash; generates synthetic object images via diffusion and fine-tunes the VLM on those — no robot data needed</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SynthDrive: Real-to-Sim-to-Real Assets for Autonomous Driving</b> &mdash; diffusion generates synthetic driving assets from real captures and feeds them back as training data</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Domain Randomization for Object Detection in Manufacturing Environments</b> &mdash; randomizes texture, lighting, and pose in a renderer to fill the gap between factory sim and factory floor</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm12">
@@ -373,10 +379,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Chain 8 autoregressive steps: each predicted scene feeds the next → <b>8-step imagined rollout</b> at 0.5s intervals.</li>
 <li>Score each rollout with a collision checker: keep the top-5 action sequences, discard the rest — <b>planning by imagination</b>.</li>
 <li>Execute the first action of the best rollout; re-plan at 2 Hz — WCDT latency <b>18ms per step</b> on one A100.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>WCDT: World-Centric Diffusion Transformer for Traffic Scene Generation</b> &mdash; generates diverse realistic traffic scenes as structured agent trajectories in world coordinates</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Graph2Scene: Hierarchical 3D Indoor Scene Generation from Scene Graphs</b> &mdash; scene graph as condition; generative model places objects that respect spatial relations</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DualDiff: Dual-Branch Diffusion for Driving Scene Generation</b> &mdash; separate branches for road layout and dynamic agents — consistent joint scene generation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SAGE: Agentic 3D Scene Generation via Multi-Step Generation</b> &mdash; an LLM agent orchestrates a sequence of generative calls to build and edit a full 3D scene</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>WCDT: World-Centric Diffusion Transformer for Traffic Scene Generation</b> &mdash; generates diverse realistic traffic scenes as structured agent trajectories in world coordinates</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Graph2Scene: Hierarchical 3D Indoor Scene Generation from Scene Graphs</b> &mdash; scene graph as condition; generative model places objects that respect spatial relations</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DualDiff: Dual-Branch Diffusion for Driving Scene Generation</b> &mdash; separate branches for road layout and dynamic agents — consistent joint scene generation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SAGE: Agentic 3D Scene Generation via Multi-Step Generation</b> &mdash; an LLM agent orchestrates a sequence of generative calls to build and edit a full 3D scene</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm13">
@@ -390,10 +396,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Inner loop: for each approach, run diffusion to denoise <b>16 contact-point offsets</b> from noise to valid contacts (50 steps).</li>
 <li>Filter by grasp quality (force-closure metric > 0.3): keep <b>3 of 8</b>; re-rank by task constraint (handle preferred).</li>
 <li>Execute: select highest-quality grasp; success rate on <b>ShapeNet mugs = 84%</b> vs 61% for regression baseline.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>BODex: Bilevel Grasp Synthesis for Dexterous Manipulation</b> &mdash; outer loop selects approach; inner loop optimizes contact points — bilevel generation avoids local minima</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>QDGset: Quality-Diversity Grasp Dataset for Dexterous Hands</b> &mdash; quality-diversity search generates a large, diverse set of valid grasps as training data for learned policies</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoDexGrasp: Geometry-Aware Dexterous Grasping via Conditional Diffusion</b> &mdash; mesh-normal conditioning on the diffusion model guides the denoiser toward geometrically valid grasps</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MaskDexGrasp: Part-Aware Grasp Synthesis via Masked Diffusion</b> &mdash; masks out non-functional parts during denoising so the model attends to task-relevant contact regions</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>BODex: Bilevel Grasp Synthesis for Dexterous Manipulation</b> &mdash; outer loop selects approach; inner loop optimizes contact points — bilevel generation avoids local minima</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>QDGset: Quality-Diversity Grasp Dataset for Dexterous Hands</b> &mdash; quality-diversity search generates a large, diverse set of valid grasps as training data for learned policies</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GeoDexGrasp: Geometry-Aware Dexterous Grasping via Conditional Diffusion</b> &mdash; mesh-normal conditioning on the diffusion model guides the denoiser toward geometrically valid grasps</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MaskDexGrasp: Part-Aware Grasp Synthesis via Masked Diffusion</b> &mdash; masks out non-functional parts during denoising so the model attends to task-relevant contact regions</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm14">
@@ -407,10 +413,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Denoising: 100 steps on a <b>196-frame × 263-dim</b> motion sequence (22 joints × 6D rotation + root velocity).</li>
 <li>Part-level guidance: right-arm token attends only to right-arm joints → <b>waving motion isolated to R arm</b>.</li>
 <li>FID on HumanML3D: <b>0.49</b> (ParTY) vs 0.74 (baseline) — more precise motion with correct part activation.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ParTY: Part-Guided Text-to-Motion Generation</b> &mdash; decomposes motion into body parts and generates each guided by part-level text tokens — finer control</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OpenT2M: A Large Open-Domain Dataset for Text-to-Motion Generation</b> &mdash; large-scale paired text-motion data; shows that coverage matters more than curation for generalization</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MoLingo: Motion-Language Alignment via Contrastive Pre-Training</b> &mdash; aligns motion and language embeddings before generation — better zero-shot transfer to new verbs</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LLaMo: Large Language Model for Human Motion Understanding and Generation</b> &mdash; uses an LLM as both a motion encoder and a generator, leveraging language priors for rare motions</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>ParTY: Part-Guided Text-to-Motion Generation</b> &mdash; decomposes motion into body parts and generates each guided by part-level text tokens — finer control</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>OpenT2M: A Large Open-Domain Dataset for Text-to-Motion Generation</b> &mdash; large-scale paired text-motion data; shows that coverage matters more than curation for generalization</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MoLingo: Motion-Language Alignment via Contrastive Pre-Training</b> &mdash; aligns motion and language embeddings before generation — better zero-shot transfer to new verbs</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>LLaMo: Large Language Model for Human Motion Understanding and Generation</b> &mdash; uses an LLM as both a motion encoder and a generator, leveraging language priors for rare motions</div></li></ul>
 </div>
 
 <div class="fam rich" id="gm15">
@@ -424,10 +430,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Autoregressive step: predict the <b>next action token</b> given all prior tokens using a causal transformer (GPT-style).</li>
 <li>Repeat for <b>7 action tokens</b> → decoded to a 7-DOF joint command; execute on robot.</li>
 <li>Generalization: 3 demonstration tokens per new task → <b>71% success</b> on unseen objects, 0 fine-tuning steps.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ICRT: In-Context Imitation via Next-Token Prediction for Robot Learning</b> &mdash; few-shot imitation by conditioning an autoregressive model on demonstration tokens — no fine-tuning</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ShapeAR: Editable Shape Generation via Autoregressive Layered Representation</b> &mdash; generates 3D shapes as a sequence of editable layers, each predicted autoregressively</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AToken: A Unified Visual Tokenizer for Autoregressive Image Generation</b> &mdash; single tokenizer trained jointly on reconstruction and generation objectives for consistent AR modeling</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Beyond Patches: Global-Aware Autoregressive Font Generation</b> &mdash; global context token prepended to patch sequence — prevents the AR model from losing long-range structure</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>ICRT: In-Context Imitation via Next-Token Prediction for Robot Learning</b> &mdash; few-shot imitation by conditioning an autoregressive model on demonstration tokens — no fine-tuning</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>ShapeAR: Editable Shape Generation via Autoregressive Layered Representation</b> &mdash; generates 3D shapes as a sequence of editable layers, each predicted autoregressively</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>AToken: A Unified Visual Tokenizer for Autoregressive Image Generation</b> &mdash; single tokenizer trained jointly on reconstruction and generation objectives for consistent AR modeling</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Beyond Patches: Global-Aware Autoregressive Font Generation</b> &mdash; global context token prepended to patch sequence — prevents the AR model from losing long-range structure</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -444,7 +450,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="diffusion-policies-explained.html">Diffusion Policies</a> &middot; <a href="world-models-explained.html">World Models</a> &middot; <a href="rl-explained.html">RL &amp; Imitation</a> &middot; <a href="vla-explained.html">Vision-Language-Action</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#gen">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="diffusion-policies-explained.html">Diffusion Policies</a> &middot; <a href="world-models-explained.html">World Models</a> &middot; <a href="rl-explained.html">RL &amp; Imitation</a> &middot; <a href="vla-explained.html">Vision-Language-Action</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Generative Models explainer &middot; mechanism diagrams are live JavaScript (assets/gm-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the synthesis engine under the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/gm-anim.js"></script>
 </body></html>

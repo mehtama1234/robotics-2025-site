@@ -74,7 +74,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#2B242A;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#191319}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#2B242A}.op b{color:var(--accent-deep)}
@@ -199,10 +205,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Train PPO for 4,000 iterations</b> (~1.5 B environment steps); the gait transitions from a shuffling crawl to a symmetric trot by iteration 800.</li>
 <li><b>Observe emergence:</b> at 1.0 m/s the policy settles on a diagonal trot; at 2.0 m/s it shifts to a bound — no one specified that schedule.</li>
 <li><b>Deploy zero-shot:</b> copy the checkpoint to the real ANYmal; it walks outdoor gravel, 0% retrain (AllGaits result: 9 biological gaits in one policy).</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AllGaits</b> &mdash; one RL policy learns all 9 biological gaits + instant energy-optimal transitions</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Agile But Safe</b> &mdash; a learned reach-avoid value net gives provable safety at 2.5 m/s in clutter</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Energy Regularization for Gait Transition</b> &mdash; real-time gait selection, 30% lower energy, no scripted sequence</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Think on Your Feet</b> &mdash; WGAN-div + hybrid model for seamless human-like humanoid gait switching</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>AllGaits</b> &mdash; one RL policy learns all 9 biological gaits + instant energy-optimal transitions</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Agile But Safe</b> &mdash; a learned reach-avoid value net gives provable safety at 2.5 m/s in clutter</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Adaptive Energy Regularization for Gait Transition</b> &mdash; real-time gait selection, 30% lower energy, no scripted sequence</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Think on Your Feet</b> &mdash; WGAN-div + hybrid model for seamless human-like humanoid gait switching</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo2">
@@ -216,10 +222,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Solve in ≤1 ms:</b> active-set QP solver (OSQP); the optimal joint accelerations land in the solver; integrate to get torque commands.</li>
 <li><b>Walking test:</b> robot pushes a 15 kg box at 0.3 m/s; WBC allocates 60% of leg effort to balance and 40% to forward push force — the split emerges from the optimization.</li>
 <li><b>Compare to separate control:</b> sequential arm-then-leg control tips the robot on every push attempt; joint WBC succeeds 94% of trials (MPPI-WBC result).</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time WBC with MPPI</b> &mdash; first sampling-based whole-body MPC on real ANYmal, no task-specific reward</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reduced-Order-Guided Contact-Implicit MPC</b> &mdash; HLIP-guided CI-MPC for a 24-DOF humanoid on rough terrain</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic Tube MPC</b> &mdash; learned uncertainty tubes replace worst-case bounds for narrow-corridor agility</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Optimal Torque Distribution on Slippery Terrain</b> &mdash; real-time slip-aware torque allocation, no pre-trained model</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Real-Time WBC with MPPI</b> &mdash; first sampling-based whole-body MPC on real ANYmal, no task-specific reward</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Reduced-Order-Guided Contact-Implicit MPC</b> &mdash; HLIP-guided CI-MPC for a 24-DOF humanoid on rough terrain</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Dynamic Tube MPC</b> &mdash; learned uncertainty tubes replace worst-case bounds for narrow-corridor agility</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Optimal Torque Distribution on Slippery Terrain</b> &mdash; real-time slip-aware torque allocation, no pre-trained model</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo3">
@@ -233,10 +239,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Distill student:</b> student sees only joint encoders + IMU + depth camera; mimics teacher via DAgger over 500 M steps; achieves 93% of teacher&rsquo;s terrain coverage.</li>
 <li><b>Deploy zero-shot:</b> copy checkpoint to Berkeley Humanoid; walks outdoor gravel, 5-cm steps, and recovers 8/10 surprise pushes — no fine-tuning.</li>
 <li><b>Snow test (DWL):</b> add a denoising world model head to the student; zero-shot deployment on snow and 8° inclines; 0 falls in 45-min outdoor trial.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Berkeley Humanoid</b> &mdash; a low-cost humanoid achieves outdoor agility + perturbation recovery from RL alone</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Denoising World Model Learning (DWL)</b> &mdash; first humanoid deployment on snow / stairs / inclines, zero-shot</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RL2AC</b> &mdash; 1000Hz adaptive control corrects disturbances, terrain, and payload live</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DreamFLEX</b> &mdash; joint fault estimation + RL keeps walking under a locked or overheated joint</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Berkeley Humanoid</b> &mdash; a low-cost humanoid achieves outdoor agility + perturbation recovery from RL alone</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Denoising World Model Learning (DWL)</b> &mdash; first humanoid deployment on snow / stairs / inclines, zero-shot</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>RL2AC</b> &mdash; 1000Hz adaptive control corrects disturbances, terrain, and payload live</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DreamFLEX</b> &mdash; joint fault estimation + RL keeps walking under a locked or overheated joint</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo4">
@@ -250,10 +256,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Curriculum over 6 stages:</b> flat → small bumps (±3 cm) → steps (8 cm) → gaps (20 cm) → rough rocks → 14-step staircase; policy trained for 2 B steps total.</li>
 <li><b>Jumping test:</b> quadruped crosses a 14-step staircase continuously, 0.6 m/s; success 82% vs 7% for flat-ground baseline (Agile Continuous Jumping result).</li>
 <li><b>Semantic traversal:</b> DINO features label mud as non-traversable; VLM planner re-routes around it zero-shot (Watch Your STEPP / VLM reasoning result).</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Agile Continuous Jumping in Discontinuous Terrains</b> &mdash; first continuous quadruped jumping across 14-step stairs + sparse stones</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Watch Your STEPP</b> &mdash; self-supervised DINO features estimate semantic traversability, no labels</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Commonsense Reasoning for Legged Adaptation with VLMs</b> &mdash; an in-context VLM planner clears obstacle courses zero-shot</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Humanoid Locomotion with a Perceptive Internal Model</b> &mdash; elevation-map perception enables robust stair climbing</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Agile Continuous Jumping in Discontinuous Terrains</b> &mdash; first continuous quadruped jumping across 14-step stairs + sparse stones</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Watch Your STEPP</b> &mdash; self-supervised DINO features estimate semantic traversability, no labels</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Commonsense Reasoning for Legged Adaptation with VLMs</b> &mdash; an in-context VLM planner clears obstacle courses zero-shot</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Humanoid Locomotion with a Perceptive Internal Model</b> &mdash; elevation-map perception enables robust stair climbing</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo5">
@@ -267,10 +273,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Navigation test:</b> robot walks 20 m corridor at 0.8 m/s, avoids 3 obstacles; then switches to tabletop pick-and-place mid-walk; 0 falls in 50 trials.</li>
 <li><b>Dance imitation:</b> upper-body mocap tracks a human wave; lower-body RL maintains balance while hips shift ±15° — the two halves never conflict (Expressive WBC result).</li>
 <li><b>Measure mode switching:</b> HOVER transitions navigation→manipulation in ≤0.3 s with no manual re-initialization; specialist-only approach requires manual mode reset.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>HOVER</b> &mdash; one distilled neural whole-body controller across navigation, loco-manip, tabletop</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Expressive Whole-Body Control</b> &mdash; upper-body imitation + lower-body RL mimics dance and handshakes, sim-to-real</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Design and Control of a Bipedal Robotic Character</b> &mdash; artist-directed expressive motion blended with RL for entertainment robotics</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Angular DCM</b> &mdash; first spatial divergent-component-of-motion capturing rotational balance</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>HOVER</b> &mdash; one distilled neural whole-body controller across navigation, loco-manip, tabletop</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Expressive Whole-Body Control</b> &mdash; upper-body imitation + lower-body RL mimics dance and handshakes, sim-to-real</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Design and Control of a Bipedal Robotic Character</b> &mdash; artist-directed expressive motion blended with RL for entertainment robotics</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Angular DCM</b> &mdash; first spatial divergent-component-of-motion capturing rotational balance</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo6">
@@ -284,10 +290,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Mobile ALOHA setup:</b> low-cost bimanual robot; 50 teleoperated demos of opening a fridge; imitation learning trains a policy that generalizes to 3 fridge positions.</li>
 <li><b>Test loco-manipulation coupling:</b> robot walks 1 m to a table while arm holds a cup; without coupling, cup tips 8/10 trials; with whole-body coordination, 0/10 spills.</li>
 <li><b>Success rate:</b> UMI-on-Legs achieves 70%+ on mobile cooking tasks vs 12% for sequential base-then-arm control.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>UMI-on-Legs</b> &mdash; hand-held UMI demos + a whole-body controller → 70%+ mobile manipulation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Mobile ALOHA</b> &mdash; low-cost whole-body teleop learns cooking, doors, elevators from 50 demos</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Agent Loco-Manipulation for Quadrupedal Pushing</b> &mdash; hierarchical multi-agent RL, +36% success on long-horizon pushing</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>BiFold</b> &mdash; language-conditioned bimanual cloth folding, state-of-the-art</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>UMI-on-Legs</b> &mdash; hand-held UMI demos + a whole-body controller → 70%+ mobile manipulation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Mobile ALOHA</b> &mdash; low-cost whole-body teleop learns cooking, doors, elevators from 50 demos</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Multi-Agent Loco-Manipulation for Quadrupedal Pushing</b> &mdash; hierarchical multi-agent RL, +36% success on long-horizon pushing</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>BiFold</b> &mdash; language-conditioned bimanual cloth folding, state-of-the-art</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo7">
@@ -301,10 +307,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Train shadowing policy:</b> humanoid trained to track retargeted motion in sim; RL reward = joint-angle tracking + contact-phase matching; 1 B steps, Isaac Gym.</li>
 <li><b>Deploy imitation:</b> robot copies a human waving and walking in real time via onboard camera at 30 Hz; 60% task success on 12 manipulation demos (HumanPlus result).</li>
 <li><b>Adversarial prior (AMP style):</b> a discriminator scores how human-like the motion is; its output added as a reward term keeps motion smooth even on unseen tasks.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>HumanPlus</b> &mdash; 40h of human mocap → humanoid shadowing + imitation, 60&ndash;100% real success</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Expressive Whole-Body Control</b> &mdash; mocap upper-body imitation blended with RL lower-body</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SkillMimicGen</b> &mdash; auto-segments + stitches human demos into 24k synthetic from 60 examples</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Imitation with Limited Actions via Diffusion + Koopman</b> &mdash; few action-labeled demos via latent Koopman actions</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>HumanPlus</b> &mdash; 40h of human mocap → humanoid shadowing + imitation, 60&ndash;100% real success</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Expressive Whole-Body Control</b> &mdash; mocap upper-body imitation blended with RL lower-body</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SkillMimicGen</b> &mdash; auto-segments + stitches human demos into 24k synthetic from 60 examples</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Imitation with Limited Actions via Diffusion + Koopman</b> &mdash; few action-labeled demos via latent Koopman actions</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo8">
@@ -318,10 +324,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>RL for large disturbances:</b> train FRASA on 200 N·m impulse pushes; the agent learns crouch-and-rebalance for pushes beyond the capture-point reach (~120 N·m).</li>
 <li><b>Hierarchical MPC test:</b> co-optimize step timing + arm counter-swing; recoverable impulse rises from 95 N·m (leg-only) to 220 N·m (+131%, paper result).</li>
 <li><b>Stand-up from fall:</b> FRASA recovers from a flat-on-floor fall in 4.2 s on average; the prior champion (hand-tuned) required 8.1 s and failed if the fall angle differed by &gt;15°.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>FRASA</b> &mdash; one DRL agent for fall recovery + stand-up, beats the RoboCup 2023 champion</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adapting Gait Frequency for Push-Recovery via Hierarchical MPC</b> &mdash; +131% recoverable impulse by co-optimizing stepping + arms</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Agile But Safe</b> &mdash; dual agile+recovery policies with a learned reach-avoid safety net</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Safety-Critical Locomotion in Infeasible Paths</b> &mdash; a hierarchy of safety conditions resolves conflicting constraints</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>FRASA</b> &mdash; one DRL agent for fall recovery + stand-up, beats the RoboCup 2023 champion</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Adapting Gait Frequency for Push-Recovery via Hierarchical MPC</b> &mdash; +131% recoverable impulse by co-optimizing stepping + arms</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Agile But Safe</b> &mdash; dual agile+recovery policies with a learned reach-avoid safety net</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Safety-Critical Locomotion in Infeasible Paths</b> &mdash; a hierarchy of safety conditions resolves conflicting constraints</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo9">
@@ -335,10 +341,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Distill to 1-step (DiffuseLoco):</b> consistency distillation reduces inference to 1 denoising step; latency drops from 18 ms to 1.2 ms — fits the 50 Hz control loop.</li>
 <li><b>Multimodal test:</b> on an asymmetric terrain, diffusion policy trots 60% of trials, canters 40%; regression policy always trots (the average) and falls 3× more often.</li>
 <li><b>Zero-shot transfer:</b> trained in sim, deployed on real Unitree A1; beats BC and RL baselines on slope stability by 15% (DiffuseLoco result).</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DiffuseLoco</b> &mdash; first real-time diffusion legged control from offline data, beats RL/BC on stability</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Preference-Aligned Diffusion Planner for Quadrupeds</b> &mdash; offline diffusion + preference refinement → zero-shot sim-to-real gaits</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Transferable Latent-to-Latent Locomotion</b> &mdash; a latent diffusion recovery module adapts one core across robots</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ProDapt</b> &mdash; long-term contact-memory diffusion completes tasks from proprioception only</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>DiffuseLoco</b> &mdash; first real-time diffusion legged control from offline data, beats RL/BC on stability</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Preference-Aligned Diffusion Planner for Quadrupeds</b> &mdash; offline diffusion + preference refinement → zero-shot sim-to-real gaits</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Transferable Latent-to-Latent Locomotion</b> &mdash; a latent diffusion recovery module adapts one core across robots</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>ProDapt</b> &mdash; long-term contact-memory diffusion completes tasks from proprioception only</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo10">
@@ -352,10 +358,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Run on Harmon:</b> a VLM generates text-aligned motion tokens; a motion decoder converts to joint angles; lower-body RL tracks the balance while upper body follows the tokens.</li>
 <li><b>Unseen-obstacle test (Commonsense VLM):</b> a never-seen inflatable ball blocks the path; VLM identifies it as soft, plans a kick to clear it; robot succeeds 7/8 trials zero-shot.</li>
 <li><b>Preference refinement:</b> 4 human corrections in natural language ("walk slower") update the LLM prior; the adjusted behavior persists across all future rollouts (Language-Guided Preference result).</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Harmon</b> &mdash; a VLM refines human-motion priors into text-aligned humanoid whole-body motion</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Commonsense Reasoning for Legged Adaptation with VLMs</b> &mdash; in-context VLM planning clears novel obstacle courses</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Language-Guided Preference Learning for Quadruped Behaviors</b> &mdash; 4 human queries yield expressive behaviors from LLM priors</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RT-H</b> &mdash; a language-motion hierarchy predicts primitives and accepts human corrections</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Harmon</b> &mdash; a VLM refines human-motion priors into text-aligned humanoid whole-body motion</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Commonsense Reasoning for Legged Adaptation with VLMs</b> &mdash; in-context VLM planning clears novel obstacle courses</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Language-Guided Preference Learning for Quadruped Behaviors</b> &mdash; 4 human queries yield expressive behaviors from LLM priors</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>RT-H</b> &mdash; a language-motion hierarchy predicts primitives and accepts human corrections</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo11">
@@ -369,10 +375,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>RL physics controller (GRIP):</b> an LSTM predicts keyframe poses; a PPO controller in Isaac Gym tracks them; the adversarial motion prior keeps the style human-like.</li>
 <li><b>Foot-skate measure:</b> foot velocity during stance &lt;0.005 m/s with physics loss vs 0.04 m/s without — an 8× reduction in skating.</li>
 <li><b>Monocular HOI refinement:</b> noisy monocular interaction estimate fed into RL physics sim; sim corrects hand-object penetration from 12 cm to &lt;1 cm (Recovering Plausible HOI result).</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAMotion</b> &mdash; uses object acceleration to infer contact, applies a physics-aware loss in diffusion</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GRIP</b> &mdash; LSTM kinematics + a PPO physics controller + adversarial motion prior in Isaac Gym</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Recovering Physically Plausible HOI from Monocular Video</b> &mdash; RL physics simulation refines noisy monocular interactions</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysHO</b> &mdash; physics-constrained dynamic 3D-Gaussian human + object from one video</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>PAMotion</b> &mdash; uses object acceleration to infer contact, applies a physics-aware loss in diffusion</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GRIP</b> &mdash; LSTM kinematics + a PPO physics controller + adversarial motion prior in Isaac Gym</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Recovering Physically Plausible HOI from Monocular Video</b> &mdash; RL physics simulation refines noisy monocular interactions</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>PhysHO</b> &mdash; physics-constrained dynamic 3D-Gaussian human + object from one video</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo12">
@@ -386,10 +392,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Build hierarchical diffusion policy:</b> contact retargeting → high-level plan tokens → low-level joint trajectory; deployed on a G1 humanoid.</li>
 <li><b>Contact accuracy test:</b> hand contact maintained in 89% of frames vs 52% for naive angle-copying retargeting.</li>
 <li><b>Sim-to-real:</b> Gallant uses dual-LiDAR voxel grids + PPO to transfer retargeted motion; achieves 90%+ upright rate across 8 terrain types, zero-shot.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Beyond Mimicry</b> &mdash; contact-preserving retargeting (pairwise-distance consistency) + hierarchical diffusion policy on a real G1</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Gallant</b> &mdash; dual-LiDAR voxel grids → PPO humanoid locomotion, 90%+ sim-to-real on 8 terrains</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RAM: Recover Any 3D Human Motion in-the-Wild</b> &mdash; motion-aware tracking + memory attention for stable reconstruction</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Multi-level Causal LLM Text-to-Motion</b> &mdash; causal motion tokenizer matched to LLM causality for aligned generation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Beyond Mimicry</b> &mdash; contact-preserving retargeting (pairwise-distance consistency) + hierarchical diffusion policy on a real G1</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Gallant</b> &mdash; dual-LiDAR voxel grids → PPO humanoid locomotion, 90%+ sim-to-real on 8 terrains</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RAM: Recover Any 3D Human Motion in-the-Wild</b> &mdash; motion-aware tracking + memory attention for stable reconstruction</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Multi-level Causal LLM Text-to-Motion</b> &mdash; causal motion tokenizer matched to LLM causality for aligned generation</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo13">
@@ -403,10 +409,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Physical-feasibility filter (OpenT2M):</b> after generation, score each frame: foot below heightmap → invalid; discard and resample until all frames pass.</li>
 <li><b>Contact accuracy:</b> SceMoS achieves 0.98 contact accuracy on HumanML3D benchmark vs 0.81 for scene-unaware baseline.</li>
 <li><b>Streaming (FloodDiffusion):</b> diffusion forcing with a causal mask generates each 100 ms chunk in 12 ms — meets real-time budget for live avatar animation.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>OpenT2M</b> &mdash; part-decomposed tokenizer + million-scale data with physical-feasibility validation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MotionHiFlow</b> &mdash; hierarchical flow matching with a topology-aware motion VAE, coarse-to-fine</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SceMoS</b> &mdash; scene-aware synthesis grounded on per-frame heightmaps → 0.98 contact accuracy</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FloodDiffusion</b> &mdash; tailored diffusion forcing for low-latency streaming motion generation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>OpenT2M</b> &mdash; part-decomposed tokenizer + million-scale data with physical-feasibility validation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MotionHiFlow</b> &mdash; hierarchical flow matching with a topology-aware motion VAE, coarse-to-fine</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SceMoS</b> &mdash; scene-aware synthesis grounded on per-frame heightmaps → 0.98 contact accuracy</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>FloodDiffusion</b> &mdash; tailored diffusion forcing for low-latency streaming motion generation</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo14">
@@ -420,10 +426,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Penetration reduction:</b> −40% mean penetration depth vs prior SOTA; 3.2 mm vs 5.4 mm average finger-into-object distance.</li>
 <li><b>Scene interaction (SceMoS + OneHOI):</b> a relational DiT conditions on the scene graph (chair, table, floor); body-scene contact accuracy 0.95 vs 0.71 for scene-blind generation.</li>
 <li><b>Sim-to-real hand-object video (PAM):</b> pose→appearance→motion pipeline generates photorealistic hand-object interaction video; used to evaluate robot grasp policies without real hardware.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoDexGrasp</b> &mdash; SIM(3)-equivariant, physics-refined dexterous grasp generation, −40% penetration</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OneHOI</b> &mdash; a relational DiT unifies human-object interaction generation and editing</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SceMoS</b> &mdash; heightmap-grounded motion respects scene surfaces and ground contact</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PAM</b> &mdash; a pose→appearance→motion engine for sim-to-real hand-object interaction video</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>GeoDexGrasp</b> &mdash; SIM(3)-equivariant, physics-refined dexterous grasp generation, −40% penetration</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>OneHOI</b> &mdash; a relational DiT unifies human-object interaction generation and editing</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SceMoS</b> &mdash; heightmap-grounded motion respects scene surfaces and ground contact</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>PAM</b> &mdash; a pose→appearance→motion engine for sim-to-real hand-object interaction video</div></li></ul>
 </div>
 
 <div class="fam rich" id="lo15">
@@ -437,10 +443,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Speech prosody (AudioAvatar):</b> extract pitch, energy, and rhythm from speech; map to upper-body gesture velocity and head pose; personalized per speaker identity.</li>
 <li><b>Evaluate text alignment:</b> FID 0.52 on HumanML3D (Archon) vs 1.1 for single-modality baseline; the fusion improves text fidelity when music is also present.</li>
 <li><b>Live editing (MotionV2V):</b> optical-flow mask isolates a limb; user draws a new trajectory; the model re-generates only that limb, leaving appearance and other limbs intact in &lt;0.4 s.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Archon</b> &mdash; any-to-any across 7 modalities for holistic digital-human generation, 72 tasks</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AudioAvatar</b> &mdash; speech prosody drives personalized whole-body gesture and posture</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MotionV2V</b> &mdash; optical-flow-guided selective motion editing while preserving appearance</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>3D-Aware Implicit Motion Control</b> &mdash; 3D-aware control for view-adaptive human video generation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Archon</b> &mdash; any-to-any across 7 modalities for holistic digital-human generation, 72 tasks</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>AudioAvatar</b> &mdash; speech prosody drives personalized whole-body gesture and posture</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MotionV2V</b> &mdash; optical-flow-guided selective motion editing while preserving appearance</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>3D-Aware Implicit Motion Control</b> &mdash; 3D-aware control for view-adaptive human video generation</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -457,7 +463,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="hardware-explained.html">Hardware</a> &middot; <a href="rl-explained.html">RL &amp; Imitation</a> &middot; <a href="medical-explained.html">Medical &amp; Surgical</a> &middot; <a href="sim-to-real-explained.html">Sim-to-Real</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#lo">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="hardware-explained.html">Hardware</a> &middot; <a href="rl-explained.html">RL &amp; Imitation</a> &middot; <a href="medical-explained.html">Medical &amp; Surgical</a> &middot; <a href="sim-to-real-explained.html">Sim-to-Real</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Locomotion &amp; Whole-Body explainer &middot; mechanism diagrams are live JavaScript (assets/lo-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the body beneath the <a href="the-machine.html">four-stage loop</a> &middot; companion to the <a href="diffusion-policies-explained.html">diffusion-policies</a>, <a href="vla-explained.html">VLA</a>, and <a href="sim-to-real-explained.html">data-engine</a> explainers &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/lo-anim.js"></script>
 </body></html>

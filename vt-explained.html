@@ -66,7 +66,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#1A2233;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#0D1420}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#1A2233}.op b{color:var(--accent-deep)}
@@ -186,10 +192,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Compress the 64 selected frames into a <b>memory bank M &isin; &Ropf;<sup>64&times;768</sup></b> via mean-pooled visual tokens.</li>
 <li>A question &ldquo;what happened after they shook hands?&rdquo; cross-attends to M; retrieval score = softmax(q&middot;M<sup>T</sup> / &radic;768).</li>
 <li>Without selection: full-video QA accuracy ~41%; with learned selection: <b>+18 pp</b> on EgoSchema.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Visual Memory Mechanism for Multimodal Large Language Models (VMem)</b> &mdash; compressed key-frame memory bank; selective retrieval for long-form QA</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Wavelet-Based Frame Selection for Long Video Understanding</b> &mdash; frequency-domain saliency scores pick informative frames before the LLM</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldMM — Multimodal Memory Agent for Long Video</b> &mdash; agentic memory agent with retrieval for open-domain long video</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>HieraMamba — Anchor-Mamba Hierarchical Pooling for Long-Range Video</b> &mdash; anchor tokens + Mamba SSM give sub-quadratic long-range context</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Visual Memory Mechanism for Multimodal Large Language Models (VMem)</b> &mdash; compressed key-frame memory bank; selective retrieval for long-form QA</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Wavelet-Based Frame Selection for Long Video Understanding</b> &mdash; frequency-domain saliency scores pick informative frames before the LLM</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>WorldMM — Multimodal Memory Agent for Long Video</b> &mdash; agentic memory agent with retrieval for open-domain long video</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>HieraMamba — Anchor-Mamba Hierarchical Pooling for Long-Range Video</b> &mdash; anchor tokens + Mamba SSM give sub-quadratic long-range context</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt2">
@@ -203,10 +209,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>At frame t: compute pixel affinity A<sub>t</sub> = softmax(e<sub>t</sub> &middot; e_ref<sup>T</sup> / &radic;256); warp M<sub>1</sub> to get M&#771;<sub>t</sub>.</li>
 <li>Predicted mask: M<sub>t</sub> = threshold(A<sub>t</sub>, 0.5); IoU with ground truth on DAVIS-2017 &asymp; <b>0.87</b>.</li>
 <li>At occlusion: affinity drops &mdash; set M<sub>t</sub> = last valid M<sub>t-k</sub>; re-id when affinity recovers above threshold.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>DeRVOS — Decoupled Referring Video Object Segmentation</b> &mdash; decouples segmentation from grounding for better referring VOS</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPARROW — Pixel-Grounded Video MLLM</b> &mdash; pixel-grounded multimodal LLM answers questions about specific video regions</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DTPTrack — Drift-Resilient Temporal Prior for Video Object Tracking</b> &mdash; temporal prior from prior frames corrects drift through occlusion</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ADTrack — RGB-T Tracking with Auxiliary Depth</b> &mdash; depth-modal auxiliary features for reliable thermal-RGB multi-modal tracking</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>DeRVOS — Decoupled Referring Video Object Segmentation</b> &mdash; decouples segmentation from grounding for better referring VOS</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SPARROW — Pixel-Grounded Video MLLM</b> &mdash; pixel-grounded multimodal LLM answers questions about specific video regions</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DTPTrack — Drift-Resilient Temporal Prior for Video Object Tracking</b> &mdash; temporal prior from prior frames corrects drift through occlusion</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>ADTrack — RGB-T Tracking with Auxiliary Depth</b> &mdash; depth-modal auxiliary features for reliable thermal-RGB multi-modal tracking</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt3">
@@ -220,10 +226,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Temporal proposal network generates ~200 anchor spans; score each with P(action|span).</li>
 <li>NMS with IoU threshold 0.4 &rarr; keep top-5; best span: <b>t=[238, 301]</b>, tIoU=0.88.</li>
 <li>Without temporal modeling (per-frame only): tIoU=0.31 &mdash; misses start/end entirely.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Stitch in Time — Self-Supervised Temporal Action Localization via Plackett-Luce Ranking</b> &mdash; ranking-based self-supervised TAL without action labels</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learnable Motion-Focused Tokenization for Video Understanding</b> &mdash; motion-aware tokenizer reduces redundant static tokens</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TRCoRSurg — Triplet Recognition for Surgical Action Detection</b> &mdash; instrument-verb-target triplet recognition in surgical video</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Action Recognition from First-Person and Third-Person Video</b> &mdash; cross-view action recognition for robot and human video</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>A Stitch in Time — Self-Supervised Temporal Action Localization via Plackett-Luce Ranking</b> &mdash; ranking-based self-supervised TAL without action labels</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Learnable Motion-Focused Tokenization for Video Understanding</b> &mdash; motion-aware tokenizer reduces redundant static tokens</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>TRCoRSurg — Triplet Recognition for Surgical Action Detection</b> &mdash; instrument-verb-target triplet recognition in surgical video</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Action Recognition from First-Person and Third-Person Video</b> &mdash; cross-view action recognition for robot and human video</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt4">
@@ -237,10 +243,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Select top-8 frames (score &gt; 0.72); pass to VLM for answer generation.</li>
 <li>VLM sees 8 frames &times; ~256 tokens = <b>2048 tokens</b> vs 18K raw frames &times; 256 = 4.6M tokens.</li>
 <li>Answer accuracy on NExT-QA: full-video 54% &rarr; evidence-filtered <b>69%</b>; 3.5&times; faster inference.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HERBench — Multi-Evidence Video QA Benchmark</b> &mdash; benchmark requiring evidence from multiple video segments per question</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Chain-of-Frames — Frame-Aware Chain-of-Thought for Video Reasoning</b> &mdash; generates frame-level reasoning chains before answering</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Select Less, Reason More — Evidence Purity for Video QA</b> &mdash; filters distractor frames before reasoning to improve answer quality</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MAD — Modality-Adaptive Decoding for Video LLMs</b> &mdash; adapts decoding to which modality (audio/visual/text) is most relevant</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>HERBench — Multi-Evidence Video QA Benchmark</b> &mdash; benchmark requiring evidence from multiple video segments per question</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Chain-of-Frames — Frame-Aware Chain-of-Thought for Video Reasoning</b> &mdash; generates frame-level reasoning chains before answering</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Select Less, Reason More — Evidence Purity for Video QA</b> &mdash; filters distractor frames before reasoning to improve answer quality</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MAD — Modality-Adaptive Decoding for Video LLMs</b> &mdash; adapts decoding to which modality (audio/visual/text) is most relevant</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt5">
@@ -254,10 +260,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Compute temporal attention: a = softmax(F q / &radic;256) &isin; &Ropf;<sup>300</sup>; peak at t=87 s.</li>
 <li>Predict span [t<sub>s</sub>, t<sub>e</sub>] = argmax boundary scores; result: <b>[85 s, 91 s]</b>.</li>
 <li>R@1 (IoU&ge;0.5) on Charades-STA: regression-only 42% &rarr; span-attention model <b>63%</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HieraMamba — Anchor-Mamba for Long-Range Temporal Grounding</b> &mdash; anchor-pooled Mamba handles multi-minute videos for moment retrieval</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPARROW — Pixel-Grounded Video MLLM for Temporal Referring</b> &mdash; pixel-level grounding supports both spatial and temporal referring queries</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LongStream — Streaming Visual Geometry for Long Temporal Reasoning</b> &mdash; online geometry model infers temporal correspondences from streaming video</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RECS4R — Referring Grounding via Contrastive Spatio-Temporal Reasoning</b> &mdash; contrastive cross-modal alignment for language-guided temporal grounding</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>HieraMamba — Anchor-Mamba for Long-Range Temporal Grounding</b> &mdash; anchor-pooled Mamba handles multi-minute videos for moment retrieval</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SPARROW — Pixel-Grounded Video MLLM for Temporal Referring</b> &mdash; pixel-level grounding supports both spatial and temporal referring queries</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>LongStream — Streaming Visual Geometry for Long Temporal Reasoning</b> &mdash; online geometry model infers temporal correspondences from streaming video</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RECS4R — Referring Grounding via Contrastive Spatio-Temporal Reasoning</b> &mdash; contrastive cross-modal alignment for language-guided temporal grounding</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt6">
@@ -271,10 +277,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>New detections at frame 48; Hungarian matching with cost C<sub>ij</sub> = 1 &minus; IoU(b<sub>i</sub>, b<sub>j</sub>).</li>
 <li>ID B passes behind pillar for 12 frames; re-ID via appearance embedding d(e<sub>B</sub>, e<sub>new</sub>) &lt; 0.35 &rarr; match.</li>
 <li>MOTA on MOT17: detection-only 42% &rarr; Kalman + re-ID <b>76%</b>; ID switches drop 8&times;.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Asynchronous Multi-Object Tracking with an Event Camera</b> &mdash; event-driven tracker propagates IDs at microsecond resolution, bypassing frame-rate occlusion windows</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MER-Tracker — Event-RGB 3D Multi-Object Tracking</b> &mdash; fuses event and RGB streams for 3D MOT in driving scenes</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FlexHook — Referring MOT with Flexible Query Hooks</b> &mdash; language-conditioned query hooks for open-vocabulary referring MOT</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>BarbieGait — Cloth-Changing Person Re-ID Dataset and Baseline</b> &mdash; large cloth-change re-ID dataset; appearance-invariant gait features</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Asynchronous Multi-Object Tracking with an Event Camera</b> &mdash; event-driven tracker propagates IDs at microsecond resolution, bypassing frame-rate occlusion windows</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MER-Tracker — Event-RGB 3D Multi-Object Tracking</b> &mdash; fuses event and RGB streams for 3D MOT in driving scenes</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>FlexHook — Referring MOT with Flexible Query Hooks</b> &mdash; language-conditioned query hooks for open-vocabulary referring MOT</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>BarbieGait — Cloth-Changing Person Re-ID Dataset and Baseline</b> &mdash; large cloth-change re-ID dataset; appearance-invariant gait features</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt7">
@@ -288,10 +294,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Sample 20 trajectory candidates per agent via flow matching; ADE = 0.36 m (vs regression: 0.61 m).</li>
 <li>Joint collision check: if any sampled pair violates 0.5 m clearance, resample &mdash; social constraint.</li>
 <li>FDE at 4.8 s: <b>0.58 m</b> mean across ETH/UCY datasets; best-of-20 FDE = <b>0.21 m</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>TrajFlow — Flow-Matching Trajectory Prediction for Autonomous Agents</b> &mdash; normalizing-flow multi-modal trajectory generation in real time</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Curb Your Attention — Causal Attention Gating for Trajectory Prediction</b> &mdash; masks non-causal context to reduce spurious correlations in prediction</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Categorical Traffic Transformer — Discrete-Token Trajectory Prediction</b> &mdash; discrete token vocabulary for joint agent-scene prediction</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ARMFlow — Online 3D Reaction Motion Prediction via Action-Conditioned Flow</b> &mdash; action-conditioned flow predicts full-body 3D reactions in real time</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>TrajFlow — Flow-Matching Trajectory Prediction for Autonomous Agents</b> &mdash; normalizing-flow multi-modal trajectory generation in real time</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Curb Your Attention — Causal Attention Gating for Trajectory Prediction</b> &mdash; masks non-causal context to reduce spurious correlations in prediction</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Categorical Traffic Transformer — Discrete-Token Trajectory Prediction</b> &mdash; discrete token vocabulary for joint agent-scene prediction</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>ARMFlow — Online 3D Reaction Motion Prediction via Action-Conditioned Flow</b> &mdash; action-conditioned flow predicts full-body 3D reactions in real time</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt8">
@@ -305,10 +311,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Compute reward r<sub>t</sub> = sim(robot_frame<sub>t</sub>, human_frame<sub>t</sub>) via VGG perceptual distance.</li>
 <li>Run RL with this visual reward for 500 episodes; success rate rises from 12% &rarr; <b>71%</b>.</li>
 <li>Gap: robot gripper &ne; human hand &mdash; retargeting MLP reduces KL(v<sub>r</sub> &Vert; v<sub>h</sub>) from 1.8 &rarr; 0.4 nats.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ViViDex — Dexterous Manipulation from Human Video</b> &mdash; trajectory-guided rewards extracted from human video enable vision-only dexterous rollouts</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RTAGrasp — Task-Oriented Grasping from Human Video Memory</b> &mdash; retrieve, transfer, and align task-relevant grasps from a video memory bank</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEMMo-Plan — Multimodal Demonstration Planning from Video</b> &mdash; multimodal planning from language + video demonstrations</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizable Imitation Learning Through Pre-Trained Representations</b> &mdash; pretrained vision encoders make imitation from video data-efficient</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>ViViDex — Dexterous Manipulation from Human Video</b> &mdash; trajectory-guided rewards extracted from human video enable vision-only dexterous rollouts</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>RTAGrasp — Task-Oriented Grasping from Human Video Memory</b> &mdash; retrieve, transfer, and align task-relevant grasps from a video memory bank</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>LEMMo-Plan — Multimodal Demonstration Planning from Video</b> &mdash; multimodal planning from language + video demonstrations</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Generalizable Imitation Learning Through Pre-Trained Representations</b> &mdash; pretrained vision encoders make imitation from video data-efficient</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt9">
@@ -322,10 +328,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Pretrain on 2M unlabeled YouTube clips (~800 GPU-hours on A100); downstream fine-tune with 1% of Kinetics labels.</li>
 <li>Top-1 accuracy: supervised from scratch 54% &rarr; masked pretrained <b>72%</b> with 1% labels.</li>
 <li>Temporal-aware masking (mask entire tubes) outperforms random by <b>+4 pp</b> &mdash; forces temporal reasoning.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Tracking by Predicting 3D Gaussians Over Time (Video-GMAE)</b> &mdash; masked autoencoder predicts 3D Gaussian motion for geometry-aware temporal pretraining</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Stitch in Time — Self-Supervised Temporal Ordering via Ranking</b> &mdash; Plackett-Luce ranking of shuffled clips as a self-supervised temporal signal</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motion 3-to-4 — 3D Motion as a Bridge to 4D Video Pretraining</b> &mdash; uses estimated 3D motion as a pseudo-label to pretrain 4D video models</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learning to See Through a Baby's Eyes — Egocentric Developmental Pretraining</b> &mdash; pretrains on head-camera infant video to study the curriculum nature provides</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Tracking by Predicting 3D Gaussians Over Time (Video-GMAE)</b> &mdash; masked autoencoder predicts 3D Gaussian motion for geometry-aware temporal pretraining</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>A Stitch in Time — Self-Supervised Temporal Ordering via Ranking</b> &mdash; Plackett-Luce ranking of shuffled clips as a self-supervised temporal signal</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Motion 3-to-4 — 3D Motion as a Bridge to 4D Video Pretraining</b> &mdash; uses estimated 3D motion as a pseudo-label to pretrain 4D video models</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Learning to See Through a Baby's Eyes — Egocentric Developmental Pretraining</b> &mdash; pretrains on head-camera infant video to study the curriculum nature provides</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt10">
@@ -339,10 +345,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Horn-Schunck adds smoothness: minimize &int;&int; (I<sub>x</sub>u + I<sub>y</sub>v + I<sub>t</sub>)<sup>2</sup> + &lambda;(|&nabla;u|<sup>2</sup> + |&nabla;v|<sup>2</sup>) dx dy.</li>
 <li>Modern RAFT: iterative refinement with 4D cost volume C(u,v) = &langle;f<sub>t</sub>, f<sub>t+1</sub>&rangle;; 12 GRU update steps.</li>
 <li>EPE on Sintel Clean: Horn-Schunck 4.8 px &rarr; RAFT <b>1.43 px</b>; 3.4&times; more accurate.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Flow3r — Factored Optical Flow for Geometry-Aware Motion Estimation</b> &mdash; separates scene-flow and camera-motion factors for cleaner generalization</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Motus — Unified Latent Action World Model from Video</b> &mdash; learns latent actions as compact optical-flow surrogates to bridge video and robot data</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>NeuFlow-V2 — Lightweight Real-Time Optical Flow</b> &mdash; global-to-local flow at 30+ FPS on embedded hardware for real-time robot perception</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-NMSTFlow — Event-Based Non-Monotone Spatio-Temporal Flow</b> &mdash; non-monotone event integration for accurate flow from asynchronous event cameras</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Flow3r — Factored Optical Flow for Geometry-Aware Motion Estimation</b> &mdash; separates scene-flow and camera-motion factors for cleaner generalization</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Motus — Unified Latent Action World Model from Video</b> &mdash; learns latent actions as compact optical-flow surrogates to bridge video and robot data</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>NeuFlow-V2 — Lightweight Real-Time Optical Flow</b> &mdash; global-to-local flow at 30+ FPS on embedded hardware for real-time robot perception</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>E-NMSTFlow — Event-Based Non-Monotone Spatio-Temporal Flow</b> &mdash; non-monotone event integration for accurate flow from asynchronous event cameras</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt11">
@@ -356,10 +362,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Represent as <b>event voxel grid</b>: bin events into B=5 time bins, accumulate polarity &rarr; V &isin; &Ropf;<sup>B&times;H&times;W</sup>.</li>
 <li>Feed V to a standard conv net; optical flow EPE on MVSEC: 0.54 px vs frame-based 1.8 px in the dark.</li>
 <li>No motion blur: a 120 km/h vehicle at 10 m has ~3 m/s apparent motion &rarr; 3 px/ms; frames blur, events stay sharp.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Asynchronous Multi-Object Tracking with an Event Camera</b> &mdash; asynchronous event tracker maintains IDs at sub-millisecond resolution</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>EvMAPPER — Event-Camera Orthophoto Mapping</b> &mdash; event streams from a UAV build high-dynamic-range orthographic maps</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A New Stereo Fisheye Event Camera — Design and Calibration</b> &mdash; wide-angle stereo event camera design + calibration procedure</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Event-Based Sensing for High-Speed Robotic Tasks</b> &mdash; active illumination + event camera closes the loop for fast pick-and-place</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Asynchronous Multi-Object Tracking with an Event Camera</b> &mdash; asynchronous event tracker maintains IDs at sub-millisecond resolution</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>EvMAPPER — Event-Camera Orthophoto Mapping</b> &mdash; event streams from a UAV build high-dynamic-range orthographic maps</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>A New Stereo Fisheye Event Camera — Design and Calibration</b> &mdash; wide-angle stereo event camera design + calibration procedure</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Active Event-Based Sensing for High-Speed Robotic Tasks</b> &mdash; active illumination + event camera closes the loop for fast pick-and-place</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt12">
@@ -373,10 +379,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Update: replace the lowest-relevance slot with the mean of f<sub>k</sub> &rarr; S<sub>k</sub>; total state cost is constant O(M&middot;D).</li>
 <li>Latency: 8 ms/frame at 1080p on a single A100 &rarr; real-time at 30 fps with 6 ms headroom.</li>
 <li>Accuracy drop from offline (full video) to streaming: <b>&minus;3.1 pp</b> on Kinetics-400; memory size M=128 closes gap to &minus;1.4 pp.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>StreamingTOM — Streaming Token Compression for Online Video</b> &mdash; online token merging keeps streaming video transformer latency constant</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LongStream — Online Streaming Visual Geometry from Video</b> &mdash; causal geometry model processes streaming video without future lookahead</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InstantViR — Real-Time Video Restoration via Streaming Diffusion</b> &mdash; frame-by-frame diffusion restoration with propagated latent state for real-time quality</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FloodDiffusion — Streaming Motion Generation for Dynamic Scenes</b> &mdash; streaming denoising generates coherent long motion sequences without a fixed horizon</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>StreamingTOM — Streaming Token Compression for Online Video</b> &mdash; online token merging keeps streaming video transformer latency constant</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>LongStream — Online Streaming Visual Geometry from Video</b> &mdash; causal geometry model processes streaming video without future lookahead</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>InstantViR — Real-Time Video Restoration via Streaming Diffusion</b> &mdash; frame-by-frame diffusion restoration with propagated latent state for real-time quality</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>FloodDiffusion — Streaming Motion Generation for Dynamic Scenes</b> &mdash; streaming denoising generates coherent long motion sequences without a fixed horizon</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt13">
@@ -390,10 +396,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Token merging: cluster 4704 tokens by cosine similarity, merge adjacent clusters &rarr; <b>256 tokens</b>.</li>
 <li>Compression ratio: 18.4&times;; VQA accuracy on MVBench: 54% (no compression) &rarr; <b>61%</b> (smart merge) vs 46% (random drop).</li>
 <li>Key insight: spatially-redundant (static background) tokens can be merged without temporal loss; motion tokens must be kept.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>OSMO — Open-Vocabulary Spatial-Motion Emotion Tracking from Video</b> &mdash; open-vocabulary emotion trajectory tracking across video with language grounding</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Variation-Aware Vision Token Dropping for Video LLMs</b> &mdash; drops spatially redundant tokens while preserving temporal variation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Unified Spatiotemporal Token Compression for Video LLMs</b> &mdash; joint spatial + temporal compression reduces video LLM FLOPs 3-5x</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InstAP — Instance-Aware Video Pretraining for Fine-Grained VLMs</b> &mdash; instance-level contrastive pretraining for object-centric video-language alignment</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>OSMO — Open-Vocabulary Spatial-Motion Emotion Tracking from Video</b> &mdash; open-vocabulary emotion trajectory tracking across video with language grounding</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Variation-Aware Vision Token Dropping for Video LLMs</b> &mdash; drops spatially redundant tokens while preserving temporal variation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Unified Spatiotemporal Token Compression for Video LLMs</b> &mdash; joint spatial + temporal compression reduces video LLM FLOPs 3-5x</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>InstAP — Instance-Aware Video Pretraining for Fine-Grained VLMs</b> &mdash; instance-level contrastive pretraining for object-centric video-language alignment</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt14">
@@ -407,10 +413,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>At test time: query bank with e<sub>test</sub>; anomaly score = 1 &minus; max<sub>j</sub> cos(e<sub>test</sub>, n<sub>j</sub>).</li>
 <li>Threshold at 0.42: true-positive rate 81%, false-positive rate 7% on UCSD Ped2.</li>
 <li>MLLM zero-shot baseline: describe scene in text &rarr; &ldquo;man running at unusual speed&rdquo; &rarr; flag; achieves AUC=0.81 without any video training.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>The Road Less Seen — Weakly-Supervised Video Anomaly Detection</b> &mdash; multiple-instance learning from coarse clip-level labels for anomaly localization</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>No Need for Real Anomaly — MLLM Zero-Shot Video Anomaly Detection</b> &mdash; an MLLM judges normality from scene description without anomaly training data</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CC-STAR — Contact-State Anomaly Detection for Robot Assembly</b> &mdash; contact-state sequence model detects assembly anomalies from force/tactile signals</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RAID — Retrieval-Augmented Anomaly Detection for Video Surveillance</b> &mdash; retrieves normal prototypes at test time to measure deviation without retraining</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>The Road Less Seen — Weakly-Supervised Video Anomaly Detection</b> &mdash; multiple-instance learning from coarse clip-level labels for anomaly localization</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>No Need for Real Anomaly — MLLM Zero-Shot Video Anomaly Detection</b> &mdash; an MLLM judges normality from scene description without anomaly training data</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>CC-STAR — Contact-State Anomaly Detection for Robot Assembly</b> &mdash; contact-state sequence model detects assembly anomalies from force/tactile signals</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RAID — Retrieval-Augmented Anomaly Detection for Video Surveillance</b> &mdash; retrieves normal prototypes at test time to measure deviation without retraining</div></li></ul>
 </div>
 
 <div class="fam rich" id="vt15">
@@ -424,10 +430,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Diffusion approach: sample f&#770;<sub>t+1</sub> ~ p<sub>&theta;</sub>(f<sub>t+1</sub> | f<sub>1:t</sub>) via 50-step DDPM reverse; SSIM = <b>0.84</b> vs MSE 0.61.</li>
 <li>Autoregressive rollout: 8 steps &rarr; FID of generated 16-frame clips: <b>18.4</b> (diffusion) vs 47.2 (MSE).</li>
 <li>World-model use: sample 200 future rollouts, score each with a reward model &rarr; pick the action that leads to the best predicted future.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GEM — Generative Environment Model from LiDAR for Autonomous Driving</b> &mdash; LiDAR-conditioned world model predicts future 3D point clouds for planning</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>NavForesee — Vision-Language World Model for Navigation Planning</b> &mdash; language-goal-conditioned future-frame prediction guides robot navigation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamics Modeling for High-Speed Off-Road Driving via Video Prediction</b> &mdash; video-prediction world model learns terrain dynamics for agile off-road driving</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Envisioning the Future One Step at a Time — Autoregressive Video World Models</b> &mdash; causal autoregressive video prediction as a general-purpose planning substrate</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>GEM — Generative Environment Model from LiDAR for Autonomous Driving</b> &mdash; LiDAR-conditioned world model predicts future 3D point clouds for planning</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>NavForesee — Vision-Language World Model for Navigation Planning</b> &mdash; language-goal-conditioned future-frame prediction guides robot navigation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Dynamics Modeling for High-Speed Off-Road Driving via Video Prediction</b> &mdash; video-prediction world model learns terrain dynamics for agile off-road driving</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Envisioning the Future One Step at a Time — Autoregressive Video World Models</b> &mdash; causal autoregressive video prediction as a general-purpose planning substrate</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -444,7 +450,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="3d-perception-explained.html">3D Perception</a> &middot; <a href="gaussian-splatting-explained.html">3D Gaussian Splatting</a> &middot; <a href="navigation-explained.html">Navigation</a> &middot; <a href="multi-robot-explained.html">Multi-Robot</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#vt">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="3d-perception-explained.html">3D Perception</a> &middot; <a href="gaussian-splatting-explained.html">3D Gaussian Splatting</a> &middot; <a href="navigation-explained.html">Navigation</a> &middot; <a href="multi-robot-explained.html">Multi-Robot</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Video &amp; Temporal Understanding explainer &middot; mechanism diagrams are live JavaScript (assets/vt-anim.js) &middot; the MCTrack tracking run is ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the eyes over time of the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/vt-anim.js"></script>
 </body></html>

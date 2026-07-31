@@ -66,7 +66,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#2A1A16;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#1A0E0C}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#2A1A16}.op b{color:var(--accent-deep)}
@@ -190,11 +196,11 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Robot 3's detour adds 2 steps.</b> It waits one step at (7,5) then curves around via (8,4). Robot 7 keeps its original route.</li>
 <li><b>No new conflict in either branch.</b> The left branch is optimal (total cost 147 steps) vs. right branch (149). CBS returns the 12-route plan with cost 147.</li>
 <li><b>Deadlock check.</b> The planner verifies no robot is waiting for a robot that is waiting for it — the plan is acyclic and safe to execute.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ICBSS: Improved Multi-Agent Combinatorial Path Finding</b> &mdash; Conflict-Based Steiner Search beats CBS on speed and solution quality</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Heuristically Guided Compilation for Task Assignment and Path Finding</b> &mdash; couples ILP with large-neighborhood search for joint assignment + collision-free routing</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Constrained Nonlinear Kaczmarz Projection for Coordinated Mobile Manipulation</b> &mdash; solves 80+ nonlinear constraints across 3–6 mobile manipulators at once</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dynamic Multi-Objective Ergodic Path Planning</b> &mdash; decomposition planner improves coverage/efficiency tradeoff by 34%</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Safe Radial Segregation for Swarms of Dubins-Like Robots</b> &mdash; first collision-free swarm convergence for nonholonomic robots from local sensing</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>ICBSS: Improved Multi-Agent Combinatorial Path Finding</b> &mdash; Conflict-Based Steiner Search beats CBS on speed and solution quality</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Heuristically Guided Compilation for Task Assignment and Path Finding</b> &mdash; couples ILP with large-neighborhood search for joint assignment + collision-free routing</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Constrained Nonlinear Kaczmarz Projection for Coordinated Mobile Manipulation</b> &mdash; solves 80+ nonlinear constraints across 3–6 mobile manipulators at once</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Dynamic Multi-Objective Ergodic Path Planning</b> &mdash; decomposition planner improves coverage/efficiency tradeoff by 34%</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Safe Radial Segregation for Swarms of Dubins-Like Robots</b> &mdash; first collision-free swarm convergence for nonholonomic robots from local sensing</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr2">
@@ -208,10 +214,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>R4 wins the bid.</b> Package 7 is assigned to R4. The auctioneer immediately opens bidding on package 11.</li>
 <li><b>Prediction step.</b> The scheduler notices a cluster of packages near dock D3 will arrive in 40 s. It pre-assigns R2 and R3 to move toward D3 now.</li>
 <li><b>R1 finishes.</b> It re-enters the auction pool. Total makespan with prediction: 3 min 22 s vs. 4 min 8 s reactive-only — a 19% reduction.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Foresee and Act Ahead: Task Prediction and Pre-Scheduling</b> &mdash; predict + pre-schedule for 30%+ efficiency in a real warehouse</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalized Mission Planning via LLM-Constructed Hierarchical Trees</b> &mdash; an LLM builds task trees for heterogeneous teams</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Digital Model-Driven Genetic Algorithm for Layout + Task Allocation</b> &mdash; jointly optimizes cell layout and who-does-what in human-robot assembly</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hybrid Decentralization for Multi-Robot Orienteering</b> &mdash; mothership-passenger coordination for 26.6% coverage gain</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Foresee and Act Ahead: Task Prediction and Pre-Scheduling</b> &mdash; predict + pre-schedule for 30%+ efficiency in a real warehouse</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Generalized Mission Planning via LLM-Constructed Hierarchical Trees</b> &mdash; an LLM builds task trees for heterogeneous teams</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Digital Model-Driven Genetic Algorithm for Layout + Task Allocation</b> &mdash; jointly optimizes cell layout and who-does-what in human-robot assembly</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Hybrid Decentralization for Multi-Robot Orienteering</b> &mdash; mothership-passenger coordination for 26.6% coverage gain</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr3">
@@ -225,10 +231,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Round 2.</b> Same averaging. Values: 49.5, 49.5, 49.5, 49.2, 49.0. The spread is narrowing.</li>
 <li><b>Round 4.</b> All five values converge to 49.4 m — the global average — reached with only nearest-neighbor messages, no central planner.</li>
 <li><b>UAV 3 drops out.</b> Remaining four re-run consensus in 3 rounds and converge to 49.8 m. The planner-free approach absorbed the failure with no restart.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Distributed Loitering Synchronization with Fixed-Wing UAVs</b> &mdash; firefly-inspired sync with 10× less communication, flown for real</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Constrained Learning for Decentralized Multi-Objective Coverage</b> &mdash; Lagrangian duality bakes fairness + thresholds into decentralized policies</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reinforcement Learning Driven Multi-Robot Exploration via Explicit Communication</b> &mdash; decentralized RL with map-sharing beats frontier-only baselines</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Hybrid Decentralization for Multi-Robot Orienteering</b> &mdash; a tunable centralized-decentralized split for task coverage</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Distributed Loitering Synchronization with Fixed-Wing UAVs</b> &mdash; firefly-inspired sync with 10× less communication, flown for real</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Constrained Learning for Decentralized Multi-Objective Coverage</b> &mdash; Lagrangian duality bakes fairness + thresholds into decentralized policies</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Reinforcement Learning Driven Multi-Robot Exploration via Explicit Communication</b> &mdash; decentralized RL with map-sharing beats frontier-only baselines</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Hybrid Decentralization for Multi-Robot Orienteering</b> &mdash; a tunable centralized-decentralized split for task coverage</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr4">
@@ -242,11 +248,11 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Episode 24,000.</b> Two robots have learned to flank the block from opposite sides. The other two discovered pushing from behind amplifies the flankers. No one programmed this split.</li>
 <li><b>Permutation-invariant critic.</b> The critic processes the four robots' observations as an unordered set — so the policy generalizes to different team sizes at test time.</li>
 <li><b>Test, unseen floor friction.</b> The team adjusts pressure within 3 steps and gets the block to the goal in 18 s, versus 38 s for the hand-coded baseline.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>MARVEL: MARL for Constrained Field-of-View Exploration</b> &mdash; orientation-aware pruning scales FoV-limited exploration to unseen maps</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Multi-Agent Loco-Manipulation for Quadrupedal Pushing</b> &mdash; hierarchical MARL, 36% over baselines on coordinated pushing</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>HARP: Human-Assisted Regrouping with Permutation-Invariant Critic</b> &mdash; lets non-experts steer multi-agent regrouping</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TaskForce: Cooperative MARL for Multi-Task Optimization</b> &mdash; Gram-matrix observations resolve gradient conflicts across tasks</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Agent Inverse Q-Learning from Demonstrations</b> &mdash; recovers multi-agent rewards 2–5× better than prior inverse RL</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>MARVEL: MARL for Constrained Field-of-View Exploration</b> &mdash; orientation-aware pruning scales FoV-limited exploration to unseen maps</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Multi-Agent Loco-Manipulation for Quadrupedal Pushing</b> &mdash; hierarchical MARL, 36% over baselines on coordinated pushing</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>HARP: Human-Assisted Regrouping with Permutation-Invariant Critic</b> &mdash; lets non-experts steer multi-agent regrouping</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>TaskForce: Cooperative MARL for Multi-Task Optimization</b> &mdash; Gram-matrix observations resolve gradient conflicts across tasks</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Multi-Agent Inverse Q-Learning from Demonstrations</b> &mdash; recovers multi-agent rewards 2–5× better than prior inverse RL</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr5">
@@ -260,10 +266,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>At t=8 s, drone 31 fails.</b> Its neighbors sense the gap — their cohesion pulls them slightly inward. The formation reshapes around the hole within 4 s.</li>
 <li><b>Wind gust at t=22 s, 6 m/s from the north.</b> Alignment force damps the drift. The diamond tilts 8° then self-corrects within 3 s.</li>
 <li><b>Final shape error</b> (mean distance from ideal diamond vertex): 0.6 m, vs. 4.1 m for a centrally-commanded baseline that lost sync when the leader link dropped.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Realizing Emergent Collective Behaviors Through Robotic Swarmalators</b> &mdash; first physical realization of predicted swarmalator patterns</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Contingency Formation Planning for Interactive Drone Light Shows</b> &mdash; real-time responsive formations with contingency recovery</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Express Yourself: Multi-Human-Swarm Interaction with MOSAIX</b> &mdash; 63 robots + 294 humans, decentralized theme-clustering, no central control</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>An Equilibrium Analysis of Magnetic Quadrupole Force Fields</b> &mdash; selective splitting + steering of microrobotic swarms via force fields</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Realizing Emergent Collective Behaviors Through Robotic Swarmalators</b> &mdash; first physical realization of predicted swarmalator patterns</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Contingency Formation Planning for Interactive Drone Light Shows</b> &mdash; real-time responsive formations with contingency recovery</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Express Yourself: Multi-Human-Swarm Interaction with MOSAIX</b> &mdash; 63 robots + 294 humans, decentralized theme-clustering, no central control</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>An Equilibrium Analysis of Magnetic Quadrupole Force Fields</b> &mdash; selective splitting + steering of microrobotic swarms via force fields</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr6">
@@ -277,11 +283,11 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>B sends a 128-byte feature packet</b> (compressed BEV feature slice, not raw lidar). Transmission takes 4 ms over V2X.</li>
 <li><b>A transforms B's features into its own coordinate frame</b> using their GPS positions: cyclist appears at (−2.8 m, 11.7 m) from A, 2.3 s until the crossing.</li>
 <li><b>A brakes at 1.4 g.</b> Without B's data, A would have detected the cyclist only at 0.6 s — too late to stop safely at this speed.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>CoopDETR: Unified Cooperative Perception via Object Query</b> &mdash; SOTA 3D detection on OPV2V/V2XSet at 1/782 the transmission cost</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Long-SCOPE: Fully Sparse Long-Range Cooperative Perception</b> &mdash; sparse fusion extends detection range across vehicles with little data</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Unsupervised Multi-agent Perception from Cooperative Views</b> &mdash; cross-view consensus supplies labels for free — no annotation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DVM-SLAM: Decentralized Visual Monocular SLAM for Multi-Agent Systems</b> &mdash; open-source decentralized collaborative SLAM matching centralized accuracy</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>V2U4Real: Real-World Vehicle-to-UAV Cooperative Perception</b> &mdash; first large real V2U dataset — 56K LiDAR frames, elevated aerial views</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>CoopDETR: Unified Cooperative Perception via Object Query</b> &mdash; SOTA 3D detection on OPV2V/V2XSet at 1/782 the transmission cost</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Long-SCOPE: Fully Sparse Long-Range Cooperative Perception</b> &mdash; sparse fusion extends detection range across vehicles with little data</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Unsupervised Multi-agent Perception from Cooperative Views</b> &mdash; cross-view consensus supplies labels for free — no annotation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DVM-SLAM: Decentralized Visual Monocular SLAM for Multi-Agent Systems</b> &mdash; open-source decentralized collaborative SLAM matching centralized accuracy</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>V2U4Real: Real-World Vehicle-to-UAV Cooperative Perception</b> &mdash; first large real V2U dataset — 56K LiDAR frames, elevated aerial views</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr7">
@@ -295,10 +301,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Feature compression.</b> A encodes those 117K points as a sparse 128-channel BEV feature map. At 4-bit quantization: 18 KB.</li>
 <li><b>Vehicle B receives the 18 KB packet, 6 ms latency.</b> It fuses A's BEV features with its own at the channel level. Detection AP rises from 61.2 to 74.8 on occluded objects.</li>
 <li><b>Bandwidth drops to 50 KB budget</b> (congested network). A switches to detection-only mode: 3 bounding boxes, 512 bytes. AP drops to 69.1 — still 8 points above solo perception.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>WhisperNet: Bandwidth-Efficient Collaboration</b> &mdash; receiver-centric coordination cuts 95% of communication, accuracy held</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CoLC: Communication-Efficient Perception with LiDAR Completion</b> &mdash; 86.1 AP@0.5 on OPV2V at only 12.5% of the transmission volume</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Communication-Aware Iterative Map Compression</b> &mdash; 98% less transmitted map data with navigation performance intact</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bandwidth-Adaptive Spatiotemporal Correspondence for Collaboration</b> &mdash; 8–56% better collaborative retrieval under bandwidth limits</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>WhisperNet: Bandwidth-Efficient Collaboration</b> &mdash; receiver-centric coordination cuts 95% of communication, accuracy held</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>CoLC: Communication-Efficient Perception with LiDAR Completion</b> &mdash; 86.1 AP@0.5 on OPV2V at only 12.5% of the transmission volume</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Communication-Aware Iterative Map Compression</b> &mdash; 98% less transmitted map data with navigation performance intact</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Bandwidth-Adaptive Spatiotemporal Correspondence for Collaboration</b> &mdash; 8–56% better collaborative retrieval under bandwidth limits</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr8">
@@ -312,10 +318,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Adaptive weighting.</b> The fuser shifts from 60/40 (lidar/radar) to 20/80. Combined AP: 64 — vs. 41 lidar-alone.</li>
 <li><b>Calibration mismatch.</b> B's radar coordinate frame is 3° rotated relative to A's lidar frame (different mount heights). Gaussian BEV uncertainty modeling absorbs this: instead of a hard transform, each detection becomes a distribution; fusion averages them.</li>
 <li><b>Latency spike: B's message arrives 120 ms late.</b> The sync module back-projects B's detections using their reported velocity: cyclist at t−120 ms was 0.67 m east of its current position. Adjusted, the fused track is accurate to 0.2 m.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hybrid Robust Collaborative Perception with LiDAR-4D Radar Fusion</b> &mdash; 90%+ in heavy rain vs 40–50% for LiDAR-only via adaptive weighting</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CATNet: Collaborative Alignment under Latency &amp; Noise</b> &mdash; spatio-temporal sync + wavelet denoising, +5.7% AP on V2XSet</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GSV2X: Geometry-Aware Uncertainty for Roadside Perception</b> &mdash; Gaussian BEV models calibration error — 0.6% drop under perturbation vs 9.5%</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Linking Modality Isolation in Heterogeneous Collaboration</b> &mdash; aligns agents with no shared training modality, 1024× less communication</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Hybrid Robust Collaborative Perception with LiDAR-4D Radar Fusion</b> &mdash; 90%+ in heavy rain vs 40–50% for LiDAR-only via adaptive weighting</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>CATNet: Collaborative Alignment under Latency &amp; Noise</b> &mdash; spatio-temporal sync + wavelet denoising, +5.7% AP on V2XSet</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GSV2X: Geometry-Aware Uncertainty for Roadside Perception</b> &mdash; Gaussian BEV models calibration error — 0.6% drop under perturbation vs 9.5%</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Linking Modality Isolation in Heterogeneous Collaboration</b> &mdash; aligns agents with no shared training modality, 1024× less communication</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr9">
@@ -329,9 +335,9 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Frame 4.</b> The phantom appears in V6's reports but in none of the other 7 vehicles' sensor data covering the same area. Likelihood ratio: 0.07. P(V6 honest) drops to 0.12.</li>
 <li><b>Frame 7.</b> Temporal consistency check: the phantom has not moved in 3 frames despite being labeled 'pedestrian walking.' P(V6 honest) &lt; 0.03. V6's reports are quarantined.</li>
 <li><b>Without the filter:</b> all 8 vehicles would brake simultaneously, causing a rear-end chain. With the filter: 2.5 checks per frame, V6 identified by frame 7, 79–87% of legitimate detections preserved.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>All Vehicles Can Lie: Defense in Fully Untrusted Collaboration</b> &mdash; Bayesian inference IDs liars at 2.5 checks/frame, restores 79–87% precision</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learning Mutual View Information Graph for Adversarial Perception</b> &mdash; temporal graph exposes shared vulnerabilities across defenses</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Adversarial Policies for Swarm Leader Identification</b> &mdash; a probing agent detects a swarm&rsquo;s leader at 95.7% accuracy</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>All Vehicles Can Lie: Defense in Fully Untrusted Collaboration</b> &mdash; Bayesian inference IDs liars at 2.5 checks/frame, restores 79–87% precision</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Learning Mutual View Information Graph for Adversarial Perception</b> &mdash; temporal graph exposes shared vulnerabilities across defenses</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Adversarial Policies for Swarm Leader Identification</b> &mdash; a probing agent detects a swarm&rsquo;s leader at 95.7% accuracy</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr10">
@@ -345,10 +351,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Left arm applies 18 N upward, 3 N east.</b> Right arm must supply 18 N upward, 3 N west simultaneously — the solver computed this pair, not each arm independently.</li>
 <li><b>At t=1.4 s, left arm hits a joint limit.</b> Force on the panel would drop. Reactive re-solve in 8 ms: right arm compensates with an extra 4 N upward to keep the panel level.</li>
 <li><b>Panel placed to within 2 mm</b> of target. Single-arm attempt on the same panel failed at 0.8 m height — torque exceeded safe limit by 35%.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Dual-Arm Coordination for Grasping Large Flat Objects</b> &mdash; zero-shot transferable dual-arm RL, sim-to-real validated</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Dexterous Bimanual Catch Skills via Adversarial-Cooperative RL</b> &mdash; 2× over single-agent RL on bimanual catching</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Cooperative Manipulation with Multiple Quadrotors + Control Barrier Functions</b> &mdash; CBFs guarantee obstacle avoidance for the whole flying team</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Robot Assembly of Deformable Linear Objects</b> &mdash; end-to-end multi-robot DLO assembly from visual + tactile sensing</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Dual-Arm Coordination for Grasping Large Flat Objects</b> &mdash; zero-shot transferable dual-arm RL, sim-to-real validated</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Dexterous Bimanual Catch Skills via Adversarial-Cooperative RL</b> &mdash; 2× over single-agent RL on bimanual catching</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Cooperative Manipulation with Multiple Quadrotors + Control Barrier Functions</b> &mdash; CBFs guarantee obstacle avoidance for the whole flying team</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Multi-Robot Assembly of Deformable Linear Objects</b> &mdash; end-to-end multi-robot DLO assembly from visual + tactile sensing</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr11">
@@ -362,10 +368,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Phase 2: task assignment.</b> Capability-aware allocator checks ground robots' reach: R1 (heavy manipulator) → zone A (debris requiring removal); R2 (sensor-laden) → zones B, C; R3 (fast, no arm) → zones D, E as relay node.</li>
 <li><b>R1 enters zone A.</b> Drone hovers at 8 m above to provide real-time overhead view — ground robot's forward camera is blocked by debris. Drone streams 720p at 5 fps over the local mesh.</li>
 <li><b>R1 localizes a survivor at (22 m, 14 m).</b> It flags the position. Drone re-routes to relay the alert, since R1's radio is shadowed by concrete. Total time to first contact: 11 min 40 s, vs. 23 min ground-only.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Terrain-Aware Ground-Aerial Exploration via Hierarchical Graph</b> &mdash; coordinates complementary ground + aerial sensing over a shared graph</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Heterogeneous Exploration with Online Free-Space Ellipsoid Graphs</b> &mdash; polynomial-complexity target assignment for mixed teams</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>V2U4Real: Vehicle-to-UAV Cooperative Perception</b> &mdash; aerial views complement ground blind spots, real multi-modal dataset</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CLSTR: Capability-Level System for Tracking Robots</b> &mdash; capability-summarizing UI for heterogeneous fleet awareness</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Terrain-Aware Ground-Aerial Exploration via Hierarchical Graph</b> &mdash; coordinates complementary ground + aerial sensing over a shared graph</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Heterogeneous Exploration with Online Free-Space Ellipsoid Graphs</b> &mdash; polynomial-complexity target assignment for mixed teams</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>V2U4Real: Vehicle-to-UAV Cooperative Perception</b> &mdash; aerial views complement ground blind spots, real multi-modal dataset</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>CLSTR: Capability-Level System for Tracking Robots</b> &mdash; capability-summarizing UI for heterogeneous fleet awareness</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr12">
@@ -379,10 +385,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>t=45 s: R1 reaches F1 and reveals a new sub-room, adding frontiers F5 and F6.</b> It broadcasts the updated map. R4 has finished F4 and, seeing F5 is closer than any remaining frontier, takes it.</li>
 <li><b>R3 loses radio at t=82 s</b> (behind a wall segment). It switches to line-of-sight relay: R2 moves 4 m to act as a repeater, re-establishing the mesh.</li>
 <li><b>Coverage complete at t=3 min 11 s</b> (vs. 7 min 40 s for a single robot). No frontier visited twice. 98.4% of floor mapped.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>MARVEL: MARL for Constrained-FoV Multi-Robot Exploration</b> &mdash; orientation-aware exploration generalizes to unseen large environments</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Realm: Real-Time Line-of-Sight Maintenance in Unknown Environments</b> &mdash; first LoS-constrained exploration with live LiDAR formulation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACE: Fast Lightweight Urban Exploration for Multi-Robot Systems</b> &mdash; ACO-based collective frontier search, maze-solving to real robots</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>FlyKites: Interactive Exploration under Limited Communication</b> &mdash; jointly optimizes relay topology, operator routing, and robot roles</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>MARVEL: MARL for Constrained-FoV Multi-Robot Exploration</b> &mdash; orientation-aware exploration generalizes to unseen large environments</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Realm: Real-Time Line-of-Sight Maintenance in Unknown Environments</b> &mdash; first LoS-constrained exploration with live LiDAR formulation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>RACE: Fast Lightweight Urban Exploration for Multi-Robot Systems</b> &mdash; ACO-based collective frontier search, maze-solving to real robots</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>FlyKites: Interactive Exploration under Limited Communication</b> &mdash; jointly optimizes relay topology, operator routing, and robot roles</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr13">
@@ -396,10 +402,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Relative pose estimation.</b> ICP on overlapping point clouds converges in 34 ms: B's map is 1.2 m east and 3° rotated from A's local frame.</li>
 <li><b>Pose graph merge.</b> A new edge is added between the matching keyframes. A distributed pose-graph optimizer runs 12 iterations of gradient descent, updating all 2,320 keyframe poses.</li>
 <li><b>Loop-closure drift corrects.</b> A's accumulated drift was 0.8 m over 180 m. After the merge, both robots share a single map accurate to 0.15 m — matching centralized SLAM on the same dataset.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DVM-SLAM: Decentralized Visual Monocular SLAM</b> &mdash; open-source decentralized collaborative SLAM, centralized-level accuracy</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Reinforcement Learning Driven Exploration via Explicit Map-Sharing</b> &mdash; robots share maps to explore faster than frontier-only baselines</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Effective Heterogeneous Point-Cloud Place Recognition</b> &mdash; BEV density images register aerial-to-ground clouds for map merging</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Communication-Aware Iterative Map Compression</b> &mdash; compresses the shared map 98% for online multi-robot planning</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>DVM-SLAM: Decentralized Visual Monocular SLAM</b> &mdash; open-source decentralized collaborative SLAM, centralized-level accuracy</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Reinforcement Learning Driven Exploration via Explicit Map-Sharing</b> &mdash; robots share maps to explore faster than frontier-only baselines</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Effective Heterogeneous Point-Cloud Place Recognition</b> &mdash; BEV density images register aerial-to-ground clouds for map merging</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Communication-Aware Iterative Map Compression</b> &mdash; compresses the shared map 98% for online multi-robot planning</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr14">
@@ -413,10 +419,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Stackelberg solution.</b> If A commits first (it arrived first and B can see A's indicator), A is the leader. B best-responds: wait. Optimal play: A goes, B waits. A gets +8, B gets +2. Total: +10 vs. −6 for random coordination.</li>
 <li><b>In an 8-car intersection sim</b> (RLFTSim), assigning priority by arrival order and computing the Stackelberg order of play reduced deadlocks from 12% to 0.4% of episodes.</li>
 <li><b>Off-equilibrium behavior.</b> A pedestrian unexpectedly enters. The game's payoffs shift (crash cost spikes). Both agents re-solve in 14 ms; the updated equilibrium is now both wait.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Who Plays First? Optimizing the Order of Play in Stackelberg Games</b> &mdash; provably optimal play order for air traffic, swarms, delivery fleets</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RD3G: Fast Newton Solver for Constrained General-Sum Games</b> &mdash; 4× faster game solving with 2× higher convergence</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RLFTSim: Controllable Multi-Agent Traffic Simulation via RL</b> &mdash; RL fine-tuning yields realistic, controllable multi-agent traffic</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InterAgent: Physics-Based Multi-Agent Execution on Interaction Graphs</b> &mdash; diffusion over interaction graphs for plausible coordinated motion</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Who Plays First? Optimizing the Order of Play in Stackelberg Games</b> &mdash; provably optimal play order for air traffic, swarms, delivery fleets</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>RD3G: Fast Newton Solver for Constrained General-Sum Games</b> &mdash; 4× faster game solving with 2× higher convergence</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RLFTSim: Controllable Multi-Agent Traffic Simulation via RL</b> &mdash; RL fine-tuning yields realistic, controllable multi-agent traffic</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>InterAgent: Physics-Based Multi-Agent Execution on Interaction Graphs</b> &mdash; diffusion over interaction graphs for plausible coordinated motion</div></li></ul>
 </div>
 
 <div class="fam rich" id="mr15">
@@ -430,10 +436,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Capability check.</b> The system queries robot capabilities: ground robot R1 has an arm (can open doors), R2 does not. SearchB2 requires opening a blocked door — assigned to R1. R2 assigned to B3.</li>
 <li><b>Constraint propagation.</b> The LLM flagged 'avoid east stairwell.' The planner adds a forbidden zone polygon to R1 and R2's maps. Both re-route; total path adds 18 m.</li>
 <li><b>Drone overwatch task starts immediately.</b> At t=6 min, drone spots a heat signature in B2. It inserts a new subtask 'AlertOperator(B2, survivor)' into the tree. R1 re-prioritizes and reaches B2 in 2 min 10 s.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalized Mission Planning via LLM-Constructed Hierarchical Trees</b> &mdash; an LLM composes task trees for heterogeneous multi-robot missions</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AgentDet: Shared-Blackboard Multi-Agent Zero-/Few-Shot Detection</b> &mdash; four agents (Scout, Pinner, Curator, Judge) cooperate over a blackboard</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SVAgent: Storyline-Guided Video Understanding via Multi-Agent Collaboration</b> &mdash; six agents build query-guided narratives, +5.5–11.5% on long-video QA</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Transparent Multi-Agent Systems via Knowledge Distillation</b> &mdash; distills MARL policies into interpretable behavior trees</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Generalized Mission Planning via LLM-Constructed Hierarchical Trees</b> &mdash; an LLM composes task trees for heterogeneous multi-robot missions</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>AgentDet: Shared-Blackboard Multi-Agent Zero-/Few-Shot Detection</b> &mdash; four agents (Scout, Pinner, Curator, Judge) cooperate over a blackboard</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SVAgent: Storyline-Guided Video Understanding via Multi-Agent Collaboration</b> &mdash; six agents build query-guided narratives, +5.5–11.5% on long-video QA</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Towards Transparent Multi-Agent Systems via Knowledge Distillation</b> &mdash; distills MARL policies into interpretable behavior trees</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -450,7 +456,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="navigation-explained.html">Navigation</a> &middot; <a href="open-vocab-explained.html">Open-Vocabulary</a> &middot; <a href="autonomous-driving-explained.html">Autonomous Driving</a> &middot; <a href="rl-explained.html">RL &amp; Imitation</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#mr">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="navigation-explained.html">Navigation</a> &middot; <a href="open-vocab-explained.html">Open-Vocabulary</a> &middot; <a href="autonomous-driving-explained.html">Autonomous Driving</a> &middot; <a href="rl-explained.html">RL &amp; Imitation</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Multi-Robot Systems explainer &middot; mechanism diagrams are live JavaScript (assets/mr-anim.js) &middot; the SIGMA run is ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the many-robot layer around the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/mr-anim.js"></script>
 </body></html>

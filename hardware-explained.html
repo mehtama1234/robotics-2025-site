@@ -66,7 +66,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#18252D;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#0E1215}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#18252D}.op b{color:var(--accent-deep)}
@@ -186,10 +192,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Fit a <b>Stribeck curve</b> to the joint: static friction 0.3 N&middot;m, viscous coefficient 0.004 N&middot;m&middot;s.</li>
 <li>Simulate the joint with a <b>Coulomb + viscous</b> friction model; position error drops from 8&deg; to 1.2&deg;.</li>
 <li>Deploy on hardware: the encoder reads <b>0.088&deg; resolution</b> at 4096 counts/rev.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Self-Sensing Odometry of a Pipeline Robot Driven by Dielectric Elastomer Actuators</b> &mdash; uses the actuator's own capacitance as a position sensor — no separate encoder needed</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Extended Friction Models for Physics Simulation of Servo Actuators</b> &mdash; Stribeck + hysteresis models that close the sim-to-real gap for actuator friction</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stretchable Electrohydraulic Artificial Muscle for Antagonistic Joints</b> &mdash; high-energy-density electric actuator that mimics biological antagonist pairs</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CASARO — Compliant Actuated Single-Actuator Soft Rotorcraft</b> &mdash; one actuator drives a full soft rotorcraft through a compliant mechanical transmission</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Self-Sensing Odometry of a Pipeline Robot Driven by Dielectric Elastomer Actuators</b> &mdash; uses the actuator's own capacitance as a position sensor — no separate encoder needed</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Extended Friction Models for Physics Simulation of Servo Actuators</b> &mdash; Stribeck + hysteresis models that close the sim-to-real gap for actuator friction</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Stretchable Electrohydraulic Artificial Muscle for Antagonistic Joints</b> &mdash; high-energy-density electric actuator that mimics biological antagonist pairs</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>CASARO — Compliant Actuated Single-Actuator Soft Rotorcraft</b> &mdash; one actuator drives a full soft rotorcraft through a compliant mechanical transmission</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw2">
@@ -203,10 +209,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Map pressure &rarr; curvature with a <b>piecewise-linear lookup</b> (3 breakpoints, fit from 10 inflations).</li>
 <li>Close loop on <b>chamber pressure</b> via a solenoid valve at 100 Hz; force ripple &lt; 0.05 N.</li>
 <li>Grasp 200 g tomato: contact patch spreads across <b>14 mm</b> of fruit surface, peak stress 4.2 kPa &mdash; well below bruise threshold of 25 kPa.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>eViper-2D — Thin Large-Area Soft Robotic Platform</b> &mdash; flat pneumatic network that produces crawling and steering from a single layer</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Large-Expansion Bi-Layer Auxetics for Soft Robotic Actuators</b> &mdash; auxetic geometry gives large, controlled shape change from modest pressure</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Soft Robot Worms Inspired by Living Worm Blobs</b> &mdash; peristaltic locomotion in a soft body — mechanics emergent from material coupling</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bio-Inspired Soft Magnetic Swimming Robot</b> &mdash; magnetically driven soft swimmer that navigates constrained fluidic channels</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>eViper-2D — Thin Large-Area Soft Robotic Platform</b> &mdash; flat pneumatic network that produces crawling and steering from a single layer</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Large-Expansion Bi-Layer Auxetics for Soft Robotic Actuators</b> &mdash; auxetic geometry gives large, controlled shape change from modest pressure</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Soft Robot Worms Inspired by Living Worm Blobs</b> &mdash; peristaltic locomotion in a soft body — mechanics emergent from material coupling</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Bio-Inspired Soft Magnetic Swimming Robot</b> &mdash; magnetically driven soft swimmer that navigates constrained fluidic channels</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw3">
@@ -220,10 +226,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Force = k &times; deflection = 800 &times; 0.10 = <b>80 N</b> read from spring encoder; no wrist F/T sensor needed.</li>
 <li>Motor sees a smoothed 80 N ramp over <b>35 ms</b> instead of a 2 ms spike &mdash; stays within current limit.</li>
 <li>Energy return on push-off: spring releases 4 J &rarr; <b>reduces hip motor demand by 18%</b> per stride.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bipedal Walking with Continuously Compliant Robotic Legs</b> &mdash; spring legs tuned to natural gait frequency cut motor demand across walking speeds</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Ankle-Foot Prosthesis with Passive Agonist-Antagonist Design</b> &mdash; two springs in opposition give energy return and push-off without active sensing</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Remote Center of Compliance for Peg-in-Hole Assembly</b> &mdash; mechanically passive compliance at the tool tip simplifies high-precision insertion</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stretchable Electrohydraulic Artificial Muscle for Antagonistic Joints</b> &mdash; soft antagonist pair that mimics the compliance profile of biological tendons</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Bipedal Walking with Continuously Compliant Robotic Legs</b> &mdash; spring legs tuned to natural gait frequency cut motor demand across walking speeds</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Adaptive Ankle-Foot Prosthesis with Passive Agonist-Antagonist Design</b> &mdash; two springs in opposition give energy return and push-off without active sensing</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Active Remote Center of Compliance for Peg-in-Hole Assembly</b> &mdash; mechanically passive compliance at the tool tip simplifies high-precision insertion</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Stretchable Electrohydraulic Artificial Muscle for Antagonistic Joints</b> &mdash; soft antagonist pair that mimics the compliance profile of biological tendons</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw4">
@@ -237,10 +243,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Grasp a <b>60 mm cylinder</b>: all three fingers wrap; contact at 6 points.</li>
 <li>Grasp a <b>20 mm sphere</b>: distal phalanges curl inward; 3-point contact, 1.2 N grasp force.</li>
 <li>Cycle 500 times: tendon elongation &lt; <b>0.3 mm</b> (nylon-coated stainless steel, E = 200 GPa).</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Model Q-II — Underactuated Hand with Enhanced Grasping Modes</b> &mdash; single-tendon hand that switches between power and pinch grasp via passive routing</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Chain-Driven Adaptive Underactuated Fingers for Prosthetic Hands</b> &mdash; chain transmission gives adaptive finger closure without independent finger motors</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Precision Harvesting End Effector with Dual Camera Perception</b> &mdash; soft-rigid hybrid gripper tuned for delicate fruit without bruising</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tendon-Driven Three-Fingered Aerial Hand Using a Single Actuator</b> &mdash; one motor drives three compliant fingers for a drone-mounted grasper</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Model Q-II — Underactuated Hand with Enhanced Grasping Modes</b> &mdash; single-tendon hand that switches between power and pinch grasp via passive routing</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Chain-Driven Adaptive Underactuated Fingers for Prosthetic Hands</b> &mdash; chain transmission gives adaptive finger closure without independent finger motors</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Precision Harvesting End Effector with Dual Camera Perception</b> &mdash; soft-rigid hybrid gripper tuned for delicate fruit without bruising</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Tendon-Driven Three-Fingered Aerial Hand Using a Single Actuator</b> &mdash; one motor drives three compliant fingers for a drone-mounted grasper</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw5">
@@ -254,10 +260,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Add a single ankle actuator (25 W peak); reduces metabolic cost by <b>21%</b> vs full active control.</li>
 <li>Virtual gravity controller shifts the zero-moment point <b>18 mm</b> forward &rarr; step starts without a control pulse.</li>
 <li>On flat ground: add 6 W average hip torque &rarr; robot walks at <b>0.8 m/s</b> with 60% passive fraction.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Model Q-II — Underactuated Hand with Enhanced Grasping Modes</b> &mdash; passive tendon routing adapts finger posture to object geometry without control</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dexterous Assembly Using a Planar Hand with Programmable Passive Compliance</b> &mdash; spring stiffness tuned at design time replaces active sensing for peg insertion</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Virtual Gravity Controller for Underactuated Biped Robots</b> &mdash; virtual gravity shapes passive dynamics so the robot walks on flat ground</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Peristaltic Wave for Multi-Legged Locomotion</b> &mdash; wave timing exploits passive leg compliance to coordinate locomotion cheaply</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Model Q-II — Underactuated Hand with Enhanced Grasping Modes</b> &mdash; passive tendon routing adapts finger posture to object geometry without control</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Dexterous Assembly Using a Planar Hand with Programmable Passive Compliance</b> &mdash; spring stiffness tuned at design time replaces active sensing for peg insertion</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>A Virtual Gravity Controller for Underactuated Biped Robots</b> &mdash; virtual gravity shapes passive dynamics so the robot walks on flat ground</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Peristaltic Wave for Multi-Legged Locomotion</b> &mdash; wave timing exploits passive leg compliance to coordinate locomotion cheaply</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw6">
@@ -271,10 +277,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Latch release: 10 N cam trigger releases in <b>4 ms</b> &rarr; leg velocity 3.2 m/s.</li>
 <li>Body lifts <b>52 cm</b> (theoretical 51.6 cm from &frac12;mv&sup2; = k&Delta;X&sup2;/2).</li>
 <li>Diffusion model proposes a <b>4-bar leg linkage</b> that reduces latch force to 5 N via mechanical advantage 1.6&times;.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEVA — High-Mobility Legged Suspension Vehicle</b> &mdash; leg-suspension hybrid morphology that traverses rubble without active shock absorption</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Text2Robot — Evolutionary Robot Design from Text Descriptions</b> &mdash; natural-language specification drives evolutionary search over morphology space</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generative-AI-Driven Jumping Robot Design Using Diffusion Models</b> &mdash; diffusion model proposes body geometry optimized for jumping height and stability</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Implicit Articulated Robot Morphology with Configuration-Space Neural SDFs</b> &mdash; neural signed distance fields represent morphology for differentiable design optimization</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>LEVA — High-Mobility Legged Suspension Vehicle</b> &mdash; leg-suspension hybrid morphology that traverses rubble without active shock absorption</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Text2Robot — Evolutionary Robot Design from Text Descriptions</b> &mdash; natural-language specification drives evolutionary search over morphology space</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Generative-AI-Driven Jumping Robot Design Using Diffusion Models</b> &mdash; diffusion model proposes body geometry optimized for jumping height and stability</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Implicit Articulated Robot Morphology with Configuration-Space Neural SDFs</b> &mdash; neural signed distance fields represent morphology for differentiable design optimization</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw7">
@@ -288,10 +294,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Fold ratio = <b>3.5:1</b> in each planar dimension.</li>
 <li>Sheet material: 0.5 mm fiberglass + 0.1 mm Kapton hinge; stiffness 18 N/mm in-plane when deployed.</li>
 <li>Single spring-loaded hinge unfolds in <b>0.8 s</b> under 0.3 N release force &mdash; no extra motor needed.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Quarry-Bot — Reconfigurable Cable-Suspended Inspection Robot</b> &mdash; flat-folded frame deploys to a cable-suspended platform for confined-space inspection</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sea-U-Whale — Reconfigurable Marine Robot</b> &mdash; origami hull reconfigures between surface and underwater profiles without actuator change</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>TrofyBot — Transformable Rolling and Flying Robot</b> &mdash; fold sequence converts between ground and aerial morphology in the field</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stair Climbing of a Transformable Wheeled Robot</b> &mdash; body fold changes wheel geometry to step over risers without a leg mechanism</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Quarry-Bot — Reconfigurable Cable-Suspended Inspection Robot</b> &mdash; flat-folded frame deploys to a cable-suspended platform for confined-space inspection</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Sea-U-Whale — Reconfigurable Marine Robot</b> &mdash; origami hull reconfigures between surface and underwater profiles without actuator change</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>TrofyBot — Transformable Rolling and Flying Robot</b> &mdash; fold sequence converts between ground and aerial morphology in the field</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Stair Climbing of a Transformable Wheeled Robot</b> &mdash; body fold changes wheel geometry to step over risers without a leg mechanism</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw8">
@@ -305,10 +311,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Measure residual shear force with a strain-gauge insert: drops from <b>24 N to 4 N</b> at 60&deg; flex.</li>
 <li>Spring stiffness tuned via Bayesian optimization over 10 min walk: final k = <b>340 N/m</b> reduces peak hip torque 19%.</li>
 <li>User trial: comfort rating improves from 3/10 to 8/10 after polycentric swap; wear time extends to <b>4 hours</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>In-Vivo Cable-Driven Rodent Ankle Exoskeleton for Gait Studies</b> &mdash; subcutaneous anchor points eliminate alignment error for precise torque delivery</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Wearable Soft Sensing Band for Wrist Torque and Gesture</b> &mdash; textile strain sensors that survive washing and conform to wrist anatomy</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Design Optimization of Passive Exoskeletons via Co-Design</b> &mdash; personalizes spring stiffness to each user's gait online without lab instrumentation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-BAR — Harness-Free Elderly Assistance Robot</b> &mdash; follows the user and applies assistive force without a body-attached harness</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>In-Vivo Cable-Driven Rodent Ankle Exoskeleton for Gait Studies</b> &mdash; subcutaneous anchor points eliminate alignment error for precise torque delivery</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Wearable Soft Sensing Band for Wrist Torque and Gesture</b> &mdash; textile strain sensors that survive washing and conform to wrist anatomy</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Online Design Optimization of Passive Exoskeletons via Co-Design</b> &mdash; personalizes spring stiffness to each user's gait online without lab instrumentation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>E-BAR — Harness-Free Elderly Assistance Robot</b> &mdash; follows the user and applies assistive force without a body-attached harness</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw9">
@@ -322,10 +328,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Fit hysteresis with a <b>Bouc-Wen model</b>: &alpha; = 0.8, &beta; = 0.15, &gamma; = 0.15, n = 2.</li>
 <li>Add a distal encoder on the fingertip joint: closes the loop directly; lag drops to <b>&lt; 0.5&deg;</b>.</li>
 <li>Damping effect: hysteresis dissipates 12 mJ/cycle &rarr; tip vibration amplitude drops <b>3&times;</b> without a dashpot.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</b> &mdash; shows hysteresis acts as a damper that improves tip stability without extra sensors</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CAFEs — Cable-Driven Collaborative Floating End-Effectors</b> &mdash; two cable-driven arms cooperate to position a shared floating tool precisely</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Accelerated Quasi-Static FEM for Real-Time Continuum Robot Control</b> &mdash; GPU-accelerated finite element model runs fast enough to close the control loop</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shared Control for Cable Routing with Tactile Sensing</b> &mdash; tactile feedback guides cable routing through narrow passages in constrained surgery</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</b> &mdash; shows hysteresis acts as a damper that improves tip stability without extra sensors</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>CAFEs — Cable-Driven Collaborative Floating End-Effectors</b> &mdash; two cable-driven arms cooperate to position a shared floating tool precisely</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Accelerated Quasi-Static FEM for Real-Time Continuum Robot Control</b> &mdash; GPU-accelerated finite element model runs fast enough to close the control loop</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Shared Control for Cable Routing with Tactile Sensing</b> &mdash; tactile feedback guides cable routing through narrow passages in constrained surgery</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw10">
@@ -339,10 +345,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Compute lateral shear gradient across taxels: slip onset = gradient &gt; <b>0.08 N/taxel</b> threshold.</li>
 <li>Issue &lsquo;tighten grip&rsquo; command at <b>80 ms</b> before drop; wrist F/T sensor detects drop onset only at t = 0 ms.</li>
 <li>After <b>500 grasp-and-slip trials</b>: 94% slip caught before drop vs 61% without tactile feedback.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AnySkin — Plug-and-Play Replaceable Magnetic Tactile Skin</b> &mdash; replaceable magnetic skin that transfers grasp policies across sensor instances</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ACROSS — Cross-Modal Tactile Representation Learning</b> &mdash; shared embedding of vision and tactile signals for manipulation without retraining</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Spatial Sensitivity Equalization of ERT-Based Robotic Skin</b> &mdash; electrical resistance tomography skin with compensated spatial sensitivity</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Magnetic-Actuated Vision-Based Whisker Array for Flow Sensing</b> &mdash; camera-behind-whisker design turns optical flow into tactile contact estimation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>AnySkin — Plug-and-Play Replaceable Magnetic Tactile Skin</b> &mdash; replaceable magnetic skin that transfers grasp policies across sensor instances</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>ACROSS — Cross-Modal Tactile Representation Learning</b> &mdash; shared embedding of vision and tactile signals for manipulation without retraining</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Spatial Sensitivity Equalization of ERT-Based Robotic Skin</b> &mdash; electrical resistance tomography skin with compensated spatial sensitivity</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>A Magnetic-Actuated Vision-Based Whisker Array for Flow Sensing</b> &mdash; camera-behind-whisker design turns optical flow into tactile contact estimation</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw11">
@@ -356,10 +362,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>At resonance: motor input 0.8 W; mechanical output 1.4 W &mdash; <b>Q-factor &asymp; 1.75</b> from stored spring energy.</li>
 <li>Lift generated at 30 Hz: <b>31 mN</b> (direct) vs <b>34 mN</b> (resonant) &mdash; 13% increase from spring.</li>
 <li>Spring-latch variant: charge in 0.4 s, release in <b>&lt; 5 ms</b> &rarr; jump-and-fly transition at 1.2 m/s takeoff.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Bioinspired Jumping Mechanism for Self-Takeoff of a Flapping-Wing Robot</b> &mdash; spring-latch energy storage mimics insect jump-and-fly transition</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tensiworm — Tensegrity Robot with Peristaltic Locomotion</b> &mdash; cable-tension network inspired by annelid muscle geometry for soft crawling</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ambient Flow Perception Using an Artificial Lateral Line Sensor</b> &mdash; pressure-sensor array that mimics fish lateral line for underwater obstacle detection</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Added Mass and Accuracy of the FF-SLIP Model for Legged Swimming</b> &mdash; spring-loaded inverted pendulum extended with fluid added mass for swimming gaits</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>A Bioinspired Jumping Mechanism for Self-Takeoff of a Flapping-Wing Robot</b> &mdash; spring-latch energy storage mimics insect jump-and-fly transition</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Tensiworm — Tensegrity Robot with Peristaltic Locomotion</b> &mdash; cable-tension network inspired by annelid muscle geometry for soft crawling</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Ambient Flow Perception Using an Artificial Lateral Line Sensor</b> &mdash; pressure-sensor array that mimics fish lateral line for underwater obstacle detection</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Added Mass and Accuracy of the FF-SLIP Model for Legged Swimming</b> &mdash; spring-loaded inverted pendulum extended with fluid added mass for swimming gaits</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw12">
@@ -373,10 +379,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Run <b>Bayesian optimization</b> over the joint 9D space, 200 evaluations, each a CFD solve (45 s on 8 cores).</li>
 <li>Sequential best: C<sub>D</sub> = 0.031, glide ratio 12.4. Joint best: C<sub>D</sub> = <b>0.022</b>, glide ratio <b>17.1</b>.</li>
 <li>Real hardware: fabricate winning hull at CNC tolerance 0.2 mm; pool drag test matches simulation within <b>4%</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>AI-Enhanced Automatic Design of Efficient Underwater Gliders</b> &mdash; multi-objective search over hull shape and buoyancy engine placement jointly</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Text2Robot — Evolutionary Robot Design from Text Descriptions</b> &mdash; evolutionary co-design driven by language specification of the task</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Efficient and Diverse Generative Robot Designs Using Evolution and Diffusion</b> &mdash; combines evolutionary selection with diffusion-based morphology generation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Design Optimization of Passive Exoskeletons</b> &mdash; Bayesian optimization personalizes spring parameters during a real walking session</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>AI-Enhanced Automatic Design of Efficient Underwater Gliders</b> &mdash; multi-objective search over hull shape and buoyancy engine placement jointly</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Text2Robot — Evolutionary Robot Design from Text Descriptions</b> &mdash; evolutionary co-design driven by language specification of the task</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Efficient and Diverse Generative Robot Designs Using Evolution and Diffusion</b> &mdash; combines evolutionary selection with diffusion-based morphology generation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Online Design Optimization of Passive Exoskeletons</b> &mdash; Bayesian optimization personalizes spring parameters during a real walking session</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw13">
@@ -390,10 +396,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Object graph: 3 parts detected (base, jar, lid); joint type predicted as <b>revolute</b> (lid) + <b>fixed</b> (jar-to-base).</li>
 <li>Mass estimated from volume &times; material class (&lsquo;plastic&rsquo;): <b>m = 0.8 kg</b>; friction &mu; = 0.35 (from material lookup).</li>
 <li>Export <b>URDF + collision mesh</b> in 6.2 s; drop into MuJoCo: lid opens correctly, jar does not slide.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysX-Anything — Simulation-Ready 3D Assets from a Single Image</b> &mdash; infers mass, friction, and joint type from a photo and exports a URDF</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Unposed-to-3D — Simulation-Ready Vehicle Models from Unposed Images</b> &mdash; no camera pose needed; reconstructs full vehicle geometry for physics engines</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ReWeaver — Topology-Accurate Garment Reconstruction for Simulation</b> &mdash; preserves cloth topology so collision and drape simulate correctly</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RealAppliance — Workable Appliance Assets for Manipulation Benchmarks</b> &mdash; extracts kinematic structure of everyday appliances from RGB video</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>PhysX-Anything — Simulation-Ready 3D Assets from a Single Image</b> &mdash; infers mass, friction, and joint type from a photo and exports a URDF</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Unposed-to-3D — Simulation-Ready Vehicle Models from Unposed Images</b> &mdash; no camera pose needed; reconstructs full vehicle geometry for physics engines</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>ReWeaver — Topology-Accurate Garment Reconstruction for Simulation</b> &mdash; preserves cloth topology so collision and drape simulate correctly</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RealAppliance — Workable Appliance Assets for Manipulation Benchmarks</b> &mdash; extracts kinematic structure of everyday appliances from RGB video</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw14">
@@ -407,10 +413,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Map E* across the surface with <b>9 probe points</b> (3&times;3 grid, 8 mm spacing) &mdash; builds a stiffness field.</li>
 <li>Feed stiffness field into NeuROK-style network: predict deformation under 2 N at untouched location.</li>
 <li>Prediction error: <b>0.9 mm RMS</b> vs 8.4 mm RMS from a uniform-E baseline.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>NeuROK — Generative 4D Neural Object Kinematics</b> &mdash; predicts per-point motion under force from a single static observation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysSkin — Physics-Based Neural Skinning with Material Estimation</b> &mdash; estimates skin elasticity from video so that deformation stays physically plausible</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>UniPixie — Probabilistic 3D Physics via Normalizing Flow Matching</b> &mdash; samples a distribution over physical parameters from visual observations</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Haptic Neural Fields — Tactile Properties Embedded in 3D Scene Representations</b> &mdash; extends NeRF-style fields with stiffness and friction so a hand can feel before it touches</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>NeuROK — Generative 4D Neural Object Kinematics</b> &mdash; predicts per-point motion under force from a single static observation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>PhysSkin — Physics-Based Neural Skinning with Material Estimation</b> &mdash; estimates skin elasticity from video so that deformation stays physically plausible</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>UniPixie — Probabilistic 3D Physics via Normalizing Flow Matching</b> &mdash; samples a distribution over physical parameters from visual observations</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Haptic Neural Fields — Tactile Properties Embedded in 3D Scene Representations</b> &mdash; extends NeRF-style fields with stiffness and friction so a hand can feel before it touches</div></li></ul>
 </div>
 
 <div class="fam rich" id="hw15">
@@ -424,10 +430,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Fit an articulation model: hinge axis direction recovered within <b>4&deg; error</b>, range of motion <b>92&deg; &plusmn; 3&deg;</b>.</li>
 <li>Assign joint type &lsquo;revolute&rsquo;; build a <b>URDF sub-tree</b> for the door from the estimated geometry.</li>
 <li>Robot opens door on first attempt without collision; without interaction priors, it fails <b>7/10</b> times.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>FUN REC — Functional 3D Scene Reconstruction from Interaction Video</b> &mdash; articulation and affordance from watching a person use the objects</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysGaia — Physics-Aware Dynamic Scene Generation Benchmark</b> &mdash; benchmark for scene models that obey conservation laws under interaction</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianFluent — Fracture Physics with Gaussian Splatting</b> &mdash; embeds fracture mechanics into 3D Gaussian representations for breakable objects</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AssemblyBench — Physics-Aware Assembly of Industrial Objects</b> &mdash; tests whether scene models correctly predict force and constraint during assembly</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>FUN REC — Functional 3D Scene Reconstruction from Interaction Video</b> &mdash; articulation and affordance from watching a person use the objects</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>PhysGaia — Physics-Aware Dynamic Scene Generation Benchmark</b> &mdash; benchmark for scene models that obey conservation laws under interaction</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GaussianFluent — Fracture Physics with Gaussian Splatting</b> &mdash; embeds fracture mechanics into 3D Gaussian representations for breakable objects</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>AssemblyBench — Physics-Aware Assembly of Industrial Objects</b> &mdash; tests whether scene models correctly predict force and constraint during assembly</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -444,7 +450,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="locomotion-explained.html">Locomotion</a> &middot; <a href="tactile-explained.html">Tactile</a> &middot; <a href="manipulation-explained.html">Manipulation</a> &middot; <a href="sim-to-real-explained.html">Sim-to-Real</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#hw">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="locomotion-explained.html">Locomotion</a> &middot; <a href="tactile-explained.html">Tactile</a> &middot; <a href="manipulation-explained.html">Manipulation</a> &middot; <a href="sim-to-real-explained.html">Sim-to-Real</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Hardware &amp; Actuation explainer &middot; mechanism diagrams are live JavaScript (assets/hw-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the physical substrate under the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/hw-anim.js"></script>
 </body></html>

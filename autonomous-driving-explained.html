@@ -66,7 +66,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#24303B;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#141a20}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#24303B}.op b{color:var(--accent-deep)}
@@ -196,10 +202,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Fuse:</b> features from all cameras that can see a cell are averaged (or attended over); occluded cells get only the cameras that face them.</li>
 <li><b>Detect:</b> a detection head runs on the 100×100 BEV feature grid, outputting bounding boxes in top-down coordinates — no 2D-to-3D guessing needed downstream.</li>
 <li><b>Result:</b> BEV-CAR achieves 38.4 mAP on nuScenes val from cameras only; every subsequent planning step operates in the same 50 m square.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>BEV-CAR</b> &mdash; context-aware ray rasterization improves monocular BEV segmentation + occlusion handling</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Retinex-BEVFormer</b> &mdash; Retinex enhancement makes multi-view BEV detection robust in low light</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CoIn3D</b> &mdash; configuration-invariant multi-camera 3D detection generalizes across camera setups</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Dur360BEV</b> &mdash; single-camera 360° BEV, dropping the complex multi-camera rig</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>BEV-CAR</b> &mdash; context-aware ray rasterization improves monocular BEV segmentation + occlusion handling</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Retinex-BEVFormer</b> &mdash; Retinex enhancement makes multi-view BEV detection robust in low light</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>CoIn3D</b> &mdash; configuration-invariant multi-camera 3D detection generalizes across camera setups</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Dur360BEV</b> &mdash; single-camera 360° BEV, dropping the complex multi-camera rig</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr2">
@@ -214,11 +220,11 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>4D step:</b> a recurrent head reads the occupancy grid at t=0 and outputs predicted grids at t+0.5 s, t+1.0 s, t+1.5 s; each cell gets a predicted class and a flow vector showing where it moves.</li>
 <li><b>Planner input:</b> the t+1.0 s predicted grid flags any voxel on the ego's intended path as occupied → planner brakes or re-routes.</li>
 <li><b>Result:</b> ShelfOcc scores 39.8 RayIoU on nuScenes without any LiDAR at train time — better than earlier methods that used it.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>ShelfOcc</b> &mdash; foundation-model 3D supervision for camera-only occupancy, no LiDAR needed</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Gau-Occ</b> &mdash; geometry-completed Gaussians for smooth multi-modal 3D occupancy</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GenieDrive</b> &mdash; 4D-occupancy-guided video generation; models how actions change occupancy</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>QueryOcc</b> &mdash; continuous 4D query-based self-supervision for semantic occupancy</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>OCCUQ</b> &mdash; efficient uncertainty on occupancy so planning can be risk-aware</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>ShelfOcc</b> &mdash; foundation-model 3D supervision for camera-only occupancy, no LiDAR needed</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Gau-Occ</b> &mdash; geometry-completed Gaussians for smooth multi-modal 3D occupancy</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GenieDrive</b> &mdash; 4D-occupancy-guided video generation; models how actions change occupancy</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>QueryOcc</b> &mdash; continuous 4D query-based self-supervision for semantic occupancy</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>OCCUQ</b> &mdash; efficient uncertainty on occupancy so planning can be risk-aware</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr3">
@@ -233,10 +239,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Track state update:</b> Kalman filter updates each track's position and velocity — car A velocity estimated at 2.2 m/s away; car B at 1.1 m/s lateral.</li>
 <li><b>New object:</b> a fourth detection in frame 2 has no match (IoU < 0.3) → assigned new ID D; kept tentative until confirmed in frame 3.</li>
 <li><b>Planner output:</b> IDs A and B are flagged as moving away; ID D as unknown — planner stays conservative until D is confirmed.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ConTrack3D</b> &mdash; contrastive association stays robust when constant-velocity assumptions break</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Stands on Shoulders of Giants</b> &mdash; lifts abundant 2D detections to 3D to cut expensive LiDAR labeling</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SaViD</b> &mdash; adaptive camera-LiDAR fusion bridges the resolution gap at long range</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LGDD</b> &mdash; native 4D-radar detection with noise-robust proposal filtering</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>ConTrack3D</b> &mdash; contrastive association stays robust when constant-velocity assumptions break</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Stands on Shoulders of Giants</b> &mdash; lifts abundant 2D detections to 3D to cut expensive LiDAR labeling</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SaViD</b> &mdash; adaptive camera-LiDAR fusion bridges the resolution gap at long range</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>LGDD</b> &mdash; native 4D-radar detection with noise-robust proposal filtering</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr4">
@@ -251,10 +257,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Trajectory regression:</b> for each mode, a small MLP outputs a sequence of (x, y) waypoints at 0.5 s intervals over 3 s — 6 waypoints per mode.</li>
 <li><b>Interaction refinement:</b> agent A's modes and agent B's modes are cross-attended so the model knows a simultaneous left-turn by both is physically impossible.</li>
 <li><b>Planner use:</b> ego planner samples future scenarios weighted by joint probability; the 0.31×0.12=3.7% scenario where both turn left causes a potential collision → planner slows 0.8 m/s to create margin.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Curb Your Attention</b> &mdash; causal attention gating filters non-causal agents → +54% robustness</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Categorical Traffic Transformer</b> &mdash; tokenized latent space for interpretable, diverse multimodal prediction</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>FoSS</b> &mdash; Fourier + state-space models capture long-range multimodal uncertainty efficiently</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SHARP</b> &mdash; short-window streaming prediction robust to variable observation lengths</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Curb Your Attention</b> &mdash; causal attention gating filters non-causal agents → +54% robustness</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Categorical Traffic Transformer</b> &mdash; tokenized latent space for interpretable, diverse multimodal prediction</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>FoSS</b> &mdash; Fourier + state-space models capture long-range multimodal uncertainty efficiently</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SHARP</b> &mdash; short-window streaming prediction robust to variable observation lengths</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr5">
@@ -269,10 +275,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Constraint embedding:</b> GuideFlow adds a lane-boundary and collision cost directly into the velocity field, so physically invalid particles are deflected rather than filtered after the fact.</li>
 <li><b>Output:</b> the 64 particles converge to a tight cluster; the median is taken as the planned trajectory — (0, 0) → (2.1, 0.1) → (4.3, 0.3) → … m over 5 s.</li>
 <li><b>Score:</b> WAM-Flow achieves 89.1 PDMS on nuScenes bench, 3× faster than diffusion-based predecessors at the same quality.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>WAM-Flow</b> &mdash; discrete flow matching plans trajectories in parallel, 3× faster, 89.1 PDMS</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GuideFlow</b> &mdash; embeds hard constraints (lane, collision) into flow-matching planning</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Percept-WAM</b> &mdash; unifies 2D/3D perception inside the planner so geometry informs the plan</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizing E2E Driving with Zero-Shot LLMs</b> &mdash; closed-loop LLM guidance cuts data needs, improves unseen-obstacle generalization</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>WAM-Flow</b> &mdash; discrete flow matching plans trajectories in parallel, 3× faster, 89.1 PDMS</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GuideFlow</b> &mdash; embeds hard constraints (lane, collision) into flow-matching planning</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Percept-WAM</b> &mdash; unifies 2D/3D perception inside the planner so geometry informs the plan</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Generalizing E2E Driving with Zero-Shot LLMs</b> &mdash; closed-loop LLM guidance cuts data needs, improves unseen-obstacle generalization</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr6">
@@ -287,10 +293,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Action head:</b> the chain-of-thought token sequence is concatenated with BEV features and fed to a small MLP that outputs 6 waypoints at 0.5 s intervals.</li>
 <li><b>Grounding check:</b> SpaceDrive's spatial encoder verifies the named objects exist in the 3D BEV at the stated positions — if not, the chain-of-thought score is penalized.</li>
 <li><b>Result:</b> HybridDriveVLA scores 0.17% collision rate on Bench2Drive — lower than end-to-end nets (0.41%) and the model can be interrogated step by step after any incident.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>HybridDriveVLA</b> &mdash; visual chain-of-thought + tree-of-thought trajectory scoring → 0.17% collisions</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SpaceDrive</b> &mdash; a geometric spatial encoder grounds the VLM&rsquo;s language in 3D for planning</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DrivePI</b> &mdash; a 0.5B 4D spatial MLLM with LiDAR beats 7B VLAs on nuScenes-QA</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>E3AD</b> &mdash; an emotion-aware VLA balances passenger comfort with safety</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>HybridDriveVLA</b> &mdash; visual chain-of-thought + tree-of-thought trajectory scoring → 0.17% collisions</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SpaceDrive</b> &mdash; a geometric spatial encoder grounds the VLM&rsquo;s language in 3D for planning</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DrivePI</b> &mdash; a 0.5B 4D spatial MLLM with LiDAR beats 7B VLAs on nuScenes-QA</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>E3AD</b> &mdash; an emotion-aware VLA balances passenger comfort with safety</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr7">
@@ -305,10 +311,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Rollout plan B:</b> deceleration to 10 m/s; predicted occupancy at t+1.5 s shows 3.2 m clearance — no overlap, cost 0.12.</li>
 <li><b>Rollout plan C:</b> lane change left; model predicts an adjacent-lane vehicle at t+0.8 s — unsafe, cost 0.91.</li>
 <li><b>Decision:</b> plan B selected; latency for all three rollouts is 18 ms on the onboard GPU — well within the 100 ms loop budget.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianDWM</b> &mdash; a 3D-Gaussian driving world model unifies scene understanding + generation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DriveLaW</b> &mdash; chains video generation into a latent planner so visuals and decisions stay consistent</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GEM</b> &mdash; a LiDAR world model with explicit dynamic/static disentanglement</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldLens</b> &mdash; full-spectrum benchmark exposing texture-vs-geometry-vs-behavior trade-offs</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>GaussianDWM</b> &mdash; a 3D-Gaussian driving world model unifies scene understanding + generation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DriveLaW</b> &mdash; chains video generation into a latent planner so visuals and decisions stay consistent</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GEM</b> &mdash; a LiDAR world model with explicit dynamic/static disentanglement</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>WorldLens</b> &mdash; full-spectrum benchmark exposing texture-vs-geometry-vs-behavior trade-offs</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr8">
@@ -323,10 +329,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>LiDAR stream:</b> contributes depth for the 30% of cells it hits; the 70% without LiDAR returns fall back to camera depth estimates.</li>
 <li><b>Radar stream:</b> the 12 radar targets provide velocity directly — crucial because camera optical flow is unreliable in rain. These cells get velocity ground truth.</li>
 <li><b>Output:</b> RPGFusion achieves 58.3 NDS on nuScenes-rain — 9.1 points above camera-only, 4.2 above LiDAR-only, because radar fills exactly the gap rain creates.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>CRAB</b> &mdash; camera-radar fusion resolves radar&rsquo;s depth ambiguity via camera keypoints</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RPGFusion</b> &mdash; 4D-radar priors guide image BEV sampling for robust 3D detection</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DSERT-RoLL</b> &mdash; first benchmark fusing event+thermal+RGB+4D-radar+dual-LiDAR in rain/snow/fog</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Talk2Radar</b> &mdash; grounds language reasoning on the underused 4D-radar modality</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>CRAB</b> &mdash; camera-radar fusion resolves radar&rsquo;s depth ambiguity via camera keypoints</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RPGFusion</b> &mdash; 4D-radar priors guide image BEV sampling for robust 3D detection</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DSERT-RoLL</b> &mdash; first benchmark fusing event+thermal+RGB+4D-radar+dual-LiDAR in rain/snow/fog</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Talk2Radar</b> &mdash; grounds language reasoning on the underused 4D-radar modality</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr9">
@@ -341,10 +347,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Adaptation step:</b> 12 gradient steps on the buffered rain examples using a self-supervised consistency loss — no human labels needed. Takes 80 ms on the GPU (within loop budget).</li>
 <li><b>After adaptation:</b> mAP recovers to 46.1 — still 6 points below clear-weather, but the system now knows its uncertainty is elevated and flags it to the planner.</li>
 <li><b>Planner response:</b> uncertainty flag triggers conservative mode — following distance increases from 2 s to 3.5 s, speed limited to 60 km/h until confidence recovers.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>CD-Buffer</b> &mdash; a dual-buffer scheme adapts detection to adverse weather at test time</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RMSeg-UDA</b> &mdash; unsupervised adaptation carries road-marking segmentation from clear to rainy/night</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>The Blind Spot of Adaptation</b> &mdash; benchmarks catastrophic forgetting in driving domain adaptation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MARSS</b> &mdash; a radar-specific architecture for semantic segmentation in bad conditions</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>CD-Buffer</b> &mdash; a dual-buffer scheme adapts detection to adverse weather at test time</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>RMSeg-UDA</b> &mdash; unsupervised adaptation carries road-marking segmentation from clear to rainy/night</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>The Blind Spot of Adaptation</b> &mdash; benchmarks catastrophic forgetting in driving domain adaptation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MARSS</b> &mdash; a radar-specific architecture for semantic segmentation in bad conditions</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr10">
@@ -359,10 +365,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>3D geometry:</b> '3D Lane Detection with Projection-Consistent Reference Points' lifts the 2D lane detections to 3D using adaptive reference points that fit the image appearance — recovering the actual road curve, not a flat projection.</li>
 <li><b>Local map build:</b> the detected lanes are accumulated into a local map as the car drives; after 80 m of travel the new interchange geometry is fully reconstructed at ~15 cm accuracy.</li>
 <li><b>Planner use:</b> the online lane map replaces the missing HD map — car stays in lane and navigates the interchange without any pre-built data.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D Lane Detection with Projection-Consistent Reference Points</b> &mdash; adaptive 3D references aligned to image appearance</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SCAM-P</b> &mdash; one real-time backbone for detection + drivable-area + lane segmentation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Incremental Mapping for Multi-Floor Parking</b> &mdash; degeneration-aware mapping in featureless, repetitive spaces</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Spatial Retrieval Augmented Autonomous Driving</b> &mdash; augments perception with offline geographic context</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>3D Lane Detection with Projection-Consistent Reference Points</b> &mdash; adaptive 3D references aligned to image appearance</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SCAM-P</b> &mdash; one real-time backbone for detection + drivable-area + lane segmentation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Real-Time Incremental Mapping for Multi-Floor Parking</b> &mdash; degeneration-aware mapping in featureless, repetitive spaces</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Spatial Retrieval Augmented Autonomous Driving</b> &mdash; augments perception with offline geographic context</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr11">
@@ -377,10 +383,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Constraint check:</b> 'Guaranteed Reach-Avoid' neural reachability certifies 8 of 30 trajectories as provably collision-free under agent uncertainty; remaining 22 are pruned.</li>
 <li><b>Risk budget:</b> 'Online Risk-Bounded Planning' allocates a per-decision risk budget of 0.01; the selected trajectory has a collision probability of 0.008 — within budget.</li>
 <li><b>Output:</b> the winning trajectory accelerates to 11.5 m/s and steers 0.8° right, passing behind agent A with 2.4 m clearance at the point of closest approach.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Online Risk-Bounded Graph-Based Local Planning</b> &mdash; distributes a mission-level risk budget per decision, with guarantees</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ME-PATS</b> &mdash; fuses a search-based planner with a learned heuristic agent</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Guaranteed Reach-Avoid through Narrow Gaps</b> &mdash; neural reachability gives provable safety for black-box dynamics</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Reliable Policy Transfer for Safety-Aware E2E Driving</b> &mdash; uncertainty-gated control-layer reliability for RL driving</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Online Risk-Bounded Graph-Based Local Planning</b> &mdash; distributes a mission-level risk budget per decision, with guarantees</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>ME-PATS</b> &mdash; fuses a search-based planner with a learned heuristic agent</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Guaranteed Reach-Avoid through Narrow Gaps</b> &mdash; neural reachability gives provable safety for black-box dynamics</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Reliable Policy Transfer for Safety-Aware E2E Driving</b> &mdash; uncertainty-gated control-layer reliability for RL driving</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr12">
@@ -395,10 +401,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Error compounding:</b> at 45 s the model, now in an unexpected configuration, fails to yield at a merge — collision probability spikes; the sim records a near-miss.</li>
 <li><b>Score:</b> open-loop rank: 3rd; closed-loop rank: 14th — the imitation gap reveals the model had memorized common patterns, not learned to drive.</li>
 <li><b>Diagnosis:</b> IGDrivSim's 'imitation gap' metric quantifies this mismatch at 0.38 (0 = same rank, 1 = completely different) — now a standard audit before deployment.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>IGDrivSim</b> &mdash; a benchmark quantifying the imitation gap under closed-loop evaluation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Promptable Closed-loop Traffic Simulation</b> &mdash; LLM-instantiated, interactively-refined traffic scenarios</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>WorldLens</b> &mdash; human-aligned full-spectrum evaluation of driving world models</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SafeDrive</b> &mdash; fine-grained safety reasoning with per-instance collision risk in a sparse world</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>IGDrivSim</b> &mdash; a benchmark quantifying the imitation gap under closed-loop evaluation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Promptable Closed-loop Traffic Simulation</b> &mdash; LLM-instantiated, interactively-refined traffic scenarios</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>WorldLens</b> &mdash; human-aligned full-spectrum evaluation of driving world models</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SafeDrive</b> &mdash; fine-grained safety reasoning with per-instance collision risk in a sparse world</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr13">
@@ -413,10 +419,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Fallback:</b> car decelerates to 20 km/h and turns on hazard lights; human override requested.</li>
 <li><b>OOD synthesis (offline):</b> 'Generating OOD Scenarios Using LLMs' uses the failure description to branch-synthesize 200 new sim scenarios with emergency vehicles; model retrained on those cases.</li>
 <li><b>Outcome:</b> SPARQ achieves 90% recall on perception failures in the SPARQ benchmark — 23 points above a standalone rule-based monitor — without increasing false-alert rate.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>System-Level Safety Monitoring and Recovery (SPARQ)</b> &mdash; a Q-network jointly reasons over perception failures + plan safety, 90% recall</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generating OOD Scenarios Using LLMs</b> &mdash; LLM branching-tree synthesis of out-of-distribution test scenarios</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Validity Learning on Failures</b> &mdash; an annotation-free failure objective mitigates planning distribution shift</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Foundation Models for Rapid Autonomy Validation</b> &mdash; generative coverage cuts the sim-miles to find rare events</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>System-Level Safety Monitoring and Recovery (SPARQ)</b> &mdash; a Q-network jointly reasons over perception failures + plan safety, 90% recall</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Generating OOD Scenarios Using LLMs</b> &mdash; LLM branching-tree synthesis of out-of-distribution test scenarios</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Validity Learning on Failures</b> &mdash; an annotation-free failure objective mitigates planning distribution shift</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Foundation Models for Rapid Autonomy Validation</b> &mdash; generative coverage cuts the sim-miles to find rare events</div></li></ul>
 </div>
 
 <div class="fam rich" id="dr14">
@@ -431,10 +437,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Label efficiency:</b> 'Label-Efficient LiDAR Panoptic Segmentation' lifts sparse 2D pseudo-labels to 3D, cutting the annotation budget from 50,000 to 3,200 hand-labeled frames while retaining +10.6 PQ.</li>
 <li><b>Result:</b> student runs at 34 ms/frame on Orin (67% of budget), mAP 41.3 vs teacher's 47.8 — a 6.5-point cost for a 6× speed gain.</li>
 <li><b>Data selection:</b> 'Scaling-Aware Data Selection' ranks the remaining training corpus by per-sample utility; keeping the top 30% of samples by utility achieves 98% of full-corpus performance — saving 3 weeks of training compute.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time LiDAR Point Cloud Compression</b> &mdash; 40&ndash;80× compression on resource-constrained robots, task accuracy kept</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>KDMOS</b> &mdash; knowledge distillation for motion segmentation, 7.69× fewer parameters</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Label-Efficient LiDAR Panoptic Segmentation</b> &mdash; lifts sparse 2D pseudo-labels to 3D, +10.6 PQ with minimal annotation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Scaling-Aware Data Selection for E2E Driving</b> &mdash; selects high-utility samples balancing scale and quality</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Real-Time LiDAR Point Cloud Compression</b> &mdash; 40&ndash;80× compression on resource-constrained robots, task accuracy kept</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>KDMOS</b> &mdash; knowledge distillation for motion segmentation, 7.69× fewer parameters</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Label-Efficient LiDAR Panoptic Segmentation</b> &mdash; lifts sparse 2D pseudo-labels to 3D, +10.6 PQ with minimal annotation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Scaling-Aware Data Selection for E2E Driving</b> &mdash; selects high-utility samples balancing scale and quality</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -451,7 +457,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="3d-perception-explained.html">3D Perception</a> &middot; <a href="navigation-explained.html">Navigation</a> &middot; <a href="vt-explained.html">Video &amp; Temporal</a> &middot; <a href="multi-robot-explained.html">Multi-Robot</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#dr">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="3d-perception-explained.html">3D Perception</a> &middot; <a href="navigation-explained.html">Navigation</a> &middot; <a href="vt-explained.html">Video &amp; Temporal</a> &middot; <a href="multi-robot-explained.html">Multi-Robot</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Autonomous Driving explainer &middot; mechanism diagrams are live JavaScript (assets/dr-anim.js) &middot; SparseDrive + LightStereo runs are ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the loop at highway speed &mdash; see the <a href="the-machine.html">four-stage machine</a>, and <a href="driving-deepdive.html">the driving code deep-dive</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/dr-anim.js"></script>
 </body></html>

@@ -77,7 +77,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#212A34;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#12181f}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#212A34}.op b{color:var(--accent-deep)}
@@ -194,11 +200,11 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Disparity regression:</b> softmax over the D axis gives sub-pixel disparity d = 38.2 px at a car 10 m away.</li>
 <li><b>Depth:</b> Z = 721 × 0.54 / 38.2 = 10.2 m — within 2% of LiDAR ground truth.</li>
 <li><b>Speed:</b> LightStereo on an RTX 3090 runs at 45 ms per frame (22 Hz) — fast enough for a moving vehicle.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Iterative Volume Fusion for Asymmetric Stereo Matching</b> &mdash; two-phase network fuses correlation volumes for high-accuracy disparity</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Pip-Stereo</b> &mdash; prunes hypotheses across iterations to speed up iterative stereo matching</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>EventHub</b> &mdash; a data factory for generalizable event-based stereo, no active-depth supervision</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SpiderCam</b> &mdash; snapshot depth from differential defocus via a beam splitter, low power</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A New Stereo Fisheye Event Camera</b> &mdash; back-to-back fisheye event cameras give full spherical stereo</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Iterative Volume Fusion for Asymmetric Stereo Matching</b> &mdash; two-phase network fuses correlation volumes for high-accuracy disparity</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Pip-Stereo</b> &mdash; prunes hypotheses across iterations to speed up iterative stereo matching</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>EventHub</b> &mdash; a data factory for generalizable event-based stereo, no active-depth supervision</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SpiderCam</b> &mdash; snapshot depth from differential defocus via a beam splitter, low power</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>A New Stereo Fisheye Event Camera</b> &mdash; back-to-back fisheye event cameras give full spherical stereo</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe2">
@@ -213,11 +219,11 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Scale anchor:</b> a single LiDAR point at z=2.4 m lands on pixel (320,280); the predicted value there is 0.48. Scale = 2.4 / 0.48 = 5.0 m per unit.</li>
 <li><b>Metric map:</b> multiply every pixel by 5.0 — RMS depth error on the remaining 200 check points is 0.11 m (4.6%).</li>
 <li><b>Without anchor:</b> the network still produces a geometrically correct relative map in 8 ms on a laptop GPU — useful for navigation even without metric scale.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Iris: Real-World Priors into Diffusion for Monocular Depth</b> &mdash; progressive generative distillation grounds depth in metric scale</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>InfiniDepth</b> &mdash; neural implicit fields give arbitrary-resolution fine-grained depth</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MD2E</b> &mdash; depth-to-edge cues supervise metric depth without ground-truth depth</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AIMDepth</b> &mdash; asymmetric image-event Mamba fuses events + RGB for extreme lighting</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Single-Shot Metric Depth from Focused Plenoptic Cameras</b> &mdash; a net makes a sparse metric point cloud from one plenoptic image</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Iris: Real-World Priors into Diffusion for Monocular Depth</b> &mdash; progressive generative distillation grounds depth in metric scale</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>InfiniDepth</b> &mdash; neural implicit fields give arbitrary-resolution fine-grained depth</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MD2E</b> &mdash; depth-to-edge cues supervise metric depth without ground-truth depth</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>AIMDepth</b> &mdash; asymmetric image-event Mamba fuses events + RGB for extreme lighting</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Single-Shot Metric Depth from Focused Plenoptic Cameras</b> &mdash; a net makes a sparse metric point cloud from one plenoptic image</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe3">
@@ -232,10 +238,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>GRU update:</b> RAFT's recurrent unit refines the flow field for 12 iterations, each reading the correlation volume at the current estimate.</li>
 <li><b>Result:</b> a parked car → near-zero vectors; a cyclist moving at 5 m/s appears → 11-pixel rightward shift at this frame rate.</li>
 <li><b>Speed:</b> RAFT on a 2080 Ti: 160 ms per pair; NeuFlow-V2 achieves 30 Hz on the same hardware using a flat correlation design.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Efficient All-Pairs Correlation Volume Sampling</b> &mdash; adaptive correlation sampling cuts optical-flow compute</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SSF: Sparse Long-Range Scene Flow</b> &mdash; sparse convolutions extend scene flow to long range for driving</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ARES</b> &mdash; asymmetric RGB-event fusion for probabilistic scene flow</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-NMSTFlow</b> &mdash; spatio-temporal motion features for unsupervised event-based optical flow</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Efficient All-Pairs Correlation Volume Sampling</b> &mdash; adaptive correlation sampling cuts optical-flow compute</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SSF: Sparse Long-Range Scene Flow</b> &mdash; sparse convolutions extend scene flow to long range for driving</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>ARES</b> &mdash; asymmetric RGB-event fusion for probabilistic scene flow</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>E-NMSTFlow</b> &mdash; spatio-temporal motion features for unsupervised event-based optical flow</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe4">
@@ -250,10 +256,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Sliding-window BA:</b> optimize last 10 keyframe poses + 3D points jointly — reprojection error ≤ 1.2 px RMS.</li>
 <li><b>Drift rate:</b> 0.8% of distance travelled (8 cm per 10 m walk) — IMU stops the scale from wandering.</li>
 <li><b>Failure mode:</b> fast rotation in a featureless corridor — IMU holds the pose for 0.2 s until features reappear.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ORB-SfMLearner</b> &mdash; ORB-feature guidance + selective online adaptation for self-supervised VO</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Active Illumination for Visual Ego-Motion in the Dark</b> &mdash; a steered light finds texture for VO in darkness</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Universal Online Temporal Calibration for VINS</b> &mdash; treats the camera-IMU time offset as a state variable</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>UR-MVO</b> &mdash; SuperPoint features fine-tuned for robust underwater monocular VO</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>ORB-SfMLearner</b> &mdash; ORB-feature guidance + selective online adaptation for self-supervised VO</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Active Illumination for Visual Ego-Motion in the Dark</b> &mdash; a steered light finds texture for VO in darkness</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Universal Online Temporal Calibration for VINS</b> &mdash; treats the camera-IMU time offset as a state variable</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>UR-MVO</b> &mdash; SuperPoint features fine-tuned for robust underwater monocular VO</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe5">
@@ -268,10 +274,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Loop detection:</b> DBoW2 descriptor matches frame 1 and frame 847 — recognises the entrance.</li>
 <li><b>Pose-graph correction:</b> a new edge is added between frames 1 and 847; g2o redistributes the 1.4 m error uniformly — every node shifts ≤ 1.8 mm.</li>
 <li><b>Result:</b> final position error drops from 1.4 m to 0.03 m — loop closure removes 98% of accumulated drift.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>KISS-SLAM</b> &mdash; a minimalist, robust graph-based LiDAR SLAM via scan-to-scan registration</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SGAD-SLAM</b> &mdash; dual-branch Gaussian SLAM: pixel-aligned Gaussians map, keyframes track</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ODGS-SLAM</b> &mdash; first omnidirectional (360°) Gaussian-splatting SLAM</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SCE-SLAM</b> &mdash; scene-coordinate embeddings give scale-consistent monocular SLAM</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>KISS-SLAM</b> &mdash; a minimalist, robust graph-based LiDAR SLAM via scan-to-scan registration</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SGAD-SLAM</b> &mdash; dual-branch Gaussian SLAM: pixel-aligned Gaussians map, keyframes track</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>ODGS-SLAM</b> &mdash; first omnidirectional (360°) Gaussian-splatting SLAM</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SCE-SLAM</b> &mdash; scene-coordinate embeddings give scale-consistent monocular SLAM</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe6">
@@ -286,10 +292,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Camera poses:</b> extracted from the stitched pointmap — no COLMAP, no SfM pipeline.</li>
 <li><b>Accuracy:</b> relative rotation error 1.3°, translation error 3.2% — competitive with COLMAP on this scene.</li>
 <li><b>Total time:</b> 13 s end-to-end vs. ~8 min for a full COLMAP run on the same 4 images.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Any4D</b> &mdash; one feed-forward pass predicts metric depth, flow, and pose for N frames</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MoRE</b> &mdash; a VGGT backbone with mixture-of-experts routing for scalable 3D reconstruction</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TokenSplat</b> &mdash; token-aligned Gaussians for pose-free feed-forward reconstruction</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>AREA3D</b> &mdash; feed-forward 3D + VLM reasoning guides active viewpoint selection</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Any4D</b> &mdash; one feed-forward pass predicts metric depth, flow, and pose for N frames</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MoRE</b> &mdash; a VGGT backbone with mixture-of-experts routing for scalable 3D reconstruction</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>TokenSplat</b> &mdash; token-aligned Gaussians for pose-free feed-forward reconstruction</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>AREA3D</b> &mdash; feed-forward 3D + VLM reasoning guides active viewpoint selection</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe7">
@@ -304,10 +310,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>IRLS iterations:</b> find nearest-neighbour pairs; weight each by a Geman-McClure robust kernel — dynamic-object outliers get weight < 0.05 within 3 iterations.</li>
 <li><b>Convergence:</b> after 15 IRLS steps, rotation error < 0.01° and translation < 0.5 mm.</li>
 <li><b>KISS-SLAM trajectory:</b> over 500 m of highway, the position drift is 0.3% of distance — comparable to GPS-aided systems.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>KISS-SLAM</b> &mdash; simple scan-to-scan registration, robust and accurate</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SOLO-SMap</b> &mdash; semantic-aided online LiDAR odometry + static mapping in dynamic scenes</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SANDRO</b> &mdash; a splitting-strategy IRLS solver robust to high point-cloud outliers</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Intensity-Augmented LiDAR-Visual-Inertial Odometry</b> &mdash; LiDAR intensity refines camera pose for real-time meshing</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>KISS-SLAM</b> &mdash; simple scan-to-scan registration, robust and accurate</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SOLO-SMap</b> &mdash; semantic-aided online LiDAR odometry + static mapping in dynamic scenes</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SANDRO</b> &mdash; a splitting-strategy IRLS solver robust to high point-cloud outliers</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Intensity-Augmented LiDAR-Visual-Inertial Odometry</b> &mdash; LiDAR intensity refines camera pose for real-time meshing</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe8">
@@ -322,10 +328,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Geometric verification:</b> RANSAC on SuperPoint correspondences between frames 47 and 1,204 — 128 inliers, essential matrix error 0.4 px.</li>
 <li><b>Loop constraint added:</b> relative pose between frame 47 and 1,204 fed into the pose graph.</li>
 <li><b>After optimisation:</b> start–end position gap closes from 3.2 m to 0.08 m.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Visual Loop Closure through Deep Graph Consensus</b> &mdash; LoopGNN builds a graph of similar keyframe cliques</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Diffusion-Based Robust LiDAR Place Recognition</b> &mdash; a diffusion model + PointNet++ trained on synthetic LiDAR</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoFlow</b> &mdash; iterative flow-based cross-view geolocalization in continuous pose space</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Hierarchical Relocalization with Feature Gaussian Splatting</b> &mdash; synthesizes nearest views from feature Gaussians for pose refinement</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Visual Loop Closure through Deep Graph Consensus</b> &mdash; LoopGNN builds a graph of similar keyframe cliques</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Diffusion-Based Robust LiDAR Place Recognition</b> &mdash; a diffusion model + PointNet++ trained on synthetic LiDAR</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GeoFlow</b> &mdash; iterative flow-based cross-view geolocalization in continuous pose space</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Hierarchical Relocalization with Feature Gaussian Splatting</b> &mdash; synthesizes nearest views from feature Gaussians for pose refinement</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe9">
@@ -340,10 +346,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Gaussian upgrade:</b> SGAD-SLAM initialises one Gaussian per mesh vertex — 38 K splats render photorealistic new views.</li>
 <li><b>Dynamic removal:</b> DGS-SLAM detects the researcher's moving hand via optical flow; those voxels are excluded from the static mesh.</li>
 <li><b>Result:</b> clean 3D surface at 4 mm resolution, ready for grasp planning — achieved at 12 Hz on an RTX 4090.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DGS-SLAM</b> &mdash; semantic 3D Gaussians identify + remove dynamic objects for dense SLAM</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>VSS-SLAM</b> &mdash; voxelized surfels from per-voxel features for geometrically accurate SLAM</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Uncertainty-Aware VI-SLAM with Volumetric Occupancy</b> &mdash; fuses reprojection + IMU + pose factors into an occupancy map</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fusionsense</b> &mdash; 3DGS + foundation-model priors + touch for sparse-view reconstruction</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>DGS-SLAM</b> &mdash; semantic 3D Gaussians identify + remove dynamic objects for dense SLAM</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>VSS-SLAM</b> &mdash; voxelized surfels from per-voxel features for geometrically accurate SLAM</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Uncertainty-Aware VI-SLAM with Volumetric Occupancy</b> &mdash; fuses reprojection + IMU + pose factors into an occupancy map</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Fusionsense</b> &mdash; 3DGS + foundation-model priors + touch for sparse-view reconstruction</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe10">
@@ -358,10 +364,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Depth via stereo events:</b> AIMDepth fuses RGB + events; the propeller's depth map updates at 2 ms latency vs 33 ms for frame-based stereo.</li>
 <li><b>Dynamic range:</b> a 140 dB event camera captures both the propeller blades and the dim background — standard camera blows out.</li>
 <li><b>Power:</b> 10 mW vs 500 mW for a 30 Hz frame camera — critical for micro-UAVs.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>AIMDepth</b> &mdash; image-event Mamba fusion for monocular depth under extreme lighting</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>ARES</b> &mdash; RGB texture + event dynamics fused for robust scene flow</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>EVLoc</b> &mdash; event-to-depth registration localizes events inside LiDAR maps</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>EvMAPPER</b> &mdash; an event camera replaces CMOS for high-altitude orthomapping</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>AIMDepth</b> &mdash; image-event Mamba fusion for monocular depth under extreme lighting</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>ARES</b> &mdash; RGB texture + event dynamics fused for robust scene flow</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>EVLoc</b> &mdash; event-to-depth registration localizes events inside LiDAR maps</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>EvMAPPER</b> &mdash; an event camera replaces CMOS for high-altitude orthomapping</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe11">
@@ -376,10 +382,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>IRLS weighting (SANDRO):</b> 18% of pairs involve occlusion boundaries; Geman-McClure weights suppress them — iteration 5 rotation error: 0.08°.</li>
 <li><b>Convergence:</b> after 12 iterations, RMS point distance = 0.31 mm — within the scanner's measurement noise.</li>
 <li><b>Time:</b> 140 ms on a laptop CPU — fast enough for a robot grasping pipeline that re-registers every 200 ms.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SANDRO</b> &mdash; IRLS + graduated non-convexity for registration under heavy outliers</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Fast(er) Robust Point Cloud Alignment Using Lie Algebra</b> &mdash; IRLS on the Lie algebra for efficient robust alignment</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Match Policy</b> &mdash; recasts action inference itself as point-cloud registration</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Effective Heterogeneous Point-Cloud Place Recognition</b> &mdash; BEV density images register aerial-to-ground clouds</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>SANDRO</b> &mdash; IRLS + graduated non-convexity for registration under heavy outliers</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Fast(er) Robust Point Cloud Alignment Using Lie Algebra</b> &mdash; IRLS on the Lie algebra for efficient robust alignment</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Match Policy</b> &mdash; recasts action inference itself as point-cloud registration</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Effective Heterogeneous Point-Cloud Place Recognition</b> &mdash; BEV density images register aerial-to-ground clouds</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe12">
@@ -394,10 +400,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Dense depth head:</b> decoder upsamples to full resolution — outputs 1.2 M depth values.</li>
 <li><b>Transparent glass door:</b> LiDAR returned 0 hits; the RGB encoder saw the frame outline; decoder fills in 2.1 m — within 4 cm of manual measurement.</li>
 <li><b>RMSE:</b> 0.74 m on KITTI depth-completion benchmark, vs 1.6 m for bilinear LiDAR interpolation alone.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>DA-Fusion</b> &mdash; deformable-attention transformer fuses RGB + depth for unseen-object segmentation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>TransDiff</b> &mdash; diffusion conditioned on RGB completes depth for transparent objects</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DCT-Diffusion</b> &mdash; transformer + diffusion completes depth on transparent objects</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bat-VUFN</b> &mdash; bio-inspired camera + ultrasound fusion, input-quality weighted</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>DA-Fusion</b> &mdash; deformable-attention transformer fuses RGB + depth for unseen-object segmentation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>TransDiff</b> &mdash; diffusion conditioned on RGB completes depth for transparent objects</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DCT-Diffusion</b> &mdash; transformer + diffusion completes depth on transparent objects</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Bat-VUFN</b> &mdash; bio-inspired camera + ultrasound fusion, input-quality weighted</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe13">
@@ -412,10 +418,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Refine:</b> ICP on the depth channel reduces rotation error to 0.6°.</li>
 <li><b>Grasp check:</b> project the grasp points in the object frame to the image — they land within 3 px of the expected contact zones.</li>
 <li><b>Pick success:</b> pose error < 5° and < 1 cm gives 94% grasp success on this object in real trials.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ZeroBP</b> &mdash; position-aware correspondence for zero-shot 6D pose from a CAD model</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>You Only Estimate Once</b> &mdash; one-stage real-time 6D pose: labels, centroid offset, rotation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LoGS</b> &mdash; SfM + Gaussian-splat map + retrieval for visual localization with fewer images</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEADER</b> &mdash; reliable local-to-global correspondences for LiDAR relocalization</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>ZeroBP</b> &mdash; position-aware correspondence for zero-shot 6D pose from a CAD model</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>You Only Estimate Once</b> &mdash; one-stage real-time 6D pose: labels, centroid offset, rotation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>LoGS</b> &mdash; SfM + Gaussian-splat map + retrieval for visual localization with fewer images</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>LEADER</b> &mdash; reliable local-to-global correspondences for LiDAR relocalization</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe14">
@@ -430,10 +436,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Arm trajectory:</b> the wrist travels 0.62 m in 3D space over 48 frames — matches a motion-capture ground truth to within 1.8 cm.</li>
 <li><b>Static background:</b> the wall behind the person has near-zero motion vectors (0.3 mm RMS) — correctly separated from the moving body.</li>
 <li><b>Comparison:</b> a static-scene DUSt3R run on the same frames produces a blurred smear at the arm — geometry and motion entangled.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Any4D</b> &mdash; unified feed-forward metric 4D (geometry + motion) for N frames</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>V-DPM</b> &mdash; extends dynamic point maps to video for feed-forward 4D + scene flow</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Mesh4D</b> &mdash; a VAE encodes deformation for topology-consistent 4D meshes from one camera</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DetAny4D</b> &mdash; streaming 4D detection with a 280k-sequence 4D-annotated dataset</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Any4D</b> &mdash; unified feed-forward metric 4D (geometry + motion) for N frames</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>V-DPM</b> &mdash; extends dynamic point maps to video for feed-forward 4D + scene flow</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Mesh4D</b> &mdash; a VAE encodes deformation for topology-consistent 4D meshes from one camera</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DetAny4D</b> &mdash; streaming 4D detection with a 280k-sequence 4D-annotated dataset</div></li></ul>
 </div>
 
 <div class="fam rich" id="pe15">
@@ -448,10 +454,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Metric anchor:</b> one GPS altitude reading pins the absolute scale — z = 14.2 m at the horizon.</li>
 <li><b>Result:</b> relative depth ranking accuracy (δ1 metric) = 0.91, vs 0.74 for a standard regression model on the same foggy scene.</li>
 <li><b>Failure mode:</b> mirror surfaces — the diffusion model hallucinates geometry behind the reflection; the depth map shows a phantom room.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Iris (diffusion priors)</b> &mdash; progressive generative distillation merges diffusion priors with real depth</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Iris (language into diffusion depth)</b> &mdash; language descriptions guide diffusion-based depth for semantic geometry</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TransDiff</b> &mdash; diffusion prior completes depth where transparency defeats sensors</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DiffSSC</b> &mdash; denoising diffusion completes semantic LiDAR scans through occlusion</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Iris (diffusion priors)</b> &mdash; progressive generative distillation merges diffusion priors with real depth</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Iris (language into diffusion depth)</b> &mdash; language descriptions guide diffusion-based depth for semantic geometry</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>TransDiff</b> &mdash; diffusion prior completes depth where transparency defeats sensors</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DiffSSC</b> &mdash; denoising diffusion completes semantic LiDAR scans through occlusion</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -468,7 +474,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="gaussian-splatting-explained.html">3D Gaussian Splatting</a> &middot; <a href="open-vocab-explained.html">Open-Vocabulary</a> &middot; <a href="vt-explained.html">Video &amp; Temporal</a> &middot; <a href="navigation-explained.html">Navigation</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#pe">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="gaussian-splatting-explained.html">3D Gaussian Splatting</a> &middot; <a href="open-vocab-explained.html">Open-Vocabulary</a> &middot; <a href="vt-explained.html">Video &amp; Temporal</a> &middot; <a href="navigation-explained.html">Navigation</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">3D Perception explainer &middot; mechanism diagrams are live JavaScript (assets/pe-anim.js) &middot; LightStereo + NeuFlow runs are ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the raw seeing beneath the <a href="the-machine.html">four-stage loop</a> and the <a href="gaussian-splatting-explained.html">splatting</a> stack &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/pe-anim.js"></script>
 </body></html>

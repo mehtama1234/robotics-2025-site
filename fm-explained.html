@@ -76,7 +76,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#10182E;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#0A0F1E}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#10182E}.op b{color:var(--accent-deep)}
@@ -185,10 +191,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>A syntax checker validates the BT structure — if a node is undefined, it signals the LLM for a <b>reflective correction pass</b>.</li>
 <li>The BT runs; at step 3 (boil) the robot detects failure (kettle not found). LLM <b>expands the BT</b> with a new subtree: find_kettle_alternative → fetch_from_cabinet.</li>
 <li>Final success rate on novel household tasks: <b>72% (LLM-BT) vs 31% (hand-coded BT)</b> on unseen object layouts.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>LLM-as-BT-Planner: Leveraging LLMs for Behavior Tree Generation in Robot Task Planning</b> &mdash; in-context learning and fine-tuning of smaller LLMs to generate syntactically valid BTs from task descriptions</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>HBTP: Heuristic Behavior Tree Planning with Large Language Model Reasoning</b> &mdash; LLM generates heuristic paths over action space to guide BT expansion; reflective feedback corrects errors</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Automatic Behavior Tree Expansion with LLMs for Robotic Manipulation</b> &mdash; LLM diagnoses execution failures and dynamically expands behavior tree nodes at runtime</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>CLIMB: Language-Guided Continual Learning for Task Planning with Iterative Model Building</b> &mdash; LLM bootstraps PDDL domain models from natural language and iteratively refines predicates from execution feedback</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>LLM-as-BT-Planner: Leveraging LLMs for Behavior Tree Generation in Robot Task Planning</b> &mdash; in-context learning and fine-tuning of smaller LLMs to generate syntactically valid BTs from task descriptions</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>HBTP: Heuristic Behavior Tree Planning with Large Language Model Reasoning</b> &mdash; LLM generates heuristic paths over action space to guide BT expansion; reflective feedback corrects errors</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Automatic Behavior Tree Expansion with LLMs for Robotic Manipulation</b> &mdash; LLM diagnoses execution failures and dynamically expands behavior tree nodes at runtime</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>CLIMB: Language-Guided Continual Learning for Task Planning with Iterative Model Building</b> &mdash; LLM bootstraps PDDL domain models from natural language and iteratively refines predicates from execution feedback</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm2">
@@ -202,10 +208,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Open-vocabulary semantic map: patch features matched to text embedding, top-3 patches voted → <b>bounding box [320px, 180px, 410px, 270px]</b>.</li>
 <li>Depth sensor fuses the 2D box to 3D: object centroid at <b>[0.4m, 0.1m, 1.2m]</b> in robot frame.</li>
 <li>Language query <b>'bring the AeroPress to the table'</b> routes to the motion planner with that 3D pose — zero labeled examples of AeroPress used.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>One Map to Find Them All: Real-time Open-Vocabulary Mapping for Zero-shot Multi-Object Navigation</b> &mdash; VLM embeddings build persistent open-vocabulary semantic maps; uncertainty drives exploration</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SpatialBot: Precise Spatial Understanding with Vision Language Models</b> &mdash; fine-tune VLM on RGB-D inputs with depth-aware QA datasets for 3D spatial reasoning</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>3D Spatial Understanding in MLLMs: Disambiguation and Evaluation</b> &mdash; fine-tunes MLLMs with 3D-aware representations for precise object localization and spatial grounding</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>The Power of Prior: Training-Free Open-Vocabulary Semantic Segmentation</b> &mdash; frozen MLLM features enable zero-shot dense prediction without any task-specific training</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>One Map to Find Them All: Real-time Open-Vocabulary Mapping for Zero-shot Multi-Object Navigation</b> &mdash; VLM embeddings build persistent open-vocabulary semantic maps; uncertainty drives exploration</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SpatialBot: Precise Spatial Understanding with Vision Language Models</b> &mdash; fine-tune VLM on RGB-D inputs with depth-aware QA datasets for 3D spatial reasoning</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>3D Spatial Understanding in MLLMs: Disambiguation and Evaluation</b> &mdash; fine-tunes MLLMs with 3D-aware representations for precise object localization and spatial grounding</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>The Power of Prior: Training-Free Open-Vocabulary Semantic Segmentation</b> &mdash; frozen MLLM features enable zero-shot dense prediction without any task-specific training</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm3">
@@ -219,10 +225,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>All 3 demos concatenated = <b>603 context tokens</b> prepended to the current observation.</li>
 <li>The causal transformer (ICRT) predicts the next action token autoregressively — <b>no weight update</b>, just inference.</li>
 <li>Success on the unseen shirt style: <b>68% (3-shot in-context) vs 12% (zero-shot)</b> — the demonstrations are the adaptation signal.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>ICRT: In-Context Imitation Learning via Next-Token Prediction</b> &mdash; causal transformer performs next-token prediction over sensorimotor trajectories; test-time adaptation via prompting</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAS-Prompt: Large Language Models as Numerical Optimizers for Robot Self-Improvement</b> &mdash; structured prompt (Summarize-Analyze-Synthesize) iterates over execution traces for gradient-free policy optimization</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LEMMo-Plan: LLM-Enhanced Learning from Multi-Modal Demonstration for Planning Sequential Contact-Rich Manipulation Tasks</b> &mdash; in-context prompting integrates tactile and force-torque signals from demos; LLM generates task plans for new configurations</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PR-MaGIC: Prompt Refinement Via Mask Decoder Gradient Flow For In-Context Segmentation</b> &mdash; training-free prompt refinement using SAM decoder gradient flow for in-context visual segmentation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>ICRT: In-Context Imitation Learning via Next-Token Prediction</b> &mdash; causal transformer performs next-token prediction over sensorimotor trajectories; test-time adaptation via prompting</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SAS-Prompt: Large Language Models as Numerical Optimizers for Robot Self-Improvement</b> &mdash; structured prompt (Summarize-Analyze-Synthesize) iterates over execution traces for gradient-free policy optimization</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>LEMMo-Plan: LLM-Enhanced Learning from Multi-Modal Demonstration for Planning Sequential Contact-Rich Manipulation Tasks</b> &mdash; in-context prompting integrates tactile and force-torque signals from demos; LLM generates task plans for new configurations</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>PR-MaGIC: Prompt Refinement Via Mask Decoder Gradient Flow For In-Context Segmentation</b> &mdash; training-free prompt refinement using SAM decoder gradient flow for in-context visual segmentation</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm4">
@@ -236,10 +242,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Each subgoal routes to a <b>skill library</b>: fetch_plates → grasp(plate_location) → navigate(table) → place(target_position).</li>
 <li>ManipGen uses locality-invariant policies for each skill: the same pick policy works on any plate location because it conditions on <b>local workspace features</b>, not global position.</li>
 <li>End-to-end success on novel table configurations: <b>61% (hierarchical LLM) vs 23% (flat policy)</b> with zero additional demonstrations per configuration.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Local Policies Enable Zero-Shot Long-Horizon Manipulation</b> &mdash; locality-invariant policies composed with foundation models for zero-shot multi-stage tasks</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MuST: Multi-Head Skill Transformer for Long-Horizon Dexterous Manipulation with Skill Progress</b> &mdash; multi-head Transformer learns parallel motion primitives; learned progress value triggers skill-switching</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>The Ingredients for Robotic Diffusion Transformers</b> &mdash; Diffusion Transformer on multimodal language-annotated demonstrations for 1500+ timestep bimanual tasks</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>COLLAGE: Collaborative Human-Agent Interaction Generation Using Hierarchical Latent Diffusion and Language Models</b> &mdash; LLM generates motion planning cues guiding latent-space diffusion model for hierarchically-abstracted interaction sequences</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Local Policies Enable Zero-Shot Long-Horizon Manipulation</b> &mdash; locality-invariant policies composed with foundation models for zero-shot multi-stage tasks</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>MuST: Multi-Head Skill Transformer for Long-Horizon Dexterous Manipulation with Skill Progress</b> &mdash; multi-head Transformer learns parallel motion primitives; learned progress value triggers skill-switching</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>The Ingredients for Robotic Diffusion Transformers</b> &mdash; Diffusion Transformer on multimodal language-annotated demonstrations for 1500+ timestep bimanual tasks</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>COLLAGE: Collaborative Human-Agent Interaction Generation Using Hierarchical Latent Diffusion and Language Models</b> &mdash; LLM generates motion planning cues guiding latent-space diffusion model for hierarchically-abstracted interaction sequences</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm5">
@@ -253,10 +259,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Robot navigates to the office first. VLM runs open-vocabulary detection. Stapler not found; proprioceptive state updates the belief.</li>
 <li>LLM <b>re-ranks</b> given 'office searched, not found': conference room moves to 0.77. Robot navigates there.</li>
 <li>Stapler found at step 2. Average search steps: <b>2.4 (LLM-guided) vs 6.1 (uniform random)</b> on 100 building episodes.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Language-Guided Object Search in Agricultural Environments</b> &mdash; LLM encodes object-to-object semantic relationships; plans paths minimizing distance while maximizing target discovery probability</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for Robot Navigation</b> &mdash; retrieval-augmented memory combines temporal metadata, spatial coordinates, image embeddings; VLM queries for long-horizon navigation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Task-Aware Semantic Map: Autonomous Robot Task Assignment Beyond Commands</b> &mdash; LLM generates contextual task proposals from scene understanding without explicit commands; autonomous task discovery</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Commonsense Reasoning for Legged Robot Adaptation with Vision-Language Models</b> &mdash; VLM-Predictive Control queries VLM for multi-skill planning from interaction history; replans online when obstacles appear</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Language-Guided Object Search in Agricultural Environments</b> &mdash; LLM encodes object-to-object semantic relationships; plans paths minimizing distance while maximizing target discovery probability</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for Robot Navigation</b> &mdash; retrieval-augmented memory combines temporal metadata, spatial coordinates, image embeddings; VLM queries for long-horizon navigation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Task-Aware Semantic Map: Autonomous Robot Task Assignment Beyond Commands</b> &mdash; LLM generates contextual task proposals from scene understanding without explicit commands; autonomous task discovery</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Commonsense Reasoning for Legged Robot Adaptation with Vision-Language Models</b> &mdash; VLM-Predictive Control queries VLM for multi-skill planning from interaction history; replans online when obstacles appear</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm6">
@@ -270,10 +276,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Action prediction head outputs a <b>6-DOF grasp pose</b>: position [0.31m, -0.12m, 0.82m], orientation quaternion.</li>
 <li>Low-level controller executes the grasp. On failure (no contact detected), a <b>VLM supervisor generates recovery instruction</b>: 'the mug slipped — re-approach from the side'.</li>
 <li>With recovery, success rate on novel object arrangements: <b>83% vs 61% (no recovery)</b> across 50 real-robot trials.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACER: Rich Language-Guided Failure Recovery Policies for Imitation Learning</b> &mdash; VLM supervisor generates online correction instructions; failure recovery data pipeline augments demonstrations</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robot Utility Models: General Policies for Zero-Shot Deployment in New Environments</b> &mdash; multimodal imitation learning with zero-shot deployment; mLLM verifier enables retry loops for recovery</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Towards Generalizable Vision-Language Robotic Manipulation: A Benchmark and LLM-Guided 3D Policy</b> &mdash; 3D-LOTUS++ chains 3D spatial reasoning with LLM task planning and VLM object grounding across generalization levels</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist Vision-Language-Action Agent</b> &mdash; task-mask sparsity and value-projection routing merge single-skill VLA models into a generalist without catastrophic forgetting</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>RACER: Rich Language-Guided Failure Recovery Policies for Imitation Learning</b> &mdash; VLM supervisor generates online correction instructions; failure recovery data pipeline augments demonstrations</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Robot Utility Models: General Policies for Zero-Shot Deployment in New Environments</b> &mdash; multimodal imitation learning with zero-shot deployment; mLLM verifier enables retry loops for recovery</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Towards Generalizable Vision-Language Robotic Manipulation: A Benchmark and LLM-Guided 3D Policy</b> &mdash; 3D-LOTUS++ chains 3D spatial reasoning with LLM task planning and VLM object grounding across generalization levels</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist Vision-Language-Action Agent</b> &mdash; task-mask sparsity and value-projection routing merge single-skill VLA models into a generalist without catastrophic forgetting</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm7">
@@ -287,10 +293,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>A static checker runs over the generated code: detects if any <b>place(food, floor)</b> call exists. If so, LLM is asked to fix it.</li>
 <li>CaStL translates the constraint <b>'never X'</b> to a Python assertion injected into the code before every place() call.</li>
 <li>Code runs on robot; if an assertion fires, execution halts and the LLM sees the stack trace → <b>generates a corrected version in one round</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>CaStL: Constraints as Specifications Through Llm Translation for Long-Horizon Task and Motion Planning</b> &mdash; multi-stage LLM pipeline translates natural-language constraints to PDDL and Python; custom solver handles constraint-rich planning</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Here's your PDDL Problem File! On Using VLMs for Generating Symbolic PDDL Problem Files</b> &mdash; VLM-to-PDDL pipeline parses visual and textual scene descriptions into valid PDDL problem files</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LLM-as-BT-Planner: Leveraging LLMs for Behavior Tree Generation in Robot Task Planning</b> &mdash; LLMs generate syntactically valid behavior trees as executable code structures from task descriptions</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SAS-Prompt: Large Language Models as Numerical Optimizers for Robot Self-Improvement</b> &mdash; structured LLM prompt generates parameter updates as code; gradient-free optimization of robot controllers</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>CaStL: Constraints as Specifications Through Llm Translation for Long-Horizon Task and Motion Planning</b> &mdash; multi-stage LLM pipeline translates natural-language constraints to PDDL and Python; custom solver handles constraint-rich planning</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Here's your PDDL Problem File! On Using VLMs for Generating Symbolic PDDL Problem Files</b> &mdash; VLM-to-PDDL pipeline parses visual and textual scene descriptions into valid PDDL problem files</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>LLM-as-BT-Planner: Leveraging LLMs for Behavior Tree Generation in Robot Task Planning</b> &mdash; LLMs generate syntactically valid behavior trees as executable code structures from task descriptions</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SAS-Prompt: Large Language Models as Numerical Optimizers for Robot Self-Improvement</b> &mdash; structured LLM prompt generates parameter updates as code; gradient-free optimization of robot controllers</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm8">
@@ -304,10 +310,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Retrieved passages: 'Section 7.3: maintain 5m clearance from flammable storage. Section 7.4: CNC spark risk zone &ge;3m.' Injected as context.</li>
 <li>LLM generates a plan that <b>navigates the CNC machine &ge;5m from tanks</b> — not from its general knowledge but from the retrieved text.</li>
 <li>SayComply evaluation: <b>91% compliance rate</b> on site-specific rules vs 54% for LLM without retrieval.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SayComply: Grounding Field Robotic Tasks in Operational Compliance Through Retrieval-Based Language Models</b> &mdash; hierarchical RAG over operational manuals grounds LLM planning in site-specific compliance documents</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for Robot Navigation</b> &mdash; retrieval over temporal metadata, spatial coordinates, and image embeddings for long-horizon navigation QA</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RACCOON: Grounding Embodied Question-Answering with State Summaries from Existing Robot Modules</b> &mdash; RAG-inspired retrieval of robot internal state injected into LLM prompts for embodied question answering</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MultiTalk: Introspective and Extrospective Dialogue for Human-Environment-LLM Alignment</b> &mdash; dual dialogue loops — introspective self-check and extrospective environment comparison — flag planning misalignments</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>SayComply: Grounding Field Robotic Tasks in Operational Compliance Through Retrieval-Based Language Models</b> &mdash; hierarchical RAG over operational manuals grounds LLM planning in site-specific compliance documents</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>ReMEmbR: Building and Reasoning Over Long-Horizon Spatio-Temporal Memory for Robot Navigation</b> &mdash; retrieval over temporal metadata, spatial coordinates, and image embeddings for long-horizon navigation QA</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>RACCOON: Grounding Embodied Question-Answering with State Summaries from Existing Robot Modules</b> &mdash; RAG-inspired retrieval of robot internal state injected into LLM prompts for embodied question answering</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>MultiTalk: Introspective and Extrospective Dialogue for Human-Environment-LLM Alignment</b> &mdash; dual dialogue loops — introspective self-check and extrospective environment comparison — flag planning misalignments</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm9">
@@ -321,10 +327,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Fine-tune with <b>next-token loss on the answer only</b>; the image and instruction are context, not supervised.</li>
 <li>LLaDA-V variant: replaces the autoregressive decoder with a <b>diffusion-based language decoder</b> — bidirectional attention over the response, not left-to-right.</li>
 <li>After tuning: the model answers visual questions, follows format instructions, and handles multi-turn dialogue about an image — with <b>8% less forgetting</b> than naive sequential fine-tuning.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>LLaDA-V: Large Language Diffusion Models with Visual Instruction Tuning</b> &mdash; diffusion-based MLLM with bidirectional attention for visual instruction following; reduces sequential forgetting</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Multimodal Continual Instruction Tuning with Dynamic Gradient Guidance</b> &mdash; geometric parameter-space guidance prevents catastrophic forgetting during sequential instruction tuning</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Streaming Video Instruction Tuning</b> &mdash; real-time frame-level Silence/Standby/Response prediction for instruction-following on streaming video</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>BabyVLM-V2: Toward Developmentally Grounded Pretraining and Benchmarking of Vision Foundation Models</b> &mdash; infant-centric pretraining curriculum; tests whether developmental ordering improves sample efficiency</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>LLaDA-V: Large Language Diffusion Models with Visual Instruction Tuning</b> &mdash; diffusion-based MLLM with bidirectional attention for visual instruction following; reduces sequential forgetting</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Multimodal Continual Instruction Tuning with Dynamic Gradient Guidance</b> &mdash; geometric parameter-space guidance prevents catastrophic forgetting during sequential instruction tuning</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Streaming Video Instruction Tuning</b> &mdash; real-time frame-level Silence/Standby/Response prediction for instruction-following on streaming video</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>BabyVLM-V2: Toward Developmentally Grounded Pretraining and Benchmarking of Vision Foundation Models</b> &mdash; infant-centric pretraining curriculum; tests whether developmental ordering improves sample efficiency</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm10">
@@ -338,10 +344,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>SEASON: compute a <b>contrastive decoding score</b> — penalize tokens whose probability rises when the image is replaced with a blank.</li>
 <li>Perceptual-evidence anchoring: enforce that the model cites an image patch before asserting an attribute — the patch acts as a <b>verifiable evidence anchor</b>.</li>
 <li>With grounding: model outputs <b>'blue'</b>. Hallucination rate on ScienceQA drops from <b>28% to 11%</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>SEASON: Mitigating Temporal Hallucination in Video LLMs via Self-Diagnostic Contrastive Decoding</b> &mdash; self-diagnostic contrastive decoding suppresses tokens whose probability increases when visual input is absent</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>See It, Say It, Sorted: An Iterative Training-Free Framework for Visually-Grounded Multimodal Reasoning in LVLMs</b> &mdash; iterative evidence-grounded decoding anchors each assertion to a verifiable image region</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Perceptual-Evidence Anchored Reinforced Learning for Multimodal Reasoning</b> &mdash; RL reward tied to perceptual evidence citation; teaches the model to ground claims before asserting them</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MAD: Modality-Adaptive Decoding for Mitigating Cross-Modal Hallucinations in MLLMs</b> &mdash; task-driven modality weighting suppresses the dominant modality from overriding the weaker one</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>SEASON: Mitigating Temporal Hallucination in Video LLMs via Self-Diagnostic Contrastive Decoding</b> &mdash; self-diagnostic contrastive decoding suppresses tokens whose probability increases when visual input is absent</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>See It, Say It, Sorted: An Iterative Training-Free Framework for Visually-Grounded Multimodal Reasoning in LVLMs</b> &mdash; iterative evidence-grounded decoding anchors each assertion to a verifiable image region</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Perceptual-Evidence Anchored Reinforced Learning for Multimodal Reasoning</b> &mdash; RL reward tied to perceptual evidence citation; teaches the model to ground claims before asserting them</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MAD: Modality-Adaptive Decoding for Mitigating Cross-Modal Hallucinations in MLLMs</b> &mdash; task-driven modality weighting suppresses the dominant modality from overriding the weaker one</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm11">
@@ -355,10 +361,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Step 2: model detects all people, filters those at x &lt; 412 → <b>4 people on the left</b>.</li>
 <li>Step 3: model checks shirt color for each of 4 people → <b>2 wearing red</b>.</li>
 <li>Final answer: <b>'2'</b>. Without CoT the model outputs '5' (all red-shirt people, ignoring the spatial filter).</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>NavForesee: A Unified Vision-Language World Model for Hierarchical Planning and Embodied Navigation</b> &mdash; VLM generates multi-step reasoning traces about the scene that directly guide hierarchical navigation decisions</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DecoVLN: Decoupling Observation Reasoning and Correction for Vision-and-Language Navigation</b> &mdash; separate modules for scene understanding and trajectory correction; each gets its own chain-of-thought pass</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Seeing What Matters: A Training-Free Self-Guided Framework for Multimodal Detail Perception and Reasoning</b> &mdash; gradient-weighted attention and PCA reconstruction steer the model toward relevant image regions for multi-hop reasoning</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CCCaption: Dual-Reward RL for Complete and Correct Image Captioning</b> &mdash; RL with dual reward (completeness + correctness) trains the model to reason over all image regions before captioning</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>NavForesee: A Unified Vision-Language World Model for Hierarchical Planning and Embodied Navigation</b> &mdash; VLM generates multi-step reasoning traces about the scene that directly guide hierarchical navigation decisions</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DecoVLN: Decoupling Observation Reasoning and Correction for Vision-and-Language Navigation</b> &mdash; separate modules for scene understanding and trajectory correction; each gets its own chain-of-thought pass</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Seeing What Matters: A Training-Free Self-Guided Framework for Multimodal Detail Perception and Reasoning</b> &mdash; gradient-weighted attention and PCA reconstruction steer the model toward relevant image regions for multi-hop reasoning</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>CCCaption: Dual-Reward RL for Complete and Correct Image Captioning</b> &mdash; RL with dual reward (completeness + correctness) trains the model to reason over all image regions before captioning</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm12">
@@ -372,10 +378,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Trainable parameters: <b>2 &times; d &times; r per layer</b>. For d=4096, r=16: 131K per layer vs 16.8M for full fine-tune → <b>99.2% reduction</b>.</li>
 <li>Fine-tune on <b>500 robot demonstrations</b> of a new pick-and-place task. Training time: <b>4 hours on 1 GPU</b> vs 3 days for full fine-tune.</li>
 <li>Task success: <b>79% (LoRA) vs 81% (full fine-tune)</b> — within 2% at 1% of the compute cost.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>FairLLaVA: Fairness-Aware Parameter-Efficient Fine-Tuning for Large Vision-Language Assistants</b> &mdash; LoRA fine-tuning with fairness constraints; shows PEFT can satisfy multiple objectives simultaneously</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Bootstrap Dynamic-Aware 3D Visual Representation for Scalable Robot Learning</b> &mdash; efficient 3D-aware adapter trained on top of a frozen 2D backbone for scalable robot perception</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>M4-SAM: Multi-Modal Mixture-of-Experts with Memory-Augmented SAM for RGB-D Video Salient Object Detection</b> &mdash; mixture-of-experts adapters with modality-specific routing inside a frozen SAM backbone</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>KALM: Keypoint Abstraction Using Large Models for Object-Relative Imitation Learning</b> &mdash; VLM auto-proposes task-relevant keypoints via a lightweight adapter; verifies consistency against robot demonstrations</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>FairLLaVA: Fairness-Aware Parameter-Efficient Fine-Tuning for Large Vision-Language Assistants</b> &mdash; LoRA fine-tuning with fairness constraints; shows PEFT can satisfy multiple objectives simultaneously</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Bootstrap Dynamic-Aware 3D Visual Representation for Scalable Robot Learning</b> &mdash; efficient 3D-aware adapter trained on top of a frozen 2D backbone for scalable robot perception</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>M4-SAM: Multi-Modal Mixture-of-Experts with Memory-Augmented SAM for RGB-D Video Salient Object Detection</b> &mdash; mixture-of-experts adapters with modality-specific routing inside a frozen SAM backbone</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>KALM: Keypoint Abstraction Using Large Models for Object-Relative Imitation Learning</b> &mdash; VLM auto-proposes task-relevant keypoints via a lightweight adapter; verifies consistency against robot demonstrations</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm13">
@@ -389,10 +395,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Merge: <span class='eq'>&theta;&#7502;&#7506;&#7493;&#7506;&#7516;&#7496;&#7507; = &theta;&#7502;&#7476;&#7486;&#7466; + &Sigma;&#7522; &lambda;&#7522;&tau;&#7522;</span> with <b>&lambda;&#7522; = 0.4</b> learned by routing.</li>
 <li>MergeVLA sparsity: threshold task vector magnitudes below <b>0.01</b> to zero — remove interference from low-magnitude overlapping updates.</li>
 <li>Merged model success: <b>pick 82%, place 79%, push 74%, pour 71%</b> — within 5% of individual fine-tuned models with <b>1/4 the storage</b>.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist Vision-Language-Action Agent</b> &mdash; task-mask sparsity and value-projection routing merge single-skill VLA models into a generalist without joint retraining</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>LIMT: Language-Informed Multi-Task Visual World Models</b> &mdash; language-extracted task representations exploit task similarity across skills; world model conditions on learned task embeddings</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Generalizable Imitation Learning Through Pre-Trained Representations</b> &mdash; pretrained ViT patch embeddings extract semantically stable keypoints shared across object categories</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Same or Not: Enhancing Visual Perception in Vision-Language Models</b> &mdash; contrastive pretraining for fine-grained similarity enables the backbone to distinguish subtly different skills or objects</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>MergeVLA: Cross-Skill Model Merging Toward a Generalist Vision-Language-Action Agent</b> &mdash; task-mask sparsity and value-projection routing merge single-skill VLA models into a generalist without joint retraining</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>LIMT: Language-Informed Multi-Task Visual World Models</b> &mdash; language-extracted task representations exploit task similarity across skills; world model conditions on learned task embeddings</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Generalizable Imitation Learning Through Pre-Trained Representations</b> &mdash; pretrained ViT patch embeddings extract semantically stable keypoints shared across object categories</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Same or Not: Enhancing Visual Perception in Vision-Language Models</b> &mdash; contrastive pretraining for fine-grained similarity enables the backbone to distinguish subtly different skills or objects</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm14">
@@ -406,10 +412,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Agent step 2: call search tool → retrieves SDS PDF from OSHA database. <b>Tool returns page 3, ventilation section.</b></li>
 <li>Agent step 3: LLM reads retrieved text → <b>'Yes: local exhaust ventilation required; TLV 200 ppm.'</b></li>
 <li>Agent composes final answer with a <b>cited source and a concrete ventilation spec</b> — neither hallucinated from memory nor requiring human lookup.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>AgentDet: A Shared-Blackboard Multi-Agent Framework for Zero-/Few-Shot Object Detection</b> &mdash; Scout/Pinner/Curator/Judge agents share a blackboard state; each tool call updates shared context for the next agent</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RAAS: LLM Agentic System Architecture Search with GRPO</b> &mdash; uses GRPO to search over possible tool-use architectures; finds efficient agentic loops automatically</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>U-Mind: A Unified Framework for Real-Time Multimodal Interaction with Audiovisual Input</b> &mdash; unified agentic framework routes audiovisual inputs through specialized perception tools with real-time latency</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>VLM-GroNav: Robot Navigation Using Physically Grounded Vision-Language Models in Outdoor Environments</b> &mdash; VLM + in-context learning dynamically refines traversability estimates from proprioceptive feedback; replans trajectory online</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>AgentDet: A Shared-Blackboard Multi-Agent Framework for Zero-/Few-Shot Object Detection</b> &mdash; Scout/Pinner/Curator/Judge agents share a blackboard state; each tool call updates shared context for the next agent</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RAAS: LLM Agentic System Architecture Search with GRPO</b> &mdash; uses GRPO to search over possible tool-use architectures; finds efficient agentic loops automatically</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>U-Mind: A Unified Framework for Real-Time Multimodal Interaction with Audiovisual Input</b> &mdash; unified agentic framework routes audiovisual inputs through specialized perception tools with real-time latency</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>VLM-GroNav: Robot Navigation Using Physically Grounded Vision-Language Models in Outdoor Environments</b> &mdash; VLM + in-context learning dynamically refines traversability estimates from proprioceptive feedback; replans trajectory online</div></li></ul>
 </div>
 
 <div class="fam rich" id="fm15">
@@ -423,10 +429,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>RNED: add a <b>Rotary Number Encoding/Decoding head</b> — standard tokenizers mis-tokenize numerical values like '1.42 mm' into meaningless subwords; RNED tokenizes measurements as structured numbers.</li>
 <li>After domain fine-tuning: AUC on Alzheimer's detection <b>0.91 vs 0.73</b> (general VLM baseline).</li>
 <li>GeoDiT: same pattern for geospatial — VLM pretrained on <b>1.2M satellite image + text</b> pairs outperforms general VLM by <b>19 F1 points</b> on land-use classification.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>EMAD: Evidence-Centric Grounded Multimodal Diagnosis for Alzheimer's Disease</b> &mdash; evidence-grounded multimodal VLM for Alzheimer's diagnosis; evidence citation prevents hallucination of clinical findings</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RNED: Rotary Number Encoding and Decoding for Medical VLMs</b> &mdash; specialized tokenizer for numerical values in clinical text; prevents mis-tokenization of measurements and scores</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeoDiT: A Diffusion-based Vision-Language Model for Geospatial Understanding</b> &mdash; VLM pretrained on satellite image-text pairs for geospatial reasoning and land-use classification</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>From Panel to Pixel: Zoom-In Vision-Language Pretraining from Biomedical Scientific Literature</b> &mdash; hierarchical figure-panel-patch supervision from biomedical papers; learns fine-grained scientific image understanding</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>EMAD: Evidence-Centric Grounded Multimodal Diagnosis for Alzheimer's Disease</b> &mdash; evidence-grounded multimodal VLM for Alzheimer's diagnosis; evidence citation prevents hallucination of clinical findings</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RNED: Rotary Number Encoding and Decoding for Medical VLMs</b> &mdash; specialized tokenizer for numerical values in clinical text; prevents mis-tokenization of measurements and scores</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GeoDiT: A Diffusion-based Vision-Language Model for Geospatial Understanding</b> &mdash; VLM pretrained on satellite image-text pairs for geospatial reasoning and land-use classification</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>From Panel to Pixel: Zoom-In Vision-Language Pretraining from Biomedical Scientific Literature</b> &mdash; hierarchical figure-panel-patch supervision from biomedical papers; learns fine-grained scientific image understanding</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -442,7 +448,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="vla-explained.html">Vision-Language-Action</a> &middot; <a href="world-models-explained.html">World Models</a> &middot; <a href="diffusion-policies-explained.html">Diffusion Policies</a> &middot; <a href="gaussian-splatting-explained.html">3D Gaussian Splatting</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#fnd">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="vla-explained.html">Vision-Language-Action</a> &middot; <a href="world-models-explained.html">World Models</a> &middot; <a href="diffusion-policies-explained.html">Diffusion Policies</a> &middot; <a href="gaussian-splatting-explained.html">3D Gaussian Splatting</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Foundation Models explainer &middot; mechanism diagrams are live JavaScript (assets/fm-anim.js) &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the reasoning engine inside the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/fm-anim.js"></script>
 </body></html>

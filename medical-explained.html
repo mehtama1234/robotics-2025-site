@@ -66,7 +66,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#102422;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#061412}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#102422}.op b{color:var(--accent-deep)}
@@ -186,10 +192,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>RCM constraint: Jacobian null-space projection keeps port displacement < <b>0.2 mm</b></li>
 <li>Latency budget: sense→compute→actuate must fit in <b>5 ms</b> or surgeon perceives lag</li>
 <li>Force feedback scaled same ratio: 0.1 N at tip → <b>0.5 N</b> felt at console</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sensory Glove-Based Surgical Robot User Interface</b> &mdash; glove captures finger intent; mapped to instrument motion with haptic feedback</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>AR-Based Endoscope Control for Laparoscopic Surgery</b> &mdash; augmented-reality overlay guides the scope toward a target region</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>MEDiC: Autonomous Exposure for Robotic Dissection</b> &mdash; learned policy autonomously positions tissue for the next dissection step</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DRL Semi-Autonomous Magnetic Micro-Robot Navigation</b> &mdash; deep RL shares control with the surgeon for micro-robot steering</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Sensory Glove-Based Surgical Robot User Interface</b> &mdash; glove captures finger intent; mapped to instrument motion with haptic feedback</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>AR-Based Endoscope Control for Laparoscopic Surgery</b> &mdash; augmented-reality overlay guides the scope toward a target region</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>MEDiC: Autonomous Exposure for Robotic Dissection</b> &mdash; learned policy autonomously positions tissue for the next dissection step</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DRL Semi-Autonomous Magnetic Micro-Robot Navigation</b> &mdash; deep RL shares control with the surgeon for micro-robot steering</div></li></ul>
 </div>
 
 <div class="fam rich" id="md2">
@@ -203,10 +209,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Deformation prior: as-rigid-as-possible energy with λ = <b>0.8</b> keeps local rigidity</li>
 <li>Depth scale recovered from known instrument diameter: <b>8 mm</b> trocar shaft</li>
 <li>Map: <b>2D Gaussians</b> splat; per-frame refit in ~<b>12 ms</b> on RTX 3090</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Advancing Dense Endoscopic Reconstruction with Gaussian Splatting (Endo-2DTAM)</b> &mdash; 2D-Gaussian-SLAM reconstructs a deformable colon lumen from monocular endoscopic video</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bilateral Structural Intensity-Depth Registration for Flexible Endoscope</b> &mdash; coupled RGB and depth alignment compensates endoscope flex</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Remote: Real-Time Endoscope Ego-Motion Estimation</b> &mdash; fast monocular ego-motion for tool-in-lumen localization</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>SLAM Assisted 3D Tracking for Laparoscopic Surgery</b> &mdash; SLAM-derived map priors stabilize instrument tracking under deformation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Advancing Dense Endoscopic Reconstruction with Gaussian Splatting (Endo-2DTAM)</b> &mdash; 2D-Gaussian-SLAM reconstructs a deformable colon lumen from monocular endoscopic video</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Bilateral Structural Intensity-Depth Registration for Flexible Endoscope</b> &mdash; coupled RGB and depth alignment compensates endoscope flex</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Remote: Real-Time Endoscope Ego-Motion Estimation</b> &mdash; fast monocular ego-motion for tool-in-lumen localization</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>SLAM Assisted 3D Tracking for Laparoscopic Surgery</b> &mdash; SLAM-derived map priors stabilize instrument tracking under deformation</div></li></ul>
 </div>
 
 <div class="fam rich" id="md3">
@@ -220,10 +226,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Obstacle: vessel at <b>18 mm</b> depth; planned path arcs 8° to clear by 3 mm margin</li>
 <li>MPC horizon: <b>10 steps</b>, 1 mm per step; replan every 2 mm of insertion</li>
 <li>Final error: tip lands within <b>1.4 mm</b> of target in phantom study (n=20)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Steerable Tape-Spring Needle for Autonomous Sharp Turns</b> &mdash; tape-spring mechanism enables tight-radius turns unreachable by bevel-tip designs</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Resolution-Optimal Motion Planning for Needle Steering in Lung</b> &mdash; plans a path through lung that meets accuracy requirements with fewest control steps</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Model Predictive Control for 3D Steerable Needles</b> &mdash; MPC tracks planned paths in real tissue using online model updates</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ultrasound-Guided Robotic Blood Drawing</b> &mdash; image-guided autonomy localizes and punctures a vein without operator input</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Steerable Tape-Spring Needle for Autonomous Sharp Turns</b> &mdash; tape-spring mechanism enables tight-radius turns unreachable by bevel-tip designs</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Resolution-Optimal Motion Planning for Needle Steering in Lung</b> &mdash; plans a path through lung that meets accuracy requirements with fewest control steps</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Model Predictive Control for 3D Steerable Needles</b> &mdash; MPC tracks planned paths in real tissue using online model updates</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Ultrasound-Guided Robotic Blood Drawing</b> &mdash; image-guided autonomy localizes and punctures a vein without operator input</div></li></ul>
 </div>
 
 <div class="fam rich" id="md4">
@@ -237,10 +243,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Hysteresis model: Prandtl-Ishlinskii with <b>12 play operators</b> reduces error by 60%</li>
 <li>Tip position error: <b>1.8 mm</b> RMS after learned correction vs 5.1 mm open-loop</li>
 <li>FEM timestep: <b>4 ms</b> (quasi-static, 3 Newton iterations per step)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Accelerated Quasi-Static FEM for Continuum Robots</b> &mdash; fast FEM simulation enables real-time model-based control of soft bodies</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</b> &mdash; characterizes how hysteresis helps or hurts position tracking; design implications</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Variable-Stiffness Nasotracheal Intubation Robot</b> &mdash; stiffness tuning navigates the nasal passage without tissue trauma</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning-Based Tip Contact Force for FBG-Embedded Continuum Robots</b> &mdash; fiber-Bragg gratings sense shape; learned model recovers contact force at the tip</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Accelerated Quasi-Static FEM for Continuum Robots</b> &mdash; fast FEM simulation enables real-time model-based control of soft bodies</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</b> &mdash; characterizes how hysteresis helps or hurts position tracking; design implications</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Variable-Stiffness Nasotracheal Intubation Robot</b> &mdash; stiffness tuning navigates the nasal passage without tissue trauma</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning-Based Tip Contact Force for FBG-Embedded Continuum Robots</b> &mdash; fiber-Bragg gratings sense shape; learned model recovers contact force at the tip</div></li></ul>
 </div>
 
 <div class="fam rich" id="md5">
@@ -254,10 +260,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>RL policy: trained in sim on <b>1,000</b> procedurally generated vascular phantoms</li>
 <li>Sim-to-real gap: domain randomization on vessel diameter ±<b>20%</b>, friction ±<b>30%</b></li>
 <li>Navigation success: <b>91%</b> to target within 3 mm in silicone phantom (n=50)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>VascularPilot3D: Autonomous Endovascular Navigation</b> &mdash; 3D vessel map + learned policy navigates to a target without manual steering</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Sim4EndoR: Simulation for Endovascular Robotics with RL</b> &mdash; physics-accurate vascular simulator trains RL policies that transfer to real catheters</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Image-Based Compliance Control for Ferromagnetic Guidewire</b> &mdash; visual servoing compensates guidewire flex under magnetic steering</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>A Robust DRL Framework for Guidewire Navigation</b> &mdash; deep RL steers guidewire in branching phantoms; trained entirely in simulation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>VascularPilot3D: Autonomous Endovascular Navigation</b> &mdash; 3D vessel map + learned policy navigates to a target without manual steering</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Sim4EndoR: Simulation for Endovascular Robotics with RL</b> &mdash; physics-accurate vascular simulator trains RL policies that transfer to real catheters</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Image-Based Compliance Control for Ferromagnetic Guidewire</b> &mdash; visual servoing compensates guidewire flex under magnetic steering</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>A Robust DRL Framework for Guidewire Navigation</b> &mdash; deep RL steers guidewire in branching phantoms; trained entirely in simulation</div></li></ul>
 </div>
 
 <div class="fam rich" id="md6">
@@ -271,10 +277,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Temporal model: TCN with receptive field of <b>60 s</b> at 1 fps sampling</li>
 <li>Accuracy: <b>89.3%</b> frame-level on held-out 10 videos</li>
 <li>Phase anticipation: predicts next phase <b>45 s</b> ahead at 78% accuracy</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>SurgPLAN++: Surgical Phase Localization and Anticipation</b> &mdash; localizes the current phase and predicts the next step from video + kinematics</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LEMON: Large Endoscopic Dataset and Foundation Model</b> &mdash; a large-scale benchmark and pretrained encoder for endoscopic understanding</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>A Stitch in Time: Self-Supervised Surgical Workflow Recognition</b> &mdash; self-supervised pretraining on surgical video without phase-label annotation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>TRCoRSurg: Surgical Triplet Recognition for Workflow</b> &mdash; recognizes (instrument, verb, target) triplets in real time from laparoscopic video</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>SurgPLAN++: Surgical Phase Localization and Anticipation</b> &mdash; localizes the current phase and predicts the next step from video + kinematics</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>LEMON: Large Endoscopic Dataset and Foundation Model</b> &mdash; a large-scale benchmark and pretrained encoder for endoscopic understanding</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>A Stitch in Time: Self-Supervised Surgical Workflow Recognition</b> &mdash; self-supervised pretraining on surgical video without phase-label annotation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>TRCoRSurg: Surgical Triplet Recognition for Workflow</b> &mdash; recognizes (instrument, verb, target) triplets in real time from laparoscopic video</div></li></ul>
 </div>
 
 <div class="fam rich" id="md7">
@@ -288,10 +294,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>CBF: barrier h(x) = distance to nerve > <b>2 mm</b>; QP filter on policy output</li>
 <li>Thread tension limit: <b>0.15 N</b>; force sensor triggers re-grip if exceeded</li>
 <li>Success rate: <b>78%</b> full-suture completion in ex vivo porcine tissue (n=40)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Suture Thread Modeling Using Control Barrier Functions</b> &mdash; CBF constraints on a learned suturing policy prevent unsafe thread tension</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Continuous Capsulorhexis via Force-Vision Control</b> &mdash; force-vision loop closes the capsular tear without surgeon guidance</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Bimanual Manipulation of Deformable Objects</b> &mdash; learned bimanual policy repositions soft tissue under visual feedback</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Autonomous Suturing Method for Minimally Invasive Surgery</b> &mdash; end-to-end learned policy drives needle in, pulls thread through, and ties</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Suture Thread Modeling Using Control Barrier Functions</b> &mdash; CBF constraints on a learned suturing policy prevent unsafe thread tension</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Autonomous Continuous Capsulorhexis via Force-Vision Control</b> &mdash; force-vision loop closes the capsular tear without surgeon guidance</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Autonomous Bimanual Manipulation of Deformable Objects</b> &mdash; learned bimanual policy repositions soft tissue under visual feedback</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Autonomous Suturing Method for Minimally Invasive Surgery</b> &mdash; end-to-end learned policy drives needle in, pulls thread through, and ties</div></li></ul>
 </div>
 
 <div class="fam rich" id="md8">
@@ -305,10 +311,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>iOCT scan rate: <b>100,000 A-scans/s</b>; depth resolution 4 μm in tissue</li>
 <li>Differentiable DRR: renders X-ray from CT in <b>30 ms</b> for gradient-based alignment</li>
 <li>Registration error: <b>1.2 mm</b> mean surface distance after convergence (10 iterations)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-Time Deformation-Aware Subretinal Injection Under iOCT</b> &mdash; OCT tracks retinal deformation in real time; adapts injection depth on the fly</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-View 2D/3D Registration with Differentiable X-Ray Rendering</b> &mdash; differentiable DRR aligns intraoperative X-ray to the 3D plan without fiducials</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>UltraDP: Force-Aware Ultrasound Diffusion Policy</b> &mdash; diffusion policy integrates force and ultrasound for contact-rich scanning</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Series-Parallel Hybrid Robot for Prostate Transperineal Puncture</b> &mdash; hybrid kinematic structure keeps the needle on the US-guided target under prostate motion</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Real-Time Deformation-Aware Subretinal Injection Under iOCT</b> &mdash; OCT tracks retinal deformation in real time; adapts injection depth on the fly</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Multi-View 2D/3D Registration with Differentiable X-Ray Rendering</b> &mdash; differentiable DRR aligns intraoperative X-ray to the 3D plan without fiducials</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>UltraDP: Force-Aware Ultrasound Diffusion Policy</b> &mdash; diffusion policy integrates force and ultrasound for contact-rich scanning</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Series-Parallel Hybrid Robot for Prostate Transperineal Puncture</b> &mdash; hybrid kinematic structure keeps the needle on the US-guided target under prostate motion</div></li></ul>
 </div>
 
 <div class="fam rich" id="md9">
@@ -322,10 +328,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Image quality metric: <b>CNR</b> (contrast-to-noise ratio); logged at 30 Hz</li>
 <li>Controller: admittance control with stiffness <b>500 N/m</b> normal, 50 N/m lateral</li>
 <li>Scan coverage: <b>94%</b> of breast surface at acceptable quality vs 71% fixed-trajectory</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Robust Robotic Breast Ultrasound Scanning</b> &mdash; force-controlled scanning maintains contact and image quality across breast geometry</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Quality-Driven Adaptive Control for Robotic Ultrasound</b> &mdash; uses image quality metrics to adaptively adjust probe pose during the scan</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Tactile-Guided Robotic Ultrasound for Intercostal Imaging</b> &mdash; tactile sensing finds rib gaps; positions probe without pre-planned trajectories</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Shape Completion in Robotic Ultrasound Spine Imaging</b> &mdash; point-cloud shape completion fills in occluded vertebrae from partial US views</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Robust Robotic Breast Ultrasound Scanning</b> &mdash; force-controlled scanning maintains contact and image quality across breast geometry</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Quality-Driven Adaptive Control for Robotic Ultrasound</b> &mdash; uses image quality metrics to adaptively adjust probe pose during the scan</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Tactile-Guided Robotic Ultrasound for Intercostal Imaging</b> &mdash; tactile sensing finds rib gaps; positions probe without pre-planned trajectories</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Shape Completion in Robotic Ultrasound Spine Imaging</b> &mdash; point-cloud shape completion fills in occluded vertebrae from partial US views</div></li></ul>
 </div>
 
 <div class="fam rich" id="md10">
@@ -339,10 +345,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Model: CNN-LSTM; input shape <b>[8, 50]</b> per window (8 ch, 50 samples)</li>
 <li>DOF: predicts <b>5 finger angles</b> independently; RMSE 8.2° on test set</li>
 <li>Latency: <b>72 ms</b> end-to-end (feature extraction + inference + actuator command)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Grasp Forces from EMG for Prosthetic Control</b> &mdash; CNN maps surface EMG to grip-force commands for a prosthetic hand</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>E-BAR: Elderly Assistance Robot</b> &mdash; mobile robot detects fall risk and assists walking without requiring a wearable</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Multi-Stage CNN-LSTM for Finger Angle Estimation from EMG</b> &mdash; cascaded network decodes individual finger angles from forearm EMG</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Adaptive Walker with Tactile and IMU Sensing</b> &mdash; walker adjusts support in real time from gait phase estimated by IMU + tactile foot sensors</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Grasp Forces from EMG for Prosthetic Control</b> &mdash; CNN maps surface EMG to grip-force commands for a prosthetic hand</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>E-BAR: Elderly Assistance Robot</b> &mdash; mobile robot detects fall risk and assists walking without requiring a wearable</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Multi-Stage CNN-LSTM for Finger Angle Estimation from EMG</b> &mdash; cascaded network decodes individual finger angles from forearm EMG</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Adaptive Walker with Tactile and IMU Sensing</b> &mdash; walker adjusts support in real time from gait phase estimated by IMU + tactile foot sensors</div></li></ul>
 </div>
 
 <div class="fam rich" id="md11">
@@ -356,10 +362,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Swarm: <b>4 micro-robots</b>, 200 μm each; magnetic interaction ≤0.5 mT at 500 μm separation</li>
 <li>Position tracking: overhead camera + <b>Kalman filter</b>; RMS error 0.3 mm</li>
 <li>Navigation: capsule reaches target in <b>28 s</b> avg (n=15 phantom trials)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Ensemble Control of a Capsule Robot Arm via External Fields</b> &mdash; external coil array steers an untethered capsule arm through a lumen</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Magnetic Microswarms in Liquid and Air</b> &mdash; coordinated swarms navigate both liquid and air-filled chambers under magnetic actuation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Flow-Aware Navigation of Magnetic Micro-Robots via PINN</b> &mdash; a physics-informed network predicts flow field; controller compensates for drift</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DNA Origami-Engineered Tetrahedral Nanorobots</b> &mdash; nanoscale origami structures navigate and release payload at a target site</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Ensemble Control of a Capsule Robot Arm via External Fields</b> &mdash; external coil array steers an untethered capsule arm through a lumen</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Magnetic Microswarms in Liquid and Air</b> &mdash; coordinated swarms navigate both liquid and air-filled chambers under magnetic actuation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Flow-Aware Navigation of Magnetic Micro-Robots via PINN</b> &mdash; a physics-informed network predicts flow field; controller compensates for drift</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DNA Origami-Engineered Tetrahedral Nanorobots</b> &mdash; nanoscale origami structures navigate and release payload at a target site</div></li></ul>
 </div>
 
 <div class="fam rich" id="md12">
@@ -373,10 +379,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Deformation field: B-spline with <b>16×16×16</b> control points; optimized with NCC + BEnd</li>
 <li>Dice score: <b>0.83</b> on liver, 0.71 on gallbladder with 10-shot SAM adaptation</li>
 <li>Registration time: <b>2.1 s</b> per volume pair on RTX 3090 (vs 45 min for ANTs CPU)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Focus on Background: Few-Shot Medical Segmentation with SAM</b> &mdash; adapts SAM to medical imaging by re-weighting background context in few-shot settings</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Dynamic Stream Network for Deformable Medical Image Registration</b> &mdash; dual-stream network captures large and fine-scale deformations jointly</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Multi-View 2D/3D Registration with Differentiable X-Ray Rendering</b> &mdash; differentiable DRR enables gradient-based alignment of intraoperative X-ray to CT plan</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>INSID3: Training-Free In-Context 3D Medical Segmentation</b> &mdash; in-context prompting with a pretrained model segments 3D volumes without task-specific training</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Focus on Background: Few-Shot Medical Segmentation with SAM</b> &mdash; adapts SAM to medical imaging by re-weighting background context in few-shot settings</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Dynamic Stream Network for Deformable Medical Image Registration</b> &mdash; dual-stream network captures large and fine-scale deformations jointly</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Multi-View 2D/3D Registration with Differentiable X-Ray Rendering</b> &mdash; differentiable DRR enables gradient-based alignment of intraoperative X-ray to CT plan</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>INSID3: Training-Free In-Context 3D Medical Segmentation</b> &mdash; in-context prompting with a pretrained model segments 3D volumes without task-specific training</div></li></ul>
 </div>
 
 <div class="fam rich" id="md13">
@@ -390,10 +396,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Topology: persistent homology at <b>H0 and H1</b>; Betti numbers summarize tissue connectivity</li>
 <li>MIL pooling: attention-weighted mean of <b>768-dim</b> patch embeddings (CONCH encoder)</li>
 <li>AUC: <b>0.94</b> for TCGA-NSCLC subtype classification (LUAD vs LUSC)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>TopoSlide: Topological Whole-Slide Pathology Learning</b> &mdash; persistent homology captures tissue-level structure beyond bag-of-patches models</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MLLM-HWSI: Hierarchical Whole-Slide Image Interpretation</b> &mdash; multi-level language model reads WSIs from patch to slide with clinical language</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>MASS: Mask-Guided Self-Supervision for 3D Medical Images</b> &mdash; self-supervised 3D pretraining via masked patches improves downstream segmentation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>SPECTRE: Volumetric CT Transformers for Diagnostic Prediction</b> &mdash; Transformer over 3D CT volumes for screening and staging tasks</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>TopoSlide: Topological Whole-Slide Pathology Learning</b> &mdash; persistent homology captures tissue-level structure beyond bag-of-patches models</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MLLM-HWSI: Hierarchical Whole-Slide Image Interpretation</b> &mdash; multi-level language model reads WSIs from patch to slide with clinical language</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>MASS: Mask-Guided Self-Supervision for 3D Medical Images</b> &mdash; self-supervised 3D pretraining via masked patches improves downstream segmentation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>SPECTRE: Volumetric CT Transformers for Diagnostic Prediction</b> &mdash; Transformer over 3D CT volumes for screening and staging tasks</div></li></ul>
 </div>
 
 <div class="fam rich" id="md14">
@@ -407,10 +413,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Hallucination rate: drops from <b>18%</b> to 6% after GRPO fine-tuning (CheXbert eval)</li>
 <li>Evidence grounding: bounding box IoU > <b>0.5</b> required before a finding is stated</li>
 <li>F1 on CheXpert-14: <b>0.71</b> vs 0.58 baseline supervised fine-tuning</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>OraPO: Oracle-Educated RL for Factual Radiology Reports</b> &mdash; GRPO with oracle-supervised reward suppresses hallucinated findings in radiology reports</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>EMAD: Evidence-Grounded Medical AI Diagnosis</b> &mdash; model localizes image evidence before stating a diagnosis, making errors traceable</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>LLaDA-MedV: Biomedical Diffusion VLM</b> &mdash; masked diffusion language model adapted for biomedical vision-language tasks</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Med-CMR: Complex Medical Reasoning Benchmark</b> &mdash; benchmark requiring multi-hop evidence integration across image, text, and clinical context</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>OraPO: Oracle-Educated RL for Factual Radiology Reports</b> &mdash; GRPO with oracle-supervised reward suppresses hallucinated findings in radiology reports</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>EMAD: Evidence-Grounded Medical AI Diagnosis</b> &mdash; model localizes image evidence before stating a diagnosis, making errors traceable</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>LLaDA-MedV: Biomedical Diffusion VLM</b> &mdash; masked diffusion language model adapted for biomedical vision-language tasks</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Med-CMR: Complex Medical Reasoning Benchmark</b> &mdash; benchmark requiring multi-hop evidence integration across image, text, and clinical context</div></li></ul>
 </div>
 
 <div class="fam rich" id="md15">
@@ -424,10 +430,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li>Diffusion: <b>1,000 denoising steps</b> during training; <b>50 DDIM steps</b> at inference</li>
 <li>FID on held-out pathology: <b>18.4</b> vs 31.2 for unconstrained diffusion baseline</li>
 <li>Downstream: classifier trained on <b>200 synthetic + 50 real</b> matches one on 250 real (Dice 0.79 vs 0.81)</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Sketch2CT: Structure-Aware 3D CT Volume Generation</b> &mdash; generates a full CT volume conditioned on a user-drawn anatomical sketch</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Anatomica: Topology-Controlled Anatomical Diffusion</b> &mdash; enforces anatomical topology (connectivity, nesting) during diffusion sampling</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Beyond Pixel Simulation: Pathology Image Generation</b> &mdash; diffusion model for histopathology trained on staining and diagnostic diversity</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Real2Sim2Real RetinalDepth-64K for Ophthalmic Surgery</b> &mdash; depth dataset from real retinal images + sim augmentation for surgical planning</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Sketch2CT: Structure-Aware 3D CT Volume Generation</b> &mdash; generates a full CT volume conditioned on a user-drawn anatomical sketch</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Anatomica: Topology-Controlled Anatomical Diffusion</b> &mdash; enforces anatomical topology (connectivity, nesting) during diffusion sampling</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Beyond Pixel Simulation: Pathology Image Generation</b> &mdash; diffusion model for histopathology trained on staining and diagnostic diversity</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Real2Sim2Real RetinalDepth-64K for Ophthalmic Surgery</b> &mdash; depth dataset from real retinal images + sim augmentation for surgical planning</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -444,7 +450,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="manipulation-explained.html">Manipulation</a> &middot; <a href="tactile-explained.html">Tactile</a> &middot; <a href="3d-perception-explained.html">3D Perception</a> &middot; <a href="hardware-explained.html">Hardware</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#md">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="manipulation-explained.html">Manipulation</a> &middot; <a href="tactile-explained.html">Tactile</a> &middot; <a href="3d-perception-explained.html">3D Perception</a> &middot; <a href="hardware-explained.html">Hardware</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Medical &amp; Surgical Robotics explainer &middot; mechanism diagrams are live JavaScript (assets/md-anim.js) &middot; the Endo-2DTAM colon reconstruction run is ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the perception of the <a href="the-machine.html">four-stage loop</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/md-anim.js"></script>
 </body></html>

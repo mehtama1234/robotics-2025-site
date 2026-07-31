@@ -76,7 +76,13 @@ h2{font-family:var(--serif);font-size:25px;letter-spacing:-.02em;margin:2px 0 14
 .papers li{display:flex;gap:9px;align-items:baseline;margin:8px 0;font-size:13px;color:#26302A;line-height:1.5}
 .vbadge{font-family:var(--mono);font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 5px;border-radius:4px;flex:none;color:#fff;position:relative;top:-1px}
 .vbadge.rb{background:var(--robo)}.vbadge.vb{background:var(--cvpr)}.vbadge.bb{background:var(--both)}
-.pt b{color:#16201a}
+.pt{flex:1}.pt b{color:#151007}
+.pnarr{font-size:13px;line-height:1.62;margin:5px 0 2px;max-width:76ch}
+.pnarr p{margin:5px 0}.pnarr p:first-child{margin-top:0}.pnarr b{color:var(--accent-deep)}
+.phow{font-size:12.5px;line-height:1.6;margin:7px 0 2px;max-width:76ch;border-left:2px solid var(--accent-lite);background:rgba(120,136,214,.07);padding:7px 12px;border-radius:0 7px 7px 0}
+.phow .phl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:4px}
+.phow p{margin:5px 0}.phow p:first-of-type{margin-top:0}.phow b{color:var(--accent-deep)}.phow ol,.phow ul{margin:4px 0;padding-left:18px}.phow li{margin:3px 0}
+.papers li{align-items:flex-start}
 .legend{font-family:var(--mono);font-size:11px;color:var(--graphite);margin-top:12px;line-height:1.8}
 .opgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}@media(max-width:620px){.opgrid{grid-template-columns:1fr}}
 .op{border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:11px 13px;font-size:13.5px;color:#26302A}.op b{color:var(--accent-deep)}
@@ -191,10 +197,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Train until the policy generalizes.</b> After 40 k episodes the grasp success rate across 200 held-out random environments plateaus at 91%. The policy has learned to grip firmly enough for the heavy case and gently enough for the light case.</li>
 <li><b>Deploy to the real robot.</b> The real table has &mu;&asymp;0.55 and the cube weighs 112 g &mdash; both inside the training cloud. On 50 real trials the robot achieves 88% success, matching the sim holdout rate within noise.</li>
 <li><b>Diagnose failures to tighten the range.</b> The 6 failures all occur when the cube is placed near the table edge (position not randomized). We add a position randomization of &plusmn;4 cm and retrain; real success rises to 94%.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>One Net to Rule Them All</b> &mdash; cross-platform randomization lets one net fly distinct quadcopters</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DrEureka</b> &mdash; an LLM auto-designs the reward AND randomization ranges, no manual tuning</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DemoStart</b> &mdash; demo-led auto-curriculum + randomization for zero-shot dexterous transfer</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Privileged-Dreamer</b> &mdash; estimates hidden parameters (mass, friction) online to condition the policy</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>One Net to Rule Them All</b> &mdash; cross-platform randomization lets one net fly distinct quadcopters</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DrEureka</b> &mdash; an LLM auto-designs the reward AND randomization ranges, no manual tuning</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DemoStart</b> &mdash; demo-led auto-curriculum + randomization for zero-shot dexterous transfer</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Privileged-Dreamer</b> &mdash; estimates hidden parameters (mass, friction) online to condition the policy</div></li></ul>
 </div>
 
 <div class="fam rich" id="se2">
@@ -208,10 +214,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Roll out the learned simulator for policy search.</b> We run 10,000 simulated episodes of a peg-insertion task entirely inside the neural model, each episode 3 seconds at 50 Hz = 150 steps. Total wall time: 8 minutes on one GPU, versus 40 hours of real robot time for the same count.</li>
 <li><b>Transfer the trained policy.</b> The policy succeeds on the real peg task in 78 of 100 trials. A policy trained in the hand-coded rigid-body sim achieves only 51/100 because the rigid-body model ignores the arm&rsquo;s cable-driven joint flex.</li>
 <li><b>Iterate by adding real data.</b> We run the transferred policy on the real robot, collect 500 new failure trajectories, retrain the neural sim on the augmented dataset, and re-run policy search. After one round, real success rises to 89/100.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Denoising World Model Learning</b> &mdash; a learned world model gives first zero-shot humanoid transfer to snow/stairs</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>World Models for General Surgical Grasping</b> &mdash; a learned model with depth uncertainty hits 69% real surgical success</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>High-Density Visual Particle Dynamics</b> &mdash; learned particle dynamics, 2&times; faster than GNNs, keeps quality</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>World Model-Based Perception for Visual Legged Locomotion</b> &mdash; a world model closes the teacher-student gap for visual transfer</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Denoising World Model Learning</b> &mdash; a learned world model gives first zero-shot humanoid transfer to snow/stairs</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>World Models for General Surgical Grasping</b> &mdash; a learned model with depth uncertainty hits 69% real surgical success</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>High-Density Visual Particle Dynamics</b> &mdash; learned particle dynamics, 2&times; faster than GNNs, keeps quality</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>World Model-Based Perception for Visual Legged Locomotion</b> &mdash; a world model closes the teacher-student gap for visual transfer</div></li></ul>
 </div>
 
 <div class="fam rich" id="se3">
@@ -225,11 +231,11 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Import into Isaac Sim.</b> We load the mesh, set the mass and friction in the USD physics properties, and place the robot arm at the measured base position (x=0.42 m from the counter edge).</li>
 <li><b>Train a grasping policy in the replica sim.</b> After 20,000 episodes the policy achieves 94% in-sim success. Because the sim geometry matches the real counter, the policy learns the exact reach distance and camera viewpoint it will encounter in reality.</li>
 <li><b>Deploy and measure the gap.</b> Real-robot trials yield 89% success on the first day &mdash; a 5-point drop compared to 35+ points when using a generic sim. The remaining failures trace to lighting differences; adding a point-light at the measured fixture position closes half that gap.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Physically Embodied Gaussian Splatting</b> &mdash; dual particle+Gaussian: particles for physics, blobs for rendering</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Real-to-Sim Grasp</b> &mdash; maps real observations back into clean sim space to close the gap</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Locomotion Affordances + Photoreal Sims from Human Data</b> &mdash; radiance fields from 10h of human data become a photoreal locomotion sim</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>PhysX-Anything</b> &mdash; reconstructs a simulation-ready physical 3D asset from a single image</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>TieBot</b> &mdash; a real-to-sim-to-real loop learns to knot a tie from video</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Physically Embodied Gaussian Splatting</b> &mdash; dual particle+Gaussian: particles for physics, blobs for rendering</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Real-to-Sim Grasp</b> &mdash; maps real observations back into clean sim space to close the gap</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Locomotion Affordances + Photoreal Sims from Human Data</b> &mdash; radiance fields from 10h of human data become a photoreal locomotion sim</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>PhysX-Anything</b> &mdash; reconstructs a simulation-ready physical 3D asset from a single image</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>TieBot</b> &mdash; a real-to-sim-to-real loop learns to knot a tie from video</div></li></ul>
 </div>
 
 <div class="fam rich" id="se4">
@@ -243,11 +249,11 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Sample 2,000 synthetic demonstrations.</b> We draw 2,000 trajectories from the diffusion model, conditioned on randomized object start positions. Each sample takes 0.4 s; all 2,000 are ready in 13 minutes.</li>
 <li><b>Filter bad samples.</b> We run each synthetic trajectory through the physics simulator and flag any that collide with the table or drop the object. 312 of 2,000 (15.6%) are rejected, leaving 1,688 clean synthetic demos.</li>
 <li><b>Train imitation learning on the mixed dataset.</b> A BC policy trained on 50 real + 1,688 synthetic demos achieves 76% real-robot success. The same policy trained on 50 real demos only achieves 51%. The generative data roughly quadrupled effective dataset size.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Manipulate-Anything</b> &mdash; a VLM generates zero-shot trajectories; cloning from them beats human data</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>GenSim2</b> &mdash; LLMs write 100+ articulated task curricula &mdash; +20% over real data</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>DexGraspNet 2.0</b> &mdash; 3.5M synthetic grasps &rarr; 91% real success, zero-shot</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Video2Robo</b> &mdash; 3DGS turns one human video into scalable robot training data</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Synthetic Object Compositions</b> &mdash; composes 20M synthetic segments into 2M images for detection/grounding</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Manipulate-Anything</b> &mdash; a VLM generates zero-shot trajectories; cloning from them beats human data</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>GenSim2</b> &mdash; LLMs write 100+ articulated task curricula &mdash; +20% over real data</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>DexGraspNet 2.0</b> &mdash; 3.5M synthetic grasps &rarr; 91% real success, zero-shot</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Video2Robo</b> &mdash; 3DGS turns one human video into scalable robot training data</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Synthetic Object Compositions</b> &mdash; composes 20M synthetic segments into 2M images for detection/grounding</div></li></ul>
 </div>
 
 <div class="fam rich" id="se5">
@@ -261,10 +267,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Measure throughput.</b> Each arm completes one 15-second episode + 3-second reset = 18 s/episode. With 20 arms in parallel, the system collects 4,000 episodes per hour. A single-arm lab would take 83 hours for the same count.</li>
 <li><b>Run for one weekend.</b> 48 hours &times; 4,000 episodes/hour = 192,000 episodes collected. Hardware cost: 20 &times; $3,000 = $60,000. Running the equivalent in cloud GPU sim would cost ~$576,000 at $3/GPU-hr &mdash; parallel cheap hardware wins on cost for this task.</li>
 <li><b>Train on the large dataset.</b> A diffusion policy trained on 190,000 episodes achieves 84% real success. The same architecture trained on 5,000 episodes (what one arm collects in a day) achieves 61%. Scale drove the 23-point gain.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Mobile ALOHA</b> &mdash; low-cost whole-body teleop &mdash; complex mobile manipulation from 50 demos</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Universal Manipulation Interface (UMI)</b> &mdash; hand-held-gripper demos teach policies with no robot in the loop</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>HumanPlus</b> &mdash; 40 hours of human mocap &rarr; humanoid shadowing + imitation</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Open-TeleVision</b> &mdash; immersive stereo teleoperation for high-quality remote demos</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Mobile ALOHA</b> &mdash; low-cost whole-body teleop &mdash; complex mobile manipulation from 50 demos</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Universal Manipulation Interface (UMI)</b> &mdash; hand-held-gripper demos teach policies with no robot in the loop</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>HumanPlus</b> &mdash; 40 hours of human mocap &rarr; humanoid shadowing + imitation</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Open-TeleVision</b> &mdash; immersive stereo teleoperation for high-quality remote demos</div></li></ul>
 </div>
 
 <div class="fam rich" id="se6">
@@ -278,10 +284,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Train a shared policy on the combined dataset.</b> A transformer policy ingests camera images + language goal and outputs end-effector delta poses. It trains on all 24,000 episodes regardless of which arm collected them. Training takes 18 hours on 8 A100s.</li>
 <li><b>Deploy to a fourth, unseen arm.</b> We install the policy on a Kinova Gen3 that contributed zero training data. The shared policy outputs end-effector deltas; a local IK solver converts those to Kinova joint commands at 100 Hz. On 50 pick trials, success rate is 72%.</li>
 <li><b>Compare to arm-specific baseline.</b> A policy trained only on 1,000 Kinova-specific demonstrations achieves 58% on the same trials. Cross-embodiment sharing gave the equivalent of 10&times; more data, lifting success by 14 points without any Kinova teleoperation.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Scaling Cross-Embodied Learning (CrossFormer)</b> &mdash; one policy over 20 embodiments / 900k trajectories</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>One Policy to Run Them All</b> &mdash; morphology-agnostic encoders &rarr; zero-shot across legged bodies</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Octo</b> &mdash; a generalist policy pretrained on 800k Open X-Embodiment trajectories</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>RoboWheel</b> &mdash; a data engine scaling cross-embodiment learning from human demonstrations</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Scaling Cross-Embodied Learning (CrossFormer)</b> &mdash; one policy over 20 embodiments / 900k trajectories</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>One Policy to Run Them All</b> &mdash; morphology-agnostic encoders &rarr; zero-shot across legged bodies</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Octo</b> &mdash; a generalist policy pretrained on 800k Open X-Embodiment trajectories</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>RoboWheel</b> &mdash; a data engine scaling cross-embodiment learning from human demonstrations</div></li></ul>
 </div>
 
 <div class="fam rich" id="se7">
@@ -295,10 +301,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Collect 200 real trials to train the residual.</b> Each trial records the final pose error just before the peg contacts the hole rim. This is the supervision signal: we want the residual to predict the correction that would have made the contact succeed.</li>
 <li><b>Train a small residual network.</b> A 2-layer MLP (128 hidden units) maps a wrist-camera patch (32&times;32 pixels) &rarr; (&Delta;x, &Delta;z). Training on 200 samples takes 4 minutes. The network learns to read the visual gap between peg and hole and output the needed nudge.</li>
 <li><b>Deploy base + residual together.</b> The residual adds at most 3.5 mm of correction per step. On 200 fresh trials, success rate rises from 38% to 91%. The residual required only 200 real trials; training from scratch on real data needed 2,000 trials to reach 87%.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>TRANSIC</b> &mdash; human-in-the-loop residual policies correct several sim-to-real gap types</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>From Imitation to Refinement</b> &mdash; residual RL over a frozen policy recovers tight-tolerance precision</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>RL2AC</b> &mdash; 1000Hz adaptive control compensates disturbances a fixed policy can&rsquo;t</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Bridging the Sim-to-Real Gap via Information Bottleneck</b> &mdash; an info bottleneck learns privileged features for distillation</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>TRANSIC</b> &mdash; human-in-the-loop residual policies correct several sim-to-real gap types</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>From Imitation to Refinement</b> &mdash; residual RL over a frozen policy recovers tight-tolerance precision</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>RL2AC</b> &mdash; 1000Hz adaptive control compensates disturbances a fixed policy can&rsquo;t</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Bridging the Sim-to-Real Gap via Information Bottleneck</b> &mdash; an info bottleneck learns privileged features for distillation</div></li></ul>
 </div>
 
 <div class="fam rich" id="se8">
@@ -312,10 +318,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Optimize parameters to minimize prediction error.</b> We run a Bayesian optimization loop: at each iteration, sample (K_t, b, k, m), simulate the same sinusoidal sweep, compute MSE between simulated and real joint velocities. After 300 iterations the best fit is K_t=0.171, b=0.003, k=8,200 N/m, m=0.412 kg. Prediction MSE drops from 14.2 to 1.1 (rad/s)&sup2;.</li>
 <li><b>Rebuild the simulator with identified parameters.</b> We load these numbers into MuJoCo, replacing the manufacturer defaults. A forward simulation of a 2-second walk now tracks real joint angles with a mean error of 0.8&deg; versus 6.3&deg; before identification.</li>
 <li><b>Train a locomotion policy in the calibrated twin.</b> After 5 M sim steps the policy achieves a real-world walk success rate of 94% on flat ground, versus 71% when trained in the un-identified simulator with the same wall-clock training time.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge rb">ROBO</span><span class="pt"><b>Automated Creation of Digital Cousins</b> &mdash; geometry/semantics-preserving twins &rarr; 90% zero-shot success</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>URDFormer</b> &mdash; infers articulated simulation environments straight from real images</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Learning Object Properties via Differentiable Robot-Object Interaction</b> &mdash; proprioception-only system ID through differentiable sim</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Visual Forklift Zero-Shot Sim2Real</b> &mdash; a photoreal digital twin transfers with no real-world data</span></li></ul>
+  <ul class="papers"><li><span class="vbadge rb">ROBO</span><div class="pt"><b>Automated Creation of Digital Cousins</b> &mdash; geometry/semantics-preserving twins &rarr; 90% zero-shot success</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>URDFormer</b> &mdash; infers articulated simulation environments straight from real images</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Learning Object Properties via Differentiable Robot-Object Interaction</b> &mdash; proprioception-only system ID through differentiable sim</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Visual Forklift Zero-Shot Sim2Real</b> &mdash; a photoreal digital twin transfers with no real-world data</div></li></ul>
 </div>
 
 <div class="fam rich" id="se9">
@@ -329,10 +335,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Apply color jitter to the foreground.</b> Block pixels are randomly shifted in hue (&plusmn;30&deg;), saturation (&times;0.5&ndash;1.5), and brightness (&times;0.7&ndash;1.3) each training step. The policy sees the block in dozens of colors; it cannot rely on redness as a cue.</li>
 <li><b>Train with augmentation active every batch.</b> Each batch of 64 images applies a fresh random augmentation on-the-fly. Training time rises by 18% due to augmentation compute, but GPU memory is unchanged because we augment in-place.</li>
 <li><b>Test on three out-of-distribution environments.</b> Kitchen counter (wood texture), outdoor table (sunlight), dark room (dim LED). Without augmentation: 34%, 12%, 8% success. With augmentation: 79%, 71%, 68%. The augmented policy generalized to appearances it never saw in its base dataset.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>MatchMask</b> &mdash; mask-centric diffusion augmentation for label-scarce segmentation</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Role-SynthCLIP</b> &mdash; role-play prompts make MLLMs generate diverse image-text pairs for CLIP</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Ditto/Editto</b> &mdash; a VLM+diffusion pipeline generates 1M instruction-edit video triplets</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>OntoAug</b> &mdash; ontology guidance keeps generative augmentation semantically coherent</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>MatchMask</b> &mdash; mask-centric diffusion augmentation for label-scarce segmentation</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Role-SynthCLIP</b> &mdash; role-play prompts make MLLMs generate diverse image-text pairs for CLIP</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Ditto/Editto</b> &mdash; a VLM+diffusion pipeline generates 1M instruction-edit video triplets</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>OntoAug</b> &mdash; ontology guidance keeps generative augmentation semantically coherent</div></li></ul>
 </div>
 
 <div class="fam rich" id="se10">
@@ -346,10 +352,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Train a CycleGAN to translate synthetic &rarr; real.</b> The GAN learns to add the warehouse&rsquo;s characteristic lens flare, dust, and JPEG grain to synthetic images, without changing object identity. After 40 epochs (3 hours on one GPU), translated images fool a human evaluator 71% of the time.</li>
 <li><b>Retrain the detector on translated images.</b> We replace the original synthetic images with their CycleGAN-translated versions and retrain a YOLOv8 detector. The translated images still carry the free segmentation masks from the render, so no new annotation was needed.</li>
 <li><b>Measure real-world detection accuracy.</b> On 200 held-out real images with human-drawn boxes: trained on raw synthetic &rarr; mAP 0.41. Trained on translated synthetic &rarr; mAP 0.67. The 26-point mAP gain came from closing the visual domain gap, not from collecting any labeled real data.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Expert-Teacher-Student for Domain Adaptive Detection</b> &mdash; foundation-model experts guide adaptation to the target domain</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>VLM-Guided Source-Free Domain Adaptation via Optimal Transport</b> &mdash; a VLM guides feature alignment with no source data at adapt time</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>UDAPose</b> &mdash; diffusion synthesis + attention adapts pose estimation to low light</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GeCo-SRT</b> &mdash; geometry-aware continual adaptation for cross-task sim-to-real</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Expert-Teacher-Student for Domain Adaptive Detection</b> &mdash; foundation-model experts guide adaptation to the target domain</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>VLM-Guided Source-Free Domain Adaptation via Optimal Transport</b> &mdash; a VLM guides feature alignment with no source data at adapt time</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>UDAPose</b> &mdash; diffusion synthesis + attention adapts pose estimation to low light</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GeCo-SRT</b> &mdash; geometry-aware continual adaptation for cross-task sim-to-real</div></li></ul>
 </div>
 
 <div class="fam rich" id="se11">
@@ -363,10 +369,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Run the teacher on all 20,000 unlabeled images.</b> Inference takes 22 minutes on one GPU. Each image gets predicted boxes with confidence scores. We keep only predictions with confidence &gt; 0.85, yielding 14,200 pseudo-labeled images. The 5,800 low-confidence images are discarded.</li>
 <li><b>Train a student detector on the combined dataset.</b> The student sees 1,000 real labels + 14,200 pseudo-labels = 15,200 images. After 50 epochs, student mAP on the held-out set is 0.81 &mdash; 9 points above the teacher trained on 1,000 images alone.</li>
 <li><b>Run one more round of pseudo-labeling.</b> We use the student as the new teacher, re-label the discarded 5,800 images (4,100 now pass the 0.85 threshold), and retrain. Student v2 reaches mAP 0.84. Total extra human annotation cost: $0.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Verifier-Guided Pseudo-Labeling for Point Tracking</b> &mdash; a learned verifier scores teacher outputs to pick reliable pseudo-labels</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Topology-based Pseudo Labeling</b> &mdash; topology-aware labels stay robust under domain shift</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>GaussianMatch</b> &mdash; multi-view Gaussian consistency filters pseudo-labels for regression</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>Scaling Robot Policy Learning via Zero-Shot Labeling</b> &mdash; foundation models auto-annotate diverse datasets for many platforms</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Verifier-Guided Pseudo-Labeling for Point Tracking</b> &mdash; a learned verifier scores teacher outputs to pick reliable pseudo-labels</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Topology-based Pseudo Labeling</b> &mdash; topology-aware labels stay robust under domain shift</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>GaussianMatch</b> &mdash; multi-view Gaussian consistency filters pseudo-labels for regression</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>Scaling Robot Policy Learning via Zero-Shot Labeling</b> &mdash; foundation models auto-annotate diverse datasets for many platforms</div></li></ul>
 </div>
 
 <div class="fam rich" id="se12">
@@ -381,10 +387,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Select one representative per cluster.</b> From each cluster we pick the trajectory closest to the centroid. This gives 5,000 representative trajectories &mdash; 1% of the original dataset &mdash; that span the full behavioral distribution.</li>
 <li><b>Train on the distilled set and compare.</b> A BC policy trained on 5,000 distilled trajectories (7 min/epoch) achieves 79% real-robot success. The same architecture trained on all 500,000 achieves 83%. The distilled set captured 95% of the performance at 1% of the training compute.</li>
 <li><b>Use the speed gain for faster iteration.</b> With 7-minute epochs, the team can run 10 ablations in the time it would take to finish one full training run, enabling much faster hyperparameter search and architecture experiments.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learnability-Guided Diffusion for Dataset Distillation</b> &mdash; synthesizes complementary, non-redundant samples &minus; 39% redundancy</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Orthogonal Gradient Matching</b> &mdash; matches gradient directions (via SVD) to avoid over-smoothing</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>EVLF</b> &mdash; early vision-language fusion captures cross-modal signal in condensed sets</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Learning to Learn Weight Generation</b> &mdash; generates network weights directly, skipping the data-hungry loop</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Learnability-Guided Diffusion for Dataset Distillation</b> &mdash; synthesizes complementary, non-redundant samples &minus; 39% redundancy</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Orthogonal Gradient Matching</b> &mdash; matches gradient directions (via SVD) to avoid over-smoothing</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>EVLF</b> &mdash; early vision-language fusion captures cross-modal signal in condensed sets</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Learning to Learn Weight Generation</b> &mdash; generates network weights directly, skipping the data-hungry loop</div></li></ul>
 </div>
 
 <div class="fam rich" id="se13">
@@ -398,10 +404,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Render a grid of new training viewpoints.</b> We specify 500 camera poses arranged in a hemisphere above the workspace, each with randomized exposure and white-balance. Rendering all 500 takes 21 seconds. These images cover viewpoints the real camera never visited.</li>
 <li><b>Composite object pose variations.</b> We re-place the red block at 200 random positions in the Gaussian scene. Each placement renders in 42 ms. Total: 200 &times; 500 viewpoints = 100,000 training images generated in under 2 hours.</li>
 <li><b>Train and evaluate the policy.</b> A policy trained on 100,000 rendered images achieves 81% real-robot success. A policy trained on 5,000 real camera images (2 hours of collection effort) achieves 74%. The neural-rendered data gave 7 more points at a fraction of the data-collection cost.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Video2Robo</b> &mdash; 3DGS extracts trajectories + photoreal views from one video</span></li>
-<li><span class="vbadge rb">ROBO</span><span class="pt"><b>GraspSplats</b> &mdash; a Gaussian-splat scene yields grasp data from a 60s capture</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>EmbodiedSplat</b> &mdash; online feed-forward semantic 3DGS for open-vocab scene data</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>DualSplat</b> &mdash; pseudo-mask bootstrapping makes 3DGS robust without dense labels</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Video2Robo</b> &mdash; 3DGS extracts trajectories + photoreal views from one video</div></li>
+<li><span class="vbadge rb">ROBO</span><div class="pt"><b>GraspSplats</b> &mdash; a Gaussian-splat scene yields grasp data from a 60s capture</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>EmbodiedSplat</b> &mdash; online feed-forward semantic 3DGS for open-vocab scene data</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>DualSplat</b> &mdash; pseudo-mask bootstrapping makes 3DGS robust without dense labels</div></li></ul>
 </div>
 
 <div class="fam rich" id="se14">
@@ -415,10 +421,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Identify underrepresented configurations.</b> We cluster the 36,400 remaining demos into 200 bins by object start position. Bin sizes range from 12 to 890 demos. The 40 bins with fewer than 50 demos each cover edge-of-workspace positions that are hardest for the policy.</li>
 <li><b>Reweight the training loss.</b> We assign each demo a weight inversely proportional to its bin size: a demo in a 12-demo bin gets weight 890/12 = 74&times;, while a demo in the 890-demo bin gets weight 1&times;. This oversamples rare configurations without collecting new data.</li>
 <li><b>Train and compare to the raw baseline.</b> Policy trained on 80,000 raw demos: 71% real success, with 41% on edge-of-workspace objects. Policy trained on 36,400 curated + reweighted demos: 84% overall, 79% on edge cases. Curation turned less data into better coverage.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Scaling-Aware Data Selection for E2E Driving</b> &mdash; balances scale and sample quality for driving datasets</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Online Data Curation via Marginal Contributions</b> &mdash; selects samples by their marginal contribution, online</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Den-TP</b> &mdash; density-balanced curation + evaluation for trajectory prediction</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Concept-Aware Batch Sampling</b> &mdash; samples by concept to curate training data efficiently</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Scaling-Aware Data Selection for E2E Driving</b> &mdash; balances scale and sample quality for driving datasets</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Online Data Curation via Marginal Contributions</b> &mdash; selects samples by their marginal contribution, online</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Den-TP</b> &mdash; density-balanced curation + evaluation for trajectory prediction</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Concept-Aware Batch Sampling</b> &mdash; samples by concept to curate training data efficiently</div></li></ul>
 </div>
 
 <div class="fam rich" id="se15">
@@ -432,10 +438,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 <li><b>Adapt the batch normalization statistics.</b> We update only the running mean and variance in the encoder&rsquo;s 12 batch-norm layers, using exponential moving average over the live camera stream (&alpha;=0.01 per frame). No gradients are computed; update takes 0.3 ms per frame.</li>
 <li><b>Monitor reconstruction loss during adaptation.</b> After 200 frames (&asymp;7 seconds at 30 Hz), reconstruction loss drops back to 0.038 &mdash; near the training baseline. The encoder has re-calibrated its feature statistics to the new lighting without any human intervention.</li>
 <li><b>Measure task performance before and after adaptation.</b> On the first 50 trials in the new factory (before adaptation): 54% grasp success. On the next 50 trials (after 200-frame warm-up): 83% success. Adaptation recovered 29 points without any new labeled data, purely from the self-supervised reconstruction signal.</li></ol></div>
-  <ul class="papers"><li><span class="vbadge vb">CVPR</span><span class="pt"><b>Test-Time Perturbation Tuning</b> &mdash; uncertainty-guided augmentation adapts a policy at test time</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>Neural Collapse in Test-Time Adaptation</b> &mdash; explains when test-time adaptation helps vs hurts, via feature geometry</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>STAR</b> &mdash; test-time prompt learning adapts vision-language models without fine-tuning</span></li>
-<li><span class="vbadge vb">CVPR</span><span class="pt"><b>CD-Buffer</b> &mdash; a dual-buffer scheme adapts detection to adverse weather at test time</span></li></ul>
+  <ul class="papers"><li><span class="vbadge vb">CVPR</span><div class="pt"><b>Test-Time Perturbation Tuning</b> &mdash; uncertainty-guided augmentation adapts a policy at test time</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>Neural Collapse in Test-Time Adaptation</b> &mdash; explains when test-time adaptation helps vs hurts, via feature geometry</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>STAR</b> &mdash; test-time prompt learning adapts vision-language models without fine-tuning</div></li>
+<li><span class="vbadge vb">CVPR</span><div class="pt"><b>CD-Buffer</b> &mdash; a dual-buffer scheme adapts detection to adverse weather at test time</div></li></ul>
 </div></div>
   <p class="legend"><span class="vbadge rb">ROBO</span> ICRA/IROS 2025 &middot; CoRL/RSS 2024 &nbsp; <span class="vbadge vb">CVPR</span> CVPR 2026 &nbsp; <span class="vbadge bb">BOTH</span> the seam &mdash; titles are real, from the analyzed corpora.</p>
 </div>
@@ -452,7 +458,7 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </div>
 
 </div>
-<div class="wrap"><nav class="related"><b>related explainers</b> <a href="rl-explained.html">RL &amp; Imitation</a> &middot; <a href="gm-explained.html">Generative Models</a> &middot; <a href="hardware-explained.html">Hardware</a> &middot; <a href="autonomous-driving-explained.html">Autonomous Driving</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a> &middot; <a href="the-math-why.html#se">the math, derived &rarr;</a></nav></div>
+<div class="wrap"><nav class="related"><b>related explainers</b> <a href="rl-explained.html">RL &amp; Imitation</a> &middot; <a href="gm-explained.html">Generative Models</a> &middot; <a href="hardware-explained.html">Hardware</a> &middot; <a href="autonomous-driving-explained.html">Autonomous Driving</a> &middot; <a href="math-explained.html">the mathematics</a> &middot; <a href="the-machine.html">the whole machine</a></nav></div>
 <footer><div class="wrap">Sim-to-Real &amp; the Data Engine explainer &middot; mechanism diagrams are live JavaScript (assets/se-anim.js) &middot; the real2sim capture is ours &middot; application map mined from ICRA/IROS/CoRL/RSS + CVPR 2026 &middot; the through-line beneath the <a href="the-machine.html">four-stage loop</a> &mdash; <a href="gaussian-splatting-explained.html">perceive</a> &middot; <a href="world-models-explained.html">imagine</a> &middot; <a href="vla-explained.html">decide</a> &middot; <a href="diffusion-policies-explained.html">act</a> &middot; <a href="index.html">Robotics 2025 home</a></div></footer>
 <script src="assets/se-anim.js"></script>
 </body></html>
