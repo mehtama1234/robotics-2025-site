@@ -1,176 +1,207 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Robotics From First Principles</title>
 <style>
-:root {
-  --ink:#0F1619; --paper:#F5F6F4; --panel:#FBFCFB; --tint:#E4ECEB;
-  --line:#D7DCD9; --graphite:#59656A; --accent:#0E7C86; --accent-deep:#0A5A62;
-  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
-}
-* { box-sizing:border-box }
-body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); line-height:1.68 }
-a { color:var(--accent-deep) }
-.wrap { max-width:900px; margin:0 auto; padding:0 24px }
-header { background:var(--ink); color:#E7ECED; padding:44px 0 36px; border-bottom:1px solid #000 }
-.bug { font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:#4FC4CE }
-h1 { margin:11px 0 0; font-size:33px; letter-spacing:-.03em; color:#F8FAFA; line-height:1.12 }
-header p { margin:12px 0 0; color:#AEBABD; font-size:16px; max-width:68ch }
-nav { position:sticky; top:0; z-index:2; background:rgba(15,22,25,.96); border-bottom:1px solid #263237 }
-nav .wrap { display:flex; flex-wrap:wrap; gap:4px; padding:9px 24px }
-nav a { color:#AEBABD; text-decoration:none; font-family:var(--mono); font-size:12px; padding:6px 10px; border-radius:6px }
-nav a:hover { background:#1b262c; color:#fff }
-.intro { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:0 10px 10px 0; padding:20px 24px; margin:26px 0 10px }
-.intro p, .lesson p, .lesson li { font-size:15.5px; color:#23302C }
-.lesson { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:22px 24px; margin:14px 0 }
-.lesson h2 { margin:0 0 12px; font-size:22px; letter-spacing:-.01em }
-.label { margin-top:13px; font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent-deep) }
-.lesson p { margin:6px 0 0; max-width:74ch }
-.lesson ul { margin:7px 0 0; padding-left:22px }
-.lesson li { margin:5px 0 }
-footer { color:var(--graphite); font-family:var(--mono); font-size:11.5px; padding:26px 0 60px }
-</style>
-</head>
-<body>
-<header><div class="wrap">
-  <div class="bug">Robotics 2025 course</div>
-  <h1>Robotics From First Principles</h1>
-  <p>A plain-language course spine for the ICRA, IROS, CoRL, and RSS robotics site.</p>
-</div></header>
-<nav><div class="wrap">
-  <a href="index.html">Home</a>
-  <a href="the-machine.html">The whole machine</a>
-  <a href="math-explained.html">Math foundations</a>
-  <a href="cross-conference.html">Cross-conference</a>
-</div></nav>
+:root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--tint:#E4ECEB;--line:#D7DCD9;--graphite:#59656A;--accent:#0E7C86;--accent-deep:#0A5A62;--accent-lite:#4FC4CE;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.72}.wrap{max-width:880px;margin:0 auto;padding:0 24px}
+header{background:var(--ink);color:#E7ECED;padding:46px 0 40px;border-bottom:1px solid #000}.bug{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent-lite)}h1{margin:12px 0 0;font-size:40px;line-height:1.08;letter-spacing:-.03em;color:#F8FAFA}header p{max-width:68ch;color:#B6C1C3;font-size:16px;margin:14px 0 0}
+nav{position:sticky;top:0;background:rgba(245,246,244,.96);border-bottom:1px solid var(--line);z-index:2}.navwrap{display:flex;gap:8px;overflow:auto;padding-top:10px;padding-bottom:10px}nav a{white-space:nowrap;color:var(--accent-deep);text-decoration:none;font-family:var(--mono);font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 8px}
+.intro{background:var(--tint);border-left:3px solid var(--accent);margin:26px 0 18px;padding:20px 22px;border-radius:0 10px 10px 0}.intro p{margin:0 0 12px}.intro p:last-child{margin-bottom:0}
+.path{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:15px 18px;margin:18px 0 24px}.path b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--graphite);margin-bottom:8px}.path a{display:inline-block;margin:4px 6px 4px 0;color:var(--accent-deep);text-decoration:none;border-bottom:1px solid var(--accent-lite)}
+.part{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:23px 24px;margin:18px 0}.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep)}h2{margin:7px 0 8px;font-size:25px;line-height:1.18;letter-spacing:-.02em}.summary{margin:0 0 16px;color:var(--graphite);font-size:16px}.essay p{margin:0 0 13px}.uses{margin-top:17px;border-top:1px solid var(--line);padding-top:13px}.uses h3{margin:0 0 7px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--graphite)}.uses ul{margin:0;padding-left:20px}.uses li{margin:5px 0}
+footer{color:var(--graphite);font-family:var(--mono);font-size:12px;padding:30px 0 70px;border-top:1px solid var(--line);margin-top:30px}footer a{color:var(--accent-deep)}
+@media(max-width:640px){h1{font-size:32px}.part{padding:19px 18px}.wrap{padding:0 18px}}
+</style></head><body>
+<header><div class="wrap"><div class="bug">Robotics course spine</div><h1>Robotics From First Principles</h1><p>A plain-language course spine for reading ICRA, IROS, CoRL, and RSS as one subject.</p></div></header>
+<nav><div class="wrap navwrap"><a href="#s1">1. Start</a><a href="#s2">2. Body</a><a href="#s3">3. Space</a><a href="#s4">4. Seeing</a><a href="#s5">5. Memory</a><a href="#s6">6. Choice</a><a href="#s7">7. Motion</a><a href="#s8">8. Contact</a><a href="#s9">9. Learning</a><a href="#s10">10. Practice</a><a href="#s11">11. People</a><a href="#s12">12. Fields</a></div></nav>
 <main class="wrap">
-  <div class="intro"><p>Robotics starts with a simple wish: make a machine do useful work in the physical world. That sounds direct until you notice what the machine must face. The world is messy. Floors slip, objects move, sensors lie, people do unexpected things, batteries run down, and a small mistake can break hardware or hurt someone.</p>
-<p>So the whole field can be read as one long answer to one question: how does a machine sense what is around it, decide what should happen next, move its body, and then check whether the world changed the way it expected? Every conference topic is one part of that loop.</p>
-<p>This course uses everyday words first. Math and code matter, but they matter because they serve this loop. A robot is not a model on a screen. It is a loop tied to a body.</p></div>
+  <div class="intro"><p>A robot is a machine that must make choices in the physical world. It has a body, a limited view, limited power, moving parts that can slip or break, and people or objects around it that may move in ways it did not expect.</p>
+<p>The whole field can be read from one question: how does the machine use incomplete information to take a useful action without causing harm? Every conference paper is one answer to part of that question.</p>
+<p>This course page is meant to be read slowly. It avoids shorthand. When a technical word is needed, it says what the word means in everyday terms and why it matters.</p></div>
+  <div class="path"><b>Read next</b><a href="the-machine.html">The whole machine</a> <a href="math-explained.html">The math underneath</a> <a href="navigation-explained.html">Moving through space</a> <a href="manipulation-explained.html">Working through contact</a> <a href="sf-explained.html">Safety and trust</a> <a href="report.html">Every ICRA and IROS paper</a></div>
   
-<section class="lesson">
-  <h2>1. The Loop: Sense, Decide, Move, Check</h2>
-  <div class="label">The problem</div>
-  <p>A robot cannot do a task in one shot. It must keep looking, choosing, acting, and correcting. The world pushes back every moment.</p>
-  <div class="label">The first principle</div>
-  <p>A robot is a closed loop. Sensors measure the world. The computer turns measurements into a state. A planner or policy chooses an action. Motors change the world. New sensor readings say whether the action helped or made things worse.</p>
-  <div class="label">Why this matters</div>
-  <p>This is why robotics feels harder than vision alone or language alone. A wrong answer does not just sit on a page. It becomes motion. The loop must be fast enough to react and careful enough not to drift into danger.</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>factory arms that adjust after a part shifts on a conveyor</li><li>self-driving cars that brake when a pedestrian steps into the road</li><li>warehouse robots that replan when an aisle is blocked</li><li>surgical robots that steady motion while tissue moves</li></ul>
+<section id="s1" class="part">
+  <div class="kicker">Start</div>
+  <h2>1. The Whole Subject In One Loop</h2>
+  <p class="summary">A robot repeats one loop: sense, understand where things are, choose, move, and learn from what happened.</p>
+  <div class="essay"><p>The first job is sensing. A camera, lidar, microphone, joint encoder, force sensor, or soft fingertip gives the robot numbers. Those numbers are not yet knowledge. They are raw readings, often noisy, late, partial, or blocked by the robot&#x27;s own hand.</p>
+<p>The second job is keeping track of the situation. The robot needs a useful estimate of itself and the world: where its joints are, where the object is, which space is open, which space is blocked, and what may happen next.</p>
+<p>The third job is choosing an action. The action may be a steering command, a grasp, a walking step, a tool motion, a camera move, or a request for help. The choice is only useful if the robot can actually perform it with its body.</p>
+<p>The fourth job is checking the result. The world pushes back. A wheel slips, a cup moves, a person steps into the path, a soft object bends. The robot senses again and updates its choice. This repeated loop is the center of robotics.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Warehouse robots use the loop to pick items, avoid people, and recover when a box is not where the system expected.</li>
+<li>Surgical robots use the loop to steady small motions and keep tools inside safe areas.</li>
+<li>Farm robots use the loop to see plants under changing light, move through soil, and handle fruit without bruising it.</li></ul>
+  </div>
 </section>
 
-<section class="lesson">
-  <h2>2. Seeing: Turning Sensor Readings Into a Usable World</h2>
-  <div class="label">The problem</div>
-  <p>Sensors do not hand the robot a clean world. Cameras give flat images. Lidars give point clouds. Touch sensors give pressure. The robot has to turn all of that into something it can use.</p>
-  <div class="label">The first principle</div>
-  <p>Perception is measurement plus interpretation. The machine must infer what is present, where it is, how it is moving, and which parts matter for the task. It is always filling gaps because no sensor sees everything.</p>
-  <div class="label">Why this matters</div>
-  <p>Bad seeing poisons every later step. If a robot thinks the table is lower than it is, the best planner in the world still sends the hand to the wrong place.</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>3D perception for picking, inspection, mapping, and driving</li><li>open-vocabulary perception for finding objects named in plain language</li><li>tactile sensing for grip, slip, and hidden contact</li><li>medical imaging where the robot sees inside the body instead of across a room</li></ul>
+<section id="s2" class="part">
+  <div class="kicker">Body</div>
+  <h2>2. A Robot Is Not Just Software</h2>
+  <p class="summary">The body sets what can be done: reach, speed, force, weight, battery, heat, wear, and safety.</p>
+  <div class="essay"><p>Software can ask for a motion, but the body decides whether that motion is possible. A small arm cannot lift a heavy box. A wheeled robot cannot climb stairs without the right shape. A soft gripper can wrap around an object, but it may be hard to know exactly where its surface is.</p>
+<p>Every joint has limits. Every motor has a highest force and a highest speed. Every battery runs out. Every sensor has blind spots. Good robotics papers respect these facts instead of pretending the machine is an abstract point on a screen.</p>
+<p>This is why hardware, control, and learning cannot be separated. A better hand changes the problem. A better sensor changes the plan. A faster motor changes what can be recovered after a slip.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Manufacturing robots need bodies that repeat motions for years without drifting out of alignment.</li>
+<li>Assistive robots need bodies that are strong enough to help but soft and predictable around people.</li>
+<li>Space robots need bodies that survive dust, cold, radiation, and long delays from Earth.</li></ul>
+  </div>
 </section>
 
-<section class="lesson">
-  <h2>3. Topology: What Stays Connected When the Shape Changes</h2>
-  <div class="label">The problem</div>
-  <p>Robots care about more than exact coordinates. They need to know what is connected to what, which paths are blocked, what surrounds what, and whether a motion can be changed without crossing an obstacle.</p>
-  <div class="label">The first principle</div>
-  <p>Topology is the study of the parts of shape that survive bending and stretching. For a robot, that means connected regions, holes, loops, inside versus outside, boundaries, and paths that cannot be smoothly changed into each other.</p>
-  <div class="label">Why this matters</div>
-  <p>A map can be drawn with exact metric distances, but the robot often first needs the topological fact: can I get from this room to that room without crossing a wall? Can this cable move around that post without tangling? Is the hand inside the safe region or outside it?</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>navigation graphs that reduce a building to rooms, doors, and corridors</li><li>motion planning where paths around different sides of an obstacle are different choices</li><li>multi-robot routing where agents must avoid swapping through the same narrow passage</li><li>deformable objects, cables, knots, cloth, and surgical threads</li><li>coverage planning where the robot must visit every connected part of an area</li></ul>
+<section id="s3" class="part">
+  <div class="kicker">Space</div>
+  <h2>3. Topology Means What Is Connected, Blocked, Or Looped</h2>
+  <p class="summary">Topology is the study of the shape of possible motion: which places connect, which paths wrap around, and which barriers split the world.</p>
+  <div class="essay"><p>In everyday words, topology asks questions like these: can the robot get from here to there without crossing a wall? Does a cable wrap around a pole? Is a hand trapped inside a handle? Does a room have one doorway or two? These questions matter even before exact distances matter.</p>
+<p>A map is not just a picture. It tells the robot which free spaces touch each other. A narrow doorway can connect two rooms. A closed door can split one reachable world into two separate pieces. A looped hallway gives two ways around; a dead end gives one way in and one way out.</p>
+<p>Hands and tools have topology too. A ring around a peg cannot simply pass through the peg. A hook can catch on an edge. A cloth can fold over itself. A knot, loop, or wrap changes what actions are possible.</p>
+<p>Many failures in robotics are topology failures. The robot planned a short path that crosses a barrier. It tried to pull a cable straight through a loop. It treated a cup handle as empty space. It thought an object could slide away when contact had actually trapped it.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Navigation uses topology to know whether two places are connected by a safe route.</li>
+<li>Manipulation uses topology to reason about handles, hooks, rings, cables, knots, and containers.</li>
+<li>Surgery uses topology to keep tools inside allowed openings and avoid crossing tissue boundaries.</li>
+<li>Multi-robot planning uses topology to decide whether several robots can pass through a corridor without blocking each other.</li></ul>
+  </div>
 </section>
 
-<section class="lesson">
-  <h2>4. Geometry: Distances, Angles, Poses, and Contact</h2>
-  <div class="label">The problem</div>
-  <p>Topology says whether a path exists. Geometry says how far, at what angle, through which pose, and with what clearance.</p>
-  <div class="label">The first principle</div>
-  <p>Geometry gives the robot a language for space. A pose tells where the body is and how it is rotated. A transform moves points between coordinate systems. Contact geometry says where surfaces touch and which motions are blocked.</p>
-  <div class="label">Why this matters</div>
-  <p>Robots live in millimeters and degrees. A grasp can fail because the wrist is rotated slightly wrong. A drone can crash because the map is almost right but not right enough.</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>camera calibration and hand-eye calibration</li><li>SLAM, where a robot builds a map while localizing itself in it</li><li>grasp planning for fingers and suction cups</li><li>legged locomotion over steps, slopes, and uneven ground</li></ul>
+<section id="s4" class="part">
+  <div class="kicker">Seeing</div>
+  <h2>4. Perception Turns Sensor Readings Into A Usable World</h2>
+  <p class="summary">Perception is the work of turning pixels, points, sound, and touch into objects, surfaces, motion, and meaning.</p>
+  <div class="essay"><p>A camera gives color at each pixel. That does not directly say how far away something is, what object it is, whether it is moving, or whether it can be touched. Perception is the work of turning readings into facts the rest of the robot can use.</p>
+<p>Three-dimensional perception asks where surfaces are in space. Tracking asks what moved and where it went. Recognition asks what kind of thing the robot is seeing. Open naming asks whether the robot can connect a human word, such as &#x27;mug&#x27; or &#x27;door handle&#x27;, to the right part of the scene.</p>
+<p>Touch is part of perception. When a finger covers the object, the camera may lose the exact place where contact happens. A tactile sensor can report pressure, slip, edge shape, or surface texture at the point where the decision matters most.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Autonomous vehicles use perception to find lanes, cars, people, signs, and free space.</li>
+<li>Medical robots use perception to reconstruct tissue shape from limited camera views.</li>
+<li>Inspection robots use perception to find cracks, corrosion, loose parts, and surface changes.</li></ul>
+  </div>
 </section>
 
-<section class="lesson">
-  <h2>5. Planning: Choosing a Path Through Too Many Possibilities</h2>
-  <div class="label">The problem</div>
-  <p>A robot can usually move in many possible ways. Most are bad, slow, unsafe, or impossible. Planning is choosing a useful path before the world changes.</p>
-  <div class="label">The first principle</div>
-  <p>Planning searches through possible futures. It keeps the futures that satisfy the task and throws away the ones that collide, exceed the robot&#x27;s limits, waste too much time, or end in the wrong place.</p>
-  <div class="label">Why this matters</div>
-  <p>Without planning, a robot only reacts. With planning, it can choose a route, prepare for a turn, move around a person, or break a task into steps.</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>road driving, drone flight, warehouse routing, and mobile manipulation</li><li>task-and-motion planning for jobs with both symbolic steps and physical paths</li><li>multi-robot path finding where many agents must share the same space</li><li>online planning where the robot replans every few milliseconds</li></ul>
+<section id="s5" class="part">
+  <div class="kicker">Memory</div>
+  <h2>5. The Robot Needs A Working Picture Of The World</h2>
+  <p class="summary">The machine needs memory because the world is only partly visible at any one moment.</p>
+  <div class="essay"><p>A robot rarely sees everything it needs. An object can pass behind a shelf. A person can leave the camera view. A map can be incomplete. The robot therefore keeps a working picture that combines old readings with new ones.</p>
+<p>This working picture may be a map, a list of objects, a set of likely positions, or a learned prediction of what may happen next. The exact form changes by paper, but the reason is the same: action needs more context than the current sensor frame provides.</p>
+<p>A good working picture is not only accurate. It also says what is uncertain. If the robot is not sure whether a person is behind a corner, that uncertainty should change the speed and path it chooses.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Home robots need memory to find objects after they leave view.</li>
+<li>Drones need memory to fly through smoke, trees, or clutter where sensors lose track.</li>
+<li>Search-and-rescue robots need memory to avoid revisiting the same area and to mark places that remain unchecked.</li></ul>
+  </div>
 </section>
 
-<section class="lesson">
-  <h2>6. Control: Making the Body Actually Follow the Plan</h2>
-  <div class="label">The problem</div>
-  <p>A plan is only a wish until motors execute it. Bodies have mass, friction, limits, delays, and unexpected pushes.</p>
-  <div class="label">The first principle</div>
-  <p>Control is feedback. Measure the gap between what should happen and what is happening, then push the system in the direction that reduces that gap while respecting the body&#x27;s limits.</p>
-  <div class="label">Why this matters</div>
-  <p>This is where paper plans meet physics. A controller turns a desired path into torques, wheel speeds, joint angles, and forces.</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>model-predictive control for cars, drones, arms, and legs</li><li>whole-body control for humanoids and quadrupeds</li><li>force control for polishing, cutting, insertion, and surgery</li><li>safety filters that override a learned action before it crosses a boundary</li></ul>
+<section id="s6" class="part">
+  <div class="kicker">Choice</div>
+  <h2>6. Planning Is Choosing A Path Through Consequences</h2>
+  <p class="summary">Planning asks what action now will make later actions easier, safer, or possible at all.</p>
+  <div class="essay"><p>The best immediate move is not always the best move. A robot may need to back up before turning, move an object before reaching another one, open a door before entering a room, or slow down now to avoid a hard stop later.</p>
+<p>Planning searches through possible futures. Some plans are paths through space. Some are task steps, such as open, pick, place, tighten, clean, or inspect. Some plans are contact sequences, such as push, slide, pinch, lift.</p>
+<p>The hard part is that the number of possible futures grows quickly. Robotics papers deal with this by using maps, learned hints, short repeated plans, human demonstrations, or rules that throw away clearly bad choices early.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Warehouses use planning to route many robots without jams.</li>
+<li>Construction robots use planning to choose build order and tool motion.</li>
+<li>Underwater robots use planning because they cannot rely on constant communication or perfect positioning.</li></ul>
+  </div>
 </section>
 
-<section class="lesson">
-  <h2>7. Learning: Getting Skill From Examples and Trial</h2>
-  <div class="label">The problem</div>
-  <p>Some tasks are too hard to program by hand. Picking up strange objects, walking on rough ground, or following open-ended instructions cannot be reduced to a short list of rules.</p>
-  <div class="label">The first principle</div>
-  <p>Learning replaces hand-written rules with experience. The robot sees examples, tries actions, receives feedback, and changes its internal mapping from situations to actions.</p>
-  <div class="label">Why this matters</div>
-  <p>Learning gives robots flexibility, but it also creates a new burden: the robot must have enough varied experience and must not learn shortcuts that fail outside training.</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>imitation learning from human demonstrations</li><li>reinforcement learning in simulation before real-world testing</li><li>diffusion and flow policies that generate whole action paths</li><li>foundation-model planners that use web-scale visual and language knowledge</li></ul>
+<section id="s7" class="part">
+  <div class="kicker">Motion</div>
+  <h2>7. Control Turns A Plan Into Real Movement</h2>
+  <p class="summary">Control is the repeated correction that keeps the body close to the intended motion.</p>
+  <div class="essay"><p>A plan says what should happen. Control deals with what is happening. If the robot arm is behind the desired path, control increases effort. If a leg slips, control changes the next force. If the body tilts, control acts before the fall grows.</p>
+<p>The simple idea is feedback: measure the gap between wanted and actual motion, then push in the direction that shrinks the gap. This sounds small, but it is the reason robots can balance, steer, grasp, and recover from disturbances.</p>
+<p>Control must run on the clock of the body. A controller that chooses a beautiful motion too late is not useful. Many papers are about making better choices under strict time limits.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Legged robots use control to keep balance while the ground changes.</li>
+<li>Robot arms use control to follow paths while carrying weight.</li>
+<li>Self-driving systems use control to turn a planned route into steering, braking, and acceleration.</li></ul>
+  </div>
 </section>
 
-<section class="lesson">
-  <h2>8. Data: Why Real Robot Experience Is Expensive</h2>
-  <div class="label">The problem</div>
-  <p>Robots need examples, but real examples are slow. Every trial takes physical time, hardware wears out, and failures can be costly.</p>
-  <div class="label">The first principle</div>
-  <p>Data is not just a file. In robotics, data is time spent in the world. The field keeps trying to make each real trial teach more, and to replace some real trials with useful simulation, video, generated scenes, or shared datasets.</p>
-  <div class="label">Why this matters</div>
-  <p>Many impressive ideas fail because they need more robot experience than anyone can collect. Data is one of the main reasons robotics moves slower than pure software.</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>sim-to-real training with randomized worlds</li><li>learning from human video before touching a robot</li><li>synthetic data for rare driving and factory cases</li><li>cross-embodiment learning where one robot teaches another</li></ul>
+<section id="s8" class="part">
+  <div class="kicker">Contact</div>
+  <h2>8. Touching The World Changes The Rules</h2>
+  <p class="summary">When contact happens, forces matter and the future can change suddenly.</p>
+  <div class="essay"><p>Moving through empty space is easier than touching something. At contact, the object may stick, slip, roll, bend, break, or tip. A tiny change in finger position can change the whole result.</p>
+<p>Grasping is not just closing a hand. The robot must choose where to touch, how hard to press, which direction to pull, and how to notice slip. If the object is soft, transparent, heavy, wet, or oddly shaped, the problem changes again.</p>
+<p>Contact is also useful. A robot can use a table edge to align an object, push instead of pick, slide a finger along a surface, or use a tool to reach where the hand cannot.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Factories use contact reasoning for assembly, insertion, polishing, and fastening.</li>
+<li>Kitchens need contact reasoning for stirring, pouring, cutting, wiping, and opening containers.</li>
+<li>Medical robots need careful force control because small contact mistakes can matter.</li></ul>
+  </div>
 </section>
 
-<section class="lesson">
-  <h2>9. Trust: Knowing When the Robot Must Not Act</h2>
-  <div class="label">The problem</div>
-  <p>A flexible robot is useful because it can handle variety. That same flexibility makes it harder to know exactly what it will do next.</p>
-  <div class="label">The first principle</div>
-  <p>Trust comes from boundaries, checks, fallback behavior, and honest uncertainty. The robot should know when it is unsure, when a command is unsafe, and when to use a simpler verified behavior instead.</p>
-  <div class="label">Why this matters</div>
-  <p>Robots share space with people, roads, tools, and fragile objects. Safety is not an extra feature. It is part of the definition of a working robot.</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>control barrier functions that keep the robot inside a safe set</li><li>uncertainty estimates for medical, driving, and human-robot settings</li><li>runtime monitors that stop a policy before damage happens</li><li>formal checks for collision avoidance and shared-space motion</li></ul>
+<section id="s9" class="part">
+  <div class="kicker">Learning</div>
+  <h2>9. Learning Lets Robots Reuse Experience</h2>
+  <p class="summary">Learning is how the robot turns examples, trials, video, or human teaching into better future behavior.</p>
+  <div class="essay"><p>Some tasks are too varied to program one rule at a time. Learning gives the robot a way to improve from data. The data can be a human demonstration, a video, a simulator trial, a previous failure, or a reward signal that says whether the result was good.</p>
+<p>Learning is not magic. It only learns from the examples and signals it receives. If the examples miss important cases, the robot may fail in those cases. If the reward measures the wrong thing, the robot may learn the wrong behavior.</p>
+<p>The value of learning is reuse. One set of experiences can help the robot recognize objects, predict motion, choose grasps, walk over new ground, or understand instructions in a way that hand-written rules would not cover.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>CoRL papers often focus on learning from demonstrations, trial data, and contact-rich practice.</li>
+<li>Service robots use learning to adapt to homes, people, and object layouts that differ every day.</li>
+<li>Industrial robots use learning to reduce setup time when a product or fixture changes.</li></ul>
+  </div>
 </section>
 
-<section class="lesson">
-  <h2>10. Cross-Field Use: Why Robotics Connects to Everything Else</h2>
-  <div class="label">The problem</div>
-  <p>Robotics borrows from many fields because a robot contains many problems at once: seeing, language, maps, bodies, chips, safety, and human use.</p>
-  <div class="label">The first principle</div>
-  <p>A robot is a meeting point. Computer vision supplies sight. Machine learning supplies adaptation. Control supplies feedback. Topology and geometry supply space. Hardware sets the speed and energy limits. Human factors decide whether the machine is useful.</p>
-  <div class="label">Why this matters</div>
-  <p>This is why robotics is a useful way to understand the larger AI stack. If an idea only works in a clean benchmark but fails when tied to sensors, bodies, delays, and safety, robotics exposes the gap.</p>
-  <div class="label">Where it shows up</div>
-  <ul><li>AI hardware for low-power onboard inference</li><li>computer vision for depth, tracking, and scene understanding</li><li>speech and language for natural instructions and feedback</li><li>search and planning for maps, task order, and decision making</li><li>graphics and simulation for training worlds and digital twins</li></ul>
+<section id="s10" class="part">
+  <div class="kicker">Practice</div>
+  <h2>10. Simulation Helps, But The Real World Has The Final Vote</h2>
+  <p class="summary">Simulation is cheap practice; the real machine reveals what the simulation missed.</p>
+  <div class="essay"><p>Real robot data is expensive. Machines wear out, people must supervise, and mistakes can damage objects or hurt someone. Simulation gives the robot many practice attempts without paying the full physical cost.</p>
+<p>The problem is that simulation is always a simplification. Friction, lighting, soft materials, sensor noise, cable drag, backlash, and small manufacturing differences can change the result. A behavior that works in a simulated world may fail on the real robot.</p>
+<p>A large part of modern robotics is closing this gap. Papers change the simulator, randomize conditions, collect small amounts of real data, use real videos, or train the robot to notice when its practice world no longer matches reality.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Humanoid robots use simulation to practice falls and recoveries that would be costly on hardware.</li>
+<li>Driving systems use simulation to test rare road events before they happen in public.</li>
+<li>Manipulation systems use simulation to generate many object poses before trying a smaller set on a real arm.</li></ul>
+  </div>
 </section>
-</main>
-<footer><div class="wrap">Robotics 2025 course spine. Plain first-principles map across sensing, planning, control, learning, topology, and real-world use.</div></footer>
-</body>
-</html>
+
+<section id="s11" class="part">
+  <div class="kicker">People</div>
+  <h2>11. Language, Trust, And Safety Are Part Of The Machine</h2>
+  <p class="summary">A useful robot must understand goals, explain limits, and act within clear safety boundaries.</p>
+  <div class="essay"><p>Language matters because people do not want to command every motor. They want to say what outcome they need: bring the cup, clean the spill, inspect the valve, hold the camera steady. The robot must connect those words to objects, places, actions, and limits.</p>
+<p>Trust matters because a wrong action in the physical world has cost. The robot should know when it is unsure, slow down near people, refuse unsafe requests, and hand control back when the situation leaves its training or sensors behind.</p>
+<p>Safety is not a final polish step. It changes the whole design. The robot may need a slower path, an allowed area, a force limit, a backup controller, a monitor, or a rule that stops an action before the danger becomes visible.</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Hospitals need robots that can explain uncertainty and respect strict boundaries.</li>
+<li>Public delivery robots need predictable motion around pedestrians.</li>
+<li>Home robots need simple instructions, safe defaults, and clear failure behavior.</li></ul>
+  </div>
+</section>
+
+<section id="s12" class="part">
+  <div class="kicker">Fields</div>
+  <h2>12. Why Robotics Matters Outside Robotics</h2>
+  <p class="summary">Robotics connects computer vision, search, language, hardware, medicine, work, and public safety because it is where information becomes action.</p>
+  <div class="essay"><p>Computer vision asks what is in the scene. Robotics asks what can be done in that scene. Search and information retrieval ask how to find the right knowledge. Robotics asks how that knowledge changes a physical decision. Hardware asks what can run fast and cheaply. Robotics asks whether it can run on a body with power, heat, and weight limits.</p>
+<p>Topology connects to many fields because it studies structure that remains even when measurements change. In biology, it can describe folded shapes and connected surfaces. In city planning, it can describe neighborhoods, roads, and barriers. In networking, it can describe which nodes remain connected when links fail. In robotics, it describes the possible motion of bodies through space and contact.</p>
+<p>The importance of robotics is not that every machine will look human. It is that more work is becoming work done by systems that sense, decide, and act. Understanding robotics gives a simple way to read many fields at once: what does the system know, what can it do, what blocks it, what could go wrong, and how does it recover?</p></div>
+  <div class="uses">
+    <h3>Where this shows up</h3>
+    <ul><li>Medicine gains better tools for imaging, surgery, rehabilitation, and lab automation.</li>
+<li>Disaster response gains machines that can enter places too dangerous for people.</li>
+<li>Transportation gains systems that must connect perception, planning, control, safety, and human rules.</li>
+<li>Science gains instruments that can explore oceans, farms, space, mines, and remote habitats.</li></ul>
+  </div>
+</section>
+  <footer>Part of the Robotics 2025 conference analysis. Continue to <a href="index.html">home</a>, <a href="the-machine.html">the whole machine</a>, or <a href="report.html">the full paper report</a>.</footer>
+</main></body></html>

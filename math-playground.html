@@ -31,6 +31,7 @@
  .ctl button:hover{background:var(--tint)}
  .read{font-family:var(--mono);font-size:12px;color:var(--graphite);padding:0 20px 14px}.read b{color:var(--c,var(--accent-deep))}
  .w.opt{--c:var(--opt)}.w.dyn{--c:var(--dyn)}.w.inf{--c:var(--inf)}.w.saf{--c:var(--geo)}
+ .w.att{--c:var(--accent-lite)}.w.kal{--c:var(--inf)}.w.cap{--c:var(--dyn)}
  footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  footer a{color:var(--graphite)}
 </style></head><body>
@@ -41,7 +42,7 @@
   <nav><a href="index.html">home</a> &middot; <a href="the-math-why.html">the mathematical why</a> &middot; <a href="the-machine.html">the machine</a></nav>
 </div></header>
 <div class="wrap">
-<p class="lead">Four knobs, four ideas. Turn the learning rate up until descent overshoots. Lower the noise schedule until the sample gets stuck. Crank the feedback gain until the controller rings. Loosen the safety margin until the robot clips the obstacle. The math is doing exactly what the equations said &mdash; now you can feel it.</p>
+<p class="lead">Seven knobs, seven ideas. Turn the learning rate up until descent overshoots. Lower the noise schedule until the sample gets stuck. Crank the feedback gain until the controller rings. Loosen the safety margin until the robot clips the obstacle. Cool the attention temperature until it stares at one token. Feed the filter a noisier sensor until it stops believing it. Shove the walker harder than its legs can reach. The math is doing exactly what the equations said &mdash; now you can feel it.</p>
 
 <!-- 1 GRADIENT DESCENT -->
 <section class="w opt">
@@ -101,6 +102,52 @@
     <button id="b_cbf">re-run</button>
   </div>
   <div class="read" id="r_cbf"></div>
+</section>
+
+<!-- 5 ATTENTION TEMPERATURE -->
+<section class="w att">
+  <div class="wtop"><div class="wk">attention &middot; the softmax</div>
+    <h2>Attention temperature — sharp focus or soft blur</h2>
+    <p class="wd">A token looks at a handful of others, each with a match score. Softmax turns the scores into weights that sum to one: <b>w<sub>i</sub> = e<sup>s<sub>i</sub>/T</sup> / &Sigma;<sub>j</sub> e<sup>s<sub>j</sub>/T</sup></b>. The temperature <b>T</b> is the one knob. Cool it toward zero and all the weight snaps onto the single best match; heat it up and the weights flatten until every key gets an equal, useless share.</p>
+  </div>
+  <canvas id="c_att" height="300"></canvas>
+  <div class="ctl">
+    <label>temperature T <span class="v" id="v_T">1.00</span><input type="range" id="s_T" min="0.10" max="4.00" step="0.05" value="1.00"></label>
+    <label>score contrast <span class="v" id="v_sp">1.00</span><input type="range" id="s_sp" min="0.30" max="2.50" step="0.05" value="1.00"></label>
+    <button id="b_att">re-roll scores</button>
+  </div>
+  <div class="read" id="r_att"></div>
+</section>
+
+<!-- 6 KALMAN FUSION -->
+<section class="w kal">
+  <div class="wtop"><div class="wk">estimation &middot; sensor fusion</div>
+    <h2>Kalman fusion — how much to trust the sensor</h2>
+    <p class="wd">The true value drifts; a noisy sensor reports it. The filter blends its own prediction with each measurement: <b>estimate &larr; prediction + K&middot;(measurement &minus; prediction)</b>, with gain <b>K = &sigma;&sup2; / (&sigma;&sup2; + R)</b>. Noisy sensor (large R) &rarr; small K &rarr; it leans on the smooth model and lags a little. Clean sensor &rarr; K near 1 &rarr; it chases every jitter. Watch the teal line find the truth between the two.</p>
+  </div>
+  <canvas id="c_kf" height="300"></canvas>
+  <div class="ctl">
+    <label>sensor noise R <span class="v" id="v_R">0.25</span><input type="range" id="s_R" min="0.02" max="1.00" step="0.01" value="0.25"></label>
+    <label>process noise Q <span class="v" id="v_Q">0.010</span><input type="range" id="s_Q" min="0.0005" max="0.0800" step="0.0005" value="0.010"></label>
+    <button id="b_kf">new run</button>
+  </div>
+  <div class="read" id="r_kf"></div>
+</section>
+
+<!-- 7 CAPTURE POINT -->
+<section class="w cap">
+  <div class="wtop"><div class="wk">legged balance &middot; the capture point</div>
+    <h2>The capture point — where to step to not fall</h2>
+    <p class="wd">A shoved body is an inverted pendulum pivoting on its foot. There is exactly one place to plant the next foot that brings it to a dead stop: the <b>capture point &xi; = x + &#7818;/&omega;</b>, where <b>&omega; = &#8730;(g/L)</b> sets the fall speed. If &xi; lands inside the foot you already have, the ankle alone holds you; if it lies past how far your leg can reach, the step falls short and you topple. Shove it and see where it must step.</p>
+  </div>
+  <canvas id="c_cp" height="300"></canvas>
+  <div class="ctl">
+    <label>push strength <span class="v" id="v_push">1.60</span><input type="range" id="s_push" min="0.20" max="4.00" step="0.05" value="1.60"></label>
+    <label>leg reach (max step) <span class="v" id="v_reach">1.00</span><input type="range" id="s_reach" min="0.30" max="2.00" step="0.05" value="1.00"></label>
+    <label>body height L <span class="v" id="v_L">0.90</span><input type="range" id="s_L" min="0.50" max="1.40" step="0.05" value="0.90"></label>
+    <button id="b_cp">shove</button>
+  </div>
+  <div class="read" id="r_cp"></div>
 </section>
 
 </div>

@@ -172,5 +172,118 @@
    if(rr)rr.innerHTML='min distance <b>'+minD.toFixed(2)+'</b> vs radius '+r.toFixed(2)+' &nbsp; &rarr; <b style="color:'+col+'">'+msg+'</b> &nbsp;&middot;&nbsp; bigger &alpha; lets it brake later and cut the corner closer.';
   });})();
 
+ /* ---------- 5. ATTENTION TEMPERATURE ---------- */
+ (function(){var cv=ctxOf('c_att');if(!cv)return;var x=cv.getContext('2d');
+  var N=6,labels=['k1','k2','k3','k4','k5','k6'];
+  var base=[2.4,1.7,1.4,0.7,0.1,-0.5];
+  function reroll(){base=[];for(var i=0;i<N;i++){base.push(3.0*Math.random()-0.7);}base.sort(function(a,b){return b-a;});}
+  click('b_att',reroll);
+  on('s_T',function(){set('v_T',val('s_T').toFixed(2));});
+  on('s_sp',function(){set('v_sp',val('s_sp').toFixed(2));});
+  ticks.push(function(){var w=cv._w,h=cv._h,T=val('s_T'),sp=val('s_sp');
+   x.fillStyle=C.bg;x.fillRect(0,0,w,h);
+   var s=base.map(function(v){return v*sp;});
+   var lg=s.map(function(v){return v/T;});
+   var mx=Math.max.apply(null,lg);
+   var ex=lg.map(function(v){return Math.exp(v-mx);});
+   var Z=ex.reduce(function(a,b){return a+b;},0);
+   var wts=ex.map(function(v){return v/Z;});
+   var wmax=Math.max.apply(null,wts);
+   var m=52,bw=(w-2*m)/N,gy=h-52,top=46;
+   x.strokeStyle=C.grid;x.beginPath();x.moveTo(m,gy);x.lineTo(w-m,gy);x.stroke();
+   for(var i=0;i<N;i++){var bwid=bw*0.62,bx=m+i*bw+(bw-bwid)/2;
+     var hgt=(gy-top)*wts[i];var by=gy-hgt;
+     x.fillStyle=(wts[i]===wmax)?C.line:'rgba(122,136,214,0.42)';
+     x.fillRect(bx,by,bwid,hgt);
+     lab(x,labels[i],bx+bwid/2,gy+13,C.mut,10.5,'center');
+     lab(x,'s='+s[i].toFixed(1),bx+bwid/2,gy+25,C.dim,9,'center');
+     lab(x,(wts[i]*100).toFixed(0)+'%',bx+bwid/2,by-8,(wts[i]===wmax)?C.ink:C.mut,10.5,'center');}
+   lab(x,'attention weight per key   w_i = exp(s_i/T) / sum_j exp(s_j/T)',14,18,C.mut,10.5);
+   var H=0;for(var j=0;j<N;j++){if(wts[j]>1e-9)H-=wts[j]*Math.log(wts[j]);}
+   var eff=Math.exp(H);
+   var st=eff<1.4?'razor focus — almost all on one key':(eff<3?'focused on a few keys':(eff<N-0.6?'spread across many keys':'nearly uniform — no focus left'));
+   var col=eff<1.4?C.good:(eff<3?C.line:C.opt);
+   var r=document.getElementById('r_att');
+   if(r)r.innerHTML='T = <b>'+T.toFixed(2)+'</b> &nbsp; entropy H = <b>'+H.toFixed(2)+'</b> &nbsp; effective keys attended exp(H) = <b>'+eff.toFixed(2)+'</b> of '+N+' &nbsp; &rarr; <b style="color:'+col+'">'+st+'</b>';
+  });})();
+
+ /* ---------- 6. KALMAN FUSION ---------- */
+ (function(){var cv=ctxOf('c_kf');if(!cv)return;var x=cv.getContext('2d');
+  var est=0,P=1,hist=[],t=0;
+  function gauss(){var u=Math.random()||1e-9,v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(TAU*v);}
+  function reset(){est=0;P=1;hist=[];t=0;}
+  reset();
+  click('b_kf',reset);
+  on('s_R',function(){set('v_R',val('s_R').toFixed(2));});
+  on('s_Q',function(){set('v_Q',val('s_Q').toFixed(3));});
+  ticks.push(function(){var w=cv._w,h=cv._h,R=val('s_R'),Q=val('s_Q');
+   t+=0.03;var truth=1.2*Math.sin(t*0.9)+0.5*Math.sin(t*0.37+1);
+   var meas=truth+gauss()*Math.sqrt(R);
+   P+=Q;var K=P/(P+R);est=est+K*(meas-est);P=(1-K)*P;
+   hist.push([truth,meas,est]);var maxN=Math.floor(cv._w*0.55);if(hist.length>maxN)hist.shift();
+   x.fillStyle=C.bg;x.fillRect(0,0,w,h);
+   var midY=h*0.52,sc=(h*0.32)/2.2,x0=w-hist.length-24;
+   x.strokeStyle=C.grid;x.beginPath();x.moveTo(0,midY);x.lineTo(w,midY);x.stroke();
+   for(var i=0;i<hist.length;i++){dot(x,x0+i,midY-hist[i][1]*sc,1.4,'rgba(255,107,138,0.5)');}
+   x.strokeStyle='rgba(140,150,180,0.6)';x.setLineDash([4,3]);x.lineWidth=1.3;x.beginPath();
+   for(var i2=0;i2<hist.length;i2++){var py=midY-hist[i2][0]*sc;if(i2===0)x.moveTo(x0+i2,py);else x.lineTo(x0+i2,py);}x.stroke();x.setLineDash([]);
+   x.strokeStyle=C.inf;x.lineWidth=1.9;x.beginPath();
+   for(var i3=0;i3<hist.length;i3++){var py3=midY-hist[i3][2]*sc;if(i3===0)x.moveTo(x0+i3,py3);else x.lineTo(x0+i3,py3);}x.stroke();
+   lab(x,'dashed = truth    dots = noisy sensor    teal = Kalman estimate',14,18,C.mut,10.5);
+   var Kss=P/(P+R);
+   var st=Kss<0.14?'trusts the model — smooth but lags the truth':(Kss<0.5?'balanced blend of model and sensor':'chases the sensor — responsive but jittery');
+   var col=Kss<0.14?C.line:(Kss<0.5?C.good:C.opt);
+   var r=document.getElementById('r_kf');
+   if(r)r.innerHTML='steady-state gain K = &sigma;&sup2;/(&sigma;&sup2;+R) = <b>'+Kss.toFixed(2)+'</b> &nbsp; &rarr; <b style="color:'+col+'">'+st+'</b> &nbsp;&middot;&nbsp; more sensor noise R &rarr; smaller K &rarr; lean on the prediction.';
+  });})();
+
+ /* ---------- 7. CAPTURE POINT ---------- */
+ (function(){var cv=ctxOf('c_cp');if(!cv)return;var x=cv.getContext('2d');
+  var g=9.81,foot0=0,footHalf=0.12,path=[],prog=0,plantX=null,xi=0,fell=false;
+  function build(){var v0=val('s_push'),L=val('s_L'),maxstep=val('s_reach');
+   var om=Math.sqrt(g/L),xpos=foot0,v=v0,dt=0.02,pivot=foot0,planted=false,tt=0,react=0.18;
+   path=[];plantX=null;fell=false;xi=xpos+v/om;
+   for(var i=0;i<520;i++){tt+=dt;
+     var acc=om*om*(xpos-pivot);v+=acc*dt;xpos+=v*dt;
+     if(!planted&&tt>=react){var target=xpos+v/om;var maxT=foot0+footHalf+maxstep;
+       plantX=(target<=maxT)?target:maxT;pivot=plantX;planted=true;}
+     path.push([xpos,v,pivot,planted]);
+     if(planted&&Math.abs(v)<0.02)break;
+     if(xpos>foot0+maxstep+3){fell=true;break;}}
+   prog=0;}
+  build();
+  click('b_cp',build);
+  on('s_push',function(){set('v_push',val('s_push').toFixed(2));build();});
+  on('s_reach',function(){set('v_reach',val('s_reach').toFixed(2));build();});
+  on('s_L',function(){set('v_L',val('s_L').toFixed(2));build();});
+  ticks.push(function(){var w=cv._w,h=cv._h,L=val('s_L');
+   x.fillStyle=C.bg;x.fillRect(0,0,w,h);
+   var ground=h-46,ox=w*0.26,sc=(w*0.52)/2.6;
+   function X(wx){return ox+wx*sc;}
+   x.strokeStyle=C.grid;x.beginPath();x.moveTo(0,ground);x.lineTo(w,ground);x.stroke();
+   x.strokeStyle=C.mut;x.lineWidth=4;x.beginPath();x.moveTo(X(foot0-footHalf),ground);x.lineTo(X(foot0+footHalf),ground);x.stroke();
+   lab(x,'stance foot',X(foot0),ground+14,C.dim,9,'center');
+   x.strokeStyle=C.opt;x.setLineDash([3,3]);x.lineWidth=1.2;x.beginPath();x.moveTo(X(xi),ground);x.lineTo(X(xi),ground-78);x.stroke();x.setLineDash([]);
+   dot(x,X(xi),ground,3.5,C.opt);lab(x,'capture pt',X(xi),ground+14,C.opt,9,'center');
+   if(prog<path.length-1)prog+=1.5;var pi=Math.min(path.length-1,Math.floor(prog));
+   var Pp=path[pi],xpos=Pp[0],v=Pp[1],pivot=Pp[2],planted=Pp[3];
+   var comH=L*95,comX=X(xpos),comY=ground-comH;
+   x.strokeStyle=C.dim;x.lineWidth=2;x.beginPath();x.moveTo(X(pivot),ground);x.lineTo(comX,comY);x.stroke();
+   if(planted&&plantX!==null&&Math.abs(plantX-foot0)>footHalf){
+     x.strokeStyle=C.dyn;x.lineWidth=4;x.beginPath();x.moveTo(X(plantX-footHalf),ground);x.lineTo(X(plantX+footHalf),ground);x.stroke();
+     lab(x,'step',X(plantX),ground+26,C.dyn,9,'center');}
+   dot(x,comX,comY,8,C.dyn);
+   x.strokeStyle=C.ink;x.lineWidth=1.5;x.beginPath();x.moveTo(comX,comY);x.lineTo(comX+v*22,comY);x.stroke();
+   lab(x,'shoved body = inverted pendulum;  capture point  xi = x + v/omega',14,18,C.mut,10.5);
+   var inSupport=Math.abs(xi-foot0)<=footHalf+1e-6;
+   var stepLen=(plantX!==null)?(plantX-(foot0+footHalf)):0;
+   var msg,col;
+   if(inSupport){msg='capture point inside the foot — the ankle holds, no step needed';col=C.good;}
+   else if(!fell){msg='steps '+Math.max(0,stepLen).toFixed(2)+' m to the capture point &rarr; comes to rest';col=C.line;}
+   else{msg='capture point beyond leg reach — the step falls short, it topples';col=C.bad;}
+   var r=document.getElementById('r_cp');
+   if(r)r.innerHTML='&omega; = &#8730;(g/L) = <b>'+Math.sqrt(g/L).toFixed(2)+'</b>/s &nbsp; capture point at <b>'+xi.toFixed(2)+'</b> m &nbsp; &rarr; <b style="color:'+col+'">'+msg+'</b> &nbsp;&middot;&nbsp; taller body (bigger L) falls slower, so &xi; sits nearer the foot.';
+  });})();
+
  requestAnimationFrame(raf);
 })();
