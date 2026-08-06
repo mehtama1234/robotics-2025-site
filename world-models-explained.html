@@ -191,8 +191,9 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
 </section>
 <section class="fp">
   <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
-  <img src="assets/wm/world_model.gif" alt="A learned world model imagining a bouncing-ball trajectory versus true physics">
-  <figcaption>World models, for real: we trained a tiny network to predict the next state of a bouncing ball, then let it <b>imagine</b> a rollout from a fresh start &mdash; violet is the model dreaming forward, green is true physics. It tracks reality closely at first, then drifts as small errors compound (worst right after a bounce) &mdash; exactly the world-model trade-off: cheap imagination, limited horizon. It was never given the physics, only learned to predict the next step. Our own run.</figcaption></figure>
+  <img src="assets/wm/wm_rollout.png" alt="Three episodes: true physics (green) versus the world model imagining forward (violet) across 16 steps" style="max-width:760px">
+  <img src="assets/wm/wm_error.png" alt="Imagination error growing with horizon; the model stays below a do-nothing baseline" style="max-width:760px;margin-top:12px">
+  <figcaption>A real latent world model, the <b>Dreamer</b> recipe in miniature. We trained one on a ball we can push around a box: a small convolutional network <b>compresses each frame to a latent code</b>, a recurrent state plus a tiny stochastic code <b>predicts the next latent from the action taken</b>, and a decoder paints it back to pixels. Then we made it <b>imagine</b> &mdash; hand it a <em>single</em> frame and an action sequence, and roll the latent forward with <em>no further observations</em>, decoding each step. Above, green is true physics, violet is the model dreaming. It nails the very next step (0.07&nbsp;px off) and stays glued to reality for six-to-eight steps, then drifts to about 7&nbsp;px by sixteen steps ahead &mdash; yet always beats a do-nothing baseline that just freezes the frame. That is the whole world-model trade-off in one picture: cheap, accurate imagination up close, decaying with horizon. It was never told the physics; it learned to dream them from watching. 6,000 steps on a T4. Our own run.</figcaption></figure>
 </section>
 
 <div class="part">
