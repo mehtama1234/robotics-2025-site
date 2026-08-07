@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Pipeline inspection robots — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#3C8296;--accent-deep:#285964;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#3C8296 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#3C8296 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Pipeline inspection robots — the real problem</h1>
+  <p>An in-pipe inspection robot has to know exactly where it is in a featureless pipe, tell real corrosion from sensor noise, grip a vertical wall, cover the entire circumference, and pin down a leak — and each of those is a separate hard problem.</p>
+  <nav><a href="inspection-crawler.html">&larr; the inspection crawler demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Count the welds — know exactly where you are in a featureless pipe</h2></div>
+  <p class="demo">Our demo: on a 300 m run with 5% wheel slip, unaided odometry drifts 15.16 m, but resetting distance at each known girth weld brings the reported position back to 0.00 m error.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>In-line inspection (ILI) tools — the 'smart pigs' run by companies such as ROSEN, Baker Hughes, and T.D. Williamson — track how far they have travelled with odometer wheels riding on the pipe wall, and log every girth weld and fitting they pass as a positional reference.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>The absolute distance an odometer reports can drift with cumulative wheel-slip error on the order of a percent of the run, which over a multi-kilometre pipeline turns into tens or hundreds of metres of position uncertainty; if the tool loses track, a flagged defect cannot be reliably relocated for a dig-and-repair.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production ILI keeps position honest by referencing odometry to known features — girth welds, valves, and fittings — and to above-ground markers (AGMs) dropped at surveyed points, then matching welds run-to-run so a defect measured today lines up with the same joint measured years ago.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo hands the crawler perfect, evenly spaced welds at known positions; a real line has irregular joint spacing, missed or mis-detected welds, dents and bends that corrupt the odometer, and GPS-denied buried sections where AGM placement and weld-matching are themselves error-prone.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Flag real corrosion — tell true metal loss from sensor noise</h2></div>
+  <p class="demo">Our demo: on a 10 mm wall with a 9 mm threshold, flagging on any single reading raises a 13.48% false-alarm rate, but requiring 4 consecutive readings below threshold cuts false alarms to 0.05% while keeping recall at 98.7%.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>This is the core job of metal-loss ILI tools: magnetic flux leakage (MFL) pigs magnetize the pipe wall to saturation and read the flux that leaks at corrosion pits, while ultrasonic (UT) thickness tools bounce sound off the far wall to measure remaining thickness directly — both offered by ROSEN, Baker Hughes, and T.D. Williamson.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A false alarm sends a crew to excavate sound pipe at large expense; a missed real defect leaves growing corrosion in service, where it can thin the wall to the point of a leak or rupture. Sizing accuracy matters too — UT depth sizing is typically within a few percent of wall thickness, and errors there feed straight into remaining-strength and repair decisions.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Real corrosion is spatially extended, so tools exploit spatial consistency: metal loss must appear coherently across adjacent sensor channels and successive samples rather than in a single noisy reading, and MFL/UT data are mapped over position and circumference so a real feature forms a consistent shape that survives filtering.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo is a clean 1-D threshold on synthetic thickness; production sizing must handle mill scale, wax and debris (UT needs a clean liquid-coupled bore), sensor lift-off and speed effects on MFL, and the hard inverse problem of turning a flux or echo signature into an accurate defect depth, length, and width.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Grip the pipe wall — hold on when the pipe or tank goes vertical</h2></div>
+  <p class="demo">Our demo: an 8 kg crawler with a fixed grip tuned on the flat slips back on the steep section (slip fraction 0.511), but raising the wheel normal force with the incline drives the slip fraction to 0.00 up to a 75-degree climb.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Wall-climbing and crawler robots inspect vertical structures — above-ground storage-tank shells, ship hulls, and risers — using permanent-magnet wheels or tracks to cling to ferromagnetic steel while carrying NDT sensors; the same adhesion problem governs any crawler that must drive up a steep or vertical pipe section rather than float through it.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>If adhesion is tuned for the flat and the wall goes vertical, the robot slips or peels off: it slides back and loses its scan line, or in the worst case falls, damaging an expensive tool and stranding it inside or on an asset. Grip has to hold not just the weight but the tether drag and the sensor payload.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production climbers size adhesion for the worst-case orientation — permanent-magnet arrays or spring-loaded wheels that keep enough normal force to prevent both slipping and toppling on a vertical wall — and analyze the force balance so the magnetic hold exceeds the load with margin across the surfaces the robot must traverse.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo scales an idealized normal force against a single friction coefficient on smooth steel; real walls have paint, rust, weld seams, curvature, and debris that change friction and break magnetic contact, and non-ferrous or lined surfaces defeat magnetic adhesion entirely.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Cover the whole wall — scan every part of the circumference, not just a strip</h2></div>
+  <p class="demo">Our demo: on a 0.6 m pipe (1.885 m circumference) with an 0.08 m sensor swath over a 24 m run, a straight axial pass sees only 4.2% of the wall, while a helical path tiles consecutive turns to reach 100% coverage.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Metal-loss ILI tools carry sensor rings that span the full circumference so one axial pass covers the whole wall, while crawlers and tank-climbing robots with a narrower sensor footprint must plan a coverage path — a back-and-forth or helical sweep — to inspect the entire surface.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Any un-scanned strip is a blind spot: corrosion or a crack in the missed band goes undetected until it fails, so a survey that reports 'no significant metal loss' can be wrong precisely where the sensor never looked. Coverage gaps undermine the whole point of the inspection.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Full-ring ILI tools are built to overlap sensor coverage around the entire bore in a single pass; footprint-limited crawlers use coverage-path planning — helical scanning or systematic boustrophedon sweeps with overlap between passes — so consecutive tracks abut and tile the complete surface.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo assumes a perfect helix on a clean cylinder with a fixed swath; real coverage fights sensor drop-outs, speed excursions that stretch or compress sample spacing, obstacles and fittings that force detours, and the trade-off between overlap for safety and the extra time and battery it costs.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Find the leak — pin down where the pipe is losing product</h2></div>
+  <p class="demo">Our demo: on a 100 m pipe with a leak at 63 m, a single sensor localizes it only to within 50 m because the pressure fall-off is symmetric, while triangulating from 10 sensors along the line locates it to within 0.2 m.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Pipeline leak-detection systems watch for the signature of a leak — a negative pressure wave and acoustic emission that travel out from the leak point in both directions — using pressure and acoustic sensors placed along the line, alongside flow-balance monitoring and distributed fiber-optic sensing.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A single sensor can tell you a leak exists but not where it is: the symmetric distance fall-off leaves the position undetermined, so crews cannot dig in the right place. A slow leak that is detected but not localized keeps releasing product and raises the environmental, safety, and cleanup cost the longer it takes to find.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Localization triangulates from multiple sensors: the negative-pressure-wave and acoustic-emission methods use the arrival-time difference of the wave reaching sensors up- and downstream, combined with the known wave speed, to compute the leak position, and fuse pressure with acoustic and flow-balance data to sharpen it.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses clean, synchronized sensors and a known wave speed on a straight pipe; real localization contends with uncertain and temperature-dependent wave velocity, pump and valve noise, sensor spacing over long distances, and transient events that mimic a leak, all of which widen the real-world error well beyond the ideal case.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="inspection-crawler.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Pipeline inspection robots — the real problem &middot; <a href="inspection-crawler.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

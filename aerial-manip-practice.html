@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Aerial manipulation — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#C77DB0;--accent-deep:#93507C;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#C77DB0 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#C77DB0 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Aerial manipulation — the real problem</h1>
+  <p>Bolt an arm onto an underactuated quadrotor and every reach, kick, descent, and push becomes a fight to keep the flying body trimmed, level, and in place while the manipulator does its job.</p>
+  <nav><a href="aerial-manip.html">&larr; the aerial manip demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Trim for the reach — comtrim</h2></div>
+  <p class="demo">Our demo: extending the 0.4 kg arm to 0.5 m shifts the center of mass 0.083 m off the rotor axis; an equal thrust split leaves a 1.96 N·m net moment that tips the aircraft, while reallocating the two rotors (7.85 N vs 15.7 N) cancels it to 0.0 N·m.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>This is the founding problem of aerial manipulation, studied by the labs behind the EU H2020 AEROARMS project (2015–2019), coordinated by the University of Seville's GRVC group with partners including DLR and CATEC, and by university groups such as UPenn's GRASP Lab and ETH Zurich that mount arms and grippers on multirotors.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A multirotor is balanced around its rotor geometry, so the instant an arm extends, the combined center of mass moves off the thrust axis; if the controller keeps splitting thrust evenly, the residual moment (weight times the offset) rolls or pitches the aircraft and it drifts or tips over.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Control allocation is re-solved for the shifted center of mass: the mixer commands unequal rotor thrusts whose net torque cancels the gravity moment from the offset load, and researchers model the arm's varying centroid explicitly so the trim tracks the arm as it moves.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo assumes the arm mass, reach, and offset are known exactly and the air is still; a real system must estimate an uncertain payload's mass and grasp point, and wind gusts add moments of their own that no static re-trim anticipates. Aerial manipulation remains largely a research field with few fielded products.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Reject the arm's kick — reaction</h2></div>
+  <p class="demo">Our demo: accelerating the arm at 12 rad/s² kicks the lighter body (arm inertia 0.05 vs body 0.02) to a 0.075 rad (4.3°) peak tilt uncompensated; feeding the reaction torque forward to the rotors holds the tilt at 0.0°.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every group flying an arm on a quadrotor hits this dynamic coupling — GRVC Seville, ETH Zurich, and UPenn GRASP among them — and the aerial-manipulation control literature is full of feedforward and observer-based torque-compensation schemes built specifically to reject the arm's reaction on the body.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Newton's third law couples the arm and body: swinging the manipulator drives an equal and opposite reaction torque into the airframe, and because the airframe is often lighter than or comparable to the arm, an uncompensated swing pitches or rolls the whole aircraft mid-task.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The known or estimated reaction torque from arm acceleration is fed forward onto the rotors so the attitude controller counters the kick before it grows, with the arm's centripetal, Coriolis, and gravity coupling terms treated as a disturbance to be canceled — an approach reported across the aerial-manipulator control literature.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses fixed inertias and a perfectly known arm acceleration; a real system must estimate coupling terms online as the arm reconfigures and carries an unknown payload, and the feedforward is only as good as that model. This is still research-stage work, not a hardened product.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Settle near the surface — groundeffect</h2></div>
+  <p class="demo">Our demo: descending to a 0.2 m grab height with 0.15 m rotors, holding the free-air hover thrust (23.5 N) leaves a 0.429 m altitude error as the drone rides its own cushion; compensating the thrust for ground effect drives the error to 0.0 m.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Ground effect is a well-established rotorcraft phenomenon and a known nuisance for any aerial task that operates close to a surface, including the contact-inspection and grasping work in the AEROARMS program and university aerial-manipulation labs; it has been characterized experimentally for multirotors in the aerodynamics literature.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Near a surface, the rotor wake recirculates and the same rotor RPM produces more thrust than it does in free air; a controller holding the free-air hover thrust makes the drone unexpectedly pop up on its own cushion, so it cannot settle down to the object it is trying to grab.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The thrust command is compensated for the ground-effect increase, using models or empirical corrections that scale thrust with height above the surface (measurable for heights below about one rotor radius) so the aircraft can hold the low altitude needed to reach the target.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a clean height-dependent thrust model over flat ground; real surfaces are uneven, tilted, or rough, the effect changes with a moving or object-occluded surface below the rotors, and it interacts with the disturbances from the arm — none of which a simple correction captures. Deployment near real structures stays experimental.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Push without tumbling — contact</h2></div>
+  <p class="demo">Our demo: commanding 0.05 m into a 6000 N/m wall with stiff position control spikes the contact force to 235.2 N and throws the flying body off; an admittance controller that yields on contact holds the peak force to 0.6 N.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Contact-based inspection was the core goal of AEROARMS (validated at a refinery in Germany and a cement factory in Spain), and ETH Zurich demonstrated axis-selective impedance and active interaction-force control on a fully actuated, omnidirectional tilt-rotor platform for push-and-slide non-destructive testing of concrete.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A flying body has almost no ability to brace against a wall, so stiff position control fights the surface: a small commanded penetration into a stiff wall produces a large contact force, and that reaction wrench throws the underactuated aircraft off its hover.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Admittance and impedance control let the aircraft yield on contact — the controller trades commanded position for measured force so the platform behaves like a compliant spring-damper against the wall — and fully actuated or omnidirectional designs add force sensing to control the interaction directly rather than fighting it.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a known linear wall stiffness and a compliant controller in isolation; real contact involves uncertain, nonlinear surface stiffness, friction and slip, and the added complication that most underactuated quadrotors cannot point thrust into the wall the way a fully actuated platform can. These systems are demonstrated in labs and pilots, not routinely deployed.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Hold the catch — retrim</h2></div>
+  <p class="demo">Our demo: closing the gripper on a 0.5 kg payload adds 4.9 N of weight; holding the pre-grasp hover thrust sinks the 2.4 kg drone 0.497 m before recovery, while re-trimming thrust and allocation the instant the grasp closes limits the drop to 0.015 m.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Grasp-and-carry is the classic aerial-manipulation task — UPenn's GRASP Lab demonstrated avian-inspired high-speed grasping on a quadrotor, and the AEROARMS partners and other groups work on aerial grasping and payload transport where the aircraft must stay stable through the pick-up.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>The moment the gripper closes on a payload, the aircraft's mass and center of mass jump; if the controller keeps commanding the pre-grasp hover thrust it is now under-lifted and off-balance, so the drone sinks and drifts until feedback catches up — a dangerous transient close to the object and any nearby structure.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The controller re-trims the instant the grasp is detected: total thrust is raised to carry the added weight and the allocation is re-solved for the new center of mass, ideally feeding the mass change forward rather than waiting for the altitude error to accumulate.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo knows the payload mass and the exact moment of grasp; a real system must react to a payload of uncertain and sometimes shifting mass, ride out swing if the load is not rigidly held, and do it all on a battery whose limited flight time shrinks further under the extra load. Reliable, unsupervised operation near people and structures remains an open research problem.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="aerial-manip.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Aerial manipulation — the real problem &middot; <a href="aerial-manip.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

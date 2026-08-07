@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Autonomous mine haulage — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#8B5E3C;--accent-deep:#5E3F28;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#8B5E3C 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#8B5E3C 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Autonomous mine haulage — the real problem</h1>
+  <p>From loading the tray to holding the truck on a downgrade and slowing for the bend, a driverless haul truck fights mis-weighed payloads, runaway grades, overheating brakes, wasted fuel, and rollover on the curve — one hard problem per stage.</p>
+  <nav><a href="mining-haul.html">&larr; the mining haul demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Load to the target — hit the payload without over- or under-filling the tray</h2></div>
+  <p class="demo">Our demo: counting a fixed number of buckets misses the 200 t target by 14.2 t and overloads past 240 t about 1.3% of the time, while reading the payload from the suspension-strut pressures lands within 1.2 t and never overloads.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Onboard payload measurement systems on Caterpillar (Cat MineStar / VIMS) and Komatsu (930E, FrontRunner-equipped) trucks weigh each load from suspension-strut pressures during the normal lift and haul, feeding tonnage back to fleet management software at Rio Tinto and BHP Pilbara autonomous operations.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Overloading racks the frame and stresses the drivetrain, wears components early, and degrades braking and steering; the industry '10/10/20' policy caps loads because consistent overloading can void a truck's warranty, while under-filling wastes fuel and cycles by hauling air.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production payload systems infer tonnes from strut pressure rather than counting shovel passes, then trim loading against the 10/10/20 rule so the fleet averages near target without individual trucks running heavy.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim reads clean strut pressures; field systems must reject a truck parked on a cross-slope, material carryback stuck in the tray, calibration drift, and center-of-load offset from an uneven dig.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Speed for the grade — hold the truck within its braking limit on the way down</h2></div>
+  <p class="demo">Our demo: a fixed 14 m/s haul-road speed on a 10-degree descent demands 158% of the truck's braking power — an unstoppable runaway — while sizing speed to the brake limit at 8.8 m/s brings demand back to 100%.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Cat MineStar Command for hauling and Komatsu FrontRunner set autonomous truck speed by grade across their driverless fleets, which now span hundreds of trucks at dozens of sites; Command has autonomously hauled over 8 billion tonnes and FrontRunner over 5 billion.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Carrying flat-road speed onto a steep loaded descent asks gravity to be held by more braking than the truck has; the truck accelerates instead of slowing and becomes a runaway that cannot be stopped at the bottom.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Autonomous haulage systems enforce grade-dependent speed limits, capping descent speed so the retarding power available always exceeds gravity's pull for the truck's loaded mass on that grade.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We assume one clean grade and a fixed brake ceiling; real haul roads mix grades, and available traction and retarding power shift with wet roads, tire wear, and the difference between a loaded descent and an empty return.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Save the brakes — dump descent energy into the retarder, not the friction brakes</h2></div>
+  <p class="demo">Our demo: friction brakes alone on a long 8-degree descent peak at 894 C — far past their ~350 C fade limit, leaving 0% capacity at the bottom — while an engine/electric retarder holds the descent at 168 C and keeps 100% of the friction brakes in reserve.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every large haul truck runs a dynamic retarder for sustained downgrades: electric-drive trucks like the Komatsu 930E and Cat 794 AC dissipate descent energy through resistor grids (the 930E retarder is rated in the thousands of kilowatts), keeping the friction brakes as an emergency reserve.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Riding the friction brakes down a long grade overheats the linings until they glaze and fade, losing much of their stopping force just when the truck reaches the steepest, fastest part of the descent — the classic runaway failure mode.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production trucks slow the descent with the retarder (engine compression braking or electric dynamic braking through grid resistors) and pre-shift checks confirm the retarder works, so the friction brakes stay cool and are held for emergency and parking use.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our model uses a single fade temperature and a steady descent; real retarder capacity depends on speed and drive type, grids can heat-soak on repeated cycles, and a slippery road can make hard retarding lock the wheels.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Drive the fuel-optimal line — steady speed and coasting beat flat-out-then-idle</h2></div>
+  <p class="demo">Our demo: an aggressive 14 m/s dash over a 5 km haul burns 561 L, while a steady 9 m/s eco line burns 339 L — 39.6% less fuel — for only 198 s of extra travel time that is often lost queuing at the shovel anyway.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Fleet management from Cat MineStar and Komatsu FrontRunner manages autonomous truck speed for efficiency, cutting idle time, bunching at the loader, unnecessary empty travel, and wasted fuel; fuel is roughly half of a haul truck's operating cost and 20–40% of a surface mine's total cost.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Racing to the front of the shovel queue burns fuel that aerodynamic drag and rolling resistance grow with speed, then idling in line gives none of it back — a single ultra-class truck burns hundreds of litres per hour, so wasted fuel across a fleet is millions of dollars a year.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Autonomous systems hold a steady fuel-optimal speed, coast the downgrades, and space trucks to avoid bunching, so cycle time is set by the loader rather than by any one truck sprinting between idle periods.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our fuel curve is a clean speed-squared model on one flat haul; real optimization trades grade, load state, road condition, engine map, and shovel-queue dynamics that change through the shift.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Slow for the bend — stay under the rollover speed through a curve</h2></div>
+  <p class="demo">Our demo: carrying 14 m/s into a 30 m-radius curve pushes lateral acceleration to 111% of the rollover threshold and tips a loaded high-CoM truck, while limiting to 13.3 m/s (v_max = sqrt(a_roll*R)) holds it right at the limit.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Autonomous haulage systems from Cat and Komatsu enforce curve speed limits across their Pilbara fleets — including one of the world's largest single-owner autonomous fleets of hundreds of trucks — and haul roads are built with graded curves and safety berms sized to the trucks.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A loaded haul truck has a high center of gravity, so carrying haul-road speed into a tight curve drives lateral acceleration past the point where the truck tips; a rollover destroys the truck's load and body and, in mixed manned operation, endangers nearby people.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Autonomous systems set a rollover-aware speed limit per curve from the radius and the truck's track width and CoM height, and mines back it up with graded (superelevated) curves and berms so an errant truck is contained.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We use a fixed track width, CoM height, and curve radius on dry ground; the real rollover margin shrinks with a shifting load, soft or wet road edges, worn tires, and berms that erode between grader passes.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="mining-haul.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Autonomous mine haulage — the real problem &middot; <a href="mining-haul.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

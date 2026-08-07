@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Soft robots — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#D98324;--accent-deep:#A15F14;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#D98324 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#D98324 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Soft robots — the real problem</h1>
+  <p>A soft or continuum arm bends instead of pivoting, so it has to know where its tip really is, drive a nonlinear actuator, conform through clutter, hold a load without sagging, and stiffen only when it must — each is a separate hard problem.</p>
+  <nav><a href="soft-robot.html">&larr; the soft robot demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Model the bend — locate the tip of a curving arm, not a straight rod</h2></div>
+  <p class="demo">Our demo: for a 0.3 m segment bent to 90 degrees, a straight-rod model mislocates the tip by 22.0 cm, while a constant-curvature (PCC) arc model puts the error at 0.0 cm.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>This is the foundational modeling problem for every continuum and tendon-driven arm — snake-arm robots, elephant-trunk manipulators, and the flexible surgical scopes used in minimally invasive surgery — where the structure curves smoothly along its length instead of pivoting at discrete joints.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Apply a rigid-link kinematic model to a body that actually bends and the predicted tip lands tens of centimetres from the real one, so the arm reaches the wrong place; for a surgical or inspection tool threading a tortuous path, that gap is the difference between hitting the target and missing it.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The piecewise constant curvature (PCC) model treats each soft segment as a circular arc of constant curvature, the most widely used kinematic framework for continuum robots; Webster and Jones's 2010 review (Design and Kinematic Modeling of Constant Curvature Continuum Robots) unified these formulations and showed the mapping splits into a robot-specific part and a general arc-to-pose part.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real segments do not hold perfectly constant curvature: gravity, external contact, and non-uniform actuation bend them into variable-curvature shapes, so production systems move to Cosserat-rod or piecewise-linear-strain models and add shape sensing that our idealized single-arc demo skips.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Calibrate the actuator — map pressure to shape through the nonlinearity</h2></div>
+  <p class="demo">Our demo: a straight-line pressure-to-curvature fit leaves an RMS curvature error of 0.0374 /m (about 2.9% of range), while the true nonlinear map cuts it to 0.0018 /m (about 0.1%).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>This is the core control problem for pneumatic soft actuators — Soft Robotics Inc.'s mGrip pneumatic fingers (now part of Schmalz) for gentle food and produce handling, and Festo's bionic pneumatic actuators such as the OctopusGripper — where compressed air, not a motor angle, sets the bend.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Assume pressure maps linearly to bend and you get a systematic shape error because the elastomer stiffens and the chamber saturates as it inflates; the gripper closes too little or too much, so a delicate item slips or is crushed and a positioning arm settles off target.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production systems calibrate the true nonlinear pressure-to-curvature (or pressure-to-angle) characteristic and drive against it; the pneumatic supply is regulated precisely — Festo's OctopusGripper runs on the Motion Terminal for fine control of air flow — so the commanded pressure produces the intended shape.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our calibration is a static, once-measured curve; real actuators show hysteresis (the inflate and deflate paths differ), rate-dependent and asymmetric behavior, and viscoelastic drift, so a single fixed map goes stale and real controllers need hysteresis compensation our demo omits.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Let it conform — reach through clutter a rigid arm cannot</h2></div>
+  <p class="demo">Our demo: across 400 trials in a field of 14 obstacles, a rigid 0.06 m-wide arm needing a clear straight corridor reaches the target only 16.5% of the time, while a soft arm that bends around them succeeds 100%.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>This is the advantage that sells continuum and soft manipulators — snake-arm robots for inspection and search in collapsed structures, and flexible surgical robots reaching a site through natural orifices and tortuous anatomy — plus conforming grippers like Festo's OctopusGripper and Soft Robotics' mGrip that wrap and cradle irregular items.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A rigid arm needs an unobstructed straight-line corridor that a cluttered scene rarely provides, so it stalls or collides; forcing it through risks damaging the obstacles, the payload, or the tissue it is working near.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Continuum manipulators have effectively many degrees of freedom along their length, so they comply with and route around obstacles instead of pushing through, and compliant grippers conform to the object's shape to grasp gently — the inherent compliance is what reduces the risk of damage in constrained, human-centric spaces.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our world is a clean 2D field of point obstacles with a free-conforming arm; real clutter is 3D, deformable, and unmapped, and a soft body pressing against it deflects unpredictably, so planning and control among real obstacles is far harder than in the demo.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Hold up the load — keep the tip on target under payload</h2></div>
+  <p class="demo">Our demo: a 0.3 m soft cantilever carrying a 4.91 N tip load sags 36.8 cm, landing the tip low by the full 36.79 cm; feedforwarding a pre-bend equal to the predicted droop cuts the tip error to 0.0 cm.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>This hits every soft or continuum arm that must carry weight — a pick-and-place gripper holding produce or a package, or a continuum manipulator supporting a tool at its tip — where the same compliance that lets it conform also lets it sag.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>An uncompensated soft cantilever bows under its own weight plus payload, so the tip settles well below the commanded height; the arm places the item low, misses the target, or drops it, and the heavier the load the worse the sag.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The fix is model-based feedforward: predict the droop from the load and the arm's stiffness and command a pre-bend that cancels it, so the loaded tip lands where intended; the same idea underlies gravity- and load-compensation terms in compliant-arm controllers.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our droop model is a single clean deflection with a known load; in reality the payload is often unknown or shifting, and material creep and fatigue slowly change the arm's stiffness over its service life, so a fixed feedforward drifts and real systems need feedback and shape sensing to stay accurate.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Stiffen when needed — soft on contact, rigid for precision</h2></div>
+  <p class="demo">Our demo: a fixed-stiff arm (8000 N/m) spikes a 24.0 N peak force on every touch; modulating stiffness (softening to 400 N/m on contact) bounds the peak to 1.2 N, while staying stiff enough to hold free-space deflection near 0.25 mm instead of 5.0 mm.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>This is the promise of variable-stiffness soft robots — granular- and layer-jamming manipulators and grippers, and tendon-driven continuum arms with jamming stiffening — that need to be gentle in contact yet precise and load-bearing when free.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A permanently soft arm is imprecise and cannot hold a load; a permanently stiff arm spikes a large impact force on every touch, so you are stuck trading fragile precision against hard, damaging contact and cannot have both at once.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Variable-stiffness mechanisms tune rigidity on demand — granular or layer jamming stiffen a membrane of particles or sheets under vacuum, and antagonistic pneumatic and fiber-jamming schemes vary an arm's stiffness — so the robot softens on contact to bound peak force and stiffens in free space for precision and payload.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our stiffness is an instant, ideal switch between two values; real jamming and antagonistic actuators have limited stiffness range, finite switching speed, and their own hysteresis and wear, and sensing contact inside a soft body to know when to switch remains an open challenge our demo assumes away.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="soft-robot.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Soft robots — the real problem &middot; <a href="soft-robot.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>On-orbit servicing — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#4B4E8C;--accent-deep:#33356B;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#4B4E8C 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#4B4E8C 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>On-orbit servicing — the real problem</h1>
+  <p>A servicing spacecraft has no ground to push against and no room for a second try, so every stage is a fight to move an arm, hold an attitude, and grab another satellite without spinning itself off target or tearing itself apart.</p>
+  <nav><a href="space-servicing.html">&larr; the space servicing demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Move without a foothold</h2></div>
+  <p class="demo">Our demo: on a 500 kg base, swinging a 40 kg arm 0.8 m recoils the base 0.0593 m and misses by 0.0593 m, but cancelling the reaction cuts the end-effector error to 0.004 m.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Any free-flying robot-arm servicer hits this: Japan's ETS-VII (NASDA/JAXA, launched 1997), the world's first free-flying space robot, flew a 2 m six-DOF arm on a free-floating base and demonstrated 'zero-reaction' arm maneuvers; DARPA's Orbital Express (2007) and robotic servicers like the planned NASA OSAM-1 face the same coupling between arm and body.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>With nothing bolted down, conservation of momentum means moving the arm shoves the whole spacecraft backward, so the end-effector drifts off its target — a missed grapple point or an unintended contact with the client — and the arm's motion perturbs the base attitude the pointing loop must then fight.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Coordinated free-flyer/manipulator control plans the arm so its reaction is either cancelled by thrusters or nulled by counter-moving links (reactionless / zero-reaction maneuvers, flight-verified on ETS-VII), letting a dexterous arm work against an effectively steady base.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We model one rigid arm on a rigid base with a single reaction to cancel; real systems have flexible links and appendages, fuel-slosh, thruster lag and plume impingement, and multi-arm coupling that make free-floating manipulation genuinely hard.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Hold the attitude</h2></div>
+  <p class="demo">Our demo: a 0.05 N·m disturbance on a 200 kg·m^2 spacecraft drifts 0.45 rad off target in 60 s with no control, while a PD loop on the reaction wheels holds pointing to 0.0012 rad.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Essentially every three-axis-stabilized satellite carries reaction wheels (or control-moment gyros) for exactly this — communications satellites, Earth-observation platforms, and servicers like the Northrop Grumman Mission Extension Vehicles all hold attitude on spinning wheels rather than by firing thrusters continuously.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A steady disturbance torque — solar pressure, gravity gradient, or the reaction from a moving arm — integrates into an ever-growing pointing error if the loop is open; lost attitude means antennas and sensors point away from their target and, during rendezvous, the docking sensors lose the client.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>A closed-loop attitude controller commands the reaction wheels to produce counter-torque, holding the body on target to milliradian-class accuracy; this three-axis wheel-based control is the standard production approach across the satellite industry.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our disturbance is a single constant torque and the plant is a rigid rotor; real spacecraft see time-varying multi-axis disturbances, sensor noise and quantization, wheel friction and jitter, and structural flex that a textbook PD loop alone does not capture.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Unload the wheels</h2></div>
+  <p class="demo">Our demo: under a persistent 0.05 N·m disturbance the wheels saturate (fraction 1.0 of 600 rad/s) and pointing blows up to 6.05 rad, but desaturating keeps wheel speed at 0.65 of the limit and pointing at 0.0012 rad.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every reaction-wheel-controlled spacecraft must manage momentum this way; missions use thrusters for momentum unloading (or magnetic torquers in low Earth orbit, where the Earth's field is usable), a routine part of satellite operations in geostationary orbit where MEV-class servicers operate.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A persistent one-sided disturbance spins the wheels ever faster toward their mechanical speed limit; a saturated wheel can produce no further torque, so the spacecraft loses attitude control until the wheel is unloaded — a serious operational failure for a satellite that must stay pointed.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Momentum desaturation, or 'wheel unloading,' fires thrusters to torque the body against the wheel momentum so the wheels can slow back into their usable range while attitude is held; this is standard practice, done periodically before the wheels approach saturation.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our model treats saturation as one speed threshold and desaturation as a clean torque; real wheel unloading trades fuel against control authority, couples into attitude during the burn, and in low Earth orbit often uses magnetic torquers instead of propellant — trade-offs our toy sim omits.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Berth on the port</h2></div>
+  <p class="demo">Our demo: braking a 0.5 m/s approach at 0.02 m/s^2 needs a 6.25 m stop distance; a plan that brakes late hits the port at 0.265 m/s, while braking on time reaches contact at ~0 m/s.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Rendezvous and proximity operations (RPO) and berthing are the core of commercial life-extension: Northrop Grumman / SpaceLogistics MEV-1 docked with Intelsat 901 in February 2020 (the first docking of two commercial satellites in orbit) and MEV-2 docked with the active Intelsat 10-02 in April 2021 — both capturing a client via its liquid-apogee-engine nozzle.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>There is no atmosphere to bleed off closing speed, so a plan that brakes too late arrives at the docking port with high relative velocity; a hard contact can damage the client satellite or the servicer's docking mechanism, and there is no easy do-over in geostationary orbit.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Careful RPO profiles brake early enough that the servicer arrives at contact at a low, controlled velocity, using relative-navigation sensors to null closing rate and lateral offset before soft capture — the approach MEV-1 and MEV-2 flew successfully in GEO.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We use a one-dimensional constant-deceleration stop; real berthing is six-DOF with lighting-dependent vision, plume and gravity-gradient disturbances, and tight lateral and angular tolerances at the capture interface that a straight-line braking model does not represent.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Match the spin</h2></div>
+  <p class="demo">Our demo: grasping a 10 deg/s tumbling client without matching leaves the full 10 deg/s relative rate at contact, while spinning the chaser up to match cuts the relative rate to 0.3 deg/s.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Cooperative clients like the Intelsats MEV serviced are stabilized and easy to approach, but active-debris-removal targets are not: ESA's ClearSpace mission (contracted 2020) is designed to rendezvous with, synchronize with, and capture an uncooperative, tumbling object using a robotic capture mechanism — the hard case ETS-VII's capture experiments began to probe.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Closing a grasp across a rotation rate loads the arm with the full relative angular velocity at the instant of contact, which can tear the manipulator or violently perturb both spacecraft; a botched grab on a tumbling target risks losing the arm, the servicer, or creating more debris.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The chaser first observes the target's tumble, then spins up to match its rotation so the relative angular rate at capture is near zero, and only then closes the grasp — matching before capture is the accepted approach for tumbling, uncooperative targets.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our target tumbles about a single known axis at a known rate; real debris tumbles about multiple axes with an unknown, drifting spin state that must be estimated from close-range sensing, and matching a fast complex tumble remains an open, one-shot problem no operational mission has yet flown.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="space-servicing.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; On-orbit servicing — the real problem &middot; <a href="space-servicing.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

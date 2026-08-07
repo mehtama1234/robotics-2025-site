@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Crane lifts — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#E07B1A;--accent-deep:#A85812;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#E07B1A 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#E07B1A 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Crane lifts — the real problem</h1>
+  <p>From staying inside the load chart to never two-blocking, a crane lift fights load-moment tip-over, cable stretch, wind drift, uneven tandem load sharing, and the hook running into the boom tip — one hard problem per stage.</p>
+  <nav><a href="construction-crane.html">&larr; the construction crane demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Stay within the load chart</h2></div>
+  <p class="demo">Our demo: reaching out to a 4.0 m radius with a 100 kN load makes a 400 kNm moment that exceeds the 300 kNm rating and tips the machine, while pulling in to the 3.0 m rated radius holds the moment at 300 kNm.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every mobile-crane operator works to the manufacturer's load chart, and load-moment indicators (LMIs, also called rated-capacity limiters) from makers like Liebherr, Tadano, and Manitowoc show the operator the live load, radius, boom angle, and percent of rated capacity to keep the lift inside the chart.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Reaching out past the rated radius, or picking a load heavier than the chart allows at that radius, drives the load moment above the tipping moment and overturns the crane — one of the most common and destructive crane failure modes.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production cranes combine the published load chart with an LMI / rated-capacity limiter that warns and can cut hoisting and boom-out motions as the load approaches rated capacity; ASME B30.5 (Mobile and Locomotive Cranes) governs these devices and practices.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim treats one static rated moment; a real machine derates with outrigger spread, counterweight, boom configuration, quadrant of operation, and out-of-level, and it must also survive dynamic swing and shock loads the static chart does not capture.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Pre-hoist for the stretch</h2></div>
+  <p class="demo">Our demo: a 100 kN load on 30 m of hoist rope stretches the cable 0.119 m, so an uncompensated pick lands the beam 0.119 m low, while pre-hoisting by that elastic stretch lands it dead on target (0.000 m error).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Riggers and crane operators on any precision set — steel erection, module placement — feel this every time the weight comes onto the hook, and wire-rope makers publish elastic-stretch data (elongation proportional to load times length over metallic area times modulus of elasticity).</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>The hoist rope lengthens elastically the instant the full weight comes on, so a load lowered onto its target with no allowance for stretch lands low — the beam settles below the mark and has to be re-hoisted and reset.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Crews take the strain and pre-hoist so the rope stretch is already pulled out before the load is set, and precision placement is done in slow, staged lowering rather than a single blind drop.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We model pure elastic stretch of a single fall; a real reeving has multiple parts of line, sheave friction, constructional (permanent) stretch, and boom and structure deflection that all add to how far the tip actually moves under load.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Beat the wind drift</h2></div>
+  <p class="demo">Our demo: a 1000 N crosswind on a 100 kN load hung from 30 m of hoist rope drifts the load 0.3 m downwind, so a naive placement lands 0.3 m off the mark, while offsetting the trolley upwind by that steady drift lands it on target.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Tower- and mobile-crane operators lifting large wind-catching loads work to manufacturer wind limits; Liebherr and other makers define a maximum permissible wind speed (as a 3-second gust at the boom head) and load charts commonly apply up to about 9 m/s (20 mph) for a stated wind-exposed area per tonne.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A crosswind pushes the suspended load into a lasting pendulum offset, so it lands downwind of the mark; a larger sail area or higher gust can swing the load, add wind load the chart never assumed, and force the lift to be stopped and the load set down.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Sites monitor wind with an anemometer at or near boom height, halt and secure the lift when the manufacturer's limit is reached (tower cranes weather-vane out of service), and plan wind-exposed picks for calm windows.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim uses a steady crosswind and a fixed pendulum; real wind is gusty and turbulent, the load's sail area and shape change its drag, and taglines and operator corrections — not a fixed trolley offset — hold placement in the field.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Share the load</h2></div>
+  <p class="demo">Our demo: a 160 kN beam split evenly reads 80 kN per crane (80% of the 100 kN rating), but its centre of mass sits 3.0 m off-centre so the near crane truly carries 128 kN — 128% of rating, an overload — until the pick points are set to match the lever arms.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Tandem (multi-crane) lifts are used when one crane cannot handle a load's weight, length, or balance; every such lift is treated as a critical lift needing a written, engineered plan by a qualified person under standards such as ASME P30.1 and B30.5 (and, in the US, 29 CFR 1926.1432).</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Assuming a blind 50/50 split when the load's centre of mass is off-centre puts more than half the weight on the near crane and can silently overload it, while the far crane runs light — a path to tip-over or structural failure of one machine.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Engineered tandem-lift plans split the load by the lever arms to its centre of mass, derate each crane's rated capacity to leave margin for imperfect real-world load sharing, and require a pre-lift meeting and slow, coordinated motion.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim solves a static two-point balance; real dual-crane lifts shift load dynamically as the cranes move, boom angles and levels change, and the plan must budget extra capacity because the share between cranes never stays perfectly balanced.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Never two-block</h2></div>
+  <p class="demo">Our demo: hoisting the hook block on a 40 m boom straight up would drive it 1.2 m past the tip (a -1.2 m clearance) and crush it into the sheaves, while an anti-two-block limit stops the hoist at a positive 1.0 m clearance.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Anti-two-block (ATB) devices are required by ASME B30.5 on many cranes (mandated for mobile cranes since the early 1990s) and are integrated into the LMI; makers such as Liebherr, Tadano, and Manitowoc fit ATB limit switches on the boom tip.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Running the hook block all the way up into the boom-tip sheaves — two-blocking — crushes the block and can snap the hoist rope, dropping the load; it happens fast, especially when booming down or extending while the hook stays put.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>An anti-two-block switch at the boom tip senses the block approaching, warns the operator, and cuts the hoist-up, boom-down, and telescope-out functions before the block reaches the sheaves, keeping a positive hook-to-tip clearance.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim checks one static clearance threshold; a real ATB must react in time to fast, combined motions (hoist, boom, telescope at once), survive weather and abuse on the boom tip, and it only helps if it is installed, calibrated, and not bypassed.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="construction-crane.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Crane lifts — the real problem &middot; <a href="construction-crane.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

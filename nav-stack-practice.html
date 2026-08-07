@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Mobile robot navigation — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#3E6E9E;--accent-deep:#2A4E73;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#3E6E9E 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#3E6E9E 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Mobile robot navigation — the real problem</h1>
+  <p>A mobile robot crossing a building has to keep answering four brutal questions at once — where am I, which way do I go, do I fit, and how do I move without hitting the person walking toward me — and the stack earns its keep only when every stage stays honest in a cluttered space full of moving humans.</p>
+  <nav><a href="nav-stack.html">&larr; the nav stack demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Know where you are — localization</h2></div>
+  <p class="demo">Our demo: a particle filter tracking 6 landmarks with 600 particles holds mean pose error to 0.131 m, while raw dead-reckoning drifts to a 0.696 m mean and 1.168 m by the end.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every indoor mobile robot hits this first. In ROS Navigation2 (nav2) the default is AMCL — Adaptive Monte Carlo Localization, a particle filter that fuses laser scans against a known map to publish the robot's pose. Warehouse and logistics AMRs from Mobile Industrial Robots (MiR), OTTO Motors (Rockwell), and Fetch all run some form of LiDAR-map localization fused with wheel odometry and an IMU.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Wheel odometry alone drifts: wheels slip, the estimate compounds error, and the robot slowly gets lost. A robot that thinks it is somewhere it is not will plan a path into a wall or stop dead and ask for help — either way it clogs an aisle and stalls the job.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The production answer is a recursive Bayesian filter that corrects dead-reckoning with sensor measurements. AMCL maintains a cloud of hypothesized poses (particles), reweights them by how well each explains the current laser scan, and resamples — so the estimate locks onto the true pose instead of drifting. Fleets add IMU and wheel-encoder fusion for robustness.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim has 6 clean landmarks and no sensor noise model worth the name. Real buildings punish localization: long featureless corridors and plain uniform walls give the scan nothing distinctive to lock onto, glass and glossy surfaces reflect or pass the laser and confuse the range reading, and symmetric layouts make two very different places look identical to the filter.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Plan the route — global planning</h2></div>
+  <p class="demo">Our demo: on a 1600-cell grid, A* finds the same 75-step shortest path as Dijkstra while expanding only 75 nodes versus Dijkstra's 1263 — a 16.8x reduction in search.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>The global planner turns 'I'm here, the goal is there' into a route across the whole map before the robot moves. In nav2 the NavFn planner implements a wavefront Dijkstra or A* search over the costmap grid, and the Smac 2D planner is a grid-based A*; Smac Hybrid-A* and State Lattice handle car-like and kinematic constraints. Every AMR vendor runs a global planner of this family.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Uninformed search is the failure mode: Dijkstra fans out in every direction equally and expands a huge number of cells to find one route. On a big warehouse map, re-planning that way many times a second wastes compute the robot needs for everything else, and a slow plan means a robot that hesitates at every replan.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>A* guides the search with a distance-to-go heuristic — it prefers to expand cells that look closer to the goal, so it reaches the same shortest path Dijkstra would while touching a fraction of the nodes. That is exactly the tradeoff nav2 exposes with its use_astar flag, and why heuristic search is the standard global-planning tool in production stacks.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our grid is static, small, and known perfectly. Real global planning runs on a costmap that changes as people and pallets move, must be re-run continuously as the world updates, and — for anything bigger than a differential-drive puck — has to respect the robot's turning radius and heading, which is why production leans on Hybrid-A* and lattice planners rather than a plain grid A*.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Give the body room — costmap inflation</h2></div>
+  <p class="demo">Our demo: planning for a point-robot yields a 34-cell path that collides (minimum clearance 1.0 cell); inflating every obstacle by the robot's 2-cell radius forces a 74-cell path with 3.0-cell clearance that does not collide.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>This is where the planner stops pretending the robot is a dot. nav2's costmap_2d builds a layered costmap — static, obstacle, and inflation layers — and the InflationLayer grows the cost around every lethal obstacle by a configured inflation radius. Every AMR from MiR, OTTO, and Fetch plans on an inflated costmap so its physical width is accounted for.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A path planned for a point-robot clips corners and scrapes walls the moment the body has real width — the shortest route on paper drives the robot's shoulder straight into a shelf leg. Under-inflate and you get contact and emergency stops; the robot has width, and the map has to know it.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production inflates obstacles by the robot's radius (plus a safety margin) before the planner ever searches, so a valid path for the inflated point automatically clears the real body. nav2's inflation layer applies an exponential decay of cost outward from each obstacle, steering the planner toward the center of free space and away from walls while still allowing tight passages when needed.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our inflation is a single fixed radius on a tidy grid. Real robots are not circles — a forked or rectangular AMR has an orientation-dependent footprint — clearance must be tuned against throughput (too much inflation and the robot refuses to enter a legal aisle), and the costmap is being rewritten in real time as obstacles appear, so the 'safe' margin is a constant tuning fight, not a constant.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Dodge the pedestrian — dynamic obstacle avoidance</h2></div>
+  <p class="demo">Our demo: driving the straight-line velocity collides (final separation 0.0 m against a 0.6 m collision radius); planning in velocity space (velocity-obstacle / reciprocal avoidance) keeps a 0.96 m minimum separation and still reaches the goal.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>The global plan is stale the instant a person walks across it. The local planner/controller reacts to what the sensors see right now. In nav2 this is the controller server — DWB (a modified Dynamic Window Approach) or TEB (Timed Elastic Band) — sampling trajectories against the live local costmap. For crowds of other moving agents, ORCA (Optimal Reciprocal Collision Avoidance) and its RVO predecessor are the classic velocity-obstacle methods, and every AMR working around people needs some version of this.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>The blunt failure is hitting a person or another robot, which is a safety incident, not just a missed job. The subtler failure is freezing: a robot that treats every moving human as a wall stops dead in a crowd and never makes progress — the 'frozen robot' problem — which strands it in a busy aisle.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The trick is to plan in velocity space: build the set of velocities that would lead to a collision (the velocity obstacle) and pick the closest allowed velocity outside it. ORCA makes this reciprocal — each agent takes half the responsibility for avoiding the other, so two robots resolve a head-on smoothly without communicating, and it scales to thousands of agents in milliseconds. DWA/DWB and TEB do the single-robot version against the local costmap.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim knows every other agent's exact position and velocity and assumes they play by the same rules. Real pedestrians are unpredictable, don't reciprocate, cut corners, stop to look at their phone, and arrive in dense crowds; sensor readings are noisy and occluded; and predicting where a human will be in two seconds — the thing the avoider actually depends on — is an open, hard problem that ORCA's constant-velocity assumption only approximates.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Follow the path — path tracking</h2></div>
+  <p class="demo">Our demo: with an 18-cell lookahead, pure pursuit tracks the path with only 0.045 rad of steering chatter, while chasing the nearest path point chatters at 0.71 rad — 16x jerkier — for essentially the same 0.07 m cross-track error.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Even a perfect plan has to become smooth wheel commands. The controller that turns a geometric path into motion is a tracking controller: pure pursuit and nav2's Regulated Pure Pursuit Controller (RPP) aim the robot at a lookahead point on the path. RPP is built for service and industrial robots and is the tracking controller many warehouse AMRs use on kinematically feasible paths.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Chase the nearest point on the path and the steering chatters — the robot jerks left-right hunting for the line, which is uncomfortable, wears the drivetrain, and at speed can overshoot corners. Bad tracking also means the real trajectory diverges from the planned safe one, quietly eating into the clearance the costmap worked to give it.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Pure pursuit aims at a lookahead point some distance ahead on the path rather than the closest point, which smooths the curvature and kills the chatter. nav2's Regulated Pure Pursuit adds regulation terms: it slows the robot on tight curvature and near obstacles, so it doesn't overshoot on blind corners — the reason it's favored for exact, safe path following on industrial AMRs.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our tracker runs a fixed lookahead on a smooth path at modest speed with no wheel slip or dynamics. Real controllers must adapt the lookahead to speed, respect acceleration and torque limits, cope with wheel slip and payload changes, and — because pure pursuit itself ignores obstacles — only stay safe when paired with a planner that guarantees the path is drivable and the avoidance layer keeps the path clear.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="nav-stack.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Mobile robot navigation — the real problem &middot; <a href="nav-stack.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

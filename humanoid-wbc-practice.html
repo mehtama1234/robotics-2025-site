@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Humanoid whole-body control — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#8A6D3B;--accent-deep:#5E4A26;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#8A6D3B 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#8A6D3B 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Humanoid whole-body control — the real problem</h1>
+  <p>A standing humanoid has to choose the right recovery when it's shoved, reach and lift and hand off objects with its arms — all while keeping its whole body from toppling, colliding with itself, or dropping the load.</p>
+  <nav><a href="humanoid-wbc.html">&larr; the humanoid wbc demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Pick the recovery — ankle, hip, or step</h2></div>
+  <p class="demo">Our demo: an ankle-only controller can only absorb a small shove before the center of mass runs past the foot and it falls, while escalating ankle → hip → step recovers from a 1.1 m/s push (recovering the strongest test disturbance the ankle-only strategy could not).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every standing humanoid that can be pushed must decide how hard to react — Boston Dynamics' electric Atlas in Hyundai plants, Tesla Optimus, Figure's robots, and Agility's Digit in Amazon and GXO warehouses all have to stay upright when bumped, and balance research at IHMC and other labs formalizes the response.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>If the controller reacts too weakly — say it only pivots at the ankles — for a shove that needs a hip bend or a protective step, the body's momentum carries the center of mass past the foot and the robot falls; the DARPA Robotics Challenge Finals in June 2015 famously produced many humanoid falls, publicly documented, when robots met disturbances their controllers couldn't handle.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Human posture research (Nashner, Horak) established three escalating strategies — ankle for small disturbances, hip for larger ones, and a step when the others are exceeded — and humanoid controllers mirror this, often using the capture point (Pratt et al., 2006: the ground point where a step stops the body) to decide when and where to step.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo escalates on a clean 1-D push with known thresholds; a real humanoid must estimate the disturbance from noisy IMU and force data in milliseconds, and its ankle, hip, and stepping authority are all bounded by finite joint torque, foot size, and how fast it can actually swing a leg.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Reach without tipping — whole-body IK</h2></div>
+  <p class="demo">Our demo: an arm-only reach for a target 0.55 m away leans the trunk and drives the center of mass 0.146 m past the support edge so the robot tips, while whole-body IK holds the CoM excursion to −0.104 m — inside the 0.12 m support — and stays stable.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Any humanoid that reaches for something at the edge of its workspace faces this — Figure 02 handling parts on a BMW line, Optimus in Tesla's factories, Digit picking totes — because extending an arm shifts weight the legs must compensate for.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Command the arm alone to a far target and the trunk leans to follow, pushing the combined center of mass past the edge of the feet; the robot tips over reaching for the object instead of grasping it.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Whole-body inverse kinematics / hierarchical quadratic programming (as used on IHMC's Atlas) solves the reach across all joints at once — arms, trunk, and legs — with keeping the center of mass over the support polygon as a hard task, so the body counter-adjusts to stay balanced while the hand hits the target.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo balances a static CoM-over-support test in a clean model; a real whole-body QP runs at hundreds of Hz with full dynamics, contact and torque limits, and must handle the momentum of the arm actually swinging out, not just the final pose.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Don't hit yourself — self-collision constraints</h2></div>
+  <p class="demo">Our demo: a straight joint-space interpolation between two arm configs drives the hand and forearm through the torso (minimum clearance −0.06 m against a 0.16 m torso radius), while planning with a self-collision constraint keeps +0.02 m of clearance.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every humanoid with arms that fold near its own body must avoid its limbs striking its torso, head, or the other arm — a standing concern for Atlas, Optimus, Figure, and Digit whenever they tuck an arm or cross the body to work in tight space.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A naive path that interpolates joint angles can sweep the hand or forearm straight through the chest; on hardware that means the arm slams into the body, jamming the motion, damaging the shell or actuators, and possibly knocking the robot off balance.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Motion planners and whole-body controllers add self-collision avoidance as an explicit constraint — modeling the body links as geometric primitives and keeping a minimum clearance between them, often as an inequality in the same QP that drives the arms, so reaching motions are steered around the robot's own body in real time.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo checks clearance against a single simplified torso cylinder; a real humanoid models many link pairs with per-link safety margins, must respect them across the whole arm and both arms at once, and does so fast enough to react while moving.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Lift with the body — counter-leaning a load</h2></div>
+  <p class="demo">Our demo: lifting a 22 kg load at 0.55 m reach with no compensation puts the combined body+load center of mass 0.028 m past the toe edge and it tips, while counter-leaning the trunk pulls the combined CoM back to give an 0.082 m stability margin.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Humanoids meant for real work carry loads at arm's length — Digit moving totes in warehouses, Optimus and Figure handling parts on factory lines — and a heavy object held out front shifts the whole system's balance forward.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Pick up a heavy load at arm's reach without shifting the body, and the added mass drags the combined center of mass past the front of the feet; the robot pitches forward and falls with the object still in its hands.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The controller treats the load as part of the whole-body balance problem and counter-leans — shifting the trunk and hips backward so the combined body-plus-load center of mass stays over the support polygon — the same whole-body-control principle that keeps the CoM inside the feet during any reach.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo assumes the load mass and where it acts are known exactly; a real robot must estimate an unknown payload's weight and center from force sensing, adapt as it's lifted and moved, and cope with the extra torque straining its actuators.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Two hands, one object — regulated grasp force</h2></div>
+  <p class="demo">Our demo: a naive two-hand hold squeezes a 40 N object with only 25 N (needs ≥40 N against μ=0.5) so friction can't hold it and it slips, while regulating the internal grasp force to 80 N — between the slip floor and the 120 N crush limit — holds it securely.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Bimanual humanoids carry objects too big or heavy for one hand — a box, a tray, a panel — so Optimus, Figure, and Atlas-class robots must coordinate both arms pressing on the same object at once.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Squeeze too little and friction can't support the object's weight, so it slips out of the two-hand grasp and drops; squeeze too much and the internal force crushes or deforms a fragile object.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Dual-arm control regulates the internal (squeeze) force — the component of the two-hand wrench that presses the arms together in the null space of the grasp — to a band that keeps each contact inside its friction cone (force closure, no slip) while staying under the object's crush limit, a standard closed-chain bimanual manipulation formulation.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a known friction coefficient, weight, and crush limit with a fixed target squeeze; a real system must estimate friction and the object's fragility, sense slip and adjust on the fly, and hold force closure while both arms and the object move together as one closed chain.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="humanoid-wbc.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Humanoid whole-body control — the real problem &middot; <a href="humanoid-wbc.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>
