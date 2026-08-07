@@ -47,7 +47,7 @@
   <div class="stats">
     <div class="stat"><b>8</b><span>robot systems</span></div>
     <div class="stat"><b>4</b><span>lifecycle clusters</span></div>
-    <div class="stat"><b>56</b><span>measured, tested stages</span></div>
+    <div class="stat"><b>66</b><span>measured, tested stages</span></div>
     <div class="stat"><b>100%</b><span>node-tested cores</span></div>
   </div>
 </div></header>
@@ -95,6 +95,16 @@
   <a class="ch" href="agricultural-robot.html"><h3>Agricultural field pass</h3><span class="tag">A field robot weeds and tends a crop</span><span class="go">open &rarr;</span></a>
   <div class="hl">Colour alone misclassifies 46% of plants; add leaf shape → 2%</div>
   <div class="stages"><div class="st"><span class="stt">Cover the whole field</span><span class="str">Sweep the field with a systematic boustrophedon path</span></div><div class="st"><span class="stt">Drive the crop rows</span><span class="str">Centre in the lane from the crop rows you can see, not from GPS</span></div><div class="st"><span class="stt">Tell crop from weed</span><span class="str">Color alone can't separate crop from weed (both are green)</span></div><div class="st"><span class="stt">Hit the moving weed</span><span class="str">Trigger the nozzle early by speed×latency so the spray lands on the moving weed</span></div><div class="st"><span class="stt">Dose to the need</span><span class="str">Apply inputs at a variable rate matched to the need map</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#5B6E7D">
+  <a class="ch" href="excavation-robot.html"><h3>Autonomous excavator</h3><span class="tag">An excavator digs and dumps earth</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Over-push the tracks and it digs 0 m; regulate to the traction limit and it digs 1.84 m</div>
+  <div class="stages"><div class="st"><span class="stt">Survey the dig site</span><span class="str">Average scans before computing cut volume</span></div><div class="st"><span class="stt">Regulate the dig force</span><span class="str">Regulate the dig force to the track traction limit</span></div><div class="st"><span class="stt">Weigh the bucket</span><span class="str">Weigh the bucket from the lift dynamics</span></div><div class="st"><span class="stt">Swing without spilling</span><span class="str">Input-shape the swing command (two half-moves a half-period apart)</span></div><div class="st"><span class="stt">Grade the surface</span><span class="str">Close the loop on blade height to a laser/GPS grade reference</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#1E5FA8">
+  <a class="ch" href="underwater-rov.html"><h3>Underwater ROV</h3><span class="tag">A subsea vehicle works the seabed</span><span class="go">open &rarr;</span></a>
+  <div class="hl">A constant-depth transit flies into the rising seabed (−1 m); altitude-hold keeps 2 m</div>
+  <div class="stages"><div class="st"><span class="stt">Trim to neutral</span><span class="str">Trim ballast to neutral buoyancy</span></div><div class="st"><span class="stt">Brake for the water</span><span class="str">Brake against the effective mass including entrained-water added mass</span></div><div class="st"><span class="stt">Crab into the current</span><span class="str">Crab upstream by asin(current/speed) so the resultant track holds the line</span></div><div class="st"><span class="stt">Fly the seabed</span><span class="str">Follow the seabed by holding altitude above it</span></div><div class="st"><span class="stt">Steady the arm</span><span class="str">Counter the arm's reaction on the free-floating base</span></div></div>
 </section></div>
 
   <h2 class="sec">The ML discipline &mdash; across the field</h2>
@@ -120,5 +130,5 @@
   <div class="stages"><div class="st"><span class="stt">Reward design & hacking</span><span class="str">Shape a reward as a potential difference so you speed learning without changing what's optimal</span></div><div class="st"><span class="stt">Exploration vs exploitation</span><span class="str">Explore, or you converge on the first option that looked good rather than the best one</span></div><div class="st"><span class="stt">Credit assignment</span><span class="str">Credit an action by its discounted future return</span></div><div class="st"><span class="stt">Policy evaluation under noise</span><span class="str">Evaluate across enough episodes to beat the noise</span></div></div>
 </section></div>
 </div>
-<footer><div class="wrap">The robotics build lab &middot; 8 systems + 4 clusters &middot; 56 measured, node-tested stages &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
+<footer><div class="wrap">The robotics build lab &middot; 10 systems + 4 clusters &middot; 66 measured, node-tested stages &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
 </body></html>
