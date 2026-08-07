@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flying a delivery — the drone-flight stack, stage by stage</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#5548C8;--accent-deep:#3A2F9A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+ header{background:#0C0A1C;color:#EDEAF8;padding:40px 0 30px;background-image:linear-gradient(90deg,rgba(85,72,200,.28),rgba(62,110,158,.14),rgba(30,140,140,.12))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#B0A6EC}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F3F1FC}
+ header p{color:#CBC4EC;font-size:16px;max-width:80ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#9A8ED8} header nav a{color:#BEB2F0}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 8px}
+ .flow{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--graphite);margin:6px 0 18px}
+ .flow b{color:var(--accent-deep)}
+ .stage{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:16px 18px;margin:16px 0}
+ .sh{display:flex;align-items:center;gap:10px} .no{font-family:var(--mono);background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+ .stage h2{font-family:var(--serif);font-size:21px;margin:0} .sh .thm{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-deep);background:rgba(85,72,200,.10);padding:3px 8px;border-radius:20px}
+ .cp{color:#333;margin:8px 0}
+ .rule{font-family:var(--serif);font-size:18px;border-left:3px solid var(--accent);padding:7px 13px;background:rgba(85,72,200,.06);border-radius:0 8px 8px 0;margin:8px 0}
+ .mx{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0} .m{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;display:flex;gap:8px;align-items:baseline}
+ .m b{font-family:var(--serif);font-size:16px} .pv{font-size:13.5px;color:var(--graphite)}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">drone-flight stack &middot; the pipeline, stage by stage</div>
+  <h1>Flying a delivery</h1>
+  <p>A quadrotor has to know which way is up, plan a path its motors can actually fly, tilt itself to move sideways, turn desired torques into four rotor speeds, and track the plan without lagging. Five stages, five distinct sub-fields &mdash; each a plain rule, <b>run and measured</b>, with the failure it prevents. A production narrative, not a grab-bag: each stage feeds the next.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="pick-place.html">pick-and-place</a> &middot; <a href="nav-stack.html">navigation stack</a> &middot; <a href="driving-stack.html">driving stack</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">Each stage is one link: the attitude estimate anchors the controller, the smooth plan gives it something flyable, the tilt law turns motion into rotation, the mixer turns rotation into rotor speeds, and feedforward keeps it all on the line. A weak link anywhere and the drone drifts, jerks, hovers, can't rotate, or lags the path.</p>
+  <div class="flow"><b>1 estimate</b> &rarr; <b>2 plan</b> &rarr; <b>3 tilt</b> &rarr; <b>4 mix</b> &rarr; <b>5 track</b></div>
+  <section class="stage">
+  <div class="sh"><span class="no">1</span><h2>Know which way is up</h2><a class="thm" href="ct-explained.html">Control & MPC</a></div>
+  <p class="cp">The drone's gyro measures how fast it is rotating — smooth, but integrate it and a tiny bias makes the estimated tilt drift away within seconds. The accelerometer reads the true tilt from gravity, but it is buried in vibration noise. Trust either alone and the attitude estimate is useless.</p>
+  <div class="rule">Fuse a drifting gyro with a noisy accelerometer: the complementary filter keeps the gyro's smoothness without its drift.</div>
+  <div class="mx"><div class="m"><span>attitude RMSE — gyro integration</span><b>0.38 rad</b></div><div class="m"><span>attitude RMSE — accelerometer</span><b>0.059 rad</b></div><div class="m"><span>attitude RMSE — complementary filter</span><b>0.024 rad</b></div></div>
+  <p class="pv">Over a rolling maneuver, integrating the 0.05 rad/s-biased gyro drifts to <b>0.38 rad</b> RMSE; the raw accelerometer sits at <b>0.059 rad</b> of noise. The complementary filter fusing both holds <b>0.024 rad</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">2</span><h2>Plan a flyable path</h2><a class="thm" href="navigation-explained.html">Navigation</a></div>
+  <p class="cp">The delivery route is a handful of waypoints. Connect them with straight line segments and the drone is asked to change velocity instantly at every corner — an infinite acceleration no motor can deliver. The 'plan' is physically unflyable.</p>
+  <div class="rule">Route through waypoints with a smooth spline; straight segments jump the velocity at every corner, demanding infinite acceleration.</div>
+  <div class="mx"><div class="m"><span>velocity jump at a corner — straight segments</span><b>2.5 m/s (∞ accel)</b></div><div class="m"><span>velocity jump — smooth spline</span><b>0.006 m/s</b></div><div class="m"><span>peak acceleration — spline (bounded)</span><b>6.4 m/s²</b></div></div>
+  <p class="pv">Straight segments through the waypoints demand a velocity jump of <b>2.5 m/s</b> at a corner — an instantaneous, infinite acceleration. The smooth spline keeps velocity continuous (jump <b>0.006 m/s</b>) with a bounded peak acceleration of <b>6.4 m/s²</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">3</span><h2>Tilt to move</h2><a class="thm" href="ct-explained.html">Control & MPC</a></div>
+  <p class="cp">A quadrotor has four upward rotors and nothing that pushes sideways. A controller that simply commands a horizontal force to chase the target produces exactly zero horizontal motion — the drone hovers in place, forever confused.</p>
+  <div class="rule">A quadrotor is underactuated: to accelerate sideways it must first tilt and let thrust push it; a flat drone goes nowhere.</div>
+  <div class="mx"><div class="m"><span>final position — flat (direct force)</span><b>0.0 m</b></div><div class="m"><span>final position — tilt control</span><b>4.94 m</b></div><div class="m"><span>max tilt used</span><b>31.5°</b></div></div>
+  <p class="pv">Asked to move <b>5.0 m</b> sideways, a flat drone commanding side-force directly ends at <b>0.0 m</b> — it never budges. Converting the desired acceleration into a tilt (up to <b>31.5°</b> of roll) carries it to <b>4.94 m</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">4</span><h2>Mix the motors</h2><a class="thm" href="hardware-explained.html">Hardware</a></div>
+  <p class="cp">The controller wants a total lift plus a roll torque. But it cannot command 'torque' — it can only set four rotor speeds. Split the thrust evenly across the rotors and you get the lift but no torque at all, so the drone can never rotate to where it needs to go.</p>
+  <div class="rule">Turn the desired thrust-and-torque wrench into four rotor thrusts with the mixer matrix; an even thrust split produces zero torque.</div>
+  <div class="mx"><div class="m"><span>roll torque — even split</span><b>0.0 N·m</b></div><div class="m"><span>roll torque — mixer matrix</span><b>0.5 N·m (commanded 0.5)</b></div><div class="m"><span>rotor thrusts feasible</span><b>yes</b></div></div>
+  <p class="pv">Commanding a <b>0.5 N·m</b> roll torque, an even thrust split delivers <b>0.0 N·m</b> — no rotation. Solving the mixer matrix delivers exactly <b>0.5 N·m</b>, with all four rotor thrusts feasible (positive).</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">5</span><h2>Follow without lag</h2><a class="thm" href="ct-explained.html">Control & MPC</a></div>
+  <p class="cp">With a smooth plan in hand, the drone still has to fly it. A pure feedback controller only reacts to error that has already happened, so on a fast, aggressive trajectory it is always a step behind — the drone lags the path and cuts every curve.</p>
+  <div class="rule">Add the trajectory's own acceleration as feedforward; feedback alone always lags a fast reference.</div>
+  <div class="mx"><div class="m"><span>tracking RMSE — feedback only</span><b>0.122 m</b></div><div class="m"><span>tracking RMSE — + feedforward</span><b>0.0139 m</b></div><div class="m"><span>reference frequency</span><b>3.0 rad/s</b></div></div>
+  <p class="pv">Tracking a fast reference (3.0 rad/s), feedback alone lags to <b>0.122 m</b> RMSE. Adding the trajectory's own acceleration as feedforward cuts the tracking error to <b>0.0139 m</b> — about <b>9× tighter</b>.</p>
+</section>
+  <div class="note"><b>How this was built.</b> Real experiments (<code>scripts/drone_flight_experiments.py</code>, pure NumPy) produce every number above. Each stage is also a small <b>tested demo package</b> under <code>source-code/learning/drone-flight/&lt;stage&gt;/</code> &mdash; a reusable <code>core.js</code> carrying the rule, with <code>node</code> assert-tests. The fourth pipeline narrative, joining <a href="pick-place.html">pick-and-place</a>, the <a href="nav-stack.html">navigation stack</a>, and the <a href="driving-stack.html">driving stack</a>.</div>
+</div>
+<footer><div class="wrap">Drone-flight stack &middot; five stages, one flight, tested reusable cores &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="driving-stack.html">driving stack</a></div></footer>
+</body></html>
