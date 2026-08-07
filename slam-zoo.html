@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>The SLAM back-end zoo — one loop, three back-ends</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#2E7D6B;--accent-deep:#1F6152;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:42px 0 30px;background-image:linear-gradient(100deg,color-mix(in srgb,#2E7D6B 30%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#2E7D6B 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F4F8F8}
+ header p{color:#BEDCDC;font-size:16px;max-width:82ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 10px}
+ figure{margin:14px 0;text-align:center} figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
+ figcaption{font-size:12.5px;color:var(--graphite);margin-top:6px}
+ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+ th,td{border:1px solid var(--line);padding:8px 12px;text-align:left} th{background:var(--panel);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite)}
+ td.g{color:#1F6152;font-weight:600} td.b{color:#9A3327;font-weight:600} td.n{color:#889}
+ .fam{font-family:var(--mono);font-size:11px;color:var(--graphite)}
+ .ctrl{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px;margin:15px 0}
+ .ch{display:flex;align-items:baseline;gap:10px} .ch h3{font-family:var(--serif);font-size:21px;margin:0}
+ .what{margin:8px 0} .res{font-size:14.5px;background:color-mix(in srgb,#2E7D6B 8%,#fff);border-radius:8px;padding:8px 12px;margin:8px 0}
+ .fail{font-size:13.5px;color:#3a2018} .fl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#9A3327;font-weight:700;margin-right:7px}
+ .cite{margin-top:9px;font-size:13px} .cl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:7px} .cite a{text-decoration:underline;text-underline-offset:2px}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the slam back-end zoo &middot; one problem, a family of methods</div>
+  <h1>Three ways to close a loop</h1>
+  <p>One 2-D robot drives a rectangular circuit among landmarks on biased, noisy odometry, then <b>closes the loop</b> by re-observing the landmark it started at. The same run is fed to three SLAM back-ends &mdash; raw dead-reckoning, an EKF filter, and a pose-graph optimizer. Each is really run; each does something different with that one loop closure.</p>
+  <nav><a href="index.html">home</a> &middot; zoos: <a href="controller-zoo.html">controller</a> &middot; <a href="estimator-zoo.html">estimator</a> &middot; <a href="planner-zoo.html">planner</a> &middot; <a href="optimizer-zoo.html">optimizer</a> &middot; <a href="grasp-zoo.html">grasp</a> &middot; <a href="slam-zoo.html">SLAM</a> &middot; <a href="rl-zoo.html">RL</a> &middot; <a href="the-lab.html">the build lab</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">The rule: <b>a loop closure is only worth as much as the back-end that uses it.</b> Odometry ignores it and finishes far from where it started; the EKF filter snaps its current pose home but the committed past stays bent (it has already marginalized history away); the pose-graph re-solves the whole trajectory at once, spreading the loop error over every pose &mdash; the lowest trajectory error and the tightest-closed loop.</p>
+  <figure><img src="assets/zoo/slam-zoo.png" alt="one true loop with the odometry drift and each back-end's estimated trajectory"><figcaption>One run, three back-ends. Odometry (dashed) drifts and ends 4.4 m from the true start &mdash; it never closes. EKF-SLAM (gold) rides that same drifted path and snaps only its endpoint home. The pose-graph (teal) re-optimizes every pose and closes tightly around the true loop (black).</figcaption></figure>
+  <table><tr><th>method</th><th>trajectory error (RMSE)</th><th>loop-closure gap</th></tr><tr><td><b>Odometry only</b><br><span class="fam">dead-reckoning &mdash; no back-end</span></td><td class="b">&#10007; 1.958 m (drifts)</td><td class="b">&#10007; 4.391 m gap</td></tr><tr><td><b>EKF-SLAM</b><br><span class="fam">filter back-end</span></td><td class="g">&#10003; 1.909 m</td><td class="g">&#10003; 0.199 m gap</td></tr><tr><td><b>Pose-graph / GraphSLAM</b><br><span class="fam">optimization back-end</span></td><td class="g">&#10003; 1.650 m (best)</td><td class="g">&#10003; 0.170 m gap</td></tr></table>
+  <section class="ctrl"><div class="ch"><h3>Odometry only</h3><span class="fam">dead-reckoning &mdash; no back-end</span></div>
+  <p class="what">Integrate the wheel odometry and nothing else. With no back-end there is no way to use the loop closure &mdash; the robot never notices it is back where it started.</p>
+  <p class="res">Biased, noisy odometry drifts steadily: <b>1.958 m</b> trajectory RMSE, and it finishes <b>4.391 m</b> from its true start &mdash; a wide-open loop that never closes.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> No feedback at all: every bit of scale and turn bias accumulates for the whole lap. This is the drift the two back-ends below exist to correct.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>EKF-SLAM</h3><span class="fam">filter back-end</span></div>
+  <p class="what">Keep one online Gaussian over the robot pose: predict with the odometry each step, and when the loop closes, do a single Kalman update against the re-observed start landmark. A filter that fuses evidence as it arrives.</p>
+  <p class="res">The loop closure slams the loop-closure gap shut &mdash; from 4.391 m down to <b>0.199 m</b>. But the RMSE barely moves (<b>1.909 m</b> vs odometry's 1.958 m): the fix lands only on the current pose.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> A filter has already marginalized the past, so the loop closure can only correct where it thinks it <i>is</i>, not where it has <i>been</i> &mdash; the drifted middle of the trajectory stays bent, and the single linearization leaves it inconsistent.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>Pose-graph / GraphSLAM</h3><span class="fam">optimization back-end</span></div>
+  <p class="what">Build a graph of every pose, with an odometry edge between consecutive poses and one loop-closure edge tying the end back to the start, then solve the whole nonlinear least-squares with Gauss-Newton &mdash; a smoother, not a filter.</p>
+  <p class="res">Re-optimizing all poses at once distributes the loop error over the entire lap: the <b>lowest RMSE (1.650 m)</b> and a tightly closed loop (<b>0.170 m</b> gap). It converges in ~5 Gauss-Newton iterations.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> The best answer &mdash; but it re-solves over the full trajectory, so it is a batch computation that grows with the number of poses (real systems keep it tractable with sparsity, sliding windows, and incremental solvers).</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="3d-perception-explained.html">Visual Loop Closure through Deep Graph Consensus</a></div></section>
+  <div class="note"><b>How this was built.</b> One 2-D SLAM problem (<code>scripts/slam_zoo_experiments.py</code>, pure NumPy) &mdash; a robot driving a 28&times;20&nbsp;m rectangular loop on odometry that is 9% long with a per-turn heading bias, plus a single loop-closure observation of the start landmark &mdash; run through all three back-ends; the figure and every number come straight from that run. The two columns measure different things: <b>RMSE</b> is average distance from the true path (did you fix the whole trajectory?), while the <b>loop-closure gap</b> is how far the estimate finishes from its own start (did you use the loop closure at all?). The ordering holds on both: odometry worst, EKF-SLAM in between, pose-graph best.</div>
+</div>
+<footer><div class="wrap">Three ways to close a loop &middot; a method zoo &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="navigation-explained.html">navigation theme</a></div></footer>
+</body></html>

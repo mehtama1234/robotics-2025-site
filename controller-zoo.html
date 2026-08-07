@@ -29,7 +29,7 @@
   <div class="bug">the controller zoo &middot; one problem, a family of methods</div>
   <h1>Five ways to control a cart-pole</h1>
   <p>The same nonlinear plant &mdash; a pole on a cart &mdash; run under five controllers, from a hand-tuned PID up to sampling MPC. Two tasks: <b>stabilize</b> the pole upright, and the hard one, <b>swing up</b> from hanging. Each is really run; each shows its own failure or tradeoff; each links to the 2025 paper that uses it.</p>
-  <nav><a href="index.html">home</a> &middot; <a href="controller-zoo.html">controller</a> &middot; <a href="estimator-zoo.html">estimator</a> &middot; <a href="planner-zoo.html">planner</a> &middot; <a href="optimizer-zoo.html">optimizer</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="ct-explained.html">control &amp; MPC theme</a></nav>
+  <nav><a href="index.html">home</a> &middot; zoos: <a href="controller-zoo.html">controller</a> &middot; <a href="estimator-zoo.html">estimator</a> &middot; <a href="planner-zoo.html">planner</a> &middot; <a href="optimizer-zoo.html">optimizer</a> &middot; <a href="grasp-zoo.html">grasp</a> &middot; <a href="slam-zoo.html">SLAM</a> &middot; <a href="rl-zoo.html">RL</a> &middot; <a href="the-lab.html">the build lab</a></nav>
 </div></header>
 <div class="wrap">
   <p class="lead">One rule runs through the family: <b>match the controller to the problem's nonlinearity.</b> Linear feedback (PID, LQR, linear-MPC) stabilizes near a setpoint but cannot execute a large motion; the swing-up needs the real nonlinear model &mdash; solved by trajectory optimization (iLQR/DDP) or by sampling (MPPI).</p>

@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>The RL-algorithm zoo — one cliff, four ways to learn</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#5548C8;--accent-deep:#3A2F9A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:42px 0 30px;background-image:linear-gradient(100deg,color-mix(in srgb,#5548C8 30%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#5548C8 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F4F8F8}
+ header p{color:#BEDCDC;font-size:16px;max-width:82ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 10px}
+ figure{margin:14px 0;text-align:center} figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
+ figcaption{font-size:12.5px;color:var(--graphite);margin-top:6px}
+ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+ th,td{border:1px solid var(--line);padding:8px 12px;text-align:left} th{background:var(--panel);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite)}
+ td.g{color:#1F6152;font-weight:600} td.b{color:#9A3327;font-weight:600} td.n{color:#889}
+ .fam{font-family:var(--mono);font-size:11px;color:var(--graphite)}
+ .ctrl{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px;margin:15px 0}
+ .ch{display:flex;align-items:baseline;gap:10px} .ch h3{font-family:var(--serif);font-size:21px;margin:0}
+ .what{margin:8px 0} .res{font-size:14.5px;background:color-mix(in srgb,#5548C8 8%,#fff);border-radius:8px;padding:8px 12px;margin:8px 0}
+ .fail{font-size:13.5px;color:#3a2018} .fl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#9A3327;font-weight:700;margin-right:7px}
+ .cite{margin-top:9px;font-size:13px} .cl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:7px} .cite a{text-decoration:underline;text-underline-offset:2px}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the RL zoo &middot; one problem, a family of methods</div>
+  <h1>Four ways to learn to walk a cliff</h1>
+  <p>One MDP &mdash; Sutton &amp; Barto's <b>Cliff Walking</b> (a 4&times;12 grid with a &minus;100 cliff along the bottom edge between start and goal) &mdash; solved four ways, from model-based dynamic programming down to model-free Monte-Carlo. Each is <b>really trained</b>; each shows the classic tradeoff: optimal-but-risky vs safe, model-based vs model-free, and what exploration costs while you learn.</p>
+  <nav><a href="index.html">home</a> &middot; zoos: <a href="controller-zoo.html">controller</a> &middot; <a href="estimator-zoo.html">estimator</a> &middot; <a href="planner-zoo.html">planner</a> &middot; <a href="optimizer-zoo.html">optimizer</a> &middot; <a href="grasp-zoo.html">grasp</a> &middot; <a href="slam-zoo.html">SLAM</a> &middot; <a href="rl-zoo.html">RL</a> &middot; <a href="the-lab.html">the build lab</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">The rule that runs through the family: <b>on-policy vs off-policy is a safety choice made <i>while</i> learning.</b> Q-learning (off-policy) learns the OPTIMAL greedy policy &mdash; the risky path right along the cliff edge &mdash; but its exploring behaviour keeps falling off, so its return <i>during training</i> is worse. SARSA (on-policy) learns the value of the exploring policy it actually follows, so it walks a <b>safer</b> path one row up and earns more while it learns. Value iteration needs the model and gives the exact optimum; Monte-Carlo needs no model but pays in samples and variance.</p>
+  <figure><img src="assets/zoo/rl-zoo.png" alt="Cliff Walking grid with Q-learning's cliff-edge path vs SARSA's safe path, and online-return learning curves"><figcaption>Left: the same 4&times;12 grid &mdash; Q-learning's greedy policy hugs the cliff edge (optimal, &minus;13); SARSA's runs one row higher (safe, &minus;17). Right: online return per episode while learning &mdash; SARSA (&minus;28) stays above Q-learning (&minus;52) because its exploring policy falls off the cliff far less. Both greedy policies are drawn from the seed-0 run; curves are averaged over 10 seeds.</figcaption></figure>
+  <table><tr><th>method</th><th>greedy policy (after training)</th><th>behaviour while learning</th></tr><tr><td><b>Value iteration</b><br><span class="fam">model-based &middot; dynamic programming</span></td><td class="g">&#10003; optimal &minus;13 (cliff-edge)</td><td class="n">&mdash; needs the model, no exploration</td></tr><tr><td><b>Q-learning</b><br><span class="fam">model-free &middot; off-policy TD</span></td><td class="g">&#10003; optimal &minus;13 (cliff-edge, 10/10 seeds)</td><td class="b">&#10007; online &minus;52 (falls off a lot)</td></tr><tr><td><b>SARSA</b><br><span class="fam">model-free &middot; on-policy TD</span></td><td class="g">&#10003; safe &minus;17 (one row up, 10/10 seeds)</td><td class="g">&#10003; online &minus;28 (+24 vs Q-learning)</td></tr><tr><td><b>Monte-Carlo control</b><br><span class="fam">model-free &middot; every-visit returns</span></td><td class="b">&#10007; solved only 3/10 seeds</td><td class="b">&#10007; online &minus;653, huge variance</td></tr></table>
+  <section class="ctrl"><div class="ch"><h3>Value iteration</h3><span class="fam">model-based &middot; dynamic programming</span></div>
+  <p class="what">Sweep the Bellman optimality backup over every state using the KNOWN transition model, until the value function stops changing. No experience, no sampling &mdash; it computes the exact optimal value and policy directly.</p>
+  <p class="res">Converges in <b>15 sweeps</b> to the exact optimum: greedy return <b>&minus;13</b> along a 13-step path that hugs the cliff edge &mdash; the reference every learner is judged against.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> It needs the full model (every transition and reward up front). Give a robot only the ability to <i>act</i>, not a map of the MDP, and value iteration cannot run &mdash; which is exactly why the model-free methods below exist.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>Q-learning</h3><span class="fam">model-free &middot; off-policy TD</span></div>
+  <p class="what">Learn from experience with the off-policy TD update: bootstrap toward <code>r + &gamma;&middot;max<sub>a</sub> Q(s&prime;,a)</code> &mdash; the value of the BEST next action, regardless of what the exploring policy actually did. So it learns the optimal greedy policy while still exploring with &epsilon;-greedy.</p>
+  <p class="res">Its greedy policy converges to the <b>optimal</b> cliff-edge path (return <b>&minus;13</b>, identical to value iteration, in all <b>10/10</b> seeds). But because that optimum runs along the edge, its &epsilon;-greedy behaviour keeps stepping off: mean online return while training is only <b>&minus;51.9</b>.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Off-policy learning nails the optimum but is indifferent to the danger of the path it explores. A random exploratory step next to the cliff is a &minus;100 &mdash; so the policy that looks best offline is the one that hurts most while you are still learning it.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="rl-explained.html">Multi-Agent Inverse Q-Learning from Demonstrations</a></div></section>
+<section class="ctrl"><div class="ch"><h3>SARSA</h3><span class="fam">model-free &middot; on-policy TD</span></div>
+  <p class="what">The on-policy TD update: bootstrap toward <code>r + &gamma;&middot;Q(s&prime;,a&prime;)</code> where <code>a&prime;</code> is the action the &epsilon;-greedy policy will ACTUALLY take next. So it learns the value of the exploring policy it follows &mdash; cliff-falls and all.</p>
+  <p class="res">Because exploration near the cliff carries a real &minus;100 cost <i>in the values it learns</i>, it prefers a <b>safe</b> path one row up: greedy return <b>&minus;17</b> (a bit longer than optimal), but mean online return while training is <b>&minus;28.4</b> &mdash; <b>+23.5 higher</b> than Q-learning's.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> The safer path is slightly sub-optimal once training ends (&minus;17 vs the optimal &minus;13). On-policy learning buys safety-while-exploring at the price of a final policy that plays it a touch too cautious.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>Monte-Carlo control</h3><span class="fam">model-free &middot; every-visit returns</span></div>
+  <p class="what">No bootstrapping and no model: play a whole episode, then average the FULL observed return back onto every state-action pair visited (every-visit, &epsilon;-greedy control). Each update waits for the episode to end.</p>
+  <p class="res">It works in principle but is sample-hungry and high-variance here: at the same 3000-episode budget its greedy policy reaches the goal in only <b>3/10</b> seeds, online return is <b>&minus;653</b>, and the across-seed spread is enormous (tail std <b>461</b> vs &lt;3.2 for the TD methods).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Full-return updates carry the whole episode's &minus;100 cliff-hits as raw variance, and waiting for episode ends wastes samples that TD reuses step-by-step. On a high-penalty MDP like this, plain Monte-Carlo needs far more episodes (or decaying &epsilon;) than bootstrapping TD to converge reliably.</div>
+  </section>
+  <div class="note"><b>How this was built.</b> One Cliff-Walking MDP (<code>scripts/rl_zoo_experiments.py</code>, pure NumPy) &mdash; 4&times;12 grid, &minus;1 per step, &minus;100 and teleport-to-start for the cliff, episode ends at the goal. Value iteration uses the full transition model; Q-learning, SARSA and Monte-Carlo each train for 3000 episodes at &alpha;=0.5, &epsilon;=0.1, &gamma;=1, averaged over 10 seeds. Every number and the figure come straight from that run, which VERIFIES the classic result: Q-learning's greedy path is optimal (&minus;13, identical to value iteration) yet its online training return (&minus;52) is worse than SARSA's (&minus;28).</div>
+</div>
+<footer><div class="wrap">Four ways to learn to walk a cliff &middot; a method zoo &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="rl-explained.html">RL &amp; imitation</a></div></footer>
+</body></html>

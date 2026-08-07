@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Factor graphs: one loop-closure fixes the whole trajectory</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#7A6CD0;--accent-deep:#4A3F9A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:820px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:42px 0 30px;background-image:linear-gradient(100deg,color-mix(in srgb,#7A6CD0 30%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#7A6CD0 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:33px;margin:10px 0 8px;color:#F4F8F8}
+ header p{color:#BEDCDC;font-size:16px;max-width:82ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ figure{margin:18px 0;text-align:center} figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
+ .what{font-size:16px;margin:16px 0}
+ .ran{font-size:15.5px;background:color-mix(in srgb,#7A6CD0 9%,#fff);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px 16px;margin:14px 0}
+ .ran .rl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;display:block;margin-bottom:5px}
+ .fail{font-size:14px;color:#3a2018;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 15px;margin:12px 0}
+ .fl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#9A3327;font-weight:700;margin-right:7px}
+ .cite{margin:12px 0;font-size:13.5px} .cl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:7px} .cite a{text-decoration:underline;text-underline-offset:2px}
+ footer{border-top:1px solid var(--line);margin-top:26px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">a foundational demo &middot; we ran it</div>
+  <h1>Factor graphs: one loop-closure fixes the whole trajectory</h1>
+  <p>The maximum-a-posteriori view of SLAM — poses are variables, measurements are factors, and the best map is the least-squares solution that explains them all at once.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="controller-zoo.html">the method zoos</a> &middot; <a href="navigation-explained.html">navigation</a></nav>
+</div></header>
+<div class="wrap">
+  <figure><img src="assets/demos/factor-graph.png" alt="Factor graphs: one loop-closure fixes the whole trajectory"></figure>
+  <p class="what">A pose-graph is a factor graph: each robot pose is a node (variable), and each measurement is a factor — a soft constraint pulling the poses toward agreement. Here a prior anchors the first pose, odometry factors constrain consecutive poses, and one loop-closure factor constrains the last pose to the first when the robot returns. The maximum-a-posteriori estimate of every pose is the nonlinear least-squares solution over all factors; we solve it with Gauss-Newton — linearize each factor's residual, stack the sparse Jacobian, solve the normal equations (JᵀJ)Δx = −Jᵀr, apply the update wrapping angles, and iterate.</p>
+  <div class="ran"><span class="rl">we ran it</span>We drove a robot around a 40 m square loop (45 pose nodes) with biased, noisy odometry, then added one loop-closure factor and one prior. Open-loop, integrating odometry alone, the trajectory drifts and the loop never closes: the end lands <b>4.07 m</b> from the start and trajectory RMSE vs ground truth is <b>2.28 m</b>. Nine Gauss-Newton iterations later, the total factor error (χ²) drops from <b>19,409</b> to <b>10.9</b>, the loop-closure gap collapses to <b>1.6 cm</b> (a <b>247×</b> reduction) and RMSE falls to <b>0.39 m</b> (<b>5.9×</b>) — the whole path snaps back onto the true square.</div>
+  <div class="fail"><span class="fl">the failure it shows</span> Odometry-only integration drifts without bound and the loop never closes — the robot's estimate of where it ended is metres from where it truly started. The single loop-closure factor doesn't just correct the last pose; the least-squares solve redistributes its error backward over every pose in the loop, so the entire trajectory is pulled into consistency at once.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="3d-perception-explained.html">SGAD-SLAM</a></div>
+  <footer>A foundational algorithm demo &middot; real experiment, honest result &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="navigation-explained.html">navigation</a></footer>
+</div></body></html>

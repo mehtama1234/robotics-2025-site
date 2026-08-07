@@ -29,7 +29,7 @@
   <div class="bug">the estimator zoo &middot; one problem, a family of methods</div>
   <h1>Four ways to localize a robot</h1>
   <p>One robot driving among known landmarks, its pose estimated four ways &mdash; from raw dead-reckoning up to a particle filter &mdash; from the same noisy odometry and range/bearing measurements. Each is really run; each shows what it can and can't do.</p>
-  <nav><a href="index.html">home</a> &middot; <a href="controller-zoo.html">controller</a> &middot; <a href="estimator-zoo.html">estimator</a> &middot; <a href="planner-zoo.html">planner</a> &middot; <a href="optimizer-zoo.html">optimizer</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="navigation-explained.html">navigation theme</a></nav>
+  <nav><a href="index.html">home</a> &middot; zoos: <a href="controller-zoo.html">controller</a> &middot; <a href="estimator-zoo.html">estimator</a> &middot; <a href="planner-zoo.html">planner</a> &middot; <a href="optimizer-zoo.html">optimizer</a> &middot; <a href="grasp-zoo.html">grasp</a> &middot; <a href="slam-zoo.html">SLAM</a> &middot; <a href="rl-zoo.html">RL</a> &middot; <a href="the-lab.html">the build lab</a></nav>
 </div></header>
 <div class="wrap">
   <p class="lead">The rule: <b>measure something and fuse it &mdash; any filter kills dead-reckoning's drift.</b> The filters then trade off. EKF is cheapest but linearizes; UKF's sigma points handle nonlinearity without derivatives; the particle filter is the only one that can hold a multimodal belief and localize from a completely unknown start.</p>
