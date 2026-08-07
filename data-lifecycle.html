@@ -1,0 +1,67 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teaching a robot: which demonstrations to collect — the data-lifecycle</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#7A6CD0;--accent-deep:#4A3F9A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+ header{background:#0D0A18;color:#EEEAF6;padding:40px 0 30px;background-image:linear-gradient(90deg,rgba(122,108,208,.24),rgba(58,160,200,.14),rgba(46,125,107,.14))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#B4A8E6}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F5F2FB}
+ header p{color:#C4BCE0;font-size:16px;max-width:80ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#A090D0} header nav a{color:#C4B4EC}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 8px}
+ .flow{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--graphite);margin:6px 0 18px}
+ .flow b{color:var(--accent-deep)}
+ .stage{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:16px 18px;margin:16px 0}
+ .sh{display:flex;align-items:center;gap:10px} .no{font-family:var(--mono);background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+ .stage h2{font-family:var(--serif);font-size:21px;margin:0} .cp{color:#333;margin:8px 0}
+ .rule{font-family:var(--serif);font-size:18px;border-left:3px solid var(--accent);padding:7px 13px;background:rgba(122,108,208,.07);border-radius:0 8px 8px 0;margin:8px 0}
+ .mx{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0} .m{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;display:flex;gap:8px;align-items:baseline}
+ .m b{font-family:var(--serif);font-size:16px} .pv{font-size:13.5px;color:var(--graphite)}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">data-lifecycle &middot; which demonstrations to collect</div>
+  <h1>Teaching a robot: which demonstrations to collect</h1>
+  <p>A robot skill is only as good as the demonstrations you spend your budget on. Four data decisions turn that budget into a policy &mdash; where the skill is weak, which demo to collect next, which to keep, and when to stop. Each is a plain rule, <b>run and measured</b> on one honest imitation simulation (a point robot learning an action skill with one sharp move). Built in the demo-package style of the CV project: a tested, reusable core behind every stage.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="safe-deploy.html">the safe-deploy lifecycle</a> &middot; <a href="rl-explained.html">RL &amp; imitation</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">One thread runs through every stage: demonstrations are the budget, and spending them uniformly wastes most of it. The lifecycle is how you spend the budget where the skill actually needs it.</p>
+  <div class="flow"><b>1 map</b> &rarr; <b>2 select</b> &rarr; <b>3 curate</b> &rarr; <b>4 stop</b> &nbsp;&middot;&nbsp; find the weak spot, demonstrate there, keep only what teaches, and stop at the elbow.</div>
+  <section class="stage">
+  <div class="sh"><span class="no">1</span><h2>Skill Coverage Map</h2></div>
+  <p class="cp">You are about to spend expensive human demonstrations teaching a robot a skill, but you have no idea which part of the skill the policy is already weak at. Collect blindly and you pour demos into the parts it already knows.</p>
+  <div class="rule">Know where the policy is weak before you spend a single demonstration.</div>
+  <div class="mx"><div class="m"><span>error on flagged-uncertain states</span><b>0.163</b></div><div class="m"><span>error on confident states</span><b>0.031</b></div><div class="m"><span>uncertain / confident error ratio</span><b>5.3×</b></div><div class="m"><span>corr(uncertainty, true error)</span><b>0.628</b></div></div>
+  <p class="pv">On held-out states, the ones the map flags as uncertain have error <b>0.163</b> — over <b>5.3×</b> the error of the states it calls confident (<b>0.031</b>). Disagreement and true error correlate at <b>0.628</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">2</span><h2>Active Demonstration Selection</h2></div>
+  <p class="cp">Human demonstrations are the budget. Collecting them uniformly wastes most of the budget re-teaching the easy majority of the workspace while the one hard move — the sharp part where the robot actually fails — stays under-sampled.</p>
+  <div class="rule">Collect the demonstration that changes the policy, not another easy one.</div>
+  <div class="mx"><div class="m"><span>demos to target — active</span><b>162</b></div><div class="m"><span>demos to target — random</span><b>246</b></div><div class="m"><span>hard-region demos — active vs random</span><b>149 vs 24</b></div><div class="m"><span>hard-skill error at equal budget</span><b>0.144 vs 0.244</b></div></div>
+  <p class="pv">To reach the same accuracy on the sharp sub-skill (MAE 0.244), active selection needs <b>162</b> demonstrations versus <b>246</b> for random collection — and it lands <b>149</b> demos in the hard region where random lands only <b>24</b>. At an equal 246-demo budget, active reaches MAE 0.144 vs random's 0.244.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">3</span><h2>Demonstration Curation</h2></div>
+  <p class="cp">A raw collection log is full of near-duplicate demonstrations of the easy spot and a handful of bad ones — a mis-teleoperated grasp, a mislabeled action. Trained on the pile as-is, the bad demos poison the policy and the duplicates buy nothing.</p>
+  <div class="rule">Keep the data that changes the model; drop what repeats or poisons.</div>
+  <div class="mx"><div class="m"><span>raw pile size → MAE</span><b>200 → 0.218</b></div><div class="m"><span>curated size → MAE</span><b>71 → 0.082</b></div><div class="m"><span>corrupted demos removed</span><b>24</b></div><div class="m"><span>error reduction</span><b>2.7×</b></div></div>
+  <p class="pv">The raw <b>200</b>-demo pile (with duplicates and 24 corrupted demos) trains to MAE <b>0.218</b>. Curated down to <b>71</b> demonstrations, the policy reaches MAE <b>0.082</b> — <b>2.7× better with about a third of the data</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">4</span><h2>Enough-Data Gate</h2></div>
+  <p class="cp">Collection has no natural stopping point, so teams over-collect — paying for demonstrations long after the policy has stopped improving — or stop too early and ship a weak skill. Nobody can see where the learning curve has flattened.</p>
+  <div class="rule">Stop collecting when the next demonstration won't move the held-out score.</div>
+  <div class="mx"><div class="m"><span>elbow — demonstrations</span><b>120</b></div><div class="m"><span>full budget — demonstrations</span><b>400</b></div><div class="m"><span>data used at the elbow</span><b>30%</b></div><div class="m"><span>accuracy gain captured</span><b>77%</b></div></div>
+  <p class="pv">On this skill the elbow lands at <b>120</b> demonstrations — just <b>30% of the 400-demo budget</b> — yet it captures <b>77% of the total achievable accuracy gain</b> (MAE 0.072 vs the full-budget 0.034). The remaining 70% of collection buys only the last 23%.</p>
+</section>
+  <div class="note"><b>How this was built.</b> Real imitation experiments (<code>scripts/data_lifecycle_experiments.py</code>, pure NumPy) produce the numbers above. Each stage is also a small <b>tested demo package</b> under <code>source-code/learning/data-lifecycle/&lt;stage&gt;/</code> &mdash; a reusable <code>core.js</code> carrying the rule, with <code>node</code> assert-tests &mdash; so the insight is a primitive you can drop onto your own collection logs, not just a figure. The twin of the <a href="safe-deploy.html">safe-deploy lifecycle</a>: that one keeps a trained policy safe, this one decides what to train it on.</div>
+</div>
+<footer><div class="wrap">The data-lifecycle &middot; four data decisions, one honest simulation, tested reusable cores &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
+</body></html>
