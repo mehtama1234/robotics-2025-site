@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Driving the road — the autonomous-driving stack, stage by stage</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#1E8C8C;--accent-deep:#146060;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+ header{background:#071414;color:#E7F4F4;padding:40px 0 30px;background-image:linear-gradient(90deg,rgba(30,140,140,.26),rgba(62,110,158,.14),rgba(176,121,31,.12))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#88CCCC}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#EEFBFB}
+ header p{color:#BEDCDC;font-size:16px;max-width:80ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#7FB4B4} header nav a{color:#A6D6D6}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 8px}
+ .flow{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--graphite);margin:6px 0 18px}
+ .flow b{color:var(--accent-deep)}
+ .stage{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:16px 18px;margin:16px 0}
+ .sh{display:flex;align-items:center;gap:10px} .no{font-family:var(--mono);background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+ .stage h2{font-family:var(--serif);font-size:21px;margin:0} .sh .thm{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-deep);background:rgba(30,140,140,.10);padding:3px 8px;border-radius:20px}
+ .cp{color:#333;margin:8px 0}
+ .rule{font-family:var(--serif);font-size:18px;border-left:3px solid var(--accent);padding:7px 13px;background:rgba(30,140,140,.06);border-radius:0 8px 8px 0;margin:8px 0}
+ .mx{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0} .m{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;display:flex;gap:8px;align-items:baseline}
+ .m b{font-family:var(--serif);font-size:16px} .pv{font-size:13.5px;color:var(--graphite)}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">autonomous-driving stack &middot; the pipeline, stage by stage</div>
+  <h1>Driving the road</h1>
+  <p>A self-driving car has to see the vehicle ahead, keep a stable track on it through clutter, forecast where it is going, hold a gap that survives a hard brake, and steer its own lane without weaving. Five stages, five distinct sub-fields &mdash; each a plain rule, <b>run and measured</b>, with the failure it prevents. A production narrative, not a grab-bag: each stage feeds the next.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="pick-place.html">pick-and-place</a> &middot; <a href="nav-stack.html">navigation stack</a> &middot; <a href="subtheme-runs.html">widening the frontier</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">Each stage is one link: the fused detection feeds the tracker, the track feeds the predictor, the prediction feeds the gap-keeper, and the plan is driven by the lane controller. A weak link anywhere and the car mislocates, loses the target, mis-forecasts, tailgates, or weaves.</p>
+  <div class="flow"><b>1 detect</b> &rarr; <b>2 track</b> &rarr; <b>3 predict</b> &rarr; <b>4 plan</b> &rarr; <b>5 control</b></div>
+  <section class="stage">
+  <div class="sh"><span class="no">1</span><h2>Detect the vehicle</h2><a class="thm" href="autonomous-driving-explained.html">Autonomous driving</a></div>
+  <p class="cp">The car has a camera and a radar looking at the same vehicle ahead, and they disagree. The camera nails the bearing but is vague on distance; the radar nails the distance but smears the bearing. Trust either one alone and you get a position that is wrong in one axis.</p>
+  <div class="rule">Fuse sensors by their noise: a camera pins the bearing, a radar pins the range, and inverse-covariance fusion is sharp in both.</div>
+  <div class="mx"><div class="m"><span>RMSE — camera alone</span><b>3.02 m</b></div><div class="m"><span>RMSE — radar alone</span><b>3.03 m</b></div><div class="m"><span>RMSE — fused</span><b>0.69 m</b></div></div>
+  <p class="pv">On its own the camera localises the vehicle to <b>3.02 m</b> RMSE and the radar to <b>3.03 m</b> — each crippled by its bad axis. Inverse-covariance fusion brings both together to <b>0.69 m</b>, about <b>4.4× tighter</b> than either sensor.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">2</span><h2>Track it over time</h2><a class="thm" href="vt-explained.html">Video & temporal</a></div>
+  <p class="cp">Frame to frame, the detector returns the real vehicle plus a scatter of false blips off guardrails and reflections — and every so often it misses the real one entirely. Snap the track to the nearest blip each frame and it leaps onto clutter the moment the true detection drops.</p>
+  <div class="rule">Gate every detection against the track's own prediction; an ungated tracker lets clutter hijack the target.</div>
+  <div class="mx"><div class="m"><span>RMSE — no gating</span><b>2.5 m</b></div><div class="m"><span>RMSE — with gating</span><b>0.47 m</b></div><div class="m"><span>clutter per frame · detection rate</span><b>3 · 70%</b></div></div>
+  <p class="pv">With 3 clutter blips per frame and the true detection present only 70% of the time, an ungated tracker drifts to <b>2.5 m</b> RMSE as it snaps onto clutter. Gating against the prediction holds it to <b>0.47 m</b> — <b>5.3× tighter</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">3</span><h2>Predict where it goes</h2><a class="thm" href="autonomous-driving-explained.html">Autonomous driving</a></div>
+  <p class="cp">To plan around another car you need its next three seconds. Extrapolate its current velocity in a straight line and, the instant that car is turning through a bend, your forecast shoots off the road while the car calmly follows the curve.</p>
+  <div class="rule">Predict with the motion the object is actually doing: a constant-velocity guess leaves the road the moment the car is turning.</div>
+  <div class="mx"><div class="m"><span>3 s error — constant velocity</span><b>13.65 m</b></div><div class="m"><span>3 s error — constant turn rate</span><b>0.45 m</b></div><div class="m"><span>prediction horizon</span><b>3 s</b></div></div>
+  <p class="pv">For a car cornering at a steady yaw rate, a straight-line constant-velocity forecast is off by <b>13.65 m</b> at the 3-second horizon — most of a lane-width and then some. A constant-turn-rate model predicts to <b>0.45 m</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">4</span><h2>Keep a safe gap</h2><a class="thm" href="sf-explained.html">Safety & guarantees</a></div>
+  <p class="cp">Following a car at highway speed, a comfortable-looking fixed gap of a couple of metres feels fine — until the lead slams on its brakes. Between your reaction time and your own braking distance, a fixed gap is nowhere near enough and you rear-end it.</p>
+  <div class="rule">Keep a following gap that grows with speed (reaction + braking distance); a fixed gap rear-ends a hard-braking lead.</div>
+  <div class="mx"><div class="m"><span>min gap — fixed 2 m</span><b>-26.0 m (crash)</b></div><div class="m"><span>safe gap — speed-dependent</span><b>30.0 m</b></div><div class="m"><span>min gap — safe policy</span><b>2.0 m (clear)</b></div></div>
+  <p class="pv">When the lead brakes hard from 25 m/s, a fixed <b>2 m</b> gap collapses to <b>-26.0 m</b> — a 26 m overlap, a crash. The speed-dependent safe gap of <b>30.0 m</b> bottoms out at <b>2.0 m</b> — no contact.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">5</span><h2>Hold the lane</h2><a class="thm" href="ct-explained.html">Control & MPC</a></div>
+  <p class="cp">The car sits half a lane off the centreline and has to ease back on. Steer in proportion to how far off you are and nothing else, and the car arrives at the line still pointed across it, sails past, and weaves back and forth — a seasick lane-keeper.</p>
+  <div class="rule">Steer on heading error plus cross-track (Stanley), not cross-track alone, or lane-keeping overshoots and weaves.</div>
+  <div class="mx"><div class="m"><span>overshoot — cross-track only</span><b>2.0 m</b></div><div class="m"><span>overshoot — Stanley</span><b>0.08 m</b></div><div class="m"><span>residual weave — P-only vs Stanley</span><b>1.389 m vs 0.0 m</b></div></div>
+  <p class="pv">Starting 2 m off the centreline, a cross-track-only controller overshoots the line by <b>2.0 m</b> and never settles (1.389 m residual weave). Adding the heading term overshoots just <b>0.08 m</b> and settles to <b>0.0 m</b>.</p>
+</section>
+  <div class="note"><b>How this was built.</b> Real experiments (<code>scripts/driving_stack_experiments.py</code>, pure NumPy) produce every number above. Each stage is also a small <b>tested demo package</b> under <code>source-code/learning/driving-stack/&lt;stage&gt;/</code> &mdash; a reusable <code>core.js</code> carrying the rule, with <code>node</code> assert-tests. The third pipeline narrative, alongside <a href="pick-place.html">pick-and-place</a> and the <a href="nav-stack.html">navigation stack</a>.</div>
+</div>
+<footer><div class="wrap">Autonomous-driving stack &middot; five stages, one drive, tested reusable cores &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="nav-stack.html">navigation stack</a></div></footer>
+</body></html>
