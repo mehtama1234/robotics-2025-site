@@ -47,7 +47,7 @@
   <div class="stats">
     <div class="stat"><b>8</b><span>robot systems</span></div>
     <div class="stat"><b>4</b><span>lifecycle clusters</span></div>
-    <div class="stat"><b>66</b><span>measured, tested stages</span></div>
+    <div class="stat"><b>86</b><span>measured, tested stages</span></div>
     <div class="stat"><b>100%</b><span>node-tested cores</span></div>
   </div>
 </div></header>
@@ -105,6 +105,26 @@
   <a class="ch" href="underwater-rov.html"><h3>Underwater ROV</h3><span class="tag">A subsea vehicle works the seabed</span><span class="go">open &rarr;</span></a>
   <div class="hl">A constant-depth transit flies into the rising seabed (−1 m); altitude-hold keeps 2 m</div>
   <div class="stages"><div class="st"><span class="stt">Trim to neutral</span><span class="str">Trim ballast to neutral buoyancy</span></div><div class="st"><span class="stt">Brake for the water</span><span class="str">Brake against the effective mass including entrained-water added mass</span></div><div class="st"><span class="stt">Crab into the current</span><span class="str">Crab upstream by asin(current/speed) so the resultant track holds the line</span></div><div class="st"><span class="stt">Fly the seabed</span><span class="str">Follow the seabed by holding altitude above it</span></div><div class="st"><span class="stt">Steady the arm</span><span class="str">Counter the arm's reaction on the free-floating base</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#4B4E8C">
+  <a class="ch" href="space-servicing.html"><h3>Orbital satellite servicing</h3><span class="tag">A servicer approaches and works a satellite in orbit</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Grasp a tumbling client across 10°/s and it tears the arm; spin-match first and it's 0.3°/s</div>
+  <div class="stages"><div class="st"><span class="stt">Move without a foothold</span><span class="str">Counter the base reaction when you move a manipulator on a free-floating spacecraft</span></div><div class="st"><span class="stt">Hold the attitude</span><span class="str">Close an attitude loop on the reaction wheels</span></div><div class="st"><span class="stt">Unload the wheels</span><span class="str">Desaturate the reaction wheels with thrusters before they hit their speed limit</span></div><div class="st"><span class="stt">Berth on the port</span><span class="str">Start braking a berthing approach at the full v^2/2a stop distance</span></div><div class="st"><span class="stt">Match the spin</span><span class="str">Match the chaser's rotation to the tumbling client before you close the grasp</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#D98324">
+  <a class="ch" href="soft-robot.html"><h3>Soft / continuum arm</h3><span class="tag">A soft arm bends, conforms, and grips gently</span><span class="go">open &rarr;</span></a>
+  <div class="hl">A rigid-rod model mislocates a bent soft arm's tip by 22 cm; the arc model nails it</div>
+  <div class="stages"><div class="st"><span class="stt">Model the bend</span><span class="str">Model a soft segment as a constant-curvature arc, not a rigid rod</span></div><div class="st"><span class="stt">Calibrate the actuator</span><span class="str">Calibrate pressure-to-curvature with the true nonlinear map</span></div><div class="st"><span class="stt">Let it conform</span><span class="str">Bend around obstacles instead of pushing straight through</span></div><div class="st"><span class="stt">Hold up the load</span><span class="str">Feedforward a pre-bend equal to the predicted tip droop</span></div><div class="st"><span class="stt">Stiffen when needed</span><span class="str">Modulate stiffness: soften on contact to bound the peak force, stay stiff in free space for precision</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#8A6D3B">
+  <a class="ch" href="humanoid-wbc.html"><h3>Humanoid whole-body</h3><span class="tag">A standing humanoid balances, reaches, and lifts</span><span class="go">open &rarr;</span></a>
+  <div class="hl">An arm-only reach drives the CoM 0.15 m past the foot and tips; whole-body IK stays inside</div>
+  <div class="stages"><div class="st"><span class="stt">Pick the recovery</span><span class="str">Escalate push recovery from ankle to hip to a step</span></div><div class="st"><span class="stt">Reach without tipping</span><span class="str">Solve the reach with whole-body IK, not the arm alone</span></div><div class="st"><span class="stt">Don't hit yourself</span><span class="str">Plan the arm motion with a self-collision constraint</span></div><div class="st"><span class="stt">Lift with the body</span><span class="str">Counter-lean the trunk when lifting a heavy load at arm's length</span></div><div class="st"><span class="stt">Two hands, one object</span><span class="str">Regulate the two-hand internal grasp force to a band between slip and crush</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#8E2B24">
+  <a class="ch" href="racing.html"><h3>Autonomous racing</h3><span class="tag">A race car drives one corner at the limit</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Brake and turn at 100% at once and you demand 141% of grip and slide off; the friction circle keeps it on track</div>
+  <div class="stages"><div class="st"><span class="stt">Find the racing line</span><span class="str">Take the minimum-curvature racing line, not the center line</span></div><div class="st"><span class="stt">Respect the friction circle</span><span class="str">Respect the friction circle</span></div><div class="st"><span class="stt">Brake at the last metre</span><span class="str">Brake at the last metre</span></div><div class="st"><span class="stt">Find the grip peak</span><span class="str">Control to the peak slip angle, not maximum steering</span></div><div class="st"><span class="stt">Balance the brakes</span><span class="str">Bias brake force forward to match the load transfer</span></div></div>
 </section></div>
 
   <h2 class="sec">The ML discipline &mdash; across the field</h2>
@@ -130,5 +150,5 @@
   <div class="stages"><div class="st"><span class="stt">Reward design & hacking</span><span class="str">Shape a reward as a potential difference so you speed learning without changing what's optimal</span></div><div class="st"><span class="stt">Exploration vs exploitation</span><span class="str">Explore, or you converge on the first option that looked good rather than the best one</span></div><div class="st"><span class="stt">Credit assignment</span><span class="str">Credit an action by its discounted future return</span></div><div class="st"><span class="stt">Policy evaluation under noise</span><span class="str">Evaluate across enough episodes to beat the noise</span></div></div>
 </section></div>
 </div>
-<footer><div class="wrap">The robotics build lab &middot; 10 systems + 4 clusters &middot; 66 measured, node-tested stages &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
+<footer><div class="wrap">The robotics build lab &middot; 14 systems + 4 clusters &middot; 86 measured, node-tested stages &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
 </body></html>
