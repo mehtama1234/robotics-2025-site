@@ -1,0 +1,124 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The robotics build lab — every system, every rule, measured</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:inherit;text-decoration:none} .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:44px 0 34px;border-bottom:1px solid #000;
+  background-image:linear-gradient(100deg,rgba(191,91,58,.20),rgba(62,110,158,.16),rgba(30,140,140,.15),rgba(85,72,200,.15),rgba(107,142,35,.15),rgba(178,58,122,.15),rgba(192,57,43,.15),rgba(62,156,86,.16))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#9FC0CE}
+ header h1{margin:10px 0 8px;font-family:var(--serif);font-size:38px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#B7C6C6;font-size:16.5px;margin:0 0 16px;max-width:82ch}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .stats{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 2px}
+ .stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:9px 14px}
+ .stat b{font-family:var(--serif);font-size:22px;display:block;line-height:1.1;color:#F4F8F8}
+ .stat span{font-size:11px;color:#9FC0CE;font-family:var(--mono);letter-spacing:.04em}
+ h2.sec{font-family:var(--serif);font-size:24px;margin:36px 0 4px;letter-spacing:-.01em}
+ .sub{color:var(--graphite);font-size:14.5px;margin:0 0 14px;max-width:80ch}
+ .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(460px,1fr));gap:16px}
+ .card{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--gc);border-radius:12px;padding:0 0 10px;overflow:hidden}
+ .ch{display:block;padding:14px 17px 10px;position:relative;background:linear-gradient(180deg,color-mix(in srgb,var(--gc) 10%,transparent),transparent)}
+ .ch h3{font-family:var(--serif);font-size:20px;margin:0;color:#14201f}
+ .ch .tag{display:block;font-size:13px;color:var(--graphite);margin-top:2px}
+ .ch .go{position:absolute;top:14px;right:16px;font-family:var(--mono);font-size:11px;color:var(--gc);font-weight:700;letter-spacing:.04em}
+ .card:hover .ch{background:linear-gradient(180deg,color-mix(in srgb,var(--gc) 18%,transparent),transparent)}
+ .hl{margin:2px 17px 8px;font-size:12.5px;color:#3a2a1a;background:color-mix(in srgb,var(--gc) 12%,#fff);border-radius:8px;padding:6px 10px;font-style:italic}
+ .stages{padding:2px 17px 4px}
+ .st{display:flex;gap:10px;padding:6px 0;border-top:1px solid #eef0ee;counter-increment:s}
+ .st:first-child{border-top:none}
+ .st::before{content:counter(s);font-family:var(--mono);font-size:10px;color:#fff;background:var(--gc);min-width:17px;height:17px;border-radius:50%;display:grid;place-items:center;margin-top:3px;flex:0 0 auto}
+ .stages{counter-reset:s}
+ .stt{font-weight:700;font-size:13.5px;color:#1a2624;flex:0 0 40%}
+ .str{font-size:12.5px;color:var(--graphite);flex:1}
+ .method{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:18px 0 4px;font-size:14.5px;color:#233}
+ .method b{color:#111}
+ footer{border-top:1px solid var(--line);margin-top:44px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:520px){.grid{grid-template-columns:1fr}.stt{flex-basis:46%}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the robotics build lab &middot; every system, every rule, measured</div>
+  <h1>Eight robot systems, one method</h1>
+  <p>Every applied idea in this collection, built the same way: taken apart into the stages a real robot runs, and each stage turned into a plain rule, a number we actually measured, the failure it prevents, and a small tested piece of reusable code. This page is the whole build &mdash; eight end-to-end systems that run <em>along</em> one robot task each, and four lifecycle clusters that cut <em>across</em> the field.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="the-machine.html">the one machine</a> &middot; <a href="subtheme-runs.html">widening the frontier</a></nav>
+  <div class="stats">
+    <div class="stat"><b>8</b><span>robot systems</span></div>
+    <div class="stat"><b>4</b><span>lifecycle clusters</span></div>
+    <div class="stat"><b>56</b><span>measured, tested stages</span></div>
+    <div class="stat"><b>100%</b><span>node-tested cores</span></div>
+  </div>
+</div></header>
+<div class="wrap">
+  <div class="method">The method, every stage: <b>a plain rule</b> (the one move that makes it work) · <b>a measured number</b> (run on a real experiment, not asserted) · <b>the failure it prevents</b> (what breaks without it) · <b>a tested reusable core</b> (<code>core.js</code> carrying the rule, with <code>node</code> assert-tests).</div>
+
+  <h2 class="sec">The robot systems &mdash; along one task</h2>
+  <p class="sub">Eight complete robots, each walked through its pipeline stage by stage. Open any system for the full client-problem, measured result, and tested package per stage.</p>
+  <div class="grid"><section class="card pipe" style="--gc:#BF5B3A">
+  <a class="ch" href="pick-place.html"><h3>Pick-and-place cell</h3><span class="tag">A warehouse arm picks an object and places it</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Segment the table before you estimate pose: yaw error 45° → 2°</div>
+  <div class="stages"><div class="st"><span class="stt">See the object</span><span class="str">Segment the object off the table before estimating its pose, or the table's geometry dominates the answer</span></div><div class="st"><span class="stt">Pick a grasp</span><span class="str">Score every candidate grasp by its friction-cone margin and pick the sturdiest, not just any grasp that closes</span></div><div class="st"><span class="stt">Reach it</span><span class="str">Near a singularity, damp the inverse</span></div><div class="st"><span class="stt">Touch down softly</span><span class="str">Command a compliant force on contact, not a stiff position</span></div><div class="st"><span class="stt">Confirm the grab</span><span class="str">Watch the grip force after you close</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#3E6E9E">
+  <a class="ch" href="nav-stack.html"><h3>Navigation stack</h3><span class="tag">A mobile robot crosses a building</span><span class="go">open &rarr;</span></a>
+  <div class="hl">A* finds the same path as Dijkstra expanding 16.8× fewer nodes</div>
+  <div class="stages"><div class="st"><span class="stt">Know where you are</span><span class="str">Correct dead-reckoning with what you can measure</span></div><div class="st"><span class="stt">Plan the route</span><span class="str">Guide the search with a distance-to-go heuristic: A* finds the same shortest path as Dijkstra while expanding a fraction of the nodes</span></div><div class="st"><span class="stt">Give the body room</span><span class="str">Inflate every obstacle by the robot's radius before planning</span></div><div class="st"><span class="stt">Dodge the pedestrian</span><span class="str">Plan in velocity space: forbid the velocities that lead to a collision and pick the closest allowed one</span></div><div class="st"><span class="stt">Follow the path</span><span class="str">Track a path by aiming at a lookahead point, not the nearest one</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#1E8C8C">
+  <a class="ch" href="driving-stack.html"><h3>Autonomous-driving stack</h3><span class="tag">A self-driving car handles the road</span><span class="go">open &rarr;</span></a>
+  <div class="hl">A fixed 2 m gap becomes a crash; the speed-dependent gap holds</div>
+  <div class="stages"><div class="st"><span class="stt">Detect the vehicle</span><span class="str">Fuse sensors by their noise: a camera pins the bearing, a radar pins the range, and inverse-covariance fusion is sharp in both</span></div><div class="st"><span class="stt">Track it over time</span><span class="str">Gate every detection against the track's own prediction</span></div><div class="st"><span class="stt">Predict where it goes</span><span class="str">Predict with the motion the object is actually doing: a constant-velocity guess leaves the road the moment the car is turning</span></div><div class="st"><span class="stt">Keep a safe gap</span><span class="str">Keep a following gap that grows with speed (reaction + braking distance)</span></div><div class="st"><span class="stt">Hold the lane</span><span class="str">Steer on heading error plus cross-track (Stanley), not cross-track alone, or lane-keeping overshoots and weaves</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#5548C8">
+  <a class="ch" href="drone-flight.html"><h3>Drone-flight stack</h3><span class="tag">A quadrotor flies a delivery</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Underactuated: a flat drone goes 0 m sideways, a tilted one reaches the goal</div>
+  <div class="stages"><div class="st"><span class="stt">Know which way is up</span><span class="str">Fuse a drifting gyro with a noisy accelerometer: the complementary filter keeps the gyro's smoothness without its drift</span></div><div class="st"><span class="stt">Plan a flyable path</span><span class="str">Route through waypoints with a smooth spline</span></div><div class="st"><span class="stt">Tilt to move</span><span class="str">A quadrotor is underactuated: to accelerate sideways it must first tilt and let thrust push it</span></div><div class="st"><span class="stt">Mix the motors</span><span class="str">Turn the desired thrust-and-torque wrench into four rotor thrusts with the mixer matrix</span></div><div class="st"><span class="stt">Follow without lag</span><span class="str">Add the trajectory's own acceleration as feedforward</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#6B8E23">
+  <a class="ch" href="legged-stack.html"><h3>Legged-locomotion stack</h3><span class="tag">A quadruped walks one gait cycle</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Lift the wrong foot and the support margin goes negative — it tips</div>
+  <div class="stages"><div class="st"><span class="stt">Feel the ground</span><span class="str">Detect foot contact with hysteresis, not a single threshold</span></div><div class="st"><span class="stt">Place the next foot</span><span class="str">Place the foot with a speed-correcting offset (Raibert): without the (v−v_des) term the robot walks forever at its starting speed</span></div><div class="st"><span class="stt">Stay upright</span><span class="str">Lift only a foot that leaves the CoM inside the remaining support triangle</span></div><div class="st"><span class="stt">Swing the leg over</span><span class="str">Arc the swing foot to a clearance apex</span></div><div class="st"><span class="stt">Push with the stance legs</span><span class="str">Distribute stance forces so no foot exceeds its friction cone</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#B23A7A">
+  <a class="ch" href="warehouse-fleet.html"><h3>Warehouse-fleet coordination</h3><span class="tag">A fleet of robots moves goods</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Run robots till they die and all 8 strand; charge by reachability and 0 do</div>
+  <div class="stages"><div class="st"><span class="stt">Hand out the jobs</span><span class="str">Assign the whole fleet at once to minimize total travel</span></div><div class="st"><span class="stt">Cross the intersection</span><span class="str">Reserve the shared intersection so one robot crosses at a time</span></div><div class="st"><span class="stt">Break the jam</span><span class="str">Break a head-on corridor tie with a yield rule (one robot ducks into a bay)</span></div><div class="st"><span class="stt">Keep the fleet alive</span><span class="str">Send a robot to charge while it can still reach the charger</span></div><div class="st"><span class="stt">Balance the stations</span><span class="str">Send each item to the shortest-queue station</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#C0392B">
+  <a class="ch" href="surgical-robot.html"><h3>Surgical teleoperation</h3><span class="tag">A surgeon operates through a robot</span><span class="go">open &rarr;</span></a>
+  <div class="hl">A remote-center-of-motion pivot holds the incision at 0 mm, not 8</div>
+  <div class="stages"><div class="st"><span class="stt">Steady the hand</span><span class="str">Low-pass the command to strip physiological hand tremor while passing the surgeon's deliberate motion</span></div><div class="st"><span class="stt">Scale the motion down</span><span class="str">Scale the surgeon's hand motion down at the tool</span></div><div class="st"><span class="stt">Pivot at the incision</span><span class="str">Constrain the tool to pivot about the fixed incision (remote center of motion)</span></div><div class="st"><span class="stt">Guard the no-go zone</span><span class="str">Enforce a virtual fixture around no-go structures</span></div><div class="st"><span class="stt">Beat the cable slack</span><span class="str">Feed the cable backlash forward on every reversal</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#3E9C56">
+  <a class="ch" href="agricultural-robot.html"><h3>Agricultural field pass</h3><span class="tag">A field robot weeds and tends a crop</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Colour alone misclassifies 46% of plants; add leaf shape → 2%</div>
+  <div class="stages"><div class="st"><span class="stt">Cover the whole field</span><span class="str">Sweep the field with a systematic boustrophedon path</span></div><div class="st"><span class="stt">Drive the crop rows</span><span class="str">Centre in the lane from the crop rows you can see, not from GPS</span></div><div class="st"><span class="stt">Tell crop from weed</span><span class="str">Color alone can't separate crop from weed (both are green)</span></div><div class="st"><span class="stt">Hit the moving weed</span><span class="str">Trigger the nozzle early by speed×latency so the spray lands on the moving weed</span></div><div class="st"><span class="stt">Dose to the need</span><span class="str">Apply inputs at a variable rate matched to the need map</span></div></div>
+</section></div>
+
+  <h2 class="sec">The ML discipline &mdash; across the field</h2>
+  <p class="sub">Four lifecycle clusters that cut across every robot: what to learn from, what to trust, how to act safely, and how to keep improving.</p>
+  <div class="grid"><section class="card clus" style="--gc:#7A6CD0">
+  <a class="ch" href="data-lifecycle.html"><h3>Data lifecycle</h3><span class="tag">Which demonstrations to collect</span><span class="go">open &rarr;</span></a>
+  
+  <div class="stages"><div class="st"><span class="stt">Skill coverage map</span><span class="str">Know where the policy is weak before you spend a single demonstration</span></div><div class="st"><span class="stt">Active demo selection</span><span class="str">Collect the demonstration that changes the policy, not another easy one</span></div><div class="st"><span class="stt">Demonstration curation</span><span class="str">Keep the data that changes the model</span></div><div class="st"><span class="stt">Enough-data gate</span><span class="str">Stop collecting when the next demonstration won't move the held-out score</span></div></div>
+</section>
+<section class="card clus" style="--gc:#3AA0C8">
+  <a class="ch" href="perception-qa.html"><h3>Perception QA</h3><span class="tag">A perception stack you can trust</span><span class="go">open &rarr;</span></a>
+  
+  <div class="stages"><div class="st"><span class="stt">Sensor fusion & agreement</span><span class="str">Trust a perception only where independent sources agree</span></div><div class="st"><span class="stt">Out-of-distribution check</span><span class="str">A perception model is valid only on inputs like its training set</span></div><div class="st"><span class="stt">Confidence calibration</span><span class="str">A confidence is only useful if it matches reality</span></div><div class="st"><span class="stt">Covariate-drift monitor</span><span class="str">Watch the input distribution</span></div></div>
+</section>
+<section class="card clus" style="--gc:#2E7D6B">
+  <a class="ch" href="safe-deploy.html"><h3>Safe deploy</h3><span class="tag">Deploying a learned policy safely</span><span class="go">open &rarr;</span></a>
+  
+  <div class="stages"><div class="st"><span class="stt">Deploy readiness gate</span><span class="str">Judge a policy on held-out cases, not the region it was recorded from</span></div><div class="st"><span class="stt">Runtime safety shield</span><span class="str">Gate every learned action through a filter that can only make it safer</span></div><div class="st"><span class="stt">Out-of-regime detector</span><span class="str">Watch for leaving the trained regime</span></div><div class="st"><span class="stt">Detect-and-recover fallback</span><span class="str">On a detected failure, fall back to a safe default</span></div></div>
+</section>
+<section class="card clus" style="--gc:#B0791F">
+  <a class="ch" href="learning-loop.html"><h3>Learning loop</h3><span class="tag">How a policy improves from experience</span><span class="go">open &rarr;</span></a>
+  
+  <div class="stages"><div class="st"><span class="stt">Reward design & hacking</span><span class="str">Shape a reward as a potential difference so you speed learning without changing what's optimal</span></div><div class="st"><span class="stt">Exploration vs exploitation</span><span class="str">Explore, or you converge on the first option that looked good rather than the best one</span></div><div class="st"><span class="stt">Credit assignment</span><span class="str">Credit an action by its discounted future return</span></div><div class="st"><span class="stt">Policy evaluation under noise</span><span class="str">Evaluate across enough episodes to beat the noise</span></div></div>
+</section></div>
+</div>
+<footer><div class="wrap">The robotics build lab &middot; 8 systems + 4 clusters &middot; 56 measured, node-tested stages &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
+</body></html>
