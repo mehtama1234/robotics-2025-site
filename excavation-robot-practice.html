@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Autonomous earthmoving — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#5B6E7D;--accent-deep:#3E4E5A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#5B6E7D 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#5B6E7D 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Autonomous earthmoving — the real problem</h1>
+  <p>From surveying the dig to grading the finished surface, an earthmoving robot fights noisy terrain maps, slipping tracks, mis-weighed buckets, swinging loads, and out-of-tolerance surfaces — one hard problem per stage.</p>
+  <nav><a href="excavation-robot.html">&larr; the excavation robot demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Survey the dig site — turn the terrain into a cut-fill map</h2></div>
+  <p class="demo">Our demo: a single noisy scan reads 690 m3 of cut versus 621 m3 true (11.1% high), while averaging repeated scans lands at 637 m3 (2.5%).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Survey crews and machine-control vendors like Trimble and Topcon build site models from drone photogrammetry, LiDAR, and GNSS rovers; Built Robotics' RPD 35 pile driver surveys its own pile locations before it works.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A biased terrain map propagates straight into an over- or under-estimated earthwork quantity, which mis-prices the bid and mis-plans the number of truckloads to haul.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production workflows average multiple passes and fit surfaces to a design model, then compute cut-fill against a GNSS or laser reference rather than trusting one raw height grid.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim averages clean synthetic scans; real drone surveys fight vegetation, water, moving equipment, GNSS multipath in pits, and registration error between flights.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Regulate the dig force — pull hard without spinning the tracks</h2></div>
+  <p class="demo">Our demo: an aggressive 140 kN command exceeds the 100 kN traction limit, so the tracks fully slip and the bucket penetrates 0.00 m; regulating to 90 kN digs 1.84 m.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Autonomous digging platforms such as Built Robotics' Exosystem retrofit, plus the traction and hydraulic controls on Caterpillar and Komatsu machines, all trade commanded dig force against available ground grip.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Commanding more force than the tracks can hold just spins them and slides the machine backward, wasting a cycle and churning the ground instead of cutting into it.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Modern machines close the loop on hydraulic pressure and track slip, backing off bucket force to stay under the traction limit so the cutting edge keeps penetrating.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We model one clean traction ceiling; real soil varies from mud to rock within a bucket, and grip shifts with moisture, grade, and undercarriage wear.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Weigh the bucket — bill the load without over- or under-filling trucks</h2></div>
+  <p class="demo">Our demo: assuming every scoop is a full 2000 kg mis-bills the load by 589 kg (29.4%), while estimating the weight from the lift dynamics is off by just 8 kg (0.4%).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Onboard weighing systems like Trimble LOADRITE (e.g. the X2350 excavator scale) and comparable loader scales weigh material bucket-by-bucket during the normal lift.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Guessing that each bucket comes up full mis-counts tonnage, and consistent errors either overload haul trucks — a safety and equipment-wear hazard — or leave them underloaded, wasting fuel and cycles.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production scales infer weight from lift hydraulics and arm motion as the load rises, reaching roughly a few-percent accuracy without pausing the dig cycle, and can feed the totals to fleet software.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our estimator uses idealized lift dynamics; field scales must reject sloshing, partial buckets, boom motion, temperature drift, and calibration change to hold their rated tolerance.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Swing without spilling — move a suspended load and stop it dead</h2></div>
+  <p class="demo">Our demo: a bang-bang swing of a 6.0 m, 4.9 s pendulum leaves 0.075 rad of residual sway, while input-shaping the command (two half-moves a half-period apart) leaves essentially zero.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Any machine that slews a hung load — cranes and the pile-handling steps on excavator-based systems such as Built Robotics' RPD — faces pendulum sway when it accelerates and stops.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A load still swinging at the end of a move can spill, miss its placement, strike people or structures, and forces the operator to wait out the oscillation before the next step.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Anti-sway control shapes the motion command — splitting a move into pulses timed to the load's natural period (input shaping) — so the swing induced by starting cancels the swing induced by stopping.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We assume a fixed pendulum length and period; real loads change length as cable pays out, feel wind and off-center pickup, and couple with the machine's own compliance.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Grade the surface — hold the blade to tolerance despite machine pitch</h2></div>
+  <p class="demo">Our demo: an open-loop blade leaves a surface roughness of 0.082 m standard deviation, while closing the loop on a laser/GPS grade reference cuts it to 0.005 m.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>2D and 3D machine-control systems from Trimble (Earthworks) and Topcon automate blade and bucket height on dozers, graders, and excavators against a laser or GNSS reference.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>An open-loop blade copies every machine pitch and bump into the finished surface, and a surface left out of grade has to be re-worked — extra passes, material, and time.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Grade control senses blade height against a rotating laser plane or a 3D GNSS site model and drives the hydraulics to hold grade to millimeters, letting the operator run faster with fewer passes.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our controller tracks one clean reference; real 3D control depends on GNSS availability, laser line-of-sight, machine dynamics, and soil that moves and compacts under the blade.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="excavation-robot.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Autonomous earthmoving — the real problem &middot; <a href="excavation-robot.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

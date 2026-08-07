@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Legged robots — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#6B8E23;--accent-deep:#4A6318;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#6B8E23 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#6B8E23 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Legged robots — the real problem</h1>
+  <p>A walking robot has to feel the ground, choose where each foot lands, stay balanced on a shifting set of contacts, swing its legs clear of the terrain, and push against the world without slipping — every step, in real time.</p>
+  <nav><a href="legged-stack.html">&larr; the legged stack demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Feel the ground — contact detection</h2></div>
+  <p class="demo">Our demo: a bare force threshold reports 58 touchdown transitions on noisy sensor data where only 8 are real; hysteresis brings it down to 10.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every dynamic quadruped — Boston Dynamics Spot, ANYbotics ANYmal, the MIT Cheetah, Unitree's robots — must know exactly when each foot touches down, since their controllers switch behavior between swing and stance on that signal.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A mistimed or false contact makes the controller commit a foot too early or too late, so the leg either slams down, loses the stance it thought it had, or chatters between states — any of which can trip the gait or drop the body.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production systems estimate contact from foot-force sensing and leg kinematics/dynamics (often with a momentum-based disturbance observer instead of a dedicated force sensor), and debounce the decision with hysteresis so sensor noise can't fake a touchdown.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim uses a clean 1-D force signal with hand-set thresholds; real robots fuse noisy multi-axis force, joint torques, and IMU data and must reject impacts, soft or deformable ground, and sensor drift.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Place the next foot — foothold selection</h2></div>
+  <p class="demo">Our demo: with the Raibert speed-correcting offset the robot converges from 0.5 to the 1.2 m/s target in about 7 strides; drop the (v − v_des) term and it walks forever at its starting 0.5 m/s.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Foot-placement control traces to Marc Raibert's hopping and running robots at the MIT Leg Lab in the 1980s — the lab that became Boston Dynamics — and the Raibert heuristic is still integrated into quadruped controllers from research labs and companies like ANYbotics and Unitree.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Choose the foothold badly and the robot fails to reach or hold its target speed, drifts off course, or plants a foot on a slippery, sloped, or unsupported patch of ground and slips or falls.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The Raibert heuristic places the foot at a 'neutral point' plus an offset proportional to the velocity error, so a foot ahead of neutral slows the body and behind neutral speeds it up; modern stacks combine this with terrain-aware footstep planning and MPC.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo places feet on flat, uniformly supportive ground with a simple speed rule; real robots must perceive terrain, avoid gaps, edges, and low-traction spots, and plan several footsteps ahead over rough or cluttered surfaces.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Stay upright — balance over the support polygon</h2></div>
+  <p class="demo">Our demo: with the CoM projected to (0.15, −0.1), lifting the FR foot leaves a stability margin of −0.166 m (the robot tips), while lifting RL keeps a +0.1 m margin and stays balanced.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Any legged robot that lifts a foot must reason about which contacts remain — a concern for ANYmal, Spot, Unitree quadrupeds, and every biped, all of which track the center of mass relative to the polygon formed by their standing feet.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Lift the wrong foot, or let the body's weight fall outside the remaining support, and the robot rolls over the edge of its support and tips — a fall that can damage the machine or its surroundings.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Classic stability uses the support polygon — the convex hull of the ground contacts — and keeps the center of mass (statically) or the Zero-Moment-Point / capture point (dynamically) inside it, so the robot only lifts a foot that keeps the body over the remaining support triangle.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a static center-of-mass-in-triangle test on flat ground; real dynamic gaits use ZMP or capture-point criteria that account for momentum and acceleration, on inclined, uneven, or moving ground.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Swing the leg over — swing-foot trajectory</h2></div>
+  <p class="demo">Our demo: a straight-line swing hits a minimum clearance of −0.05 m over a 0.05 m bump (it stubs), while arcing the foot to a 0.1 m apex keeps +0.043 m of clearance.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every walking robot must lift and reposition each swinging leg without catching it on the terrain — Spot, ANYmal, MIT Cheetah, and Unitree all generate swing-foot trajectories with a raised apex between liftoff and touchdown.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A swing path with too little clearance scuffs or stubs the foot on bumps, curbs, or debris, which stalls the leg, jolts the body, and can trip the whole robot mid-step.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Controllers command a smooth swing trajectory that arcs up to a clearance apex and back down to the planned foothold — instead of a straight line — giving the foot room to pass over expected terrain height.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo arcs over a single known bump of fixed height; real robots must set clearance from perceived, uncertain terrain and adapt the swing on the fly when a foot catches something the map missed.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Push with the stance legs — force distribution</h2></div>
+  <p class="demo">Our demo: against 200 N of weight plus 60 N horizontal, an even force split drives the low-traction front foot (μ=0.25) to 1.2× its friction limit and it slips; the optimized split holds every foot to 0.35× and none slip.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Dynamic quadrupeds distribute how hard each stance foot pushes — the MIT Cheetah's convex MPC, ANYmal's hierarchical whole-body controller, and similar stacks on Spot and Unitree all solve for per-foot ground-reaction forces.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Split the required force evenly and a foot on low-traction ground is asked for more than friction can supply, so it slips — the push fails, the body lurches, and the gait can break down.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Whole-body controllers pose force distribution as a quadratic program (QP) that finds ground-reaction forces producing the desired body motion while keeping each foot inside its friction cone (linearized as a pyramid) and within force limits.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo solves one static two-foot split with known friction coefficients; a real whole-body QP/MPC runs at hundreds of Hz over all legs with estimated, changing friction, full-body dynamics, and torque limits.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="legged-stack.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Legged robots — the real problem &middot; <a href="legged-stack.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

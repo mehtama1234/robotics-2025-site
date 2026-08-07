@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Robotic bin picking — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#BF5B3A;--accent-deep:#8A3E24;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#BF5B3A 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#BF5B3A 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Robotic bin picking — the real problem</h1>
+  <p>A warehouse arm has to see a jumbled object, choose a grasp that won't slip, reach it without the arm tearing itself apart, touch down without crushing anything, and confirm it actually holds — five hard problems back to back.</p>
+  <nav><a href="pick-place.html">&larr; the pick place demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>See the object — pose from a point cloud</h2></div>
+  <p class="demo">Our demo: after segmenting the object off the table, RANSAC recovered the yaw to within 2 degrees and the center to 1 mm, versus 45 degrees and 108 mm if we fit the raw cloud that the 500-point table dominates.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Bin-picking vendors like Covariant and RightHand Robotics, and academic 6DoF pipelines (PS6D, point-pair-feature methods), all start by turning an RGB-D or point-cloud scan into an object pose so the arm knows where and how the item sits in the tote.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>If the pose is wrong, everything downstream fails: the grasp targets empty space, the arm collides with a bin wall, or it grips the wrong item. Textureless, reflective, dark, or transparent surfaces wreck depth sensing, and in a cluttered bin one object's geometry can dominate the fit — exactly the table-dominates-object failure our demo reproduces.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production systems segment the scene first — RANSAC plane fitting removes the bin floor and walls, then instance segmentation isolates each item — before estimating pose per object. Reported bin-picking pipelines reach roughly millimeter-level accuracy and around 90% success on real totes once the object is properly separated from its background.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo is one clean object on a flat table with a known shape. Real bins have heavy occlusion, stacked and overlapping items, novel SKUs the model never saw, and shiny or clear packaging where the depth camera returns garbage — none of which a single RANSAC fit handles.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Pick a grasp — score every candidate</h2></div>
+  <p class="demo">Our demo: across 400 candidate grasps only 31.5% achieved force closure, and scoring each by its friction-cone margin found a grasp with a +26.2 degree margin (near the 26.6 degree cone) instead of the median candidate at -15 degrees.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Berkeley's Dex-Net line (GQ-CNN grasp-quality networks) is the canonical academic answer; industrially, RightHand's RightPick uses three compliant fingers plus suction and Covariant uses suction grippers, each of which has to pick from many possible grasp points on each item.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A grasp that merely closes on the object isn't enough — if it sits outside the friction cone the item slips or drops mid-transfer, costing a failed pick and a lost cycle. The Amazon Picking/Robotics Challenge exposed how hard this is: even the strongest teams took tens of seconds per item and could not pick every object, and difficulty rose sharply as bins got more crowded.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Modern grasp planners score a large set of candidate grasps and keep the most robust. Dex-Net 2.0 reported about 93% success planning parallel-jaw grasps in under a second on known objects, and Dex-Net 3.0 reported roughly 98% / 82% / 58% suction success on basic / typical / adversarial objects — the margin-scoring idea our demo uses in miniature.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We score a fixed set of analytic candidates on a rigid object with a known friction cone. Real items are deformable (bags, clothing), have unknown or varying friction, and the best grasp can be occluded by neighbors — and suction versus finger choice depends on the specific item in ways our single metric ignores.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Reach it — inverse kinematics near a singularity</h2></div>
+  <p class="demo">Our demo: with the target 3.05 m out on a 3.0 m reach — right at the edge — a plain Jacobian inverse commanded a 21.6 rad/s joint step, while damped least squares reached essentially the same final error with a maximum joint step of 0.19 rad/s.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Any arm-motion stack hits this — MoveIt (the standard ROS motion-planning framework) and industrial arm controllers must solve inverse kinematics to convert a target pose into joint angles, and every warehouse picker faces targets near the edge of the workspace.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Near a kinematic singularity the Jacobian becomes ill-conditioned, so a naive inverse commands enormous joint velocities — the arm jerks, faults on a speed limit, or moves unpredictably. In a warehouse that means an aborted pick, an emergency stop, or wear on the joints.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Damped least squares (the singularity-robust inverse) is the standard fix: it trades a little tracking error for a bounded, stable solution near singularities. MoveIt Servo, for example, slows the end effector toward zero as it approaches a singularity, and variants like selectively-damped least squares tune the damping per singular direction.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo is a single planar target with no obstacles and no joint limits. A real picker must plan a full collision-free trajectory inside a cluttered bin, respect joint and velocity limits, and often has redundant degrees of freedom to resolve — problems well beyond one damped inverse step.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Touch down softly — impedance instead of position</h2></div>
+  <p class="demo">Our demo: commanding a stiff position 20 mm past a wall at 0.1 m produced a 108.4 N peak contact force, while commanding a compliant force held the peak to 4.0 N for the same overshoot.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Contact-rich manipulation — placing an item in a tote, peg-in-hole assembly, dual-arm handling — relies on impedance or admittance control; collaborative and industrial arms expose Cartesian impedance modes precisely so contact doesn't turn a small position error into a large force.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Under stiff position control a tiny position error at contact becomes a huge force: the gripper crushes fragile items, the arm faults on a force limit, or it damages the bin or the product. Assembly and placement both fail when the controller fights the environment instead of yielding to it.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Impedance control commands a target stiffness and damping rather than an exact position, so the arm behaves like a spring on contact and force stays bounded. Research on peg-in-hole assembly shows lowering translational stiffness along the insertion axis lets the part comply and seat with modest, controlled contact forces — the same principle our 4 N result shows.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo is a 1-D push against a rigid wall with hand-tuned stiffness. Real placement mixes stiff and soft contacts, unknown surface geometry, and items that themselves deform, so a single fixed impedance isn't enough — production increasingly uses variable-impedance and learned compliance.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Confirm the grab — watch the grip force</h2></div>
+  <p class="demo">Our demo: monitoring grip force against the 5.0 N expected load with a 3.5 N threshold caught every slip (100% recall, 0% false alarms) an average of 6 steps before the object would have been lost.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Tactile-sensing research uses sensors like SynTouch's BioTac and MIT's GelSight/GelSlim to catch slip; warehouse pickers monitor grip or suction state after closing so a silently slipping item can be re-gripped rather than dropped.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A slip you don't notice is a dropped item — mislabeled as picked, jammed in the mechanism, or damaged on the floor — and a lost cycle. Because tactile signals are subtle, incipient slip (part of the contact slipping while the rest holds) is easy to miss until the object is already gone.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Detecting slip sets a safe lower bound on grip force: once slip is sensed, the controller tightens before the object falls. Vibration-based sensors react fast — reported BioTac slip-detection delays are on the order of tens of milliseconds — and monitoring the ratio of shear to normal force or the onset vibration is the standard signal, the same after-close watch our demo performs.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo watches a clean 1-D force signal with a fixed threshold. Real tactile data is noisy and multi-axis, slip signatures vary by material and surface, and suction failure looks different from finger slip — so production systems need learned, sensor-specific detectors, not one threshold.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="pick-place.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Robotic bin picking — the real problem &middot; <a href="pick-place.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Warehouse robot fleets — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#B23A7A;--accent-deep:#7E2652;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#B23A7A 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#B23A7A 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Warehouse robot fleets — the real problem</h1>
+  <p>A goods-to-person fleet only earns its keep when hundreds of robots share the same floor without stepping on each other — so the real fight is coordination: who does what, who crosses first, who yields, who charges, and where the work piles up.</p>
+  <nav><a href="warehouse-fleet.html">&larr; the warehouse fleet demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Hand out the jobs — task allocation</h2></div>
+  <p class="demo">Our demo: assigning all 7 robots at once cuts total travel from 25.0 m (greedy nearest-job) to 18.6 m, a 25.8% saving.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every goods-to-person operator hits this: Amazon Robotics (the former Kiva Systems), where robots drive under inventory pods and carry them to staffed pick stations, plus AutoStore, Ocado, GreyOrange, Locus Robotics, and Fetch. A central controller must decide, hundreds of times a second, which robot takes which move.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Bad allocation shows up as wasted travel and empty robots crossing the floor to reach far-away jobs while nearer robots sit idle. Because pods must reach staffed stations on time, a poor dispatch starves the pick stations and drops picks-per-hour — the single number the whole facility is measured on.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>In production the assignment is centralized and solved as a global optimization rather than nearest-job greedy: the Hungarian algorithm and auction/market-based methods (robots 'bid' on tasks) are the classic tools, run continuously as new orders arrive. Amazon-style systems fold pod selection and station scheduling into the same dispatch loop.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo assigns a fixed batch of 7 robots to 7 jobs once. A real fleet is 'lifelong': thousands of robots, an open-ended stream of orders, pods that must be restocked and returned, and objectives (throughput, deadlines, congestion) that trade off against each other — so the clean one-shot optimum is never actually reached.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Cross the intersection — traffic management</h2></div>
+  <p class="demo">Our demo: 6 robots free-for-all collide on 4 steps at the shared cell; reserving the intersection drops collisions to 0 at the price of 19 added wait-steps.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Any fleet that shares aisles and crossings: Amazon's grid of barcode-marked floor cells, AutoStore and Ocado robots driving on top of a bin grid, and AMR vendors moving carts through mixed human-robot aisles. The more robots per square meter, the more this dominates.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Without arbitration, two robots want the same cell at the same time — a collision, or a near-miss that forces an emergency stop. Emergency stops and re-planning ripple outward into congestion, and a jammed intersection can stall a whole region of the floor, cutting throughput far beyond the two robots involved.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production systems reserve space and time: a robot claims a cell (or a path segment with a time window) before entering, and others wait. Grid systems enforce this centrally; AMR fleets add one-way lanes, zoning, speed limits at crossings, and reservation-based path planning (VDA 5050 is a common fleet-interface standard). One robot crosses at a time, exactly as in the demo.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our reservation is a single perfect grid cell with instant, lossless communication and robots that move in lockstep. Real robots have physical footprint, momentum, localization error, dropped messages, and humans wandering in — so real traffic control needs safety margins, continuous re-planning, and onboard collision sensing on top of the reservation.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Break the jam — deadlock resolution</h2></div>
+  <p class="demo">Our demo: a symmetric 'both wait' in a 7-cell corridor deadlocks forever (0 tasks done); a yield rule that ducks one robot into the passing bay at cell 3 clears it in 9 steps (2 tasks done).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Narrow one-lane corridors and choke points in any warehouse fleet — single-file aisles, dock approaches, and pinch points between zones. It bites hardest in dense grids and retrofit sites where aisles are too tight for two robots to pass.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A deadlock is worse than slow: two robots facing head-on, each waiting for the other, block the corridor indefinitely and can back up every robot queued behind them until an operator intervenes. Livelock (robots repeatedly yielding into each other) wastes motion without progress. Either way, part of the floor freezes.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production avoids symmetry: priority/yield rules break the tie so one robot backs into a passing bay or a wider cell while the other proceeds, plus one-way routing so head-on conflicts never form. Research frames this as multi-agent path finding (MAPF) with conflict-based search (CBS); in practice fleets lean on zoning, one-way lanes, and simple deterministic yield priorities that are fast and predictable.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our corridor is one straight line with one bay and a tidy tie-break. Real deadlocks are cyclic and multi-party — three, four, or more robots in a loop of mutual waiting across several intersections — which is far harder to even detect than a two-robot standoff, let alone unwind without cascading new conflicts.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Keep the fleet alive — charge scheduling</h2></div>
+  <p class="demo">Our demo: running all 8 robots until dead strands all 8 in the aisles after only 16 tasks; charging each before it can no longer reach a charger strands 0 and completes 200 tasks.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every battery-powered fleet, especially those running long or 24/7 shifts: Amazon's floor robots (widely reported to top up in short bursts between jobs), AutoStore and Ocado grids, and AMR fleets from Fetch, Locus, and others that share a bank of chargers.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A robot that runs flat mid-aisle is not just idle — it's an immovable obstacle that must be rescued, and it blocks whatever traffic needed that lane. Too-conservative charging is the opposite failure: robots sit on chargers they don't need while jobs pile up, so the fleet's effective size shrinks and throughput drops.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The dominant production pattern is opportunity (opportunity/top-up) charging: a robot grabs a few minutes on an open charger between tasks rather than draining fully and doing a long deep charge. Fleets schedule charging as a first-class task in the dispatcher, weighed against picking work; some sites use battery swapping or inter-shift swaps for continuous operation.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a clean linear battery model and a single reach-the-charger threshold. Real batteries degrade non-linearly with temperature, age, and load; charger slots are contended and finite; and the scheduler must forecast future demand — sending a robot to charge now because the floor will be busy in twenty minutes, a prediction our sim never makes.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Balance the stations — workload leveling</h2></div>
+  <p class="demo">Our demo: piling every item on one of 3 stations caps the fleet at that station's rate (throughput 0.33, max queue 400); routing each item to the shortest queue reaches full throughput 1.0 with a max queue of 1.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Multi-station goods-to-person operations: Amazon fulfillment centers with rows of pick stations, and grid systems like AutoStore and Ocado that feed many ports/pick stations from one robot fleet. Ocado's execution software explicitly system-directs which pick goes where to keep stations fed.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>If work concentrates on one station, that station's service rate becomes the ceiling for the entire fleet — robots and pods queue up behind it while other stations sit starved, and the expensive robot fleet is throttled by a single bottleneck. Uneven load also creates local congestion (pods piling up near the busy station) that spills into the traffic problem.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production balances load in real time: route each incoming item/order to the shortest-queue or best-positioned station, use dynamic zoning that reassigns operational areas as demand shifts, and coordinate bot arrivals so bins reach a station just in time rather than all at once. Well-balanced grid stations are reported to sustain hundreds of picks per hour each.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo balances three identical stations serving interchangeable items. Real stations differ in staffing, ergonomics, and speed; items are constrained to stations that stock the right pods; orders have deadlines and multi-line dependencies; and re-routing an item competes with the same traffic and charging constraints — so 'send it to the shortest queue' is only the first move in a much larger scheduling problem.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="warehouse-fleet.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Warehouse robot fleets — the real problem &middot; <a href="warehouse-fleet.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

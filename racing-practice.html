@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Autonomous racing — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#8E2B24;--accent-deep:#5E1C17;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#8E2B24 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#8E2B24 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Autonomous racing — the real problem</h1>
+  <p>Driving a car at the very edge of tire grip, where every corner is a physics problem and being a fraction slower loses the race.</p>
+  <nav><a href="racing.html">&larr; the racing demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Find the racing line</h2></div>
+  <p class="demo">Our demo: opening a 30 m center-line corner to a 114 m racing-line radius raises corner speed from 76 to 147 km/h and clears the corner 0.73 s sooner.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Autonomous-racing programs such as the Indy Autonomous Challenge and the earlier Roborace series, plus the F1TENTH 1:10-scale racing community, all plan a global racing line before they drive. TUM's Autonomous Motorsport team, which won and podiumed at the Indy Autonomous Challenge, built and open-sourced a minimum-curvature raceline planner used across both Roborace and IAC.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>In racing there is no partial credit: a line that opens the corner even slightly less than optimal forces a lower friction-limited corner speed, which bleeds time through the corner and down the following straight, and over a lap that gap decides the race.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production race stacks compute a global trajectory offline as an optimization — a shortest-path or minimum-curvature line, or a full minimum-lap-time optimal control problem transcribed to a nonlinear program (e.g. via CasADi/IPOPT) — as in TUM's global_racetrajectory_optimization and CommonRoad raceline planner.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo optimizes one idealized constant-radius corner with fixed grip; a real planner must handle a whole track of compound curves, a grip surface that varies with tire temperature and wear, aerodynamic downforce that changes the limit with speed, and other cars that block the ideal line.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Respect the friction circle</h2></div>
+  <p class="demo">Our demo: with grip capped at 1.5 g, braking and cornering both at 100% demands 141% of the limit and slides off track; trading braking for cornering holds the demand at 100% and stays gripped.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every controller that drives a car at the limit — the MPC stacks used in F1TENTH racing and in Indy Autonomous Challenge / Roborace vehicles — encodes the friction (or traction) circle as a hard constraint on combined longitudinal and lateral acceleration.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>The tire has one shared budget of grip; asking for full braking and full cornering at once exceeds it, and because grip combines as a vector rather than a sum the car simply slides straight off the road, spinning or running off track.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Racing controllers keep the combined demand sqrt(ax^2+ay^2) inside mu*g by design: model-predictive controllers solve a constrained optimization each cycle with the friction-circle limit built in, trading braking against cornering so the vehicle rides the edge of grip rather than the corner of the box.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a single fixed grip limit; a real car's mu changes continuously with tire temperature, pressure, surface, load, and downforce, so production stacks add online friction and slip estimation to keep the friction circle honest as conditions shift.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Brake at the last metre</h2></div>
+  <p class="demo">Our demo: braking from 80 to 30 m/s needs 187 m; braking 20 m late still carries 39 m/s and overshoots the apex by 20 m, while braking early costs 0.30 s.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Optimal braking points are the core of both human racecraft and autonomous-racing controllers — from F1TENTH and Indy Autonomous Challenge stacks to the classic motorsport technique of trail braking, where the driver carries the brake past turn-in.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Braking too late leaves the car carrying too much speed at the apex so it runs wide and misses the corner, while braking too early sheds speed the car did not need to lose, crawling into the corner and giving away time down the next straight.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Race controllers compute the braking distance d=(v0^2-vc^2)/(2*mu*g) and place the braking point so the car arrives at corner speed exactly at the apex; trail-braking transfers weight onto the front tires as the driver eases off the brake into the turn, improving front grip and rotation.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo assumes a constant deceleration on a straight line into one corner; real braking must model brake-force build-up, tire temperature, downforce that grows the braking limit at high speed, and the reality of other cars forcing a compromised, defensive braking point.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Find the grip peak</h2></div>
+  <p class="demo">Our demo: at the 8 deg peak slip angle the tire makes 1.50 g of cornering force; steering on to 16 deg past the peak drops it to 1.19 g, losing 20% of the grip while turning harder.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Anyone modeling tires at the limit relies on the Pacejka Magic Formula, the most widely used semi-empirical tire model, which autonomous-racing controllers (F1TENTH, IAC, Roborace) use to predict lateral force versus slip angle.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Lateral tire force climbs with slip angle to a peak and then falls, so steering past the peak gives less grip, not more — the car pushes wide in understeer exactly when the driver is asking for a tighter line.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Controllers target the slip angle at the peak of the tire curve rather than maximum steering: the Pacejka formula Fy = D*sin(C*arctan(B*alpha - E*(B*alpha - arctan(B*alpha)))) captures the peak (racing slicks peak near ~6 deg, road tires nearer 10-15 deg), and staying at that peak extracts the maximum lateral g available.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses one fixed slip curve; in reality the peak and its height shift with tire temperature, wear, load, and surface, so real stacks estimate grip online and couple lateral with longitudinal slip through the combined-slip form of the model.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Balance the brakes</h2></div>
+  <p class="demo">Our demo: braking lifts 1698 N off the rear axle (down to 3207 N); an equal front/rear split then demands 1.53x the rear's remaining grip and locks it, while matching bias to the dynamic loads holds the rear at 1.00x and gripped.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Brake bias is a fundamental vehicle-dynamics tuning parameter in all of motorsport and a hardware/controls concern for autonomous race cars in the Indy Autonomous Challenge and Roborace, whose braking systems must respect the load transfer built into the chassis.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Hard braking throws weight forward and lightens the rear axle; a split that sends too much force rearward overloads the now-lightly-loaded rear tires past their reduced grip, locking them and snapping the car into a spin at the worst moment.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>The brake force is biased forward to match the load transfer m*a*h/L, splitting braking in proportion to the dynamic (not static) axle loads so neither axle exceeds its own grip; engineers tune bias so the car brakes just short of lockup, since a rolling tire grips better than a sliding one.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a single steady deceleration and fixed geometry; real cars manage bias that shifts with deceleration level, fuel load, downforce, and tire state, and modern systems add ABS and electronic brake-force distribution to chase the lockup edge dynamically.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="racing.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Autonomous racing — the real problem &middot; <a href="racing.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>
