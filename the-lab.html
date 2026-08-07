@@ -47,7 +47,7 @@
   <div class="stats">
     <div class="stat"><b>8</b><span>robot systems</span></div>
     <div class="stat"><b>4</b><span>lifecycle clusters</span></div>
-    <div class="stat"><b>86</b><span>measured, tested stages</span></div>
+    <div class="stat"><b>111</b><span>measured, tested stages</span></div>
     <div class="stat"><b>100%</b><span>node-tested cores</span></div>
   </div>
 </div></header>
@@ -125,6 +125,31 @@
   <a class="ch" href="racing.html"><h3>Autonomous racing</h3><span class="tag">A race car drives one corner at the limit</span><span class="go">open &rarr;</span></a>
   <div class="hl">Brake and turn at 100% at once and you demand 141% of grip and slide off; the friction circle keeps it on track</div>
   <div class="stages"><div class="st"><span class="stt">Find the racing line</span><span class="str">Take the minimum-curvature racing line, not the center line</span></div><div class="st"><span class="stt">Respect the friction circle</span><span class="str">Respect the friction circle</span></div><div class="st"><span class="stt">Brake at the last metre</span><span class="str">Brake at the last metre</span></div><div class="st"><span class="stt">Find the grip peak</span><span class="str">Control to the peak slip angle, not maximum steering</span></div><div class="st"><span class="stt">Balance the brakes</span><span class="str">Bias brake force forward to match the load transfer</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#C77DB0">
+  <a class="ch" href="aerial-manip.html"><h3>Aerial manipulation</h3><span class="tag">A flying drone grabs with an arm</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Reach the arm out and an untrimmed drone feels a 2 N·m moment and tips; reallocate thrust and it's 0</div>
+  <div class="stages"><div class="st"><span class="stt">Trim for the reach</span><span class="str">Trim the rotor thrusts for the arm's CoM offset</span></div><div class="st"><span class="stt">Reject the arm's kick</span><span class="str">Feedforward the arm's reaction torque onto the rotors</span></div><div class="st"><span class="stt">Settle near the surface</span><span class="str">Compensate thrust for ground effect near a surface</span></div><div class="st"><span class="stt">Push without tumbling</span><span class="str">Yield with an admittance controller during contact</span></div><div class="st"><span class="stt">Hold the catch</span><span class="str">Re-trim thrust and allocation the instant the gripper closes on a payload</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#E07B1A">
+  <a class="ch" href="construction-crane.html"><h3>Construction crane</h3><span class="tag">An autonomous crane places a beam</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Reach past the load chart to 4 m and the moment hits 400 kN·m and tips; the limiter caps it at 300</div>
+  <div class="stages"><div class="st"><span class="stt">Stay within the load chart</span><span class="str">Keep the load moment (load times radius) under the crane's rated moment</span></div><div class="st"><span class="stt">Pre-hoist for the stretch</span><span class="str">Pre-hoist by the cable's elastic stretch before setting the load</span></div><div class="st"><span class="stt">Beat the wind drift</span><span class="str">Offset the trolley upwind by the steady pendulum drift</span></div><div class="st"><span class="stt">Share the load</span><span class="str">Split a tandem lift by the lever arms to the load's centre of mass, not 50/50</span></div><div class="st"><span class="stt">Never two-block</span><span class="str">Stop the hoist at a positive hook-to-tip clearance (anti-two-block)</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#8B5E3C">
+  <a class="ch" href="mining-haul.html"><h3>Mining haul truck</h3><span class="tag">An autonomous haul truck moves ore</span><span class="go">open &rarr;</span></a>
+  <div class="hl">A naive descent speed demands 158% of brake capacity (runaway); matched to the grade it stays at 100%</div>
+  <div class="stages"><div class="st"><span class="stt">Load to the target</span><span class="str">Load to the measured payload from the suspension-strut pressures, not a fixed bucket count</span></div><div class="st"><span class="stt">Speed for the grade</span><span class="str">Set the descent speed from the brake/traction limit, not a fixed haul-road speed</span></div><div class="st"><span class="stt">Save the brakes</span><span class="str">Dump the descent energy into the engine/electric retarder and keep the friction brakes as a reserve</span></div><div class="st"><span class="stt">Drive the fuel-optimal line</span><span class="str">Drive a steady fuel-optimal speed and coast the downgrades instead of flat-out-then-idle</span></div><div class="st"><span class="stt">Slow for the bend</span><span class="str">Slow for the bend below the rollover speed v_max = sqrt(a_roll*R)</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#3C8296">
+  <a class="ch" href="inspection-crawler.html"><h3>Pipe-inspection crawler</h3><span class="tag">A crawler inspects a pipeline from inside</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Odometry drifts 15 m over a 300 m pipe; resetting at each girth weld brings it to 0</div>
+  <div class="stages"><div class="st"><span class="stt">Count the welds</span><span class="str">Reset wheel odometry to the known girth-weld locations</span></div><div class="st"><span class="stt">Flag real corrosion</span><span class="str">Require several adjacent readings below the threshold before flagging corrosion</span></div><div class="st"><span class="stt">Grip the pipe wall</span><span class="str">Raise the wheel normal force with the incline</span></div><div class="st"><span class="stt">Cover the whole wall</span><span class="str">Drive a helical path so consecutive turns tile the full circumference</span></div><div class="st"><span class="stt">Find the leak</span><span class="str">Localize a leak by triangulating from several sensors along the pipe</span></div></div>
+</section>
+<section class="card pipe" style="--gc:#A0522D">
+  <a class="ch" href="planetary-rover.html"><h3>Planetary rover</h3><span class="tag">A Mars rover drives itself over regolith</span><span class="go">open &rarr;</span></a>
+  <div class="hl">Slipping wheels over-report 143 m on a true 100 m traverse; visual odometry reads the ground truth</div>
+  <div class="stages"><div class="st"><span class="stt">Trust the ground, not the wheels</span><span class="str">Trust visual odometry over the wheels</span></div><div class="st"><span class="stt">Drive without a joystick</span><span class="str">Navigate on-board, not by joystick from Earth</span></div><div class="st"><span class="stt">Read the terrain</span><span class="str">Plan on a traversability map, not a straight line</span></div><div class="st"><span class="stt">Budget the sun</span><span class="str">Schedule driving inside the daily energy budget and park in the sun</span></div><div class="st"><span class="stt">Don't get stuck</span><span class="str">Monitor the slip ratio and back out when it spikes</span></div></div>
 </section></div>
 
   <h2 class="sec">The ML discipline &mdash; across the field</h2>
@@ -150,5 +175,5 @@
   <div class="stages"><div class="st"><span class="stt">Reward design & hacking</span><span class="str">Shape a reward as a potential difference so you speed learning without changing what's optimal</span></div><div class="st"><span class="stt">Exploration vs exploitation</span><span class="str">Explore, or you converge on the first option that looked good rather than the best one</span></div><div class="st"><span class="stt">Credit assignment</span><span class="str">Credit an action by its discounted future return</span></div><div class="st"><span class="stt">Policy evaluation under noise</span><span class="str">Evaluate across enough episodes to beat the noise</span></div></div>
 </section></div>
 </div>
-<footer><div class="wrap">The robotics build lab &middot; 14 systems + 4 clusters &middot; 86 measured, node-tested stages &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
+<footer><div class="wrap">The robotics build lab &middot; 19 systems + 4 clusters &middot; 111 measured, node-tested stages &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
 </body></html>
