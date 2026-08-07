@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>The planner zoo — one map, five motion planners</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#7A6CD0;--accent-deep:#4A3F9A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:42px 0 30px;background-image:linear-gradient(100deg,color-mix(in srgb,#7A6CD0 30%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#7A6CD0 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F4F8F8}
+ header p{color:#BEDCDC;font-size:16px;max-width:82ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 10px}
+ figure{margin:14px 0;text-align:center} figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
+ figcaption{font-size:12.5px;color:var(--graphite);margin-top:6px}
+ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+ th,td{border:1px solid var(--line);padding:8px 12px;text-align:left} th{background:var(--panel);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite)}
+ td.g{color:#1F6152;font-weight:600} td.b{color:#9A3327;font-weight:600} td.n{color:#889}
+ .fam{font-family:var(--mono);font-size:11px;color:var(--graphite)}
+ .ctrl{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px;margin:15px 0}
+ .ch{display:flex;align-items:baseline;gap:10px} .ch h3{font-family:var(--serif);font-size:21px;margin:0}
+ .what{margin:8px 0} .res{font-size:14.5px;background:color-mix(in srgb,#7A6CD0 8%,#fff);border-radius:8px;padding:8px 12px;margin:8px 0}
+ .fail{font-size:13.5px;color:#3a2018} .fl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#9A3327;font-weight:700;margin-right:7px}
+ .cite{margin-top:9px;font-size:13px} .cl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:7px} .cite a{text-decoration:underline;text-underline-offset:2px}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the planner zoo &middot; one problem, a family of methods</div>
+  <h1>Five ways to plan a path</h1>
+  <p>One map with a concave pocket on the direct line, planned five ways &mdash; grid search, sampling, and optimization. Each is really run; each shows its family's tradeoff; each links to the 2025 paper that uses it.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="controller-zoo.html">controller zoo</a> &middot; <a href="estimator-zoo.html">estimator zoo</a> &middot; <a href="planner-zoo.html">planner zoo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="navigation-explained.html">navigation theme</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">The rule: <b>pick the planner family for the job.</b> Grid search (Dijkstra/A*) is optimal and complete but discretised and can expand the whole map; sampling (RRT/RRT*) handles continuous, high-dimensional spaces; optimization (CHOMP) gives the smoothest path but is <b>local</b> &mdash; a straight-line guess into a concave pocket gets trapped where the samplers route around.</p>
+  <figure><img src="assets/zoo/planner_zoo.png" alt="one map with five planners' paths overlaid"><figcaption>One map, one start (green) and goal (black): A* and the samplers all route around the central C-pocket; CHOMP's straight-line guess is trapped inside it (a local minimum).</figcaption></figure>
+  <table><tr><th>method</th><th>path length (optimal &asymp;64)</th><th>effort / outcome</th></tr><tr><td><b>Dijkstra</b><br><span class="fam">uninformed grid search</span></td><td class="g">64.3 optimal</td><td class="b">3044 nodes</td></tr><tr><td><b>A*</b><br><span class="fam">heuristic grid search</span></td><td class="g">64.3 optimal</td><td class="g">1054 nodes (2.9&times; fewer)</td></tr><tr><td><b>RRT</b><br><span class="fam">sampling-based</span></td><td class="b">83.6 (+30%)</td><td class="n">149 samples</td></tr><tr><td><b>RRT*</b><br><span class="fam">asymptotically-optimal sampling</span></td><td class="g">77.4 (+20%)</td><td class="n">109 samples</td></tr><tr><td><b>CHOMP</b><br><span class="fam">trajectory optimization</span></td><td class="b">&#10007; trapped in pocket</td><td class="b">clearance 0.0</td></tr></table>
+  <section class="ctrl"><div class="ch"><h3>Dijkstra</h3><span class="fam">uninformed grid search</span></div>
+  <p class="what">Expand the cheapest-so-far grid cell outward until the goal is reached. Complete and optimal on the grid, but it searches in every direction at once.</p>
+  <p class="res">Finds the optimal grid path (<b>64.3</b>) &mdash; but with no sense of where the goal is, it expands <b>3044 cells</b>, most of the free map.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Optimal and complete, but blind: it does the same work whether the goal is next door or across the map.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>A*</h3><span class="fam">heuristic grid search</span></div>
+  <p class="what">Dijkstra plus a distance-to-goal heuristic, so the search leans toward the goal &mdash; same optimal answer, a fraction of the work.</p>
+  <p class="res">Same optimal path (<b>64.3</b>) expanding only <b>1054</b> cells &mdash; <b>2.9&times;</b> fewer than Dijkstra.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Optimal, complete, and fast &mdash; but tied to a discretised grid, so paths come out grid-aligned (a staircase) and it scales badly to high dimensions.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>RRT</h3><span class="fam">sampling-based</span></div>
+  <p class="what">Grow a tree by drawing random points in the continuous space and connecting the nearest collision-free node &mdash; no grid, works in any dimension.</p>
+  <p class="res">Finds a feasible path fast, but a jagged, sub-optimal one: <b>83.6</b>, about <b>30%</b> longer than optimal, and different every run.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Probabilistically complete and scales to high-dimensional arm planning, but the path is jagged, non-optimal, and random.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Visual-RRT: Finding Paths toward Visual-Goals via Differentiable Rendering</a></div></section>
+<section class="ctrl"><div class="ch"><h3>RRT*</h3><span class="fam">asymptotically-optimal sampling</span></div>
+  <p class="what">RRT that continually rewires the tree to shorter connections, so with more samples the path converges toward optimal.</p>
+  <p class="res">Cleaner and shorter than plain RRT (<b>77.4</b>, +<b>20%</b>), approaching the optimal path as it samples more.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Keeps RRT's continuous-space strengths and adds optimality &mdash; but only in the limit, so it needs many more samples than plain RRT.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="navigation-explained.html">Path Planning Using Instruction-Guided Probabilistic Roadmaps</a></div></section>
+<section class="ctrl"><div class="ch"><h3>CHOMP</h3><span class="fam">trajectory optimization</span></div>
+  <p class="what">Start from a guess (here a straight line) and descend a cost of smoothness + obstacle clearance, bending the whole path at once.</p>
+  <p class="res">On a convex obstacle it gives the smoothest path of all &mdash; but here its straight-line guess runs into the concave pocket and the gradient can't climb out: it stays <b>trapped inside the obstacle</b> (min clearance <b>0.0</b>).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> The smoothest paths and cheap to refine a good guess &mdash; but it is a LOCAL method: a bad initialization in a concave region is a trap the samplers simply route around.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="navigation-explained.html">High Accuracy Aerial Maneuvers via Variational Integrator Discretized Trajectory Optimization</a></div></section>
+  <div class="note"><b>How this was built.</b> One 60&times;60 map (<code>scripts/planner_zoo_experiments.py</code>, pure NumPy) with a concave pocket on the direct line, planned by all five; the figure and numbers come straight from that run. The families answer different questions &mdash; is the path optimal, is the space continuous, is the path smooth &mdash; and the C-pocket is exactly where an optimizer's locality bites.</div>
+</div>
+<footer><div class="wrap">Five ways to plan a path &middot; a method zoo &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="navigation-explained.html">navigation theme</a></div></footer>
+</body></html>
