@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#6B8E23 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#6B8E23"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 3 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Feel the ground — contact detection</h2></div>
   <p class="demo">Our demo: a bare force threshold reports 58 touchdown transitions on noisy sensor data where only 8 are real; hysteresis brings it down to 10.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production systems estimate contact from foot-force sensing and leg kinematics/dynamics (often with a momentum-based disturbance observer instead of a dedicated force sensor), and debounce the decision with hysteresis so sensor noise can't fake a touchdown.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim uses a clean 1-D force signal with hand-set thresholds; real robots fuse noisy multi-axis force, joint torques, and IMU data and must reject impacts, soft or deformable ground, and sensor drift.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Place the next foot — foothold selection</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The Raibert heuristic places the foot at a 'neutral point' plus an offset proportional to the velocity error, so a foot ahead of neutral slows the body and behind neutral speeds it up; modern stacks combine this with terrain-aware footstep planning and MPC.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo places feet on flat, uniformly supportive ground with a simple speed rule; real robots must perceive terrain, avoid gaps, edges, and low-traction spots, and plan several footsteps ahead over rough or cluttered surfaces.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Autotuning Bipedal Locomotion MPC with GRFM-Net for Efficient Sim-to-Real Transfer</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Stay upright — balance over the support polygon</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Classic stability uses the support polygon — the convex hull of the ground contacts — and keeps the center of mass (statically) or the Zero-Moment-Point / capture point (dynamically) inside it, so the robot only lifts a foot that keeps the body over the remaining support triangle.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a static center-of-mass-in-triangle test on flat ground; real dynamic gaits use ZMP or capture-point criteria that account for momentum and acceleration, on inclined, uneven, or moving ground.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Bipedal Walking with Continuously Compliant Robotic Legs</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Swing the leg over — swing-foot trajectory</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Controllers command a smooth swing trajectory that arcs up to a clearance apex and back down to the planned foothold — instead of a straight line — giving the foot room to pass over expected terrain height.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo arcs over a single known bump of fixed height; real robots must set clearance from perceived, uncertain terrain and adapt the swing on the fly when a foot catches something the map missed.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Push with the stance legs — force distribution</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Whole-body controllers pose force distribution as a quadratic program (QP) that finds ground-reaction forces producing the desired body motion while keeping each foot inside its friction cone (linearized as a pyramid) and within force limits.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo solves one static two-foot split with known friction coefficients; a real whole-body QP/MPC runs at hundreds of Hz over all legs with estimated, changing friction, full-body dynamics, and torque limits.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Optimal Torque Distribution via Dynamic Adaptation for Quadrupedal Locomotion on Slippery Terrains</a> &middot; <a href="ct-explained.html">Bipedal Walking with Continuously Compliant Robotic Legs</a></div>
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="legged-stack.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

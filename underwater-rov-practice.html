@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#1E5FA8 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#1E5FA8"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 2 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Trim to neutral</h2></div>
   <p class="demo">Our demo: trimming ballast cuts net buoyancy from 20 N to 0.4 N, so idle drift drops from 0.63 m/s to 0.09 m/s.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Operators add syntactic-foam flotation and lead ballast to reach slight positive or neutral buoyancy, a standard pre-dive trim procedure; the residual restoring force is kept small enough that station-keeping is cheap.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo treats buoyancy as one clean number; real vehicles change buoyancy with depth as foam and housings compress, seawater density varies with salinity and temperature, and payload swaps re-trim the whole vehicle.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Brake for the water</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Underwater vehicle controllers use hydrodynamic models — Fossen's 6-DOF formulation with an added-mass matrix M_A added to the rigid-body mass M_RB — so the acceleration and braking plan uses the effective, not the dry, inertia.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We use a single constant added-mass number; real added mass is a full 6-DOF matrix that changes with heading and coupling, and nonlinear drag (not just inertia) dominates the real braking curve.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="hardware-explained.html">Added Mass and Accuracy of the FF-SLIP Model for Legged Swimming</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Crab into the current</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Dynamic positioning and station-keeping controllers estimate the current and add a feedforward crab angle or offsetting thrust; DVL bottom-lock gives ground-relative velocity so the controller can null out drift and hold position even against current.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our current is a known constant; real currents are unknown, unsteady, and depth-varying, and tether drag adds a large disturbance our free-flying vehicle ignores.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Fly the seabed</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>A DVL or single-beam altimeter measures height above bottom and the controller holds a commanded altitude, terrain-following the seabed; the DVL's four angled acoustic beams give both altitude and ground-relative velocity from bottom tracking.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our terrain is a smooth known profile; real altimeters lose bottom lock over soft mud, steep slopes, or out of range, and reactive altitude-hold cannot see a vertical cliff ahead the way a look-ahead sonar can.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Steady the arm</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Coordinated vehicle-manipulator control compensates the arm's reaction with the thrusters (or the ROV grabs the structure with a second, powerful grabber arm to anchor itself), so the dexterous arm can work against a steady base.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We model a single rigid arm on a rigid base; real coupling includes hydrodynamic added mass on the moving links, thruster lag, and umbilical forces, and precise free-floating manipulation remains hard in practice.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">NDOB-Based Control of a UAV with Delta-Arm Considering Manipulator Dynamics</a></div>
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="underwater-rov.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

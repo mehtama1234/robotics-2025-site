@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#3E6E9E 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#3E6E9E"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 2 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Know where you are — localization</h2></div>
   <p class="demo">Our demo: a particle filter tracking 6 landmarks with 600 particles holds mean pose error to 0.131 m, while raw dead-reckoning drifts to a 0.696 m mean and 1.168 m by the end.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The production answer is a recursive Bayesian filter that corrects dead-reckoning with sensor measurements. AMCL maintains a cloud of hypothesized poses (particles), reweights them by how well each explains the current laser scan, and resamples — so the estimate locks onto the true pose instead of drifting. Fleets add IMU and wheel-encoder fusion for robustness.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim has 6 clean landmarks and no sensor noise model worth the name. Real buildings punish localization: long featureless corridors and plain uniform walls give the scan nothing distinctive to lock onto, glass and glossy surfaces reflect or pass the laser and confuse the range reading, and symmetric layouts make two very different places look identical to the filter.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="navigation-explained.html">Key-Scan-Based Mobile Robot Navigation via Graphs of Scan Regions</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Plan the route — global planning</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>A* guides the search with a distance-to-go heuristic — it prefers to expand cells that look closer to the goal, so it reaches the same shortest path Dijkstra would while touching a fraction of the nodes. That is exactly the tradeoff nav2 exposes with its use_astar flag, and why heuristic search is the standard global-planning tool in production stacks.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our grid is static, small, and known perfectly. Real global planning runs on a costmap that changes as people and pallets move, must be re-run continuously as the world updates, and — for anything bigger than a differential-drive puck — has to respect the robot's turning radius and heading, which is why production leans on Hybrid-A* and lattice planners rather than a plain grid A*.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Give the body room — costmap inflation</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production inflates obstacles by the robot's radius (plus a safety margin) before the planner ever searches, so a valid path for the inflated point automatically clears the real body. nav2's inflation layer applies an exponential decay of cost outward from each obstacle, steering the planner toward the center of free space and away from walls while still allowing tight passages when needed.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our inflation is a single fixed radius on a tidy grid. Real robots are not circles — a forked or rectangular AMR has an orientation-dependent footprint — clearance must be tuned against throughput (too much inflation and the robot refuses to enter a legal aisle), and the costmap is being rewritten in real time as obstacles appear, so the 'safe' margin is a constant tuning fight, not a constant.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Dodge the pedestrian — dynamic obstacle avoidance</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The trick is to plan in velocity space: build the set of velocities that would lead to a collision (the velocity obstacle) and pick the closest allowed velocity outside it. ORCA makes this reciprocal — each agent takes half the responsibility for avoiding the other, so two robots resolve a head-on smoothly without communicating, and it scales to thousands of agents in milliseconds. DWA/DWB and TEB do the single-robot version against the local costmap.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim knows every other agent's exact position and velocity and assumes they play by the same rules. Real pedestrians are unpredictable, don't reciprocate, cut corners, stop to look at their phone, and arrive in dense crowds; sensor readings are noisy and occluded; and predicting where a human will be in two seconds — the thing the avoider actually depends on — is an open, hard problem that ORCA's constant-velocity assumption only approximates.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Decentralized Uncertainty-Aware Multi-Agent Collision Avoidance With Model Predictive Path Integral</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Follow the path — path tracking</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Pure pursuit aims at a lookahead point some distance ahead on the path rather than the closest point, which smooths the curvature and kills the chatter. nav2's Regulated Pure Pursuit adds regulation terms: it slows the robot on tight curvature and near obstacles, so it doesn't overshoot on blind corners — the reason it's favored for exact, safe path following on industrial AMRs.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our tracker runs a fixed lookahead on a smooth path at modest speed with no wheel slip or dynamics. Real controllers must adapt the lookahead to speed, respect acceleration and torque limits, cope with wheel slip and payload changes, and — because pure pursuit itself ignores obstacles — only stay safe when paired with a planner that guarantees the path is drivable and the avoidance layer keeps the path clear.</p></div>
   </div>
+  
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="nav-stack.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

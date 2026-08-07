@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#3E9C56 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#3E9C56"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. This applied domain sits largely outside the corpus, so the stages here illustrate the underlying themes rather than specific 2025 papers.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Cover the whole field — sweep every acre without gaps or overlap</h2></div>
   <p class="demo">Our demo: a systematic boustrophedon sweep covers all 400 cells (100%), while a naive path leaves gaps and re-covers ground, reaching only 28.5%.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Coverage-path planning lays the field out as parallel swaths driven in an ox-plow (boustrophedon) pattern, with the headland handled by automated end-of-row turns; RTK auto-steer keeps pass-to-pass spacing tight so swaths abut without gaps or overlap.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim is a clean rectangular grid; real fields have irregular boundaries, obstacles, terraces, waterways, and point rows that force decomposition of the field into sub-regions and much harder turn and re-entry planning.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Drive the crop rows — stay centered in the lane, not on the plants</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>RTK-GNSS corrections pull GNSS from meters down to roughly 2 to 3 cm pass-to-pass; on top of that, machine-vision row detection segments the visible crop rows and steers to the lane center, so guidance references the plants actually in front of the wheels rather than a possibly-biased map.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our vision model is idealized; real row-following fights variable lighting, leaf occlusion of the ground, crop residue, weeds masquerading as rows, and changing appearance as the crop grows and closes canopy.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Tell crop from weed — separate the plant to keep from the plant to kill</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Modern systems use deep convolutional classifiers and detectors trained on large labeled crop-and-weed image sets running on onboard GPUs, going well beyond simple color thresholds to leaf shape, texture, and context to separate look-alike green plants.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our classifier uses two hand-picked features on clean plants; production models must generalize to novel weed species, growth stages, overlapping and occluded leaves, dust, and mud, and still decide in real time at working speed.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Hit the moving weed — fire the nozzle so the spray lands on target</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Systems compensate for latency by predicting where the weed will be when the actuator fires, offsetting the trigger by ground speed times the total detection-to-spray delay, so the droplet or laser pulse meets the target at the right instant.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our timing model assumes constant speed, known latency, and a still target on flat ground; real rigs jolt over rough, wet fields where speed, boom height, and nozzle timing all vary, and wind can push the droplets off the moving target.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Dose to the need — apply just enough input where the field actually needs it</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Variable-rate technology drives application from a georeferenced prescription (need) map — from weed detection or soil and yield data — and modulates rate section-by-section or nozzle-by-nozzle in real time as the machine moves.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our need map is exact and static; real prescription maps carry sensing error and go stale, and the sprayer's response, drift, and section-control resolution limit how precisely the commanded rate actually reaches each spot in the field.</p></div>
   </div>
+  
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="agricultural-robot.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

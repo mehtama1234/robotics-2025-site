@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#D98324 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#D98324"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 3 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Model the bend — locate the tip of a curving arm, not a straight rod</h2></div>
   <p class="demo">Our demo: for a 0.3 m segment bent to 90 degrees, a straight-rod model mislocates the tip by 22.0 cm, while a constant-curvature (PCC) arc model puts the error at 0.0 cm.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The piecewise constant curvature (PCC) model treats each soft segment as a circular arc of constant curvature, the most widely used kinematic framework for continuum robots; Webster and Jones's 2010 review (Design and Kinematic Modeling of Constant Curvature Continuum Robots) unified these formulations and showed the mapping splits into a robot-specific part and a general arc-to-pose part.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real segments do not hold perfectly constant curvature: gravity, external contact, and non-uniform actuation bend them into variable-curvature shapes, so production systems move to Cosserat-rod or piecewise-linear-strain models and add shape sensing that our idealized single-arc demo skips.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="medical-explained.html">On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</a> &middot; <a href="medical-explained.html">Learning-Based Tip Contact Force for FBG-Embedded Continuum Robots</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Calibrate the actuator — map pressure to shape through the nonlinearity</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production systems calibrate the true nonlinear pressure-to-curvature (or pressure-to-angle) characteristic and drive against it; the pneumatic supply is regulated precisely — Festo's OctopusGripper runs on the Motion Terminal for fine control of air flow — so the commanded pressure produces the intended shape.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our calibration is a static, once-measured curve; real actuators show hysteresis (the inflate and deflate paths differ), rate-dependent and asymmetric behavior, and viscoelastic drift, so a single fixed map goes stale and real controllers need hysteresis compensation our demo omits.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Let it conform — reach through clutter a rigid arm cannot</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Continuum manipulators have effectively many degrees of freedom along their length, so they comply with and route around obstacles instead of pushing through, and compliant grippers conform to the object's shape to grasp gently — the inherent compliance is what reduces the risk of damage in constrained, human-centric spaces.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our world is a clean 2D field of point obstacles with a free-conforming arm; real clutter is 3D, deformable, and unmapped, and a soft body pressing against it deflects unpredictably, so planning and control among real obstacles is far harder than in the demo.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Hold up the load — keep the tip on target under payload</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The fix is model-based feedforward: predict the droop from the load and the arm's stiffness and command a pre-bend that cancels it, so the loaded tip lands where intended; the same idea underlies gravity- and load-compensation terms in compliant-arm controllers.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our droop model is a single clean deflection with a known load; in reality the payload is often unknown or shifting, and material creep and fatigue slowly change the arm's stiffness over its service life, so a fixed feedforward drifts and real systems need feedback and shape sensing to stay accurate.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="medical-explained.html">Learning-Based Tip Contact Force for FBG-Embedded Continuum Robots</a> &middot; <a href="tactile-explained.html">ConTac: Soft Skinned Arm with Vision-Based Shape Sensing</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Stiffen when needed — soft on contact, rigid for precision</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Variable-stiffness mechanisms tune rigidity on demand — granular or layer jamming stiffen a membrane of particles or sheets under vacuum, and antagonistic pneumatic and fiber-jamming schemes vary an arm's stiffness — so the robot softens on contact to bound peak force and stiffens in free space for precision and payload.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our stiffness is an instant, ideal switch between two values; real jamming and antagonistic actuators have limited stiffness range, finite switching speed, and their own hysteresis and wear, and sensing contact inside a soft body to know when to switch remains an open challenge our demo assumes away.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="tactile-explained.html">ConTac: Soft Skinned Arm with Vision-Based Shape Sensing</a></div>
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="soft-robot.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

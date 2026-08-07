@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#4B4E8C 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#4B4E8C"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. This applied domain sits largely outside the corpus, so the stages here illustrate the underlying themes rather than specific 2025 papers.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Move without a foothold</h2></div>
   <p class="demo">Our demo: on a 500 kg base, swinging a 40 kg arm 0.8 m recoils the base 0.0593 m and misses by 0.0593 m, but cancelling the reaction cuts the end-effector error to 0.004 m.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Coordinated free-flyer/manipulator control plans the arm so its reaction is either cancelled by thrusters or nulled by counter-moving links (reactionless / zero-reaction maneuvers, flight-verified on ETS-VII), letting a dexterous arm work against an effectively steady base.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We model one rigid arm on a rigid base with a single reaction to cancel; real systems have flexible links and appendages, fuel-slosh, thruster lag and plume impingement, and multi-arm coupling that make free-floating manipulation genuinely hard.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Hold the attitude</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>A closed-loop attitude controller commands the reaction wheels to produce counter-torque, holding the body on target to milliradian-class accuracy; this three-axis wheel-based control is the standard production approach across the satellite industry.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our disturbance is a single constant torque and the plant is a rigid rotor; real spacecraft see time-varying multi-axis disturbances, sensor noise and quantization, wheel friction and jitter, and structural flex that a textbook PD loop alone does not capture.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Unload the wheels</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Momentum desaturation, or 'wheel unloading,' fires thrusters to torque the body against the wheel momentum so the wheels can slow back into their usable range while attitude is held; this is standard practice, done periodically before the wheels approach saturation.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our model treats saturation as one speed threshold and desaturation as a clean torque; real wheel unloading trades fuel against control authority, couples into attitude during the burn, and in low Earth orbit often uses magnetic torquers instead of propellant — trade-offs our toy sim omits.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Berth on the port</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Careful RPO profiles brake early enough that the servicer arrives at contact at a low, controlled velocity, using relative-navigation sensors to null closing rate and lateral offset before soft capture — the approach MEV-1 and MEV-2 flew successfully in GEO.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We use a one-dimensional constant-deceleration stop; real berthing is six-DOF with lighting-dependent vision, plume and gravity-gradient disturbances, and tight lateral and angular tolerances at the capture interface that a straight-line braking model does not represent.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Match the spin</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The chaser first observes the target's tumble, then spins up to match its rotation so the relative angular rate at capture is near zero, and only then closes the grasp — matching before capture is the accepted approach for tumbling, uncooperative targets.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our target tumbles about a single known axis at a known rate; real debris tumbles about multiple axes with an unknown, drifting spin state that must be estimated from close-range sensing, and matching a fast complex tumble remains an open, one-shot problem no operational mission has yet flown.</p></div>
   </div>
+  
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="space-servicing.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#C0392B 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#C0392B"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 2 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Steady the hand — tremor filtering</h2></div>
   <p class="demo">Our demo: a low-pass filter cuts a 10 Hz tremor 13× while passing the deliberate motion (0.45 mm → 0.03 mm).</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Low-pass filtering of the master input on teleoperated systems; real-time active tremor cancellation in handheld micro-instruments; scaling (below) compounds the benefit.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real tremor is non-stationary, patient- and fatigue-specific, and overlaps intended motion in frequency; real systems must trade suppression against latency the surgeon can feel. Ours is a fixed 10 Hz sinusoid.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Scale the motion — precision by ratio</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Adjustable master–slave motion scaling on the console, chosen per task (finer for delicate suturing, coarser for gross moves).</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Scaling interacts with haptics and latency, and higher ratios shrink the usable workspace and slow the surgeon down. Ours is pure jitter divided by a constant.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Pivot at the incision — remote centre of motion</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>A mechanical RCM linkage (da Vinci) or a software RCM constraint in the controller that permits only rotation and insertion about the fixed port.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>The real problem includes patient motion, changing insufflation pressure, and tool exchanges shifting the geometry. Ours is a fixed pivot.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="hardware-explained.html">Active Remote Center of Compliance for Peg-in-Hole Assembly</a> &middot; <a href="medical-explained.html">Remote: Real-Time Endoscope Ego-Motion Estimation</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Guard the no-go zone — virtual fixtures</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Haptic virtual fixtures / active constraints (forbidden-region plus guidance), a concept named by Rosenberg in 1993 and now shipping in mainstream orthopaedic robots.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>The hard part in reality is registering the plan to a moving, deforming patient accurately — the boundary is only as good as that registration. Ours is a fixed sphere in a fixed frame.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Beat the cable slack — backlash compensation</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Backlash/hysteresis modelling with feedforward, distal shape sensing (fibre-Bragg-grating sensors), or stiffer transmissions.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real hysteresis is load- and configuration-dependent and drifts with wear over an instrument's limited use life. Ours is a fixed deadband.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="hardware-explained.html">On the Benefits of Hysteresis in Tendon-Driven Continuum Robots</a> &middot; <a href="hardware-explained.html">Shared Control for Cable Routing with Tactile Sensing</a></div>
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="surgical-robot.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

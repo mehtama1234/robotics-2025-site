@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#A0522D 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#A0522D"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 2 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Trust the ground, not the wheels — visual odometry</h2></div>
   <p class="demo">Our demo: at 30% slip, wheel odometry over-reports 143 m on a true 100 m traverse; visual odometry reads the truth.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Visual odometry: tracking terrain features between stereo image pairs to measure true motion, plus slip checks that abort a drive when slip exceeds a threshold.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>VO is compute-heavy — the MER rovers could only afford it in short steps ('blind drive, then VO'). Regolith texture varies, and featureless terrain defeats it. Ours is a fixed slip ratio.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="3d-perception-explained.html">Intensity-Augmented LiDAR-Visual-Inertial Odometry</a> &middot; <a href="3d-perception-explained.html">Active Illumination for Visual Ego-Motion in the Dark</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Drive without a joystick — onboard autonomy</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Onboard stereo terrain assessment and local path planning, with a full sol's plan uplinked once per day and executed autonomously.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real autonomy is bounded by a ~200 MHz radiation-hard CPU, the power budget, and deep risk-aversion — a stuck rover is unrecoverable. Ours is a distance-per-sol ratio.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Read the terrain — traversability</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Traversability maps from stereo, keep-out zones, and — on Curiosity — a traction-control algorithm that modulates individual wheel speeds to cut the load sharp rocks put on the wheels.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real hazards include benign-looking ripples that trap a rover (Spirit) and rocks below stereo resolution. Ours is a grid with labelled cells.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="navigation-explained.html">Watch Your STEPP: Semantic Traversability Estimation Using Pose-Projected Features</a> &middot; <a href="navigation-explained.html">Gnd: Global Navigation Dataset with Multi-Category Traversability</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Budget the sun — energy management</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Strict per-sol energy budgeting, driving only within the solar-plus-battery envelope, and parking tilted toward the Sun for winter survival; Curiosity and Perseverance use RTGs to remove the constraint entirely.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real budgets fold in dust accumulation on the panels, seasonal Sun angle, heater loads and instrument power. Ours is a simple drain-versus-solar sum.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Don't get stuck — sinkage and embedding</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Onboard slip and sinkage checks that halt a drive the moment slip spikes, conservative avoidance of loose sand, and visual odometry to detect that the rover is making no progress.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Soil bearing strength is invisible until the wheels are already in it — the core reason Spirit was lost. Ours is a slip threshold on a modelled sand trap.</p></div>
   </div>
+  
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="planetary-rover.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

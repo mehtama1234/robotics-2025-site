@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#1E8C8C 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#1E8C8C"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 2 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Detect the vehicle — sensor fusion</h2></div>
   <p class="demo">Our demo: camera (bearing) + radar (range) fused by inverse covariance beats either sensor (3.0 m → 0.69 m).</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Per-sensor covariance fusion or track-to-track fusion; radar owns the longitudinal estimate, camera the lateral and the class. Mobileye pushes 'true redundancy' — independent camera-only and radar-only subsystems that must agree. AEB is being mandated (Euro NCAP; US FMVSS 127 by 2029).</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>The real problem is asynchronous sensors, tens of milliseconds of latency, extrinsic-calibration drift, radar multipath and hundreds of simultaneous objects. Our demo fuses one static object with fixed Gaussians.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="multi-robot-explained.html">Hybrid Robust Collaborative Perception with LiDAR-4D Radar Fusion</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Track it over time — data association + gating</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Chi-square validation gates around each predicted position, global-nearest-neighbour or JPDA/MHT association, and Kalman / interacting-multiple-model filters; benchmarked on nuScenes and the Waymo Open Dataset.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real trackers manage track birth and death, long occlusions, hundreds of objects, appearance re-identification, and sensor-specific noise. Ours is one target in uniform clutter.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="vt-explained.html">MER-Tracker — Event-RGB 3D Multi-Object Tracking</a> &middot; <a href="vt-explained.html">Asynchronous Multi-Object Tracking with an Event Camera</a> &middot; <a href="sf-explained.html">Dual-level Adaptation for Multi-Object Tracking: Building Test-Time Calibration from Experience</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Predict where it goes — motion forecasting</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Kinematic CTRV/CTRA models for the short horizon; learned models (VectorNet, MultiPath, transformer predictors) for multimodal intent, usually ensembled with a conservative fallback.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real prediction is multi-agent and interactive — your plan changes their behaviour — multimodal, and must run for hundreds of agents at once. Ours is one car on a fixed arc.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Keep a safe gap — following distance</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Time-headway rules (the 2-second rule), the RSS safe-longitudinal-distance formula (your reaction + braking distance minus the lead's), and standards ISO 15622 (ACC) and 22839 (forward collision mitigation).</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real gap-keeping must estimate road friction (wet/ice halves it), react to instant cut-ins, and trade comfort against safety under sensor latency. Ours is a 1-D deterministic brake.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Hold the lane — lateral control</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Stanley (cross-track + heading), pure pursuit with speed-scheduled lookahead, and model-predictive lateral control that respects the vehicle model.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real control fights tyre slip, actuator lag, road bank and camber, changing speed, and plain model mismatch. Ours is a kinematic unicycle.</p></div>
   </div>
+  
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="driving-stack.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

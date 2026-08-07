@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#5548C8 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#5548C8"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 1 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Know which way is up — attitude estimation</h2></div>
   <p class="demo">Our demo: fusing a drifting gyro with a noisy accelerometer, the complementary filter cuts attitude RMSE to 0.024 rad, versus 0.38 rad for gyro-only integration.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The complementary filter high-passes the gyro (smooth, but drifting) and low-passes the accelerometer's gravity direction (noisy, but drift-free) so each covers the other's weakness; production stacks upgrade this to an Extended Kalman Filter that also fuses GPS, magnetometer, and barometer to reject bad measurements.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses clean simulated noise; real IMUs add vibration from the motors, temperature-dependent bias, and magnetic interference, and outdoors the accelerometer's 'gravity' reference is corrupted by the drone's own acceleration during maneuvers.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Plan a flyable path — trajectory generation</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Fit smooth polynomial trajectories that minimize snap (the fourth derivative of position); because a quadrotor's position, velocity, acceleration, jerk, and snap map directly to feasible thrust and body rates, a snap-smooth path is one the underactuated drone can physically fly.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our spline just smooths corners; a real planner must also respect thrust and motor limits, dodge obstacles and no-fly zones, and re-plan online as wind, other aircraft, and sensor updates change what's flyable.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Tilt to move — the underactuated quad</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Cascaded control: an outer position loop computes the acceleration the drone needs, converts it into the tilt (roll and pitch setpoints) that points thrust the right way, and an inner attitude loop drives the body to that tilt — the standard architecture in PX4 and ArduPilot.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo commands a clean tilt in a vacuum; real flight adds aerodynamic drag, rotor wash, and gusts that push back on the tilt, plus a slung payload whose swing shifts the center of mass and fights the very attitude the controller is trying to hold.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Mix the motors — control allocation</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The mixer matrix (built from rotor positions and spin directions) maps the desired thrust-and-torque wrench to the four rotor thrusts by inverting the geometry; production allocators add saturation handling — prioritizing attitude over thrust so the drone keeps control authority when it hits the motors' limits.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our mixer assumes ideal, instantly-responding rotors; real motors have spin-up lag, thrust that isn't perfectly linear in command, battery voltage sag that lowers the ceiling as the pack drains, and no redundancy — lose one motor on a quad and the mixer can no longer produce every torque it needs.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Follow without lag — feedforward tracking</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Feed the trajectory's own known acceleration forward to the motors so they're already pushing where the path is going, and let feedback correct only the residual error; because the smooth planned trajectory hands you that acceleration for free, feedforward turns a laggy tracker into a tight one.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our feedforward assumes a perfect model of the drone; real feedforward is only as good as the mass, thrust, and drag estimates it's built on, and wind gusts, a variable payload, and battery-dependent thrust all shift those numbers mid-flight, leaving feedback to absorb what the model got wrong.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Flying Quadrotors in Tight Formations Using Learning-Based Model Predictive Control</a></div>
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="drone-flight.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

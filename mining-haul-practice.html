@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#8B5E3C 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#8B5E3C"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. This applied domain sits largely outside the corpus, so the stages here illustrate the underlying themes rather than specific 2025 papers.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Load to the target — hit the payload without over- or under-filling the tray</h2></div>
   <p class="demo">Our demo: counting a fixed number of buckets misses the 200 t target by 14.2 t and overloads past 240 t about 1.3% of the time, while reading the payload from the suspension-strut pressures lands within 1.2 t and never overloads.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production payload systems infer tonnes from strut pressure rather than counting shovel passes, then trim loading against the 10/10/20 rule so the fleet averages near target without individual trucks running heavy.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim reads clean strut pressures; field systems must reject a truck parked on a cross-slope, material carryback stuck in the tray, calibration drift, and center-of-load offset from an uneven dig.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Speed for the grade — hold the truck within its braking limit on the way down</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Autonomous haulage systems enforce grade-dependent speed limits, capping descent speed so the retarding power available always exceeds gravity's pull for the truck's loaded mass on that grade.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We assume one clean grade and a fixed brake ceiling; real haul roads mix grades, and available traction and retarding power shift with wet roads, tire wear, and the difference between a loaded descent and an empty return.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Save the brakes — dump descent energy into the retarder, not the friction brakes</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production trucks slow the descent with the retarder (engine compression braking or electric dynamic braking through grid resistors) and pre-shift checks confirm the retarder works, so the friction brakes stay cool and are held for emergency and parking use.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our model uses a single fade temperature and a steady descent; real retarder capacity depends on speed and drive type, grids can heat-soak on repeated cycles, and a slippery road can make hard retarding lock the wheels.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Drive the fuel-optimal line — steady speed and coasting beat flat-out-then-idle</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Autonomous systems hold a steady fuel-optimal speed, coast the downgrades, and space trucks to avoid bunching, so cycle time is set by the loader rather than by any one truck sprinting between idle periods.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our fuel curve is a clean speed-squared model on one flat haul; real optimization trades grade, load state, road condition, engine map, and shovel-queue dynamics that change through the shift.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Slow for the bend — stay under the rollover speed through a curve</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Autonomous systems set a rollover-aware speed limit per curve from the radius and the truck's track width and CoM height, and mines back it up with graded (superelevated) curves and berms so an errant truck is contained.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We use a fixed track width, CoM height, and curve radius on dry ground; the real rollover margin shrinks with a shifting load, soft or wet road edges, worn tires, and berms that erode between grader passes.</p></div>
   </div>
+  
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="mining-haul.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

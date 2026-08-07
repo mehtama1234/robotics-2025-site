@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#5B6E7D 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#5B6E7D"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. This applied domain sits largely outside the corpus, so the stages here illustrate the underlying themes rather than specific 2025 papers.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Survey the dig site — turn the terrain into a cut-fill map</h2></div>
   <p class="demo">Our demo: a single noisy scan reads 690 m3 of cut versus 621 m3 true (11.1% high), while averaging repeated scans lands at 637 m3 (2.5%).</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production workflows average multiple passes and fit surfaces to a design model, then compute cut-fill against a GNSS or laser reference rather than trusting one raw height grid.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim averages clean synthetic scans; real drone surveys fight vegetation, water, moving equipment, GNSS multipath in pits, and registration error between flights.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Regulate the dig force — pull hard without spinning the tracks</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Modern machines close the loop on hydraulic pressure and track slip, backing off bucket force to stay under the traction limit so the cutting edge keeps penetrating.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We model one clean traction ceiling; real soil varies from mud to rock within a bucket, and grip shifts with moisture, grade, and undercarriage wear.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Weigh the bucket — bill the load without over- or under-filling trucks</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production scales infer weight from lift hydraulics and arm motion as the load rises, reaching roughly a few-percent accuracy without pausing the dig cycle, and can feed the totals to fleet software.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our estimator uses idealized lift dynamics; field scales must reject sloshing, partial buckets, boom motion, temperature drift, and calibration change to hold their rated tolerance.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Swing without spilling — move a suspended load and stop it dead</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Anti-sway control shapes the motion command — splitting a move into pulses timed to the load's natural period (input shaping) — so the swing induced by starting cancels the swing induced by stopping.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We assume a fixed pendulum length and period; real loads change length as cable pays out, feel wind and off-center pickup, and couple with the machine's own compliance.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Grade the surface — hold the blade to tolerance despite machine pitch</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Grade control senses blade height against a rotating laser plane or a 3D GNSS site model and drives the hydraulics to hold grade to millimeters, letting the operator run faster with fewer passes.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our controller tracks one clean reference; real 3D control depends on GNSS availability, laser line-of-sight, machine dynamics, and soil that moves and compacts under the blade.</p></div>
   </div>
+  
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="excavation-robot.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#E07B1A 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#E07B1A"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. This applied domain sits largely outside the corpus, so the stages here illustrate the underlying themes rather than specific 2025 papers.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Stay within the load chart</h2></div>
   <p class="demo">Our demo: reaching out to a 4.0 m radius with a 100 kN load makes a 400 kNm moment that exceeds the 300 kNm rating and tips the machine, while pulling in to the 3.0 m rated radius holds the moment at 300 kNm.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production cranes combine the published load chart with an LMI / rated-capacity limiter that warns and can cut hoisting and boom-out motions as the load approaches rated capacity; ASME B30.5 (Mobile and Locomotive Cranes) governs these devices and practices.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim treats one static rated moment; a real machine derates with outrigger spread, counterweight, boom configuration, quadrant of operation, and out-of-level, and it must also survive dynamic swing and shock loads the static chart does not capture.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Pre-hoist for the stretch</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Crews take the strain and pre-hoist so the rope stretch is already pulled out before the load is set, and precision placement is done in slow, staged lowering rather than a single blind drop.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>We model pure elastic stretch of a single fall; a real reeving has multiple parts of line, sheave friction, constructional (permanent) stretch, and boom and structure deflection that all add to how far the tip actually moves under load.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Beat the wind drift</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Sites monitor wind with an anemometer at or near boom height, halt and secure the lift when the manufacturer's limit is reached (tower cranes weather-vane out of service), and plan wind-exposed picks for calm windows.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim uses a steady crosswind and a fixed pendulum; real wind is gusty and turbulent, the load's sail area and shape change its drag, and taglines and operator corrections — not a fixed trolley offset — hold placement in the field.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Share the load</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Engineered tandem-lift plans split the load by the lever arms to its centre of mass, derate each crane's rated capacity to leave margin for imperfect real-world load sharing, and require a pre-lift meeting and slow, coordinated motion.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim solves a static two-point balance; real dual-crane lifts shift load dynamically as the cranes move, boom angles and levels change, and the plan must budget extra capacity because the share between cranes never stays perfectly balanced.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Never two-block</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>An anti-two-block switch at the boom tip senses the block approaching, warns the operator, and cuts the hoist-up, boom-down, and telescope-out functions before the block reaches the sheaves, keeping a positive hook-to-tip clearance.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our sim checks one static clearance threshold; a real ATB must react in time to fast, combined motions (hoist, boom, telescope at once), survive weather and abuse on the boom tip, and it only helps if it is installed, calibrated, and not bypassed.</p></div>
   </div>
+  
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="construction-crane.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

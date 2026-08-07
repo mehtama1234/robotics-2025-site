@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#B23A7A 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#B23A7A"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 3 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Hand out the jobs — task allocation</h2></div>
   <p class="demo">Our demo: assigning all 7 robots at once cuts total travel from 25.0 m (greedy nearest-job) to 18.6 m, a 25.8% saving.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>In production the assignment is centralized and solved as a global optimization rather than nearest-job greedy: the Hungarian algorithm and auction/market-based methods (robots 'bid' on tasks) are the classic tools, run continuously as new orders arrive. Amazon-style systems fold pod selection and station scheduling into the same dispatch loop.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo assigns a fixed batch of 7 robots to 7 jobs once. A real fleet is 'lifelong': thousands of robots, an open-ended stream of orders, pods that must be restocked and returned, and objectives (throughput, deadlines, congestion) that trade off against each other — so the clean one-shot optimum is never actually reached.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="multi-robot-explained.html">Digital Model-Driven Genetic Algorithm for Layout + Task Allocation</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Cross the intersection — traffic management</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production systems reserve space and time: a robot claims a cell (or a path segment with a time window) before entering, and others wait. Grid systems enforce this centrally; AMR fleets add one-way lanes, zoning, speed limits at crossings, and reservation-based path planning (VDA 5050 is a common fleet-interface standard). One robot crosses at a time, exactly as in the demo.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our reservation is a single perfect grid cell with instant, lossless communication and robots that move in lockstep. Real robots have physical footprint, momentum, localization error, dropped messages, and humans wandering in — so real traffic control needs safety margins, continuous re-planning, and onboard collision sensing on top of the reservation.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="multi-robot-explained.html">ICBSS: Improved Multi-Agent Combinatorial Path Finding</a> &middot; <a href="multi-robot-explained.html">Heuristically Guided Compilation for Task Assignment and Path Finding</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Break the jam — deadlock resolution</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production avoids symmetry: priority/yield rules break the tie so one robot backs into a passing bay or a wider cell while the other proceeds, plus one-way routing so head-on conflicts never form. Research frames this as multi-agent path finding (MAPF) with conflict-based search (CBS); in practice fleets lean on zoning, one-way lanes, and simple deterministic yield priorities that are fast and predictable.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our corridor is one straight line with one bay and a tidy tie-break. Real deadlocks are cyclic and multi-party — three, four, or more robots in a loop of mutual waiting across several intersections — which is far harder to even detect than a two-robot standoff, let alone unwind without cascading new conflicts.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="multi-robot-explained.html">ICBSS: Improved Multi-Agent Combinatorial Path Finding</a> &middot; <a href="multi-robot-explained.html">Heuristically Guided Compilation for Task Assignment and Path Finding</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Keep the fleet alive — charge scheduling</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The dominant production pattern is opportunity (opportunity/top-up) charging: a robot grabs a few minutes on an open charger between tasks rather than draining fully and doing a long deep charge. Fleets schedule charging as a first-class task in the dispatcher, weighed against picking work; some sites use battery swapping or inter-shift swaps for continuous operation.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a clean linear battery model and a single reach-the-charger threshold. Real batteries degrade non-linearly with temperature, age, and load; charger slots are contended and finite; and the scheduler must forecast future demand — sending a robot to charge now because the floor will be busy in twenty minutes, a prediction our sim never makes.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Balance the stations — workload leveling</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Production balances load in real time: route each incoming item/order to the shortest-queue or best-positioned station, use dynamic zoning that reassigns operational areas as demand shifts, and coordinate bot arrivals so bins reach a station just in time rather than all at once. Well-balanced grid stations are reported to sustain hundreds of picks per hour each.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo balances three identical stations serving interchangeable items. Real stations differ in staffing, ergonomics, and speed; items are constrained to stations that stock the right pods; orders have deadlines and multi-line dependencies; and re-routing an item competes with the same traffic and charging constraints — so 'send it to the shortest queue' is only the first move in a much larger scheduling problem.</p></div>
   </div>
+  
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="warehouse-fleet.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>

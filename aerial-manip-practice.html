@@ -23,6 +23,9 @@
  .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
  .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
  .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .papers{margin-top:10px;font-size:13px;color:#333;background:color-mix(in srgb,#C77DB0 8%,#fff);border:1px solid var(--line);border-radius:9px;padding:9px 13px}
+ .papers .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:8px}
+ .papers a{color:var(--accent-deep);text-decoration:underline;text-underline-offset:2px}
  .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
  footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
  @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
@@ -35,6 +38,7 @@
 </div></header>
 <div class="wrap">
   <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <div class="intro" style="border-left-color:#C77DB0"><b>Into the 2025 papers.</b> Where the ICRA/IROS 2025 corpus (1,263 analysed papers) has work on the exact problem a stage solves, it is cited inline below and links into the <a href="the-rules.html">theme explainer</a> that carries that paper&rsquo;s per-paper breakdown. 3 of this system&rsquo;s stages have a direct match.</div>
   <section class="stg">
   <div class="sh"><span class="no">1</span><h2>Trim for the reach — comtrim</h2></div>
   <p class="demo">Our demo: extending the 0.4 kg arm to 0.5 m shifts the center of mass 0.083 m off the rotor axis; an equal thrust split leaves a 1.96 N·m net moment that tips the aircraft, while reallocating the two rotors (7.85 N vs 15.7 N) cancels it to 0.0 N·m.</p>
@@ -44,6 +48,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Control allocation is re-solved for the shifted center of mass: the mixer commands unequal rotor thrusts whose net torque cancels the gravity moment from the offset load, and researchers model the arm's varying centroid explicitly so the trim tracks the arm as it moves.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo assumes the arm mass, reach, and offset are known exactly and the air is still; a real system must estimate an uncertain payload's mass and grasp point, and wind gusts add moments of their own that no static re-trim anticipates. Aerial manipulation remains largely a research field with few fielded products.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="navigation-explained.html">Safety-Critical Control for Aerial Physical Interaction in Uncertain Environment</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">2</span><h2>Reject the arm's kick — reaction</h2></div>
@@ -54,6 +59,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The known or estimated reaction torque from arm acceleration is fed forward onto the rotors so the attitude controller counters the kick before it grows, with the arm's centripetal, Coriolis, and gravity coupling terms treated as a disturbance to be canceled — an approach reported across the aerial-manipulator control literature.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses fixed inertias and a perfectly known arm acceleration; a real system must estimate coupling terms online as the arm reconfigures and carries an unknown payload, and the feedforward is only as good as that model. This is still research-stage work, not a hardened product.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">3</span><h2>Settle near the surface — groundeffect</h2></div>
@@ -64,6 +70,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The thrust command is compensated for the ground-effect increase, using models or empirical corrections that scale thrust with height above the surface (measurable for heights below about one rotor radius) so the aircraft can hold the low altitude needed to reach the target.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a clean height-dependent thrust model over flat ground; real surfaces are uneven, tilted, or rough, the effect changes with a moving or object-occluded surface below the rotors, and it interacts with the disturbances from the arm — none of which a simple correction captures. Deployment near real structures stays experimental.</p></div>
   </div>
+  
 </section>
 <section class="stg">
   <div class="sh"><span class="no">4</span><h2>Push without tumbling — contact</h2></div>
@@ -74,6 +81,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>Admittance and impedance control let the aircraft yield on contact — the controller trades commanded position for measured force so the platform behaves like a compliant spring-damper against the wall — and fully actuated or omnidirectional designs add force sensing to control the interaction directly rather than fighting it.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo uses a known linear wall stiffness and a compliant controller in isolation; real contact involves uncertain, nonlinear surface stiffness, friction and slip, and the added complication that most underactuated quadrotors cannot point thrust into the wall the way a fully actuated platform can. These systems are demonstrated in labs and pilots, not routinely deployed.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="navigation-explained.html">Safety-Critical Control for Aerial Physical Interaction in Uncertain Environment</a> &middot; <a href="ct-explained.html">Flying Quadrotors in Tight Formations Using Learning-Based Model Predictive Control</a></div>
 </section>
 <section class="stg">
   <div class="sh"><span class="no">5</span><h2>Hold the catch — retrim</h2></div>
@@ -84,6 +92,7 @@
     <div class="facet solved"><span class="fl">How it's solved in production</span><p>The controller re-trims the instant the grasp is detected: total thrust is raised to carry the added weight and the allocation is re-solved for the new center of mass, ideally feeding the mass change forward rather than waiting for the altitude error to accumulate.</p></div>
     <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Our demo knows the payload mass and the exact moment of grasp; a real system must react to a payload of uncertain and sometimes shifting mass, ride out swing if the load is not rigidly held, and do it all on a battery whose limited flight time shrinks further under the extra load. Reliable, unsupervised operation near people and structures remains an open research problem.</p></div>
   </div>
+  <div class="papers"><span class="pl">In the ICRA/IROS 2025 papers</span> <a href="manipulation-explained.html">Hook-Based Aerial Payload Grasping from a Moving Platform</a></div>
 </section>
   <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="aerial-manip.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
 </div>
