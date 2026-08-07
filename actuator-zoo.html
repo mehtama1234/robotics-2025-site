@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>The actuator zoo — one joint, three ways to deliver force</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#8C6239;--accent-deep:#5E3F1E;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:42px 0 30px;background-image:linear-gradient(100deg,color-mix(in srgb,#8C6239 30%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#8C6239 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F4F8F8}
+ header p{color:#BEDCDC;font-size:16px;max-width:82ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 10px}
+ figure{margin:14px 0;text-align:center} figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
+ figcaption{font-size:12.5px;color:var(--graphite);margin-top:6px}
+ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+ th,td{border:1px solid var(--line);padding:8px 12px;text-align:left} th{background:var(--panel);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite)}
+ td.g{color:#1F6152;font-weight:600} td.b{color:#9A3327;font-weight:600} td.n{color:#889}
+ .fam{font-family:var(--mono);font-size:11px;color:var(--graphite)}
+ .ctrl{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px;margin:15px 0}
+ .ch{display:flex;align-items:baseline;gap:10px} .ch h3{font-family:var(--serif);font-size:21px;margin:0}
+ .what{margin:8px 0} .res{font-size:14.5px;background:color-mix(in srgb,#8C6239 8%,#fff);border-radius:8px;padding:8px 12px;margin:8px 0}
+ .fail{font-size:13.5px;color:#3a2018} .fl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#9A3327;font-weight:700;margin-right:7px}
+ .cite{margin-top:9px;font-size:13px} .cl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:7px} .cite a{text-decoration:underline;text-underline-offset:2px}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the actuator zoo &middot; one problem, a family of methods</div>
+  <h1>Three ways to build a joint</h1>
+  <p>Every robot joint answers one question before it moves: how stiff is the connection from motor to load? Stiff means precise but unforgiving; soft means safe but sloppy. The identical 1-DOF joint &mdash; a motor, a transmission, a 1 kg load &mdash; is built three ways and given the same two tests: drive into a wall (safety) and track a fast sine (precision). Each is really simulated, each showing the tradeoff none of them escapes.</p>
+  <nav><a href="index.html">home</a> &middot; zoos: <a href="controller-zoo.html">controller</a> &middot; <a href="estimator-zoo.html">estimator</a> &middot; <a href="planner-zoo.html">planner</a> &middot; <a href="optimizer-zoo.html">optimizer</a> &middot; <a href="grasp-zoo.html">grasp</a> &middot; <a href="slam-zoo.html">SLAM</a> &middot; <a href="rl-zoo.html">RL</a> &middot; <a href="representation-zoo.html">representation</a> &middot; <a href="actuator-zoo.html">actuator</a> &middot; <a href="the-lab.html">the build lab</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">The rule: <b>match the actuator's stiffness to the risk, not just the task.</b> A joint stiff enough to place a tool to the millimetre is stiff enough to injure on accidental contact; a joint soft enough to be safe cannot track a fast trajectory. The same joint, built three ways, traces the whole tradeoff &mdash; and shows why the most interesting hardware can change its own stiffness.</p>
+  <figure><img src="assets/zoo/actuator_zoo.png" alt="left: contact force versus time as each actuator drives into a wall; right: load position tracking a fast sine for the rigid and series-elastic joints"><figcaption>Left (safety): driven into a wall, the rigid joint climbs to a crushing steady force while the series-elastic and variable-impedance joints stay low (their spring bounces, then settles). Right (precision): tracking a fast 2 Hz sine, the rigid joint follows the target while the soft series-elastic joint lags and overshoots. Variable-impedance overlaps the rigid line in its stiff mode.</figcaption></figure>
+  <table><tr><th>method</th><th>force into an obstacle</th><th>fast-tracking error</th></tr><tr><td><b>Rigid (stiff servo)</b><br><span class="fam">stiff transmission, position-controlled</span></td><td class="b">&#10007; 1500 N (crushes)</td><td class="g">&#10003; 5.7 mm</td></tr><tr><td><b>Series-elastic (SEA)</b><br><span class="fam">a spring between motor and load</span></td><td class="g">&#10003; 62 N</td><td class="b">&#10007; 40 mm (lags)</td></tr><tr><td><b>Variable-impedance (VIA)</b><br><span class="fam">stiffness you change on the fly</span></td><td class="g">&#10003; 33 N (soft mode)</td><td class="g">&#10003; 5.7 mm (stiff mode)</td></tr></table>
+  <section class="ctrl"><div class="ch"><h3>Rigid (stiff servo)</h3><span class="fam">stiff transmission, position-controlled</span></div>
+  <p class="what">The default: the motor drives the load through a stiff transmission, so the commanded position becomes the load position almost instantly. Fast and precise &mdash; and completely rigid.</p>
+  <p class="res">Tracks the fast 2 Hz sine to <b>5.7 mm</b> RMS, the tightest of the three. But drive it into an obstacle and the stiff transmission passes the command straight through: commanded 12 cm past a wall it pushes with <b>1500 N</b> sustained (peak ~<b>1570 N</b>) &mdash; a crushing force.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> No mechanical give: on unexpected contact with a person or the environment it transmits the full actuator force. And a position servo has <b>no built-in force sensing</b> &mdash; it knows where it is, not how hard it is pushing.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="hardware-explained.html">Extended Friction Models for Physics Simulation of Servo Actuators</a></div></section>
+<section class="ctrl"><div class="ch"><h3>Series-elastic (SEA)</h3><span class="fam">a spring between motor and load</span></div>
+  <p class="what">Put a real spring between the motor and the load. The spring cushions every contact, and because force = stiffness &times; deflection, its stretch also <i>measures</i> the output force &mdash; a force sensor built into the mechanism.</p>
+  <p class="res">The same collision now pushes with only <b>62 N</b>, about <b>24&times;</b> gentler than the rigid joint, because the soft spring &mdash; not the motor &mdash; sets the contact force. That same deflection gives clean <b>force sensing and control</b> for free, and the spring stores and returns energy on cyclic tasks.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> The compliance costs bandwidth: tracking the 2 Hz sine the load lags and overshoots to <b>40 mm</b> RMS (about <b>7&times;</b> the rigid joint), and near the spring's resonance it amplifies the motion instead of following it. A soft joint cannot be both precise and fast.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="hardware-explained.html">CASARO — Compliant Actuated Single-Actuator Soft Rotorcraft</a></div></section>
+<section class="ctrl"><div class="ch"><h3>Variable-impedance (VIA)</h3><span class="fam">stiffness you change on the fly</span></div>
+  <p class="what">Make the spring's stiffness adjustable: go soft the instant contact is expected, go stiff when precision matters. One joint that can sit anywhere on the tradeoff curve instead of being welded to one point.</p>
+  <p class="res">It gets <b>both</b> ends: soft on the collision, it holds contact to just <b>33 N</b>; stiff on the tracking task, it matches the rigid joint at <b>5.7 mm</b>. The only one of the three not stuck at a single compromise.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> You pay for it: a second mechanism (often a second motor) to vary the stiffness, more mass and control complexity, and the system must <b>know which mode to be in</b> &mdash; guess wrong and go stiff at the moment of contact, and you are back to the rigid joint's forces.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Passivity Filters for Bilateral Teleoperation with Variable Impedance Control</a></div></section>
+  <div class="note">One 1-DOF joint: a critically-damped motor servo (200 rad/s) drives a 1 kg load through a transmission spring; a wall 12 cm ahead has contact stiffness 50000 N/m. Only the transmission stiffness changes between actuators (rigid 10000, SEA 350, VIA 180 soft / 9000 stiff), so every difference is the actuator itself, not the controller. &lsquo;Force into an obstacle&rsquo; is the sustained push when the joint is commanded 12 cm past the wall; &lsquo;tracking error&rsquo; is RMS on a 2 Hz, 6 cm sine. Software impedance control (a stiff actuator emulating softness in code) is a fourth option not simulated here &mdash; it can pick a point on this curve, but its force feedback is delayed, so a millisecond impact still leaks through, which is why mechanical springs persist. Pure NumPy &mdash; <code>scripts/actuator_zoo_experiments.py</code>.</div>
+</div>
+<footer><div class="wrap">Three ways to build a joint &middot; a method zoo &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="hardware-explained.html">hardware theme</a></div></footer>
+</body></html>
