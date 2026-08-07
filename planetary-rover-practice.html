@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Planetary rovers — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#A0522D;--accent-deep:#6E381E;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#A0522D 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#A0522D 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Planetary rovers — the real problem</h1>
+  <p>What driving on Mars actually demands, stage by stage — the missions that lived it, the rovers lost to it, how JPL solves it, and what our clean demo leaves out.</p>
+  <nav><a href="planetary-rover.html">&larr; the planetary rover demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Trust the ground, not the wheels — visual odometry</h2></div>
+  <p class="demo">Our demo: at 30% slip, wheel odometry over-reports 143 m on a true 100 m traverse; visual odometry reads the truth.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>NASA's Mars Exploration Rovers (Spirit and Opportunity) pioneered onboard visual odometry; Curiosity, Perseverance and China's Zhurong all rely on it.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>On slopes Spirit measured wheel slip up to ~100% — wheels turning, rover not moving. Wheel-only odometry would believe it had driven metres it never did, losing localisation and driving blind toward hazards.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Visual odometry: tracking terrain features between stereo image pairs to measure true motion, plus slip checks that abort a drive when slip exceeds a threshold.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>VO is compute-heavy — the MER rovers could only afford it in short steps ('blind drive, then VO'). Regolith texture varies, and featureless terrain defeats it. Ours is a fixed slip ratio.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Drive without a joystick — onboard autonomy</h2></div>
+  <p class="demo">Our demo: autonomy covers ~24× the distance per sol that pure teleoperation does (36 → 864 m).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>MER's GESTALT/AutoNav; Curiosity and Perseverance's AutoNav — Perseverance can even navigate while driving ('thinking while driving').</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Mars is 4–24 minutes away one-way at light speed, so a joystick is impossible. Human-sequenced 'directed drives' cover far less ground per sol; every metre of autonomy buys more science before the mission ends.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Onboard stereo terrain assessment and local path planning, with a full sol's plan uplinked once per day and executed autonomously.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real autonomy is bounded by a ~200 MHz radiation-hard CPU, the power budget, and deep risk-aversion — a stuck rover is unrecoverable. Ours is a distance-per-sol ratio.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Read the terrain — traversability</h2></div>
+  <p class="demo">Our demo: a traversability-aware path takes 0 hazards where a straight line crosses 2, for modest extra distance.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every Mars rover grades terrain by slope, roughness and step height from stereo (GESTALT/AutoNav).</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Sharp embedded rocks punctured Curiosity's aluminium wheels in 2013–14, forcing new routes and a software fix; an untraversable slope can flip or strand a rover for good.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Traversability maps from stereo, keep-out zones, and — on Curiosity — a traction-control algorithm that modulates individual wheel speeds to cut the load sharp rocks put on the wheels.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real hazards include benign-looking ripples that trap a rover (Spirit) and rocks below stereo resolution. Ours is a grid with labelled cells.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Budget the sun — energy management</h2></div>
+  <p class="demo">Our demo: a naive continuous drive strands (battery → 0); a power-aware schedule survives and travels far further.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Solar rovers and landers live and die by the energy budget — Sojourner, the MERs, Zhurong, InSight. Opportunity was killed by a 2018 global dust storm; Spirit could not reach a Sun-facing winter slope and froze.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Run the battery flat in shadow or overnight and the heaters stop — the electronics freeze and the mission ends. Energy, not distance, is often the true limiting resource.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Strict per-sol energy budgeting, driving only within the solar-plus-battery envelope, and parking tilted toward the Sun for winter survival; Curiosity and Perseverance use RTGs to remove the constraint entirely.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real budgets fold in dust accumulation on the panels, seasonal Sun angle, heater loads and instrument power. Ours is a simple drain-versus-solar sum.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Don't get stuck — sinkage and embedding</h2></div>
+  <p class="demo">Our demo: an aggressive drive embeds at ~88% slip; a slip-monitored drive stays mobile and backs out.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Spirit famously embedded in soft, sulfate-rich soil at 'Troy' in 2009 and never escaped, ending the mission in 2010; Opportunity's 'Purgatory Dune' (2005) took weeks to climb out of.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>On Mars, embedding is usually terminal — there is no tow truck. It is the failure mode that actually ended a flagship mission.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Onboard slip and sinkage checks that halt a drive the moment slip spikes, conservative avoidance of loose sand, and visual odometry to detect that the rover is making no progress.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Soil bearing strength is invisible until the wheels are already in it — the core reason Spirit was lost. Ours is a slip threshold on a modelled sand trap.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="planetary-rover.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Planetary rovers — the real problem &middot; <a href="planetary-rover.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

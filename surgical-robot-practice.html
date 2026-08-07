@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Surgical robotics — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#C0392B;--accent-deep:#8E2A20;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#C0392B 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#C0392B 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Surgical robotics — the real problem</h1>
+  <p>What a teleoperated surgical robot is really solving, stage by stage — the systems in operating rooms today, the harm when it fails, how it is actually built, and what our clean demo leaves out.</p>
+  <nav><a href="surgical-robot.html">&larr; the surgical robot demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Steady the hand — tremor filtering</h2></div>
+  <p class="demo">Our demo: a low-pass filter cuts a 10 Hz tremor 13× while passing the deliberate motion (0.45 mm → 0.03 mm).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Intuitive's da Vinci system (millions of prostatectomies, hysterectomies and more) filters the surgeon's console input; microsurgery — retinal, neuro — is even more tremor-limited, and active-cancellation handheld tools (e.g. the Micron instrument) target it directly.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Physiological tremor runs ~8–12 Hz at tens to over a hundred microns. At the scale of suturing a millimetre-wide vessel or operating on the retina, that shake tears tissue and misplaces sutures — freehand, it is a hard limit on what is operable.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Low-pass filtering of the master input on teleoperated systems; real-time active tremor cancellation in handheld micro-instruments; scaling (below) compounds the benefit.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real tremor is non-stationary, patient- and fatigue-specific, and overlaps intended motion in frequency; real systems must trade suppression against latency the surgeon can feel. Ours is a fixed 10 Hz sinusoid.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Scale the motion — precision by ratio</h2></div>
+  <p class="demo">Our demo: 5:1 motion scaling shrinks hand jitter from 0.80 mm to 0.16 mm at the tool.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every teleoperated surgical robot offers motion scaling — da Vinci runs roughly 3:1 to 5:1, combined with tremor filtering, as a core selling point.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Human hand positioning is good to about a millimetre; the task is sub-millimetre. Map hand to tool 1:1 and the surgeon simply cannot place the tip finely enough, however careful.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Adjustable master–slave motion scaling on the console, chosen per task (finer for delicate suturing, coarser for gross moves).</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Scaling interacts with haptics and latency, and higher ratios shrink the usable workspace and slow the surgeon down. Ours is pure jitter divided by a constant.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Pivot at the incision — remote centre of motion</h2></div>
+  <p class="demo">Our demo: a remote-centre-of-motion constraint holds the incision at 0 mm where a naive move drags it 8 mm.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>The remote centre of motion is the defining constraint of minimally-invasive surgical robots. da Vinci enforces it mechanically with a double-parallelogram linkage; research and other systems (e.g. RAVEN) enforce it in software.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>If the shaft translated at the port it would tear the incision and injure the abdominal wall — this is a hard safety requirement, not an optimisation.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>A mechanical RCM linkage (da Vinci) or a software RCM constraint in the controller that permits only rotation and insertion about the fixed port.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>The real problem includes patient motion, changing insufflation pressure, and tool exchanges shifting the geometry. Ours is a fixed pivot.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Guard the no-go zone — virtual fixtures</h2></div>
+  <p class="demo">Our demo: a virtual fixture holds tool penetration into a 4 mm keep-out at 0 mm instead of 3.97 mm.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Stryker's MAKO robotic knee and hip system uses haptic active constraints — the surgeon physically cannot cut outside the planned bone volume; virtual fixtures also appear in neuro and ENT robotics.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Straying into a critical structure — a nerve, a major vessel — ends the operation badly. Active constraints exist to make that geometrically impossible.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Haptic virtual fixtures / active constraints (forbidden-region plus guidance), a concept named by Rosenberg in 1993 and now shipping in mainstream orthopaedic robots.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>The hard part in reality is registering the plan to a moving, deforming patient accurately — the boundary is only as good as that registration. Ours is a fixed sphere in a fixed frame.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Beat the cable slack — backlash compensation</h2></div>
+  <p class="demo">Our demo: feeding the backlash forward cuts tip lag from 0.16 mm to 0 on reversals.</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>da Vinci's EndoWrist and most flexible, cable-driven instruments carry tendon backlash; continuum robots such as the Auris/Monarch bronchoscope fight hysteresis constantly.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Backlash gives a dead-band on every direction reversal — the tip lags and the tool feels 'loose' exactly during the fine back-and-forth of suturing.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Backlash/hysteresis modelling with feedforward, distal shape sensing (fibre-Bragg-grating sensors), or stiffer transmissions.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real hysteresis is load- and configuration-dependent and drifts with wear over an instrument's limited use life. Ours is a fixed deadband.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="surgical-robot.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Surgical robotics — the real problem &middot; <a href="surgical-robot.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>

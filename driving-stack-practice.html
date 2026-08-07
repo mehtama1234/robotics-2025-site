@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Autonomous driving — the real problem</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#1E8C8C;--accent-deep:#146060;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.62}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0C0F12;color:#EAF0F0;padding:44px 0 32px;background-image:linear-gradient(100deg,color-mix(in srgb,#1E8C8C 34%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#1E8C8C 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:35px;margin:10px 0 10px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#C2CDCD;font-size:16.5px;max-width:84ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#94a6ac} header nav a{color:#b8ccd0}
+ .intro{font-size:15px;color:#333;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:13px 17px;margin:22px 0 6px}
+ .intro b{color:#111}
+ .stg{margin:26px 0;border-top:1px solid var(--line);padding-top:18px}
+ .sh{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+ .no{font-family:var(--mono);background:var(--accent);color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+ .sh h2{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:-.01em}
+ .demo{font-size:13px;color:var(--graphite);font-style:italic;margin:0 0 12px 37px;border-left:2px solid var(--line);padding-left:11px}
+ .facets{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .facet{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+ .facet p{margin:5px 0 0;font-size:14px;color:#222}
+ .fl{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+ .facet.who .fl{color:#2A6E8C} .facet.cost .fl{color:#9A3327} .facet.solved .fl{color:#1F6152} .facet.gap .fl{color:#6A4A9A}
+ .facet.who{border-left:3px solid #2A6E8C} .facet.cost{border-left:3px solid #9A3327} .facet.solved{border-left:3px solid #1F6152} .facet.gap{border-left:3px solid #6A4A9A}
+ .note{font-size:12.5px;color:var(--graphite);margin:26px 0 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+ @media(max-width:640px){.facets{grid-template-columns:1fr} .demo{margin-left:0}}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the real problem &middot; beyond the demo</div>
+  <h1>Autonomous driving — the real problem</h1>
+  <p>What a self-driving stack is really up against, stage by stage — the industry that lives it, the crashes when it fails, how it is actually solved, and what our clean demo leaves out.</p>
+  <nav><a href="driving-stack.html">&larr; the driving stack demo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="index.html">home</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="intro">Each stage below pairs our measured demo with the <b>real practical problem</b> behind it: <b>who actually hits it</b> (the industry or system), <b>what it costs</b> when it fails (real failure modes and incidents), <b>how it is solved</b> in production today, and the honest <b>gap</b> between our clean sim and the real thing. The demo captures the essence; this is the world it lives in.</div>
+  <section class="stg">
+  <div class="sh"><span class="no">1</span><h2>Detect the vehicle — sensor fusion</h2></div>
+  <p class="demo">Our demo: camera (bearing) + radar (range) fused by inverse covariance beats either sensor (3.0 m → 0.69 m).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Every production ADAS and robotaxi. Radar (good range + Doppler velocity, works in rain and dark) and camera (good classification + bearing) are fused in Mobileye-based cars, Waymo, Zoox and most OEM automatic emergency braking (AEB) systems; lidar adds a third channel on robotaxis.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Radar alone struggles to tell a stopped truck from an overhead sign, so it is often filtered out — a factor in several Autopilot crashes into stopped fire trucks and semis (2018–2021, NHTSA investigations). Camera alone fails at night, in glare, and against low-contrast objects.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Per-sensor covariance fusion or track-to-track fusion; radar owns the longitudinal estimate, camera the lateral and the class. Mobileye pushes 'true redundancy' — independent camera-only and radar-only subsystems that must agree. AEB is being mandated (Euro NCAP; US FMVSS 127 by 2029).</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>The real problem is asynchronous sensors, tens of milliseconds of latency, extrinsic-calibration drift, radar multipath and hundreds of simultaneous objects. Our demo fuses one static object with fixed Gaussians.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">2</span><h2>Track it over time — data association + gating</h2></div>
+  <p class="demo">Our demo: gating detections against the Kalman prediction rejects clutter (2.50 m → 0.47 m RMSE).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Multi-object tracking sits in every AV perception stack — and the algorithms (JPDA, MHT, global nearest-neighbour) came from decades of aerospace and defence radar tracking before that.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>An ungated tracker snaps onto guardrail reflections and ghost returns, causing ID switches and phantom objects — the planner then brakes for nothing or, worse, drops a real vehicle mid-manoeuvre.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Chi-square validation gates around each predicted position, global-nearest-neighbour or JPDA/MHT association, and Kalman / interacting-multiple-model filters; benchmarked on nuScenes and the Waymo Open Dataset.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real trackers manage track birth and death, long occlusions, hundreds of objects, appearance re-identification, and sensor-specific noise. Ours is one target in uniform clutter.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">3</span><h2>Predict where it goes — motion forecasting</h2></div>
+  <p class="demo">Our demo: a constant-turn-rate model beats straight-line constant velocity on a cornering car (13.7 m → 0.45 m at 3 s).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Prediction is widely considered the hardest open module in self-driving. Waymo, Cruise and every serious player run learned multimodal predictors; the Argoverse and Waymo Open Motion challenges exist specifically for it.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Mispredict a cut-in or an unprotected left turn and the car either plans into a collision or freezes in the intersection — Cruise's well-publicised stalls and hesitations trace largely to prediction uncertainty.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Kinematic CTRV/CTRA models for the short horizon; learned models (VectorNet, MultiPath, transformer predictors) for multimodal intent, usually ensembled with a conservative fallback.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real prediction is multi-agent and interactive — your plan changes their behaviour — multimodal, and must run for hundreds of agents at once. Ours is one car on a fixed arc.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">4</span><h2>Keep a safe gap — following distance</h2></div>
+  <p class="demo">Our demo: a fixed 2 m gap becomes a crash when the lead brakes; the speed-dependent gap holds (−26 m → +2 m).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>Adaptive cruise control and AEB in every modern car; robotaxis. Mobileye's Responsibility-Sensitive Safety (RSS) turns the safe-distance idea into a formal model now cited in AV regulation.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>Too short a gap causes the most common crash type — the rear-end. Too aggressive an AEB causes 'phantom braking', which gets the car rear-ended from behind (thousands of NHTSA complaints).</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Time-headway rules (the 2-second rule), the RSS safe-longitudinal-distance formula (your reaction + braking distance minus the lead's), and standards ISO 15622 (ACC) and 22839 (forward collision mitigation).</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real gap-keeping must estimate road friction (wet/ice halves it), react to instant cut-ins, and trade comfort against safety under sensor latency. Ours is a 1-D deterministic brake.</p></div>
+  </div>
+</section>
+<section class="stg">
+  <div class="sh"><span class="no">5</span><h2>Hold the lane — lateral control</h2></div>
+  <p class="demo">Our demo: a cross-track-only controller weaves; adding the heading term (Stanley) settles (2.0 m overshoot → 0.08 m).</p>
+  <div class="facets">
+    <div class="facet who"><span class="fl">Who actually hits it</span><p>The Stanley controller won the 2005 DARPA Grand Challenge for Stanford; pure pursuit is older and ubiquitous; production lane-centring uses these plus MPC on higher-end systems.</p></div>
+    <div class="facet cost"><span class="fl">What it costs when it fails</span><p>A weaving lane-keeper is uncomfortable and unsafe — it ping-pongs in the lane — and bad tuning turns into over- or understeer at highway speed.</p></div>
+    <div class="facet solved"><span class="fl">How it's solved in production</span><p>Stanley (cross-track + heading), pure pursuit with speed-scheduled lookahead, and model-predictive lateral control that respects the vehicle model.</p></div>
+    <div class="facet gap"><span class="fl">Toy demo &rarr; real system</span><p>Real control fights tyre slip, actuator lag, road bank and camber, changing speed, and plain model mismatch. Ours is a kinematic unicycle.</p></div>
+  </div>
+</section>
+  <div class="note">Grounded in well-established, public domain knowledge. The measured demos live in <a href="driving-stack.html">the pipeline page</a> and as tested packages under <code>source-code/learning/</code>; this page is the practical context around them.</div>
+</div>
+<footer><div class="wrap">The real problem &middot; Autonomous driving — the real problem &middot; <a href="driving-stack.html">back to the demo</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>
