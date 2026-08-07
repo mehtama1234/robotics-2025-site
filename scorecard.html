@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>The scorecard — every number on this site, verified</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#2E7D6B;--accent-deep:#1F6152;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:42px 0 30px;background-image:linear-gradient(100deg,color-mix(in srgb,#2E7D6B 32%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#2E7D6B 60%,#cfe)}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F4F8F8}
+ header p{color:#BEDCDC;font-size:16px;max-width:82ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 10px}
+ .bignum{display:flex;gap:26px;flex-wrap:wrap;margin:18px 0}
+ .bignum div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:120px}
+ .bignum b{font-family:var(--serif);font-size:27px;display:block;color:var(--accent-deep)}
+ .bignum span{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--graphite)}
+ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+ th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top} th{background:var(--panel);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite)}
+ td.g{color:#1F6152} td.b{color:#9A3327}
+ .fam{font-family:var(--mono);font-size:11px;color:var(--graphite)}
+ .ctrl{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px;margin:15px 0}
+ .ch{display:flex;align-items:center;justify-content:space-between;gap:10px} .ch h3{font-family:var(--serif);font-size:20px;margin:0}
+ .what{margin:8px 0;font-size:14.5px} .res{font-size:14.5px;background:color-mix(in srgb,#2E7D6B 8%,#fff);border-radius:8px;padding:8px 12px;margin:8px 0}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:22px 0}
+ code{font-family:var(--mono);font-size:.92em;background:#eef1ef;padding:1px 5px;border-radius:4px}
+ pre{background:#0A0F14;color:#cfe;font-family:var(--mono);font-size:12px;padding:14px 16px;border-radius:10px;overflow-x:auto}
+ h2{font-family:var(--serif);font-size:24px;margin:30px 0 8px}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the scorecard &middot; the honesty guarantee, checked</div>
+  <h1>Every number on this site, verified</h1>
+  <p>Every number on this site was computed by code, not typed by a human or written by a model. This page re-runs six mechanical checks each time the site is built — verifying that every link works, every figure exists, every measurement still matches its source, and every cited paper name is real. If any check fails, it turns red right here; this scorecard is where you would see it first.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="the-rules.html">the rules</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead"><b>Status: <span style="color:#1F6152">&#10003; all checks pass</span></b> &mdash; 6 of 6 checks green. A run-it-to-explain-it site lives or dies on trust. One invented number, one cited paper that doesn't exist, one figure that got accidentally deleted — these don't just break a single page, they make every number suspect. So rather than ask you to take the numbers on faith, the collection checks itself, mechanically, at every build. Either every number reconciles to the raw result it came from, or this page shows you exactly which one doesn't.</p>
+
+  <div class="bignum">
+    <div><b>1,263</b><span>papers analyzed</span></div>
+    <div><b>111</b><span>tested cores</span></div>
+    <div><b>57</b><span>citations verified</span></div>
+    <div><b>16</b><span>zoos &amp; demos</span></div>
+    <div><b>22</b><span>theme explainers</span></div>
+  </div>
+
+  <table><tr><th>check</th><th>what it verifies</th><th>result</th><th>status</th></tr><tr><td><b>Dead internal links</b></td><td>Every local <code>.html</code> link across all 117 pages resolves to a file that exists.</td><td class="g" style="white-space:nowrap">0 broken<br><span class="fam">of 117 pages scanned</span></td><td class="g" style="white-space:nowrap;font-weight:700">&#10003; pass</td></tr><tr><td><b>Missing figures & assets</b></td><td>Every referenced image, script, and stylesheet under <code>assets/</code> or <code>source-code/</code> is present on disk.</td><td class="g" style="white-space:nowrap">0 missing<br><span class="fam">of 117 pages scanned</span></td><td class="g" style="white-space:nowrap;font-weight:700">&#10003; pass</td></tr><tr><td><b>Unit tests (the tested cores)</b></td><td>Every <code>*.test.js</code> that guards a learning package's core still passes.</td><td class="g" style="white-space:nowrap">111/111<br><span class="fam">of 111 test files</span></td><td class="g" style="white-space:nowrap;font-weight:700">&#10003; pass</td></tr><tr><td><b>Method-zoo & demo citations</b></td><td>Every 2025 paper cited by a method zoo or foundational demo resolves to a real title in the analyzed corpus.</td><td class="g" style="white-space:nowrap">13/13<br><span class="fam">of 13 citations</span></td><td class="g" style="white-space:nowrap;font-weight:700">&#10003; pass</td></tr><tr><td><b>Practice deep-dive citations</b></td><td>Every curated corpus citation on the 19 practice deep-dives resolves to a real paper AND is attributed to the theme it actually appears in.</td><td class="g" style="white-space:nowrap">44/44<br><span class="fam">of 44 citations</span></td><td class="g" style="white-space:nowrap;font-weight:700">&#10003; pass</td></tr><tr><td><b>Measured-number drift</b></td><td>Every measurement quoted in a zoo or demo page still matches its ground-truth <code>_results</code> JSON. 223 measurements reconciled to a result value (exact, unit-converted, or as a %/&times; summary); 10 experiment-input constants noted.</td><td class="g" style="white-space:nowrap">0 contradictions<br><span class="fam">of 223 measurements reconciled</span></td><td class="g" style="white-space:nowrap;font-weight:700">&#10003; pass</td></tr></table>
+
+  <h2>Each check, up close</h2>
+  <section class="ctrl"><div class="ch"><h3>Dead internal links</h3><span class="g" style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em">&#10003; PASS</span></div><p class="what">Every internal link (from one page to another on this site) must point to a file that actually exists. A link to a missing page breaks the reader's journey and suggests the site is unmaintained. This check crawls the entire site and catches any dead link before publication.</p><p class="res"><b style="font-size:22px">0</b> &nbsp;<span class="fam">0 broken of 117 pages scanned</span></p></section><section class="ctrl"><div class="ch"><h3>Missing figures & assets</h3><span class="g" style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em">&#10003; PASS</span></div><p class="what">Every image, figure, animation script, and stylesheet that a page references must exist on disk. A broken image tag or missing CSS file breaks the visual contract—the page promised something and can't deliver it. This check verifies that every asset dependency is actually present.</p><p class="res"><b style="font-size:22px">0</b> &nbsp;<span class="fam">0 missing of 117 pages scanned</span></p></section><section class="ctrl"><div class="ch"><h3>Unit tests (the tested cores)</h3><span class="g" style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em">&#10003; PASS</span></div><p class="what">Each learning package ships with a small unit test that pins its core behaviour — the filter really reduces error, the planner really finds a path. If the code drifts, the test fails, and the claim built on it can no longer be trusted.</p><p class="res"><b style="font-size:22px">111<span style="color:var(--graphite);font-size:20px">/111</span></b> &nbsp;<span class="fam">111 test files</span></p></section><section class="ctrl"><div class="ch"><h3>Method-zoo & demo citations</h3><span class="g" style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em">&#10003; PASS</span></div><p class="what">The method-zoo pages and demo sections name specific techniques and papers that use them, drawn from the analyzed corpus. Each name is checked against the actual database of papers to confirm it's a real title from a real 2025 conference, not an invention or a paraphrase.</p><p class="res"><b style="font-size:22px">13<span style="color:var(--graphite);font-size:20px">/13</span></b> &nbsp;<span class="fam">13 citations</span></p></section><section class="ctrl"><div class="ch"><h3>Practice deep-dive citations</h3><span class="g" style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em">&#10003; PASS</span></div><p class="what">The deep-dive pages cite real papers, and each citation must be correctly attributed to the theme or topic it actually appears under in the corpus. This is where an automated writer is most tempted to guess—to say a paper is about computer vision when it's really about manipulation. This check confirms both that the paper exists AND that it lives in the right category.</p><p class="res"><b style="font-size:22px">44<span style="color:var(--graphite);font-size:20px">/44</span></b> &nbsp;<span class="fam">44 citations</span></p></section><section class="ctrl"><div class="ch"><h3>Measured-number drift</h3><span class="g" style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em">&#10003; PASS</span></div><p class="what">The subtlest failure: a page might quote '22x speedup' while the experiment now produces '14x'. The drift check reads these measurements back out of the page prose and confirms each one still matches the raw result in the data. Numbers age; this ensures they don't age in the prose while the code moves on.</p><p class="res"><b style="font-size:22px">0</b> &nbsp;<span class="fam">0 contradictions of 223 measurements reconciled</span></p></section>
+
+  <h2>Reproduce it yourself</h2>
+  <p style="font-size:14.5px;max-width:82ch">Nothing here is privileged. The same script that renders this page runs every check &mdash; clone the source and run it:</p>
+  <pre>python3 scripts/build_scorecard.py   # recomputes all six checks, rewrites this page
+node source-code/learning/&lt;pkg&gt;/tests/core.test.js   # any single tested core</pre>
+  <p class="note">When all six checks pass, the collection's central claim holds mechanically: everything you read here was really computed, every paper really exists, every number is current. When any check goes red, this scorecard is the first to tell you. Trust is binary.</p>
+
+</div>
+<footer><div class="wrap">The scorecard &middot; recomputed at every build &middot; <a href="index.html">home</a> &middot; <a href="the-lab.html">the build lab</a></div></footer>
+</body></html>
