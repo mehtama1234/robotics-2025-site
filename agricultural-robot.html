@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tending a field — the agricultural-robot stack, stage by stage</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#3E9C56;--accent-deep:#2A6E3C;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+ header{background:#0A1509;color:#ECF6EE;padding:40px 0 30px;background-image:linear-gradient(90deg,rgba(62,156,86,.28),rgba(176,121,31,.13),rgba(58,160,200,.12))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#96CDA4}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F1F9F3}
+ header p{color:#C6DCCB;font-size:16px;max-width:80ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#83B792} header nav a{color:#A6D5B2}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 8px}
+ .flow{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--graphite);margin:6px 0 18px}
+ .flow b{color:var(--accent-deep)}
+ .stage{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:16px 18px;margin:16px 0}
+ .sh{display:flex;align-items:center;gap:10px} .no{font-family:var(--mono);background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+ .stage h2{font-family:var(--serif);font-size:21px;margin:0} .sh .thm{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-deep);background:rgba(62,156,86,.10);padding:3px 8px;border-radius:20px}
+ .cp{color:#333;margin:8px 0}
+ .rule{font-family:var(--serif);font-size:18px;border-left:3px solid var(--accent);padding:7px 13px;background:rgba(62,156,86,.06);border-radius:0 8px 8px 0;margin:8px 0}
+ .mx{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0} .m{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;display:flex;gap:8px;align-items:baseline}
+ .m b{font-family:var(--serif);font-size:16px} .pv{font-size:13.5px;color:var(--graphite)}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">agricultural robot &middot; the field pass, stage by stage</div>
+  <h1>Tending a field</h1>
+  <p>A field robot has to cover every metre, drive the narrow lanes without crushing plants, tell a weed from the crop, hit that weed while rolling, and dose inputs to what each patch actually needs. Five stages, five distinct sub-fields &mdash; each a plain rule, <b>run and measured</b>, with the failure it prevents. A production narrative, not a grab-bag: each stage feeds the next.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="surgical-robot.html">surgical robot</a> &middot; <a href="warehouse-fleet.html">warehouse fleet</a> &middot; <a href="nav-stack.html">navigation</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">Each stage is one link in a single field pass: cover it all, drive the rows, see the weed, spray it on the move, and dose to the need. A weak link anywhere and the robot skips ground, crushes seedlings, sprays the crop, misses the weed, or wastes the chemical.</p>
+  <div class="flow"><b>1 cover</b> &rarr; <b>2 rows</b> &rarr; <b>3 classify</b> &rarr; <b>4 spray</b> &rarr; <b>5 dose</b></div>
+  <section class="stage">
+  <div class="sh"><span class="no">1</span><h2>Cover the whole field</h2><a class="thm" href="navigation-explained.html">Navigation</a></div>
+  <p class="cp">The robot has to treat every square metre of a field — miss a patch and weeds seed it, re-cover a patch and you waste fuel and time. Let it wander toward whatever looks unfinished and it leaves a patchwork of skipped ground and doubled-up passes.</p>
+  <div class="rule">Sweep the field with a systematic boustrophedon path; a naive path leaves gaps and re-covers ground, missing much of the field.</div>
+  <div class="mx"><div class="m"><span>field covered — boustrophedon</span><b>100%</b></div><div class="m"><span>field covered — naive path</span><b>28%</b></div><div class="m"><span>field size</span><b>400 cells</b></div></div>
+  <p class="pv">Over the same number of steps on a 400-cell field, the boustrophedon sweep covers <b>100%</b> of it. A naive wander-to-the-nearest-gap path covers only <b>28%</b> — most of the field is left untreated.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">2</span><h2>Drive the crop rows</h2><a class="thm" href="autonomous-driving-explained.html">Autonomous driving</a></div>
+  <p class="cp">The robot must drive the narrow lane between two crop rows without crushing the plants. GPS alone carries a bias of a few tens of centimetres — and when that bias is a big fraction of the row spacing, the robot tracks straight down a row of seedlings.</p>
+  <div class="rule">Centre in the lane from the crop rows you can see, not from GPS; a GPS bias larger than half the row spacing drives the robot onto the plants.</div>
+  <div class="mx"><div class="m"><span>lateral error — GPS</span><b>0.302 m</b></div><div class="m"><span>lateral error — vision rows</span><b>0.013 m</b></div><div class="m"><span>row spacing</span><b>0.75 m</b></div></div>
+  <p class="pv">On 0.75 m rows, GPS lane-keeping sits <b>0.302 m</b> off centre — more than a third of the way to the plants. Vision row-following centres to <b>0.013 m</b>, comfortably in the lane.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">3</span><h2>Tell crop from weed</h2><a class="thm" href="open-vocab-explained.html">Open-vocabulary</a></div>
+  <p class="cp">To spray weeds and spare the crop, the robot must tell them apart — but both are green plants. Threshold on colour, the obvious signal, and the two are hopelessly mixed: the robot sprays the crop and misses the weed about as often as it gets it right.</p>
+  <div class="rule">Color alone can't separate crop from weed (both are green); add leaf shape and a two-feature boundary tells them apart.</div>
+  <div class="mx"><div class="m"><span>misclassification — colour only</span><b>46%</b></div><div class="m"><span>misclassification — colour + shape</span><b>2%</b></div></div>
+  <p class="pv">A colour-only threshold misclassifies <b>46%</b> of plants — barely better than a coin flip, because crop and weed greenness overlap. Adding leaf shape drops the error to <b>2%</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">4</span><h2>Hit the moving weed</h2><a class="thm" href="ct-explained.html">Control & MPC</a></div>
+  <p class="cp">The robot is rolling forward while it sprays, and the nozzle takes a fraction of a second to fire and for the droplet to land. Trigger the instant the weed is under the nozzle and, in that fraction of a second, the robot has moved on — every shot lands behind the weed and hits bare soil.</p>
+  <div class="rule">Trigger the nozzle early by speed×latency so the spray lands on the moving weed; firing on detection lands every shot behind it.</div>
+  <div class="mx"><div class="m"><span>weed hit rate — fire on detection</span><b>0%</b></div><div class="m"><span>weed hit rate — lead by latency</span><b>100%</b></div><div class="m"><span>travel during latency</span><b>0.3 m</b></div></div>
+  <p class="pv">At <b>1.5 m/s</b> the <b>0.2 s</b> nozzle latency means the robot travels <b>0.3 m</b> before the spray lands — far past a <b>5 cm</b> weed. Firing on detection hits <b>0%</b>; leading by the latency hits <b>100%</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">5</span><h2>Dose to the need</h2><a class="thm" href="navigation-explained.html">Navigation</a></div>
+  <p class="cp">Fertilizer and chemicals are the biggest running cost, and need varies across a field — some patches are starved, most are fine. Dose the whole field uniformly at a rate high enough for the worst patch and you pour expensive input onto ground that never needed it.</p>
+  <div class="rule">Apply inputs at a variable rate matched to the need map; a uniform dose big enough for the worst cell wastes most of the chemical everywhere else.</div>
+  <div class="mx"><div class="m"><span>input used — uniform dose</span><b>4441 units</b></div><div class="m"><span>input used — variable rate</span><b>894 units</b></div><div class="m"><span>input saved</span><b>80%</b></div></div>
+  <p class="pv">To satisfy every one of 900 cells, a uniform dose at the worst cell's rate uses <b>4441</b> units of input. Variable-rate application matched to the need map uses <b>894</b> — <b>80% less</b> for the same coverage.</p>
+</section>
+  <div class="note"><b>How this was built.</b> Real experiments (<code>scripts/agricultural_robot_experiments.py</code>, pure NumPy) produce every number above. Each stage is also a small <b>tested demo package</b> under <code>source-code/learning/agricultural-robot/&lt;stage&gt;/</code> &mdash; a reusable <code>core.js</code> carrying the rule, with <code>node</code> assert-tests. The eighth pipeline narrative, joining pick-and-place, navigation, driving, drone flight, legged locomotion, warehouse fleet, and the surgical robot.</div>
+</div>
+<footer><div class="wrap">Agricultural-robot field pass &middot; five stages, one field, tested reusable cores &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="surgical-robot.html">surgical robot</a></div></footer>
+</body></html>

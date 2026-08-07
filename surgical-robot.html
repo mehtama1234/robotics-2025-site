@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Operating through a robot — the surgical-robot teleoperation stack, stage by stage</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#C0392B;--accent-deep:#8E2A20;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+ header{background:#180907;color:#F7E9E7;padding:40px 0 30px;background-image:linear-gradient(90deg,rgba(192,57,43,.28),rgba(178,58,122,.13),rgba(58,160,200,.12))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#E39C93}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#FBEFED}
+ header p{color:#E6C7C2;font-size:16px;max-width:80ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#CD8E86} header nav a{color:#E7ABA2}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 8px}
+ .flow{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--graphite);margin:6px 0 18px}
+ .flow b{color:var(--accent-deep)}
+ .stage{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:16px 18px;margin:16px 0}
+ .sh{display:flex;align-items:center;gap:10px} .no{font-family:var(--mono);background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+ .stage h2{font-family:var(--serif);font-size:21px;margin:0} .sh .thm{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-deep);background:rgba(192,57,43,.10);padding:3px 8px;border-radius:20px}
+ .cp{color:#333;margin:8px 0}
+ .rule{font-family:var(--serif);font-size:18px;border-left:3px solid var(--accent);padding:7px 13px;background:rgba(192,57,43,.06);border-radius:0 8px 8px 0;margin:8px 0}
+ .mx{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0} .m{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;display:flex;gap:8px;align-items:baseline}
+ .m b{font-family:var(--serif);font-size:16px} .pv{font-size:13.5px;color:var(--graphite)}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">surgical-robot teleoperation &middot; the console, stage by stage</div>
+  <h1>Operating through a robot</h1>
+  <p>A surgeon at a console drives tools inside a patient through tiny incisions. Between their hands and the tissue sit five safeguards &mdash; steady the tremor, scale for precision, pivot at the incision, guard the no-go zones, and beat the cable slack &mdash; each a plain rule, <b>run and measured</b>, with the failure it prevents. A production narrative, not a grab-bag: each stage feeds the next.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="pick-place.html">pick-and-place</a> &middot; <a href="warehouse-fleet.html">warehouse fleet</a> &middot; <a href="medical-explained.html">medical robotics</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">Each stage is one link between the surgeon's intent and a safe cut: filter the hand, shrink the motion, respect the incision, fence off the danger, and take up the slack. A weak link anywhere and the tool shakes, misses, tears, strays, or lags.</p>
+  <div class="flow"><b>1 tremor</b> &rarr; <b>2 scale</b> &rarr; <b>3 pivot</b> &rarr; <b>4 fixture</b> &rarr; <b>5 slack</b></div>
+  <section class="stage">
+  <div class="sh"><span class="no">1</span><h2>Steady the hand</h2><a class="thm" href="ct-explained.html">Control & MPC</a></div>
+  <p class="cp">Even a great surgeon's hand carries a fine physiological tremor — a few tenths of a millimetre shaking at around ten times a second. Pass the raw hand command straight to the tool and that shake is amplified right at the tip, where a tenth of a millimetre matters.</p>
+  <div class="rule">Low-pass the command to strip physiological hand tremor while passing the surgeon's deliberate motion.</div>
+  <div class="mx"><div class="m"><span>tremor at the tool — raw</span><b>0.446 mm</b></div><div class="m"><span>tremor at the tool — filtered</span><b>0.034 mm</b></div><div class="m"><span>deliberate motion — kept</span><b>5.02 → 5.14 mm</b></div></div>
+  <p class="pv">The <b>10 Hz</b> tremor at the tool drops from <b>0.446 mm</b> raw to <b>0.034 mm</b> after a 3 Hz low-pass — a 13× reduction — while the deliberate 0.5 Hz motion passes untouched (5.02→5.14 mm).</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">2</span><h2>Scale the motion down</h2><a class="thm" href="medical-explained.html">Medical</a></div>
+  <p class="cp">The task is sub-millimetre — suturing a vessel a few millimetres across — but the human hand can only hold a position to about a millimetre. Map the hand to the tool one-to-one and the surgeon simply cannot place the tip finely enough, no matter how careful.</p>
+  <div class="rule">Scale the surgeon's hand motion down at the tool; 1:1 hand jitter is far larger than the sub-millimetre task demands.</div>
+  <div class="mx"><div class="m"><span>tool targeting error — 1:1</span><b>0.799 mm</b></div><div class="m"><span>tool targeting error — 5:1</span><b>0.158 mm</b></div><div class="m"><span>hand jitter (input)</span><b>1.0 mm</b></div></div>
+  <p class="pv">With ~<b>1.0 mm</b> of natural hand jitter, a 1:1 mapping lands the tool <b>0.799 mm</b> from target on average. Scaling <b>5:1</b> at the tool cuts that to <b>0.158 mm</b> — into the sub-millimetre range the task needs.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">3</span><h2>Pivot at the incision</h2><a class="thm" href="medical-explained.html">Medical</a></div>
+  <p class="cp">The tool enters the body through a single small incision, and that incision must not move — dragging the shaft sideways through it tears the tissue. But to reach different spots inside, the tip has to sweep, and a naive Cartesian controller moves the whole shaft to do it.</p>
+  <div class="rule">Constrain the tool to pivot about the fixed incision (remote center of motion); a free Cartesian move drags the shaft through the incision and tears it.</div>
+  <div class="mx"><div class="m"><span>incision displacement — naive</span><b>8.0 mm (tears)</b></div><div class="m"><span>incision displacement — RCM</span><b>0.0 mm</b></div><div class="m"><span>tip sweep at depth</span><b>16 mm @ 50 mm</b></div></div>
+  <p class="pv">Sweeping the tip <b>16 mm</b> across at <b>50 mm</b> depth, a naive Cartesian move drags the incision point <b>8.0 mm</b> — tearing it. The remote-center-of-motion constraint holds the incision at <b>0.0 mm</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">4</span><h2>Guard the no-go zone</h2><a class="thm" href="sf-explained.html">Safety & guarantees</a></div>
+  <p class="cp">Millimetres from the work sits something the tool must never touch — a major vessel, a nerve. The surgeon is focused on the task, and one slip of the command sends the tool straight into the structure that ends the operation badly.</p>
+  <div class="rule">Enforce a virtual fixture around no-go structures; without it the tool follows the command straight into the critical anatomy.</div>
+  <div class="mx"><div class="m"><span>penetration — no fixture</span><b>3.97 mm</b></div><div class="m"><span>penetration — virtual fixture</span><b>0.0 mm</b></div><div class="m"><span>keep-out radius</span><b>4 mm</b></div></div>
+  <p class="pv">A command aimed straight through a <b>4 mm</b> keep-out around a vessel penetrates it by <b>3.97 mm</b> with no fixture. The virtual fixture holds penetration to <b>0.0 mm</b> — the tool never enters.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">5</span><h2>Beat the cable slack</h2><a class="thm" href="hardware-explained.html">Hardware</a></div>
+  <p class="cp">The wrist at the tool tip is driven by cables running down the shaft, and cables have slack. Every time the surgeon reverses direction, the tip sits still through the backlash before it catches up — the tool feels loose and lags exactly when fine, back-and-forth suturing needs it most.</p>
+  <div class="rule">Feed the cable backlash forward on every reversal; an uncompensated tendon-driven tool lags its command through the deadband.</div>
+  <div class="mx"><div class="m"><span>tip error — uncompensated</span><b>0.163 mm</b></div><div class="m"><span>tip error — backlash-compensated</span><b>0.0 mm</b></div><div class="m"><span>cable backlash</span><b>2.0°</b></div></div>
+  <p class="pv">With a <b>2.0°</b> cable backlash on a 10 mm tool, an uncompensated tip lags its command by <b>0.163 mm</b> RMS through the reversals. Feeding the backlash forward cuts the tip error to <b>0.0 mm</b>.</p>
+</section>
+  <div class="note"><b>How this was built.</b> Real experiments (<code>scripts/surgical_robot_experiments.py</code>, pure NumPy) produce every number above. Each stage is also a small <b>tested demo package</b> under <code>source-code/learning/surgical-robot/&lt;stage&gt;/</code> &mdash; a reusable <code>core.js</code> carrying the rule, with <code>node</code> assert-tests. The seventh pipeline narrative, joining pick-and-place, navigation, driving, drone flight, legged locomotion, and warehouse fleet.</div>
+</div>
+<footer><div class="wrap">Surgical-robot teleoperation &middot; five safeguards, one operation, tested reusable cores &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="warehouse-fleet.html">warehouse fleet</a></div></footer>
+</body></html>
