@@ -1,0 +1,50 @@
+[
+ {
+  "theme": "Navigation",
+  "page": "navigation-explained.html",
+  "subtheme": "Trajectory optimization & MPC",
+  "rule": "Start from a bad straight-line guess and let the gradient of a smoothness+clearance cost bend the path around the obstacle.",
+  "result": "Collision cost falls <b>222 \u2192 0.0</b> over 1,500 gradient steps; the path's closest approach to the obstacle centre rises from <b>0.09 m</b> to <b>0.90 m</b> \u2014 out to the 0.90 m keep-out radius.",
+  "failure": "The straight-line initialization skims 0.09 m from the obstacle centre, deep inside the 0.90 m keep-out \u2014 a collision. Optimization is what makes the path executable."
+ },
+ {
+  "theme": "Navigation",
+  "page": "navigation-explained.html",
+  "subtheme": "SLAM & pose-graph optimization",
+  "rule": "Add the loop-closure constraint and let least squares spread the accumulated error over the whole trajectory.",
+  "result": "Dead-reckoning drifts to <b>0.43 m</b> RMS off the true loop; adding one loop-closure edge and solving the pose graph cuts it to <b>0.06 m</b> \u2014 a <b>7\u00d7</b> reduction.",
+  "failure": "Open-loop odometry never returns to start \u2014 0.43 m of unbounded drift. The constraint is what closes the map."
+ },
+ {
+  "theme": "Manipulation",
+  "page": "manipulation-explained.html",
+  "subtheme": "Grasp stability & force closure",
+  "rule": "Pick contacts whose friction cones both contain the line between them; then no external wrench can break the grip.",
+  "result": "With friction \u03bc=0.5, only <b>29%</b> of random two-finger grasps achieve force closure, versus <b>100%</b> when the second contact is chosen antipodal to the first.",
+  "failure": "71% of random grasps sit outside the friction cone \u2014 the object slips out the moment it's lifted."
+ },
+ {
+  "theme": "Manipulation",
+  "page": "manipulation-explained.html",
+  "subtheme": "Visual servoing (IBVS)",
+  "rule": "Map the desired pixel change back through the interaction matrix; don't move the camera directly in image space.",
+  "result": "Image error decays <b>0.578 \u2192 0.0000</b> in 60 steps through the interaction matrix. The naive 'move toward the pixel error' baseline stalls at <b>0.212</b> \u2014 it never corrects the depth error.",
+  "failure": "Servoing in raw image space leaves 0.212 residual: it can't tell that half the error is the camera being too far, not too far left."
+ },
+ {
+  "theme": "Control & MPC",
+  "page": "ct-explained.html",
+  "subtheme": "PID control & the integral term",
+  "rule": "Proportional feedback alone leaves a steady-state offset against any constant load; the integral term is what drives it to zero.",
+  "result": "Tracking a reference of 1.0 against a constant load, a P-only controller settles at <b>0.700</b> \u2014 a permanent <b>0.300</b> offset. Adding the integral term settles at <b>1.000</b> (offset 0.000).",
+  "failure": "P-only leaves 0.300 of steady-state error forever \u2014 more gain reduces but never removes it."
+ },
+ {
+  "theme": "Locomotion",
+  "page": "locomotion-explained.html",
+  "subtheme": "ZMP & balance control",
+  "rule": "Keep the Zero-Moment Point inside the support polygon: x_zmp = x_com \u2212 (z/g)\u00b7\u1e8d must stay within the foot.",
+  "result": "With a 0.9 m CoM and a \u00b10.10 m foot, the largest CoM acceleration the robot can take before the ZMP reaches the foot edge is <b>1.09 m/s\u00b2</b>. A 6 m/s\u00b2 shove puts the ZMP at <b>-0.55 m</b> \u2014 OUTSIDE the foot.",
+  "failure": "At 6 m/s\u00b2 the ZMP lands at -0.55 m, past the -0.10 m rear edge \u2014 the robot rotates about the foot edge and topples."
+ }
+]

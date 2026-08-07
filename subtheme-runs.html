@@ -1,0 +1,88 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Widening the frontier — subtheme runs, one measured result at a time</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#0E7C86;--accent-deep:#0A5A62;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:inherit;text-decoration:none} .wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:40px 0 30px;border-bottom:1px solid #000;
+  background-image:linear-gradient(90deg,rgba(58,160,200,.20),rgba(122,108,208,.16),rgba(191,91,58,.16),rgba(46,125,107,.18))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#9FC0CE}
+ header h1{margin:10px 0 8px;font-family:var(--serif);font-size:34px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#B7C6C6;font-size:16px;margin:0 0 14px;max-width:80ch}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .stats{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 4px}
+ .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+ .stat b{font-family:var(--serif);font-size:22px;display:block;line-height:1.1}
+ .stat span{font-size:11.5px;color:var(--graphite);font-family:var(--mono);letter-spacing:.04em}
+ .lead{font-size:16px;color:#222;max-width:82ch;margin:20px 0 10px}
+ .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:14px;margin-top:8px}
+ .card{display:block;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gc);
+  border-radius:12px;padding:15px 17px;transition:transform .12s,box-shadow .12s}
+ .card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.07)}
+ .card .meta{display:flex;align-items:baseline;gap:9px;margin-bottom:8px;flex-wrap:wrap}
+ .card .thm{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gc);font-weight:700}
+ .card .sub{font-family:var(--serif);font-size:17px;color:#14201f}
+ .card .rl{font-size:14px;color:#2a3634;margin-bottom:10px}
+ .card .res,.card .fail{font-size:13px;line-height:1.5;margin-top:7px;padding:7px 10px;border-radius:8px}
+ .card .res{background:rgba(46,125,107,.08);color:#1c2b28} .card .fail{background:rgba(191,91,58,.08);color:#3a2018}
+ .pl,.fl{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-right:6px;padding:1px 6px;border-radius:20px;vertical-align:1px}
+ .pl{background:#1F6152;color:#fff} .fl{background:#9A4327;color:#fff}
+ .card b{font-variant-numeric:tabular-nums}
+ footer{border-top:1px solid var(--line);margin-top:44px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">widening the frontier &middot; subtheme runs</div>
+  <h1>Widening the frontier, one measured run at a time</h1>
+  <p>The 22 themes each fan out into a dozen-plus application families &mdash; roughly 330 subthemes in all. Each has a plain-language explanation and a worked example, but almost none had a <em>measured</em> run. This page is the frontier: subthemes where we actually <b>ran the micro-experiment</b> the worked example only described, and got a real number, a visible failure, and one reusable rule.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="the-machine.html">the one machine</a> &middot; <a href="perception-qa.html">perception-QA</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><b>6</b><span>subthemes with a new run</span></div>
+    <div class="stat"><b>4</b><span>themes touched</span></div>
+    <div class="stat"><b>~330</b><span>subthemes total &mdash; the frontier</span></div>
+    <div class="stat"><b>6/6</b><span>show a visible failure</span></div>
+  </div>
+  <p class="lead">Each card is one subtheme: the reusable rule, the number we measured on a real (small, CPU) experiment, and what breaks without the idea. Click through to the parent theme. This is a first batch &mdash; the frontier is wide and these are the beachhead.</p>
+  <div class="cards"><a class="card" href="navigation-explained.html" style="--gc:#BF5B3A">
+  <div class="meta"><span class="thm">Navigation</span><span class="sub">Trajectory optimization & MPC</span></div>
+  <div class="rl">Start from a bad straight-line guess and let the gradient of a smoothness+clearance cost bend the path around the obstacle.</div>
+  <div class="res"><span class="pl">we ran it</span> Collision cost falls <b>222 → 0.0</b> over 1,500 gradient steps; the path's closest approach to the obstacle centre rises from <b>0.09 m</b> to <b>0.90 m</b> — out to the 0.90 m keep-out radius.</div>
+  <div class="fail"><span class="fl">without it</span> The straight-line initialization skims 0.09 m from the obstacle centre, deep inside the 0.90 m keep-out — a collision. Optimization is what makes the path executable.</div>
+</a>
+<a class="card" href="navigation-explained.html" style="--gc:#BF5B3A">
+  <div class="meta"><span class="thm">Navigation</span><span class="sub">SLAM & pose-graph optimization</span></div>
+  <div class="rl">Add the loop-closure constraint and let least squares spread the accumulated error over the whole trajectory.</div>
+  <div class="res"><span class="pl">we ran it</span> Dead-reckoning drifts to <b>0.43 m</b> RMS off the true loop; adding one loop-closure edge and solving the pose graph cuts it to <b>0.06 m</b> — a <b>7×</b> reduction.</div>
+  <div class="fail"><span class="fl">without it</span> Open-loop odometry never returns to start — 0.43 m of unbounded drift. The constraint is what closes the map.</div>
+</a>
+<a class="card" href="manipulation-explained.html" style="--gc:#BF5B3A">
+  <div class="meta"><span class="thm">Manipulation</span><span class="sub">Grasp stability & force closure</span></div>
+  <div class="rl">Pick contacts whose friction cones both contain the line between them; then no external wrench can break the grip.</div>
+  <div class="res"><span class="pl">we ran it</span> With friction μ=0.5, only <b>29%</b> of random two-finger grasps achieve force closure, versus <b>100%</b> when the second contact is chosen antipodal to the first.</div>
+  <div class="fail"><span class="fl">without it</span> 71% of random grasps sit outside the friction cone — the object slips out the moment it's lifted.</div>
+</a>
+<a class="card" href="manipulation-explained.html" style="--gc:#BF5B3A">
+  <div class="meta"><span class="thm">Manipulation</span><span class="sub">Visual servoing (IBVS)</span></div>
+  <div class="rl">Map the desired pixel change back through the interaction matrix; don't move the camera directly in image space.</div>
+  <div class="res"><span class="pl">we ran it</span> Image error decays <b>0.578 → 0.0000</b> in 60 steps through the interaction matrix. The naive 'move toward the pixel error' baseline stalls at <b>0.212</b> — it never corrects the depth error.</div>
+  <div class="fail"><span class="fl">without it</span> Servoing in raw image space leaves 0.212 residual: it can't tell that half the error is the camera being too far, not too far left.</div>
+</a>
+<a class="card" href="ct-explained.html" style="--gc:#BF5B3A">
+  <div class="meta"><span class="thm">Control & MPC</span><span class="sub">PID control & the integral term</span></div>
+  <div class="rl">Proportional feedback alone leaves a steady-state offset against any constant load; the integral term is what drives it to zero.</div>
+  <div class="res"><span class="pl">we ran it</span> Tracking a reference of 1.0 against a constant load, a P-only controller settles at <b>0.700</b> — a permanent <b>0.300</b> offset. Adding the integral term settles at <b>1.000</b> (offset 0.000).</div>
+  <div class="fail"><span class="fl">without it</span> P-only leaves 0.300 of steady-state error forever — more gain reduces but never removes it.</div>
+</a>
+<a class="card" href="locomotion-explained.html" style="--gc:#BF5B3A">
+  <div class="meta"><span class="thm">Locomotion</span><span class="sub">ZMP & balance control</span></div>
+  <div class="rl">Keep the Zero-Moment Point inside the support polygon: x_zmp = x_com − (z/g)·ẍ must stay within the foot.</div>
+  <div class="res"><span class="pl">we ran it</span> With a 0.9 m CoM and a ±0.10 m foot, the largest CoM acceleration the robot can take before the ZMP reaches the foot edge is <b>1.09 m/s²</b>. A 6 m/s² shove puts the ZMP at <b>-0.55 m</b> — OUTSIDE the foot.</div>
+  <div class="fail"><span class="fl">without it</span> At 6 m/s² the ZMP lands at -0.55 m, past the -0.10 m rear edge — the robot rotates about the foot edge and topples.</div>
+</a></div>
+</div>
+<footer><div class="wrap">Widening the frontier &middot; subtheme micro-runs in the spirit of a coverage/quality audit &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
+</body></html>
