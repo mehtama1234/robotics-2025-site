@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>The representation zoo — one scene, four ways to store it</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#2E7DA6;--accent-deep:#1F5B7A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:42px 0 30px;background-image:linear-gradient(100deg,color-mix(in srgb,#2E7DA6 30%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#2E7DA6 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F4F8F8}
+ header p{color:#BEDCDC;font-size:16px;max-width:82ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 10px}
+ figure{margin:14px 0;text-align:center} figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
+ figcaption{font-size:12.5px;color:var(--graphite);margin-top:6px}
+ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+ th,td{border:1px solid var(--line);padding:8px 12px;text-align:left} th{background:var(--panel);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite)}
+ td.g{color:#1F6152;font-weight:600} td.b{color:#9A3327;font-weight:600} td.n{color:#889}
+ .fam{font-family:var(--mono);font-size:11px;color:var(--graphite)}
+ .ctrl{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px;margin:15px 0}
+ .ch{display:flex;align-items:baseline;gap:10px} .ch h3{font-family:var(--serif);font-size:21px;margin:0}
+ .what{margin:8px 0} .res{font-size:14.5px;background:color-mix(in srgb,#2E7DA6 8%,#fff);border-radius:8px;padding:8px 12px;margin:8px 0}
+ .fail{font-size:13.5px;color:#3a2018} .fl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#9A3327;font-weight:700;margin-right:7px}
+ .cite{margin-top:9px;font-size:13px} .cl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:7px} .cite a{text-decoration:underline;text-underline-offset:2px}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the representation zoo &middot; one problem, a family of methods</div>
+  <h1>Four ways to store a scene</h1>
+  <p>Before a robot can plan or perceive, it has to STORE the world somehow. The same 2D scene &mdash; two disks and one thin bar &mdash; is built four ways: a dense occupancy grid, a signed-distance field, a neural field (a NeRF-style MLP), and a Gaussian splat. Each is really constructed and measured against the identical ground truth, exposing the tradeoff none of them escapes: memory vs. query speed vs. fidelity vs. what you can even ask it.</p>
+  <nav><a href="index.html">home</a> &middot; zoos: <a href="controller-zoo.html">controller</a> &middot; <a href="estimator-zoo.html">estimator</a> &middot; <a href="planner-zoo.html">planner</a> &middot; <a href="optimizer-zoo.html">optimizer</a> &middot; <a href="grasp-zoo.html">grasp</a> &middot; <a href="slam-zoo.html">SLAM</a> &middot; <a href="rl-zoo.html">RL</a> &middot; <a href="representation-zoo.html">representation</a> &middot; <a href="the-lab.html">the build lab</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">The rule: <b>pick the representation for the question, not by reputation.</b> Store one scene four ways and you get four different answers to &lsquo;how much memory, how fast to query, how faithful, and what can you even ask it?&rsquo; &mdash; and the winner flips with resolution and dimension. A grid is a cheap, fast lookup that staircases; an SDF spends floats to buy the gradient planning needs; a neural field trades query speed for resolution-independence; splats trade sharp corners for compact appearance.</p>
+  <figure><img src="assets/zoo/representation_zoo.png" alt="the same scene rendered as an occupancy grid, a signed-distance field, a neural-field MLP, and a Gaussian splat, plus the SDF gradient field"><figcaption>Top: ground truth, the occupancy grid (staircased), and the signed-distance field (blue=outside, red=inside, black=surface). Bottom: the neural field (blurred), the 56-blob Gaussian splat (corners rounded), and the SDF's gradient in free space &mdash; arrows point away from obstacles, the signal planning needs.</figcaption></figure>
+  <table><tr><th>method</th><th>reconstruction (IoU)</th><th>memory &middot; what it can answer</th></tr><tr><td><b>Occupancy grid</b><br><span class="fam">dense array of 0/1 cells</span></td><td class="g">&#10003; IoU 0.91</td><td class="g">0.28 KB &middot; O(1) lookup, 0.23 ms</td></tr><tr><td><b>Signed-distance field</b><br><span class="fam">each cell = distance to surface</span></td><td class="g">&#10003; IoU 1.0</td><td class="g">9 KB &middot; +gradient (clearance &amp; push-dir)</td></tr><tr><td><b>Neural field (MLP)</b><br><span class="fam">a NeRF-style network (x,y)&rarr;occupancy</span></td><td class="g">&#10003; IoU 0.95</td><td class="b">&#10007; 23 KB, ~25&times; query cost</td></tr><tr><td><b>Gaussian splat</b><br><span class="fam">scene as a sum of blobs</span></td><td class="b">&#10007; IoU 0.82</td><td class="g">1.3 KB &middot; +appearance, explicit</td></tr></table>
+  <section class="ctrl"><div class="ch"><h3>Occupancy grid</h3><span class="fam">dense array of 0/1 cells</span></div>
+  <p class="what">The classic robotics map: chop space into a 48&times;48 array and mark each cell occupied or free. A query is a single array index; the whole thing bit-packs to almost nothing.</p>
+  <p class="res">Bit-packed to <b>0.28 KB</b> &mdash; the <b>smallest</b> of the four, not the largest &mdash; and the <b>fastest</b> to ask: 20,000 queries in <b>0.23 ms</b>, a pure O(1) lookup. IoU <b>0.91</b> against the 256&times;256 truth.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> It <b>staircases</b>: no sub-cell precision, so the disk edges and the thin bar come out jagged &mdash; that is the IoU ceiling here. And it gives you <b>no gradient</b>: a cell is just occupied or free, with no direction toward free space. Resolution is fixed at build time, and in 3D the cell count explodes as N&sup3;.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="3d-perception-explained.html">Uncertainty-Aware VI-SLAM with Volumetric Occupancy</a></div></section>
+<section class="ctrl"><div class="ch"><h3>Signed-distance field</h3><span class="fam">each cell = distance to surface</span></div>
+  <p class="what">Store, in each cell, the signed distance to the nearest surface &mdash; negative inside, zero on the boundary, positive outside. The surface is the exact zero-crossing, and the field's slope points straight away from obstacles.</p>
+  <p class="res">Same 48&times;48 cells, now floats: <b>9 KB</b>, about <b>32&times;</b> the bit-grid. In return the surface is exact (IoU <b>1.0</b>) and every cell carries a <b>gradient</b> &mdash; at a free point just below the lower disk it returns clearance <b>0.07</b> and a push-direction, with the eikonal property |&nabla;SDF|&asymp;1 holding across <b>99.6%</b> of free space. That gradient is exactly what a planner descends.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Costs roughly <b>32&times;</b> the memory of a bit-grid, still carries <b>no appearance</b> (geometry only), and must be <b>rebuilt</b> whenever the scene moves.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="gaussian-splatting-explained.html">GS-SDF</a></div></section>
+<section class="ctrl"><div class="ch"><h3>Neural field (MLP)</h3><span class="fam">a NeRF-style network (x,y)&rarr;occupancy</span></div>
+  <p class="what">Replace the array with a tiny network: a positional-encoded 2&rarr;64&rarr;64&rarr;1 MLP trained on 6000 sampled points. It is continuous and resolution-free &mdash; you can query it at any point, at any zoom.</p>
+  <p class="res">With 5953 parameters it reconstructs the fine detail <b>better than the grid's staircase</b> (IoU <b>0.95</b> vs 0.91), smoothly and at any resolution.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Here it is the <b>largest</b> in memory (<b>23 KB</b>) and the slowest to answer: a query is a full forward pass, about <b>25&times;</b> the grid's lookup, and it needs <b>training</b> first. Its famed compactness only pays off at high resolution or in 3D, where a dense grid would balloon; at this scale a bitmap beats it on both memory and speed. Notably the 2025 ICRA/IROS corpus has almost <b>no</b> NeRF/neural-field papers &mdash; the field has largely migrated to the Gaussian splats below.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>Gaussian splat</h3><span class="fam">scene as a sum of blobs</span></div>
+  <p class="what">Represent the occupied region as 56 2D Gaussian blobs (k-means centers, per-cluster covariance). Explicit and editable &mdash; you can move a single blob &mdash; and each blob can carry a color, so appearance comes for free.</p>
+  <p class="res">Just <b>1.3 KB</b> for 56 blobs: compact, explicit, and natively carrying <b>appearance</b>, which the grid and SDF cannot.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Lowest fidelity here (IoU <b>0.82</b>): round blobs <b>round off the sharp corners</b> and struggle with the thin bar unless you add many more. A query sums over all 56 blobs (O(K), not a lookup) &mdash; slow in this plain-NumPy build, but trivially GPU-parallel in real tile-based splatting, which is why 3DGS still renders in real time.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="open-vocab-explained.html">GraspSplats: Efficient Manipulation with 3D Feature Splatting</a></div></section>
+  <div class="note">Built on one 2D scene (two disks + a thin bar of width 0.03) so every representation is scored against the same 256&times;256 ground truth. Grid and SDF share a 48&times;48 lattice; the neural field is a positional-encoded 2&rarr;64&rarr;64&rarr;1 MLP trained on 6000 samples; the splat is 56 Gaussians fit by k-means. IoU and memory are exact; query times are min-of-7 on CPU (read them as orders of magnitude, not benchmarks). Pure NumPy + a tiny CPU PyTorch MLP &mdash; <code>scripts/representation_zoo_experiments.py</code>.</div>
+</div>
+<footer><div class="wrap">Four ways to store a scene &middot; a method zoo &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="gaussian-splatting-explained.html">3D Gaussian Splatting theme</a></div></footer>
+</body></html>
