@@ -171,6 +171,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
   <img src="assets/neuflow/neuflow_flow.gif" alt="NeuFlow optical flow field between two frames">
   <figcaption>And motion: <b>NeuFlow</b> computing dense optical flow between consecutive frames &mdash; every pixel colored by the direction and speed it moved. That flow field is Part&nbsp;I&rsquo;s &lsquo;where every pixel went&rsquo;. Also our own run.</figcaption></figure>
+  <figure class="ranfig" style="margin-top:16px"><div class="ranbadge">&#9679; we ran it &middot; we built it</div>
+  <img src="assets/pe/icp_align.png" alt="ICP snapping two offset lidar scans into alignment, with the error dropping each iteration" style="max-width:860px">
+  <img src="assets/pe/ransac_fit.png" alt="RANSAC fitting a line through heavy outliers where least-squares fails" style="max-width:600px;margin-top:12px">
+  <figcaption>Under the perception above sit two workhorses of geometry &mdash; we coded both from scratch and ran them. <b>ICP</b> (iterative closest point): two lidar scans of the same room are offset by an unknown rotation and shift; ICP guesses which points correspond (the nearest ones), solves the single best rigid transform for them (an SVD), applies it, and repeats &mdash; snapping the scans together. Top: an L-corner + a round obstacle, misaligned, then locked into place, with the alignment error falling to the noise floor in a few iterations. <b>RANSAC</b>: fit a model when <em>half</em> the points are junk. It samples a tiny subset, fits, counts how many agree, and keeps the best &mdash; so it ignores the outliers that drag ordinary least-squares badly off (bottom: least-squares slope 0.43, RANSAC 0.79 vs the true 0.80). These are the quiet backbone of SLAM, registration, and pose estimation. Our own run, pure NumPy.</figcaption></figure>
 </section>
 
 <div class="part">

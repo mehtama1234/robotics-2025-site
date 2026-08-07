@@ -168,6 +168,10 @@ footer{border-top:1px solid var(--line);margin-top:34px;padding:22px 0 60px;colo
   <figure class="ranfig"><div class="ranbadge">&#9679; we ran it</div>
   <img src="assets/sigma/sigma_mapf.gif" alt="SIGMA multi-agent path finding — many agents routing to goals without collision">
   <figcaption>Multi-agent path finding, for real: we ran <b>SIGMA</b> on a maze &mdash; every colored dot is a robot routing from its start to its own goal, and the plan is woven so no two ever share a cell at the same step. This is Part&nbsp;I&rsquo;s &lsquo;many paths, zero collisions&rsquo; made concrete, with the search space growing exponentially in the number of agents. Our own run.</figcaption></figure>
+  <figure class="ranfig" style="margin-top:16px"><div class="ranbadge">&#9679; we ran it &middot; we built it</div>
+  <img src="assets/mr/mapf_paths.png" alt="Six robots' collision-free paths on a grid with obstacles, plus time snapshots showing no two share a cell" style="max-width:820px">
+  <img src="assets/mr/mapf_scaling.png" alt="Number of conflicts the search resolves grows with team size" style="max-width:520px;margin-top:12px">
+  <figcaption>The SIGMA run above is a fast <em>learned</em> planner; here is the classical counterpart, coded from scratch and run &mdash; <b>conflict-based search</b>, which is <b>guaranteed collision-free</b>. Each robot first plans its own shortest path ignoring the others; then the algorithm finds the <b>first</b> place two paths collide (same cell, same instant), and <b>branches</b> &mdash; forbidding one of the two robots from that cell at that time and replanning &mdash; repeating until the whole team&rsquo;s plan has zero conflicts. Left: 6 robots reach their goals (star) from their starts (circle), threading around the walls; the snapshots confirm no two ever occupy the same cell at the same step. Right: the number of conflicts the search must resolve grows with team size &mdash; the price of a hard guarantee. Our own run, ~150 lines of NumPy.</figcaption></figure>
 </section>
 
 <div class="part">
