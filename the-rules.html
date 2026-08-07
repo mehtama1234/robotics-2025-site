@@ -1,0 +1,178 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The field in 22 rules — robotics, one idea at a time</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;
+  --accent:#0E7C86;--accent-deep:#0A5A62;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:inherit;text-decoration:none}
+ .wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:40px 0 30px;border-bottom:1px solid #000;
+  background-image:linear-gradient(90deg,rgba(58,160,200,.20),rgba(122,108,208,.16),rgba(191,91,58,.16),rgba(46,125,107,.18))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#9FC0CE}
+ header h1{margin:10px 0 8px;font-family:var(--serif);font-size:36px;letter-spacing:-.02em;color:#F4F8F8}
+ header p{color:#B7C6C6;font-size:16px;margin:0 0 14px;max-width:76ch}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .stats{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 4px}
+ .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+ .stat b{font-family:var(--serif);font-size:22px;display:block;line-height:1.1}
+ .stat span{font-size:11.5px;color:var(--graphite);font-family:var(--mono);letter-spacing:.04em}
+ .lead{font-size:16px;color:#222;max-width:80ch;margin:20px 0 6px}
+ .grp{margin:30px 0 10px}
+ .grp h2{font-family:var(--serif);font-size:21px;margin:0 0 12px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+ .gdot{width:12px;height:12px;border-radius:3px;background:var(--gc)}
+ .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+ .card{display:block;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gc);
+  border-radius:12px;padding:15px 16px;transition:transform .12s,box-shadow .12s}
+ .card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.07)}
+ .card .rl{font-family:var(--serif);font-size:17px;line-height:1.4;color:#14201f}
+ .card .meta{display:flex;align-items:center;gap:8px;margin:11px 0 6px}
+ .card .thm{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gc);font-weight:700}
+ .chip{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-left:auto}
+ .chip.ok{background:rgba(46,125,107,.14);color:#1F6152}
+ .chip.meh{background:rgba(89,101,106,.12);color:#59656A}
+ .chip.gap{background:rgba(191,91,58,.15);color:#9A4327}
+ .chip.sub{background:rgba(122,108,208,.14);color:#4A3F9A}
+ .card .proof{font-size:12.5px;color:var(--graphite)}
+ .card .pl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#8b969a;margin-right:5px}
+ footer{border-top:1px solid var(--line);margin-top:44px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the field in 22 rules &middot; one idea at a time</div>
+  <h1>The whole field, one rule at a time</h1>
+  <p>Every theme in this collection distilled to a single plain-English rule &mdash; the one move that makes it work &mdash; each paired with the real run on this site that <em>proves</em> it. Read it top to bottom and you have the spine of modern robotics in twenty-two sentences.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-machine.html">the one machine</a> &middot; <a href="the-math-why.html">the mathematics</a> &middot; <a href="math-playground.html">play with the math</a></nav>
+</div></header>
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><b>22</b><span>themes, one rule each</span></div>
+    <div class="stat"><b>37</b><span>real runs proving them</span></div>
+    <div class="stat"><b>20/22</b><span>themes with a run</span></div>
+    <div class="stat"><b>~330</b><span>subthemes &mdash; the next frontier</span></div>
+  </div>
+  <p class="lead">A rule is not a slogan: each says what must stay true and what breaks without it. The chip tells you how far we proved it &mdash; <span class="chip ok" style="margin:0">failure shown</span> (we showed what breaks without the idea), <span class="chip meh" style="margin:0">demo only</span> (we ran the real system but didn't stage the failure), <span class="chip gap" style="margin:0">no run yet</span> (the one open gap), <span class="chip sub" style="margin:0">substrate</span>.</p>
+  <section class="grp" style="--gc:#3AA0C8">
+  <h2><span class="gdot"></span>Sense — take in the world</h2>
+  <div class="cards"><a class="card" href="3d-perception-explained.html">
+  <div class="rl">Depth is the shift between two eyes; trust hidden geometry only when independent views agree.</div>
+  <div class="meta"><span class="thm">3D perception</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> LightStereo · NeuFlow · ICP/RANSAC</div>
+</a>
+<a class="card" href="gaussian-splatting-explained.html">
+  <div class="rl">Fit millions of little blobs to the photos by gradient descent — one equation both renders and reconstructs.</div>
+  <div class="meta"><span class="thm">Gaussian splatting</span><span class="chip meh">demo only</span></div>
+  <div class="proof"><span class="pl">proven by</span> Mip-360 garden real2sim</div>
+</a>
+<a class="card" href="vt-explained.html">
+  <div class="rl">A video is not a stack of images; carry identity and motion through time.</div>
+  <div class="meta"><span class="thm">Video & temporal</span><span class="chip meh">demo only</span></div>
+  <div class="proof"><span class="pl">proven by</span> MCTrack 3D tracking</div>
+</a>
+<a class="card" href="open-vocab-explained.html">
+  <div class="rl">Name anything by matching image and text in one shared space — no fixed label list.</div>
+  <div class="meta"><span class="thm">Open-vocabulary</span><span class="chip meh">demo only</span></div>
+  <div class="proof"><span class="pl">proven by</span> Qwen2-VL</div>
+</a>
+<a class="card" href="autonomous-driving-explained.html">
+  <div class="rl">Represent the scene sparsely and plan end-to-end — but keep an uncertainty check before you commit.</div>
+  <div class="meta"><span class="thm">Autonomous driving</span><span class="chip meh">demo only</span></div>
+  <div class="proof"><span class="pl">proven by</span> SparseDrive · LightStereo</div>
+</a></div>
+</section><section class="grp" style="--gc:#7A6CD0">
+  <h2><span class="gdot"></span>Decide — reason about what to do</h2>
+  <div class="cards"><a class="card" href="fm-explained.html">
+  <div class="rl">Translate a language goal into a checked, executable structure — never trust the raw text.</div>
+  <div class="meta"><span class="thm">Foundation models</span><span class="chip gap">no run yet</span></div>
+  <div class="proof"><span class="pl">proven by</span> — open gap —</div>
+</a>
+<a class="card" href="vla-explained.html">
+  <div class="rl">Map image + instruction straight to action with one shared policy across tasks and bodies.</div>
+  <div class="meta"><span class="thm">Vision-language-action</span><span class="chip meh">demo only</span></div>
+  <div class="proof"><span class="pl">proven by</span> Qwen2-VL backbone</div>
+</a>
+<a class="card" href="world-models-explained.html">
+  <div class="rl">Predict the next state, then rehearse a policy in imagination before touching the real robot.</div>
+  <div class="meta"><span class="thm">World models</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> RSSM · learning-in-imagination</div>
+</a>
+<a class="card" href="multi-robot-explained.html">
+  <div class="rl">Plan each robot alone, then branch on the first conflict until zero collisions remain.</div>
+  <div class="meta"><span class="thm">Multi-robot</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> SIGMA · conflict-based search</div>
+</a></div>
+</section><section class="grp" style="--gc:#BF5B3A">
+  <h2><span class="gdot"></span>Move — act on the world</h2>
+  <div class="cards"><a class="card" href="manipulation-explained.html">
+  <div class="rl">Bake in the symmetry so one demonstration teaches every rotation.</div>
+  <div class="meta"><span class="thm">Manipulation</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> KUKA pick · equivariance (60× fewer demos)</div>
+</a>
+<a class="card" href="locomotion-explained.html">
+  <div class="rl">A shove is recoverable only if you can step to the capture point ξ = x + ẋ/ω.</div>
+  <div class="meta"><span class="thm">Locomotion</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> hopper · SAC · capture-point</div>
+</a>
+<a class="card" href="ct-explained.html">
+  <div class="rl">Measure the error, push back in proportion, and re-plan over a short horizon before the mismatch grows.</div>
+  <div class="meta"><span class="thm">Control & MPC</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> cart-pole LQR · Kalman filter</div>
+</a>
+<a class="card" href="navigation-explained.html">
+  <div class="rl">Add the distance-still-to-go to the cost so the search leans toward the goal — optimal and cheap.</div>
+  <div class="meta"><span class="thm">Navigation</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> RRT · A* (33% shorter than greedy)</div>
+</a>
+<a class="card" href="tactile-explained.html">
+  <div class="rl">Read the shear in the gel to feel a slip coming before the object drops.</div>
+  <div class="meta"><span class="thm">Tactile</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> GelSight sim · learned slip detector</div>
+</a>
+<a class="card" href="diffusion-policies-explained.html">
+  <div class="rl">Sample one valid action from the whole distribution; never regress to the average of two.</div>
+  <div class="meta"><span class="thm">Diffusion policies</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> Octo · flow-vs-diffusion (12× fewer steps)</div>
+</a>
+<a class="card" href="gm-explained.html">
+  <div class="rl">Turn noise into data by following the learned score; sampling keeps every mode alive.</div>
+  <div class="meta"><span class="thm">Generative models</span><span class="chip meh">demo only</span></div>
+  <div class="proof"><span class="pl">proven by</span> DDPM two-moons · MNIST</div>
+</a></div>
+</section><section class="grp" style="--gc:#2E7D6B">
+  <h2><span class="gdot"></span>Across the loop — data, safety, learning, bodies</h2>
+  <div class="cards"><a class="card" href="sim-to-real-explained.html">
+  <div class="rl">If you can't match reality, randomize the sim so reality is just one more variant.</div>
+  <div class="meta"><span class="thm">Sim-to-real</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> garden real2sim · domain randomization (100%→0% on shift)</div>
+</a>
+<a class="card" href="sf-explained.html">
+  <div class="rl">Bend the command the least amount that keeps the barrier non-negative; certify, don't hope.</div>
+  <div class="meta"><span class="thm">Safety & guarantees</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> CBF filter · conformal prediction</div>
+</a>
+<a class="card" href="rl-explained.html">
+  <div class="rl">Credit an action by the future return it leads to, not the first reward it happens to get.</div>
+  <div class="meta"><span class="thm">RL & imitation</span><span class="chip meh">demo only</span></div>
+  <div class="proof"><span class="pl">proven by</span> tabular Q-learning</div>
+</a>
+<a class="card" href="medical-explained.html">
+  <div class="rl">Reconstruct the deforming surface from monocular views before you act inside the body.</div>
+  <div class="meta"><span class="thm">Medical</span><span class="chip meh">demo only</span></div>
+  <div class="proof"><span class="pl">proven by</span> Endo-2DTAM colon SLAM</div>
+</a>
+<a class="card" href="hardware-explained.html">
+  <div class="rl">Put compliance between motor and load so impact force is filtered, not transmitted.</div>
+  <div class="meta"><span class="thm">Hardware</span><span class="chip ok">failure shown</span></div>
+  <div class="proof"><span class="pl">proven by</span> series-elastic impact (3502N→297N)</div>
+</a>
+<a class="card" href="math-explained.html">
+  <div class="rl">The 15 shared primitives every theme above is built from — the substrate, not a single rule.</div>
+  <div class="meta"><span class="thm">Mathematics</span><span class="chip sub">substrate</span></div>
+  <div class="proof"><span class="pl">proven by</span> the-math-why · math-explained</div>
+</a></div>
+</section>
+</div>
+<footer><div class="wrap">The field in 22 rules &middot; decision rule + the run that proves it, in the spirit of a coverage/quality audit &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-machine.html">the one machine</a></div></footer>
+</body></html>
