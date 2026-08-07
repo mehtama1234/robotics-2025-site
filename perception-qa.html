@@ -1,0 +1,67 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A perception stack you can trust — the perception-QA cluster</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#3AA0C8;--accent-deep:#256F8C;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+ header{background:#07141A;color:#E8F3F8;padding:40px 0 30px;background-image:linear-gradient(90deg,rgba(58,160,200,.24),rgba(46,125,107,.14),rgba(122,108,208,.12))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#8FCAE0}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F0F8FB}
+ header p{color:#BCD6E2;font-size:16px;max-width:80ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#84B4C8} header nav a{color:#ABD4E4}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 8px}
+ .flow{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--graphite);margin:6px 0 18px}
+ .flow b{color:var(--accent-deep)}
+ .stage{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:16px 18px;margin:16px 0}
+ .sh{display:flex;align-items:center;gap:10px} .no{font-family:var(--mono);background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+ .stage h2{font-family:var(--serif);font-size:21px;margin:0} .cp{color:#333;margin:8px 0}
+ .rule{font-family:var(--serif);font-size:18px;border-left:3px solid var(--accent);padding:7px 13px;background:rgba(58,160,200,.07);border-radius:0 8px 8px 0;margin:8px 0}
+ .mx{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0} .m{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;display:flex;gap:8px;align-items:baseline}
+ .m b{font-family:var(--serif);font-size:16px} .pv{font-size:13.5px;color:var(--graphite)}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">perception-qa &middot; a stack you can trust</div>
+  <h1>A perception stack you can trust</h1>
+  <p>A recogniser with high test accuracy is not yet trustworthy: it fuses faulty sensors, answers unfamiliar inputs with false confidence, over-reports certainty, and goes silently blind when the world drifts. Four checks close those gaps &mdash; each a plain rule, <b>run and measured</b> on real perception experiments. Built in the demo-package style of the CV project: a tested, reusable core behind every stage.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="data-lifecycle.html">the data-lifecycle</a> &middot; <a href="safe-deploy.html">the safe-deploy lifecycle</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">This is the sensing side of a trilogy: <a href="data-lifecycle.html">what to learn</a> &rarr; <b>whether to trust what you sense</b> &rarr; <a href="safe-deploy.html">how to act on it safely</a>. Accuracy is table stakes; these checks are what let a planner rely on the number a perception hands it.</p>
+  <div class="flow"><b>1 fuse</b> &rarr; <b>2 novelty</b> &rarr; <b>3 calibrate</b> &rarr; <b>4 drift</b> &nbsp;&middot;&nbsp; weight and cross-check sensors, flag the unfamiliar, make confidence honest, and watch the inputs for silent shift.</div>
+  <section class="stage">
+  <div class="sh"><span class="no">1</span><h2>Sensor Fusion & Agreement</h2></div>
+  <p class="cp">A robot reads the same quantity from two noisy sensors and has to commit to one number. Average them and a single faulty sensor drags the estimate off; trust the 'better' one and you throw away information the other one had.</p>
+  <div class="rule">Trust a perception only where independent sources agree; weight them by their noise.</div>
+  <div class="mx"><div class="m"><span>RMSE — sensor A / sensor B</span><b>0.399 / 0.248</b></div><div class="m"><span>RMSE — noise-weighted fusion</span><b>0.211</b></div><div class="m"><span>fault caught (recall) / false alarm</span><b>90% / 0.1%</b></div><div class="m"><span>RMSE under fault — naive vs gated</span><b>0.793 vs 0.309</b></div></div>
+  <p class="pv">Sensor A alone has RMSE <b>0.399</b>, the better sensor B <b>0.248</b>; noise-weighted fusion beats both at <b>0.211</b>. When B faults on 20% of readings, disagreement flags <b>90%</b> of the faults at a <b>0.1%</b> false-alarm rate — so agreement-gated fusion holds RMSE at <b>0.309</b> where fusing the fault in blows it up to <b>0.793</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">2</span><h2>Out-of-Distribution Novelty Check</h2></div>
+  <p class="cp">A perception model learned to recognise a fixed world. In deployment it will meet inputs from outside that world — a new object, a new lighting, a sensor it never saw — and answer them with the same confidence it uses on familiar ones.</p>
+  <div class="rule">A perception model is valid only on inputs like its training set; flag the rest.</div>
+  <div class="mx"><div class="m"><span>novel inputs caught (recall)</span><b>100%</b></div><div class="m"><span>false alarms on familiar inputs</span><b>5%</b></div><div class="m"><span>separation (AUROC)</span><b>0.999</b></div></div>
+  <p class="pv">On a stream of in-distribution and novel inputs, the distance check flags <b>100%</b> of the novel ones while false-alarming on only <b>5%</b> of familiar inputs — an AUROC of <b>0.999</b> separating the two.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">3</span><h2>Confidence Calibration</h2></div>
+  <p class="cp">A downstream planner treats the perception's confidence as a probability — it slows down when the detector is unsure. But a modern network trained hard is overconfident: it reports 99% on calls it gets wrong a quarter of the time, so the planner trusts it exactly when it shouldn't.</p>
+  <div class="rule">A confidence is only useful if it matches reality; measure the gap and rescale it.</div>
+  <div class="mx"><div class="m"><span>accuracy (unchanged)</span><b>75%</b></div><div class="m"><span>calibration error — before</span><b>0.192</b></div><div class="m"><span>calibration error — after</span><b>0.068</b></div><div class="m"><span>fitted temperature</span><b>9.43</b></div></div>
+  <p class="pv">The overfit classifier is 75% accurate but badly miscalibrated: expected calibration error <b>0.192</b>. A single temperature (T=<b>9.43</b>, i.e. its logits were ~9× too sharp) cuts calibration error to <b>0.068</b> — <b>2.8× more honest</b> — without touching accuracy.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">4</span><h2>Covariate-Drift Monitor</h2></div>
+  <p class="cp">In production there are no labels, so accuracy is invisible. The camera slowly fogs, the season changes, the floor gets glossier — the input distribution drifts, accuracy quietly falls, and nothing in the pipeline says a word until something downstream breaks.</p>
+  <div class="rule">Watch the input distribution; a silent covariate shift is a failure before the metrics move.</div>
+  <div class="mx"><div class="m"><span>accuracy — before / after drift</span><b>85% / 59%</b></div><div class="m"><span>flagged fraction — before / after</span><b>6% / 42%</b></div><div class="m"><span>labels needed by the monitor</span><b>none</b></div></div>
+  <p class="pv">Under a covariate shift the classifier's accuracy silently falls from <b>85%</b> to <b>59%</b> — a 26-point drop no one could see without labels. The label-free monitor catches it: the flagged fraction jumps from <b>6%</b> to <b>42%</b> — a 7× rise you can alarm on immediately.</p>
+</section>
+  <div class="note"><b>How this was built.</b> Real experiments (<code>scripts/perception_qa_experiments.py</code>, NumPy + a tiny CPU torch classifier) produce the numbers above. Each stage is also a small <b>tested demo package</b> under <code>source-code/learning/perception-qa/&lt;stage&gt;/</code> &mdash; a reusable <code>core.js</code> carrying the rule, with <code>node</code> assert-tests &mdash; so the insight is a primitive you can drop onto your own perception logs. The third of three matched clusters: <a href="data-lifecycle.html">data-lifecycle</a> (what to learn), perception-QA (what to trust), <a href="safe-deploy.html">safe-deploy</a> (how to act).</div>
+</div>
+<footer><div class="wrap">The perception-QA cluster &middot; four trust checks, real experiments, tested reusable cores &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
+</body></html>
