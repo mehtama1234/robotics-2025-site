@@ -1,0 +1,67 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How a policy improves from experience — the learning-loop cluster</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#B0791F;--accent-deep:#8A5E14;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+ header{background:#14100A;color:#F4EEE2;padding:40px 0 30px;background-image:linear-gradient(90deg,rgba(176,121,31,.26),rgba(191,91,58,.14),rgba(46,125,107,.12))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#D9B676}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#FBF6EC}
+ header p{color:#DBCBAE;font-size:16px;max-width:80ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#C0A26A} header nav a{color:#DCC088}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 8px}
+ .flow{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--graphite);margin:6px 0 18px}
+ .flow b{color:var(--accent-deep)}
+ .stage{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:16px 18px;margin:16px 0}
+ .sh{display:flex;align-items:center;gap:10px} .no{font-family:var(--mono);background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+ .stage h2{font-family:var(--serif);font-size:21px;margin:0} .cp{color:#333;margin:8px 0}
+ .rule{font-family:var(--serif);font-size:18px;border-left:3px solid var(--accent);padding:7px 13px;background:rgba(176,121,31,.07);border-radius:0 8px 8px 0;margin:8px 0}
+ .mx{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0} .m{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;display:flex;gap:8px;align-items:baseline}
+ .m b{font-family:var(--serif);font-size:16px} .pv{font-size:13.5px;color:var(--graphite)}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">learning-loop &middot; improving from experience</div>
+  <h1>How a policy improves from experience</h1>
+  <p>A robot that learns by trial and error stands or falls on four decisions: what to reward, when to explore, how to assign credit for a delayed reward, and how to know a new policy is actually better. Get any wrong and the agent games its reward, converges on a mediocre habit, learns nothing, or ships the worse policy. Each is a plain rule, <b>run and measured</b> on a small tabular-RL problem. Built in the demo-package style of the CV project: a tested, reusable core behind every stage.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="rl-explained.html">RL &amp; imitation</a> &middot; <a href="data-lifecycle.html">data-lifecycle</a> &middot; <a href="perception-qa.html">perception-QA</a> &middot; <a href="safe-deploy.html">safe-deploy</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">This is the fourth cluster and it closes the machine: <a href="data-lifecycle.html">what to learn from</a> &rarr; <a href="perception-qa.html">what to trust</a> &rarr; <a href="safe-deploy.html">how to act safely</a> &rarr; <b>how to keep improving</b>. Every stage is one pillar of the reinforcement-learning loop, shown with the failure it prevents.</p>
+  <div class="flow"><b>1 reward</b> &rarr; <b>2 explore</b> &rarr; <b>3 credit</b> &rarr; <b>4 evaluate</b> &nbsp;&middot;&nbsp; write a reward that can't be gamed, explore before you commit, discount the future into every action, and beat the noise before you trust a win.</div>
+  <section class="stage">
+  <div class="sh"><span class="no">1</span><h2>Reward Design & Hacking</h2></div>
+  <p class="cp">An RL agent optimises the reward you write, not the behaviour you meant. Add an intuitive bonus to speed it up — 'reward getting near the workbench' — and the agent finds the loophole: it farms the bonus forever and never does the task.</p>
+  <div class="rule">Shape a reward as a potential difference so you speed learning without changing what's optimal; any other bonus can be gamed.</div>
+  <div class="mx"><div class="m"><span>beacon-bonus agent reaches goal</span><b>no — it farms the bonus</b></div><div class="m"><span>potential-shaped agent reaches goal</span><b>yes, in 12 steps (optimal)</b></div><div class="m"><span>goal reward vs farmable bonus/step</span><b>1.0 vs 0.3</b></div></div>
+  <p class="pv">In a 7×7 reach-the-goal grid, an agent trained with a farmable beacon-proximity bonus (+0.3/step) <b>never reaches the goal</b> — it loops by the beacon collecting bonus. The same agent with a potential-based bonus reaches the goal by the optimal <b>12-step</b> path.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">2</span><h2>Exploration vs Exploitation</h2></div>
+  <p class="cp">An agent that always takes its current best action locks onto the first option that happened to look good and never discovers the better one sitting one try away. It converges — confidently — to a mediocre policy.</p>
+  <div class="rule">Explore, or you converge on the first option that looked good rather than the best one.</div>
+  <div class="mx"><div class="m"><span>best-arm rate (final) — greedy</span><b>36%</b></div><div class="m"><span>best-arm rate (final) — ε-greedy</span><b>62%</b></div><div class="m"><span>total regret — greedy vs ε-greedy</span><b>235 vs 166</b></div></div>
+  <p class="pv">On a 10-armed bandit over 2000 pulls, a purely greedy agent ends up pulling the best arm only <b>36%</b> of the time; an ε-greedy agent (10% exploration) reaches <b>62%</b> — and cuts total regret from <b>235</b> to <b>166</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">3</span><h2>Credit Assignment & Discounting</h2></div>
+  <p class="cp">The reward for a robot task arrives at the very end — the object is placed, the room is reached. Which of the hundred earlier actions deserves the credit? An agent that only values the immediate reward sees zero everywhere and learns nothing.</p>
+  <div class="rule">Credit an action by its discounted future return; a myopic agent cannot learn a delayed reward.</div>
+  <div class="mx"><div class="m"><span>discounted agent (γ=0.9) reaches goal</span><b>yes, in 7 steps</b></div><div class="m"><span>myopic agent (γ=0) reaches goal</span><b>no — stuck at the start</b></div><div class="m"><span>chain length (reward at the end)</span><b>8 states</b></div></div>
+  <p class="pv">On an 8-state chain with reward only at the far end, a discounted agent (γ=0.9) propagates the value back and reaches the goal by the optimal <b>7-step</b> path. A myopic agent (γ=0) sees zero reward everywhere but the last step and <b>never leaves the start</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">4</span><h2>Policy Evaluation Under Noise</h2></div>
+  <p class="cp">You have a new policy that beat the old one in a quick test, so you ship it. But robot episodes are noisy, and the quick test was a handful of runs — the 'win' may be pure luck, and you have just deployed the worse policy.</p>
+  <div class="rule">Evaluate across enough episodes to beat the noise; a single small-sample win is often luck.</div>
+  <div class="mx"><div class="m"><span>picks the better policy — 3 episodes</span><b>60%</b></div><div class="m"><span>picks the better policy — 200 episodes</span><b>98%</b></div><div class="m"><span>true return gap (B over A)</span><b>0.2</b></div></div>
+  <p class="pv">When policy B is truly better than A by just 0.2 in mean return (with unit-variance noise), a <b>3-episode</b> eval crowns the better policy only <b>60%</b> of the time — barely better than a coin flip. A <b>200-episode</b> eval gets it right <b>98%</b> of the time.</p>
+</section>
+  <div class="note"><b>How this was built.</b> Real tabular-RL experiments (<code>scripts/learning_loop_experiments.py</code>, pure NumPy) produce the numbers above. Each stage is also a small <b>tested demo package</b> under <code>source-code/learning/learning-loop/&lt;stage&gt;/</code> &mdash; a reusable <code>core.js</code> carrying the rule, with <code>node</code> assert-tests &mdash; so the insight is a primitive you can drop onto your own RL logs. The fourth of four matched clusters: <a href="data-lifecycle.html">data-lifecycle</a>, <a href="perception-qa.html">perception-QA</a>, <a href="safe-deploy.html">safe-deploy</a>, learning-loop.</div>
+</div>
+<footer><div class="wrap">The learning-loop cluster &middot; four RL pillars, real experiments, tested reusable cores &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="the-rules.html">the field in 22 rules</a></div></footer>
+</body></html>
