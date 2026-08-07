@@ -5,11 +5,11 @@
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
  *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
  a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
- header{background:#07141A;color:#E7F3F3;padding:42px 0 30px;background-image:linear-gradient(100deg,rgba(30,140,140,.30),transparent)}
- header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#88CCCC}
- header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#EFF9F9}
+ header{background:#0A0F14;color:#EAF0F0;padding:42px 0 30px;background-image:linear-gradient(100deg,color-mix(in srgb,#1E8C8C 30%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#1E8C8C 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F4F8F8}
  header p{color:#BEDCDC;font-size:16px;max-width:82ch;margin:0 0 14px}
- header nav{font-family:var(--mono);font-size:12px;color:#7FB4B4} header nav a{color:#A6D6D6}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
  .lead{font-size:16px;max-width:82ch;margin:22px 0 10px}
  figure{margin:14px 0;text-align:center} figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
  figcaption{font-size:12.5px;color:var(--graphite);margin-top:6px}
@@ -28,50 +28,39 @@
 <header><div class="wrap">
   <div class="bug">the controller zoo &middot; one problem, a family of methods</div>
   <h1>Five ways to control a cart-pole</h1>
-  <p>The same nonlinear plant &mdash; a pole on a cart &mdash; run under five controllers, from a hand-tuned PID up to sampling MPC. Two tasks: <b>stabilize</b> the pole upright, and the hard one, <b>swing up</b> from hanging. Each controller is really run; each shows its own failure or tradeoff; each links to the 2025 paper that uses it.</p>
-  <nav><a href="index.html">home</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="ct-explained.html">control &amp; MPC theme</a> &middot; <a href="the-rules.html">the field in 22 rules</a></nav>
+  <p>The same nonlinear plant &mdash; a pole on a cart &mdash; run under five controllers, from a hand-tuned PID up to sampling MPC. Two tasks: <b>stabilize</b> the pole upright, and the hard one, <b>swing up</b> from hanging. Each is really run; each shows its own failure or tradeoff; each links to the 2025 paper that uses it.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="controller-zoo.html">controller zoo</a> &middot; <a href="estimator-zoo.html">estimator zoo</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="ct-explained.html">control &amp; MPC theme</a></nav>
 </div></header>
 <div class="wrap">
-  <p class="lead">One rule runs through the whole family: <b>match the controller to the problem's nonlinearity.</b> Linear feedback (PID, LQR, linear-MPC) stabilizes beautifully near a setpoint but cannot execute a large motion; the swing-up needs the real nonlinear model &mdash; solved either by trajectory optimization (iLQR/DDP) or by sampling (MPPI).</p>
-  <figure><img src="assets/zoo/controller_zoo.png" alt="pole angle vs time under each controller on the swing-up task">
-  <figcaption>Swing-up from hanging (180&deg;): only iLQR and MPPI drive the pole angle to 0&deg; (upright) and hold it. The linear controllers never get there.</figcaption></figure>
-  <table><tr><th>controller</th><th>stabilize upright</th><th>swing up from hanging</th></tr><tr><td><b>PID</b><br><span class="fam">classical feedback</span></td><td class="b">&#10007;</td><td class="b">&#10007; fails</td></tr><tr><td><b>LQR</b><br><span class="fam">linear-optimal</span></td><td class="g">&#10003; holds</td><td class="b">&#10007; fails</td></tr><tr><td><b>MPC</b><br><span class="fam">receding-horizon</span></td><td class="g">&#10003; holds</td><td class="b">&#10007; fails</td></tr><tr><td><b>iLQR / DDP</b><br><span class="fam">nonlinear trajectory optimization</span></td><td class="n">&mdash;</td><td class="g">&#10003; swings up</td></tr><tr><td><b>MPPI</b><br><span class="fam">sampling MPC</span></td><td class="n">&mdash;</td><td class="g">&#10003; swings up</td></tr></table>
-  <section class="ctrl">
-  <div class="ch"><h3>PID</h3><span class="fam">classical feedback</span></div>
-  <p class="what">A single feedback loop on one signal: push in proportion to the pole's tilt (and its rate). No model, no notion of the cart — just two gains tuned by hand.</p>
-  <p class="res">It balances the pole for a few seconds, but with no cart feedback the cart accelerates <b>172 m</b> away and the pole eventually topples (final angle <b>1.423 rad</b>). And it never swings up.</p>
-  <div class="fail"><span class="fl">the tradeoff</span> Single-loop angle feedback can't stabilize an underactuated cart-pole — it doesn't even know the cart exists. This is exactly what full-state feedback (LQR) fixes.</div>
-  
-</section>
-<section class="ctrl">
-  <div class="ch"><h3>LQR</h3><span class="fam">linear-optimal</span></div>
-  <p class="what">Linearize the plant about upright and solve for the optimal linear feedback (the Riccati equation). One matrix gain over the full state — cart and pole together.</p>
-  <p class="res">Stabilizes upright cleanly (final angle <b>0.004 rad</b>, cart drift <b>0.02 m</b>). But the linear model is only valid near upright, so swing-up fails (<b>0.975 rad</b>).</p>
-  <div class="fail"><span class="fl">the tradeoff</span> Optimal — but only for the linearization. Far from the setpoint the model is wrong, so it can't handle a large motion like swing-up.</div>
-  
-</section>
-<section class="ctrl">
-  <div class="ch"><h3>MPC</h3><span class="fam">receding-horizon</span></div>
-  <p class="what">Re-solve a short-horizon optimal-control problem every step, so it can respect hard limits (here, a bounded actuator force) that LQR would ignore.</p>
-  <p class="res">Stabilizes upright within the force limit (final angle <b>0.005 rad</b>). With a linear model it still can't swing up (<b>2.713 rad</b>).</p>
-  <div class="fail"><span class="fl">the tradeoff</span> Adds constraints and re-planning, but a linear-model MPC is still local — the nonlinear swing-up is out of reach.</div>
-  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Koopman Operator Based Linear Model Predictive Control for Quadruped Trotting</a></div>
-</section>
-<section class="ctrl">
-  <div class="ch"><h3>iLQR / DDP</h3><span class="fam">nonlinear trajectory optimization</span></div>
-  <p class="what">Iterative LQR: repeatedly linearize the nonlinear dynamics along the current trajectory and improve it with a backward Riccati pass and a forward line search — differential dynamic programming.</p>
-  <p class="res">Solves the full nonlinear problem: it pumps energy and drives the pole all the way to upright — swing-up succeeds, final angle <b>0.007 rad</b> (&asymp;0&deg;).</p>
-  <div class="fail"><span class="fl">the tradeoff</span> The payoff of using the real nonlinear model. Cost: it needs gradients of the dynamics and a good initialization, and it optimizes one trajectory offline.</div>
-  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Endpoint-Explicit Differential Dynamic Programming via Exact Resolution</a></div>
-</section>
-<section class="ctrl">
-  <div class="ch"><h3>MPPI</h3><span class="fam">sampling MPC</span></div>
-  <p class="what">Model-predictive path integral control: each step, sample hundreds of random control sequences, roll them out through the nonlinear model, and take a cost-weighted average — no gradients at all.</p>
-  <p class="res">Swings up and balances by sampling, closed-loop, with no derivatives — final angle <b>0.007 rad</b> (&asymp;0&deg;).</p>
-  <div class="fail"><span class="fl">the tradeoff</span> Handles any nonlinearity or non-smooth cost, but leans on lots of parallel rollouts and a noise/temperature it is sensitive to.</div>
-  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Real-Time Whole-Body Control of Legged Robots with Model-Predictive Path Integral Control</a></div>
-</section>
-  <div class="note"><b>How this was built.</b> One cart-pole model (<code>scripts/controller_zoo_experiments.py</code>, pure NumPy RK4), five controllers each run on both tasks; the figure and every number above come straight from that run. This is the first of the "method zoo" pages &mdash; one problem, a whole family of methods, each with the failure it fixes and the real 2025 paper that uses it.</div>
+  <p class="lead">One rule runs through the family: <b>match the controller to the problem's nonlinearity.</b> Linear feedback (PID, LQR, linear-MPC) stabilizes near a setpoint but cannot execute a large motion; the swing-up needs the real nonlinear model &mdash; solved by trajectory optimization (iLQR/DDP) or by sampling (MPPI).</p>
+  <figure><img src="assets/zoo/controller_zoo.png" alt="pole angle vs time under each controller on swing-up"><figcaption>Swing-up from hanging (180&deg;): only iLQR and MPPI drive the pole angle to 0&deg; (upright) and hold it; the linear controllers oscillate forever.</figcaption></figure>
+  <table><tr><th>method</th><th>stabilize upright</th><th>swing up from hanging</th></tr><tr><td><b>PID</b><br><span class="fam">classical feedback</span></td><td class="b">&#10007; topples</td><td class="b">&#10007;</td></tr><tr><td><b>LQR</b><br><span class="fam">linear-optimal</span></td><td class="g">&#10003; holds</td><td class="b">&#10007;</td></tr><tr><td><b>MPC</b><br><span class="fam">receding-horizon</span></td><td class="g">&#10003; holds</td><td class="b">&#10007;</td></tr><tr><td><b>iLQR / DDP</b><br><span class="fam">nonlinear trajectory optimization</span></td><td class="n">&mdash;</td><td class="g">&#10003; swings up</td></tr><tr><td><b>MPPI</b><br><span class="fam">sampling MPC</span></td><td class="n">&mdash;</td><td class="g">&#10003; swings up</td></tr></table>
+  <section class="ctrl"><div class="ch"><h3>PID</h3><span class="fam">classical feedback</span></div>
+  <p class="what">A single feedback loop on one signal: push in proportion to the pole's tilt (and its rate). No model, no notion of the cart.</p>
+  <p class="res">It balances the pole briefly, but with no cart feedback the cart accelerates <b>172 m</b> away and the pole topples (<b>1.423 rad</b>). And it never swings up.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Single-loop angle feedback can't stabilize an underactuated cart-pole &mdash; it doesn't even know the cart exists. This is what full-state feedback (LQR) fixes.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>LQR</h3><span class="fam">linear-optimal</span></div>
+  <p class="what">Linearize about upright and solve for the optimal linear feedback (the Riccati equation) &mdash; one gain over the full state, cart and pole together.</p>
+  <p class="res">Stabilizes upright cleanly (<b>0.004 rad</b>, cart drift <b>0.02 m</b>). But the linear model is only valid near upright, so swing-up fails (<b>0.975 rad</b>).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Optimal &mdash; but only for the linearization. Far from the setpoint the model is wrong, so a large motion like swing-up is out of reach.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>MPC</h3><span class="fam">receding-horizon</span></div>
+  <p class="what">Re-solve a short-horizon optimal-control problem every step, so it can respect hard limits (here, a bounded actuator force) that LQR ignores.</p>
+  <p class="res">Stabilizes upright within the force limit (<b>0.005 rad</b>). With a linear model it still can't swing up (<b>2.713 rad</b>).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Adds constraints and re-planning, but a linear-model MPC is still local.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Koopman Operator Based Linear Model Predictive Control for Quadruped Trotting</a></div></section>
+<section class="ctrl"><div class="ch"><h3>iLQR / DDP</h3><span class="fam">nonlinear trajectory optimization</span></div>
+  <p class="what">Iterative LQR: repeatedly linearize the nonlinear dynamics along the trajectory and improve it with a backward Riccati pass and a forward line search &mdash; differential dynamic programming.</p>
+  <p class="res">Solves the full nonlinear problem: it pumps energy and drives the pole all the way to upright &mdash; swing-up succeeds, final angle <b>0.007 rad</b> (&asymp;0&deg;).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> The payoff of using the real nonlinear model. Cost: it needs gradients and a good initialization, and optimizes one trajectory offline.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Endpoint-Explicit Differential Dynamic Programming via Exact Resolution</a></div></section>
+<section class="ctrl"><div class="ch"><h3>MPPI</h3><span class="fam">sampling MPC</span></div>
+  <p class="what">Model-predictive path integral: each step sample hundreds of random control sequences, roll them out through the nonlinear model, and take a cost-weighted average &mdash; no gradients at all.</p>
+  <p class="res">Swings up and balances by sampling, closed-loop, with no derivatives &mdash; final angle <b>0.007 rad</b> (&asymp;0&deg;).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Handles any nonlinearity or non-smooth cost, but leans on many parallel rollouts and a noise/temperature it is sensitive to.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Real-Time Whole-Body Control of Legged Robots with Model-Predictive Path Integral Control</a></div></section>
+  <div class="note"><b>How this was built.</b> One cart-pole model (<code>scripts/controller_zoo_experiments.py</code>, pure-NumPy RK4), five controllers each run on both tasks; the figure and every number come straight from that run.</div>
 </div>
-<footer><div class="wrap">The controller zoo &middot; PID &middot; LQR &middot; MPC &middot; iLQR/DDP &middot; MPPI on one cart-pole &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="ct-explained.html">control theme</a></div></footer>
+<footer><div class="wrap">Five ways to control a cart-pole &middot; a method zoo &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="ct-explained.html">control &amp; MPC theme</a></div></footer>
 </body></html>
