@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crossing a building — the navigation stack, stage by stage</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#3E6E9E;--accent-deep:#2A4E73;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+ header{background:#0A1018;color:#E9EFF6;padding:40px 0 30px;background-image:linear-gradient(90deg,rgba(62,110,158,.26),rgba(58,160,200,.14),rgba(46,125,107,.12))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#93B4D6}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F0F5FB}
+ header p{color:#C2D0E0;font-size:16px;max-width:80ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#8AA6C4} header nav a{color:#AEC6E0}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 8px}
+ .flow{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--graphite);margin:6px 0 18px}
+ .flow b{color:var(--accent-deep)}
+ .stage{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:16px 18px;margin:16px 0}
+ .sh{display:flex;align-items:center;gap:10px} .no{font-family:var(--mono);background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+ .stage h2{font-family:var(--serif);font-size:21px;margin:0} .sh .thm{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-deep);background:rgba(62,110,158,.10);padding:3px 8px;border-radius:20px}
+ .cp{color:#333;margin:8px 0}
+ .rule{font-family:var(--serif);font-size:18px;border-left:3px solid var(--accent);padding:7px 13px;background:rgba(62,110,158,.06);border-radius:0 8px 8px 0;margin:8px 0}
+ .mx{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0} .m{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;display:flex;gap:8px;align-items:baseline}
+ .m b{font-family:var(--serif);font-size:16px} .pv{font-size:13.5px;color:var(--graphite)}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">navigation stack &middot; the pipeline, stage by stage</div>
+  <h1>Crossing a building</h1>
+  <p>A mobile robot has to know where it is, plan a route, keep its body off the walls, dodge the people who wander across it, and actually drive the line smoothly. Five stages, five distinct sub-fields &mdash; each a plain rule, <b>run and measured</b>, with the failure it prevents. A production narrative, not a grab-bag: each stage feeds the next.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="pick-place.html">pick-and-place pipeline</a> &middot; <a href="subtheme-runs.html">widening the frontier</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">Each stage is one link: the pose feeds the planner, the plan is made safe by the costmap, the safe plan is defended against moving obstacles, and the final line is driven by the tracker. A weak link anywhere and the robot is lost, stuck, or in the wall.</p>
+  <div class="flow"><b>1 localize</b> &rarr; <b>2 plan</b> &rarr; <b>3 costmap</b> &rarr; <b>4 dodge</b> &rarr; <b>5 track</b></div>
+  <section class="stage">
+  <div class="sh"><span class="no">1</span><h2>Know where you are</h2><a class="thm" href="navigation-explained.html">Navigation</a></div>
+  <p class="cp">The robot's wheels report how far it turned, but wheels slip and the error compounds — after a minute of driving, dead-reckoning alone thinks the robot is a metre from where it actually is. Everything downstream plans from a lie.</p>
+  <div class="rule">Correct dead-reckoning with what you can measure; a particle filter fuses motion and sensing so the pose stops drifting.</div>
+  <div class="mx"><div class="m"><span>mean pose error — dead-reckoning</span><b>0.696 m</b></div><div class="m"><span>mean pose error — particle filter</span><b>0.131 m</b></div><div class="m"><span>dead-reckoning error by the end</span><b>1.168 m</b></div></div>
+  <p class="pv">Over a 60-step drive with 6 landmarks, dead-reckoning drifts to a mean pose error of <b>0.696 m</b> (and 1.168 m by the end). A 600-particle filter fusing the same odometry with range measurements holds the error to <b>0.131 m</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">2</span><h2>Plan the route</h2><a class="thm" href="navigation-explained.html">Navigation</a></div>
+  <p class="cp">The robot needs the shortest route across a building-sized grid. Search outward blindly in every direction (Dijkstra) and you expand almost the whole map before reaching the goal — too slow to replan as things change.</p>
+  <div class="rule">Guide the search with a distance-to-go heuristic: A* finds the same shortest path as Dijkstra while expanding a fraction of the nodes.</div>
+  <div class="mx"><div class="m"><span>nodes expanded — Dijkstra</span><b>1263</b></div><div class="m"><span>nodes expanded — A*</span><b>75</b></div><div class="m"><span>path length (both, optimal)</span><b>75 steps</b></div></div>
+  <p class="pv">On a 1600-cell grid, Dijkstra expands <b>1263</b> nodes to find the 75-step path. A* finds the <em>same</em> optimal path expanding only <b>75</b> nodes — a <b>16.8×</b> speedup.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">3</span><h2>Give the body room</h2><a class="thm" href="navigation-explained.html">Navigation</a></div>
+  <p class="cp">The planner treats the robot as a point, so it happily routes through the shortest gap in a wall. But the robot is not a point — it has width — and the shortest gap is narrower than the robot, so the 'valid' path drives the body straight into the wall.</p>
+  <div class="rule">Inflate every obstacle by the robot's radius before planning; a point-robot path collides the moment the body has width.</div>
+  <div class="mx"><div class="m"><span>min clearance — raw plan</span><b>1.0 cell (collides)</b></div><div class="m"><span>min clearance — inflated costmap</span><b>3.0 cells (safe)</b></div><div class="m"><span>path length — raw vs inflated</span><b>34 → 74</b></div></div>
+  <p class="pv">With a 2-cell-radius robot, the raw point-plan takes the short gap and comes within <b>1.0 cell</b> of the wall — the body <b>collides</b>. Planning on the inflated costmap routes through the wide gap (34→74 cells longer) but keeps <b>3.0 cells</b> of clearance — safe.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">4</span><h2>Dodge the pedestrian</h2><a class="thm" href="multi-robot-explained.html">Multi-robot</a></div>
+  <p class="cp">The planned route is clear of walls, but a person walks across it. A plan made against the static map drives the robot straight into a moving obstacle it never accounted for.</p>
+  <div class="rule">Plan in velocity space: forbid the velocities that lead to a collision and pick the closest allowed one.</div>
+  <div class="mx"><div class="m"><span>min separation — drive straight</span><b>0.00 m (hit)</b></div><div class="m"><span>min separation — velocity obstacles</span><b>0.96 m (clear)</b></div><div class="m"><span>reaches goal after dodging</span><b>yes</b></div></div>
+  <p class="pv">Driving straight to the goal, the robot's separation from the crossing pedestrian drops to <b>0.00 m</b> — a collision (radius 0.6 m). Choosing velocities outside the collision cone keeps a <b>0.96 m</b> separation and still reaches the goal.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">5</span><h2>Follow the path</h2><a class="thm" href="ct-explained.html">Control & MPC</a></div>
+  <p class="cp">A plan is a line on the floor; the robot still has to drive it. Steer toward the closest point on the path and the robot yanks the wheel left-right-left every step — the tracking looks fine on paper but the motors chatter and the ride is jerky.</p>
+  <div class="rule">Track a path by aiming at a lookahead point, not the nearest one; chasing the closest point makes the steering chatter.</div>
+  <div class="mx"><div class="m"><span>steering chatter — chase nearest</span><b>0.71 rad/step</b></div><div class="m"><span>steering chatter — lookahead</span><b>0.045 rad/step</b></div><div class="m"><span>cross-track error (both)</span><b>~0.073 m</b></div></div>
+  <p class="pv">Both controllers stay on the path (cross-track ~0.073 m either way). But chasing the nearest point chatters the steering at <b>0.71 rad/step</b>, while a lookahead point cuts that to <b>0.045 rad/step</b> — <b>16× smoother</b>.</p>
+</section>
+  <div class="note"><b>How this was built.</b> Real experiments (<code>scripts/nav_stack_experiments.py</code>, pure NumPy) produce every number above. Each stage is also a small <b>tested demo package</b> under <code>source-code/learning/nav-stack/&lt;stage&gt;/</code> &mdash; a reusable <code>core.js</code> carrying the rule, with <code>node</code> assert-tests. The second pipeline narrative alongside <a href="pick-place.html">pick-and-place</a>: where the lifecycle clusters cut across the field, these run along one robot task.</div>
+</div>
+<footer><div class="wrap">Navigation-stack pipeline &middot; five stages, one crossing, tested reusable cores &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="pick-place.html">pick-and-place pipeline</a></div></footer>
+</body></html>
