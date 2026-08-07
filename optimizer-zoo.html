@@ -1,0 +1,66 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>The optimizer zoo — one landscape, five optimizers</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#B0791F;--accent-deep:#8A5E14;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;--serif:"Iowan Old Style",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+ header{background:#0A0F14;color:#EAF0F0;padding:42px 0 30px;background-image:linear-gradient(100deg,color-mix(in srgb,#B0791F 30%,transparent),transparent)}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,#B0791F 55%,#cfe)}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#F4F8F8}
+ header p{color:#BEDCDC;font-size:16px;max-width:82ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#8FA6AE} header nav a{color:#AEC6CE}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 10px}
+ figure{margin:14px 0;text-align:center} figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
+ figcaption{font-size:12.5px;color:var(--graphite);margin-top:6px}
+ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
+ th,td{border:1px solid var(--line);padding:8px 12px;text-align:left} th{background:var(--panel);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--graphite)}
+ td.g{color:#1F6152;font-weight:600} td.b{color:#9A3327;font-weight:600} td.n{color:#889}
+ .fam{font-family:var(--mono);font-size:11px;color:var(--graphite)}
+ .ctrl{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:15px 17px;margin:15px 0}
+ .ch{display:flex;align-items:baseline;gap:10px} .ch h3{font-family:var(--serif);font-size:21px;margin:0}
+ .what{margin:8px 0} .res{font-size:14.5px;background:color-mix(in srgb,#B0791F 8%,#fff);border-radius:8px;padding:8px 12px;margin:8px 0}
+ .fail{font-size:13.5px;color:#3a2018} .fl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#9A3327;font-weight:700;margin-right:7px}
+ .cite{margin-top:9px;font-size:13px} .cl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);font-weight:700;margin-right:7px} .cite a{text-decoration:underline;text-underline-offset:2px}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:30px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">the optimizer zoo &middot; one problem, a family of methods</div>
+  <h1>Five ways to minimize a function</h1>
+  <p>One nonconvex landscape (a bowl with a deep global well, a shallow local well, and ripples), minimized five ways from the same starting point &mdash; from plain gradient descent up to sampling-based global search. Each is really run; each ends where its assumptions take it.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="controller-zoo.html">controller</a> &middot; <a href="estimator-zoo.html">estimator</a> &middot; <a href="planner-zoo.html">planner</a> &middot; <a href="optimizer-zoo.html">optimizer</a> &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="ct-explained.html">control &amp; MPC theme</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">The rule: <b>match the optimizer to the landscape.</b> Gradient methods (GD, momentum, Adam) descend into the nearest minimum and stay there &mdash; on a nonconvex problem they get trapped near the start. Global samplers (the cross-entropy method, simulated annealing) explore and find the global optimum. CEM is exactly the sampling idea behind MPPI and sampling-based MPC.</p>
+  <figure><img src="assets/zoo/optimizer_zoo.png" alt="optimizer trajectories on a nonconvex landscape"><figcaption>From one start, the three gradient methods collapse into the nearby local min (bottom-left); CEM (orange) and simulated annealing explore and reach the deep global min (star).</figcaption></figure>
+  <table><tr><th>method</th><th>final value (global &asymp;&minus;1.85)</th><th>outcome</th></tr><tr><td><b>Gradient descent</b><br><span class="fam">first-order local</span></td><td class="b">-0.58</td><td class="b">&#10007; local min</td></tr><tr><td><b>Momentum</b><br><span class="fam">first-order local</span></td><td class="b">-0.58</td><td class="b">&#10007; local min</td></tr><tr><td><b>Adam</b><br><span class="fam">adaptive first-order</span></td><td class="b">-0.58</td><td class="b">&#10007; local min</td></tr><tr><td><b>CEM</b><br><span class="fam">cross-entropy sampling</span></td><td class="g">-1.82</td><td class="g">&#10003; global min</td></tr><tr><td><b>Simulated annealing</b><br><span class="fam">stochastic global</span></td><td class="g">-1.8</td><td class="g">&#10003; global min</td></tr></table>
+  <section class="ctrl"><div class="ch"><h3>Gradient descent</h3><span class="fam">first-order local</span></div>
+  <p class="what">Step downhill along the negative gradient. The workhorse of everything, but it only ever moves to lower cost right where it stands.</p>
+  <p class="res">From this start it rolls straight into the nearby local minimum and stops (<b>-0.58</b>, still <b>6.64</b> from the global min).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Purely local: it finds the nearest minimum, so on a nonconvex landscape the starting point decides the answer.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>Momentum</h3><span class="fam">first-order local</span></div>
+  <p class="what">Gradient descent with a velocity term that accumulates, so it rolls through small bumps and speeds up down long slopes.</p>
+  <p class="res">Rolls through the ripples but still settles in the same local basin (<b>-0.58</b>) &mdash; it doesn't carry enough energy to cross into the far, deeper well.</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Helps with small ripples and ill-conditioning, but a deep neighbouring basin is still out of reach.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>Adam</h3><span class="fam">adaptive first-order</span></div>
+  <p class="what">Scales each coordinate's step by running estimates of the gradient's mean and variance &mdash; the default optimizer for deep nets.</p>
+  <p class="res">Adapts its step size but is still a local, gradient-following method: same local minimum (<b>-0.58</b>).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> A smarter step size is not global search &mdash; Adam converges faster within a basin but doesn't escape it.</div>
+  </section>
+<section class="ctrl"><div class="ch"><h3>CEM</h3><span class="fam">cross-entropy sampling</span></div>
+  <p class="what">Sample a population of candidates, keep the best 'elite' fraction, refit the sampling distribution to them, and repeat &mdash; no gradients at all.</p>
+  <p class="res">Explores widely and its distribution walks over to the deep well: it finds the <b>global</b> minimum (<b>-1.82</b>, only <b>0.24</b> away).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Global via sampling and derivative-free &mdash; the exact idea behind MPPI / sampling MPC. Cost: many function evaluations and a variance schedule it is sensitive to.</div>
+  <div class="cite"><span class="cl">In the ICRA/IROS 2025 papers</span> <a href="ct-explained.html">Real-Time Whole-Body Control of Legged Robots with Model-Predictive Path Integral Control</a></div></section>
+<section class="ctrl"><div class="ch"><h3>Simulated annealing</h3><span class="fam">stochastic global</span></div>
+  <p class="what">Random moves, accepted even when they go uphill &mdash; with a probability that cools over time, so it explores early and settles late.</p>
+  <p class="res">Its early uphill moves let it climb out of the local basin and wander to the global well (<b>-1.8</b>, <b>0.35</b> away).</p>
+  <div class="fail"><span class="fl">the tradeoff</span> Escapes local minima by accepting worse moves &mdash; but it is slow and its cooling schedule is a knob you have to tune.</div>
+  </section>
+  <div class="note"><b>How this was built.</b> One 2-D nonconvex function (<code>scripts/optimizer_zoo_experiments.py</code>, pure NumPy), five optimizers each run from the same point; the figure and numbers come straight from that run. The lesson generalises: gradient descent is local, so on a nonconvex loss the initialization decides which basin you land in &mdash; which is why global samplers matter for planning and why deep learning leans on good initialization and stochasticity.</div>
+</div>
+<footer><div class="wrap">Five ways to minimize a function &middot; a method zoo &middot; <a href="the-lab.html">the build lab</a> &middot; <a href="ct-explained.html">control &amp; MPC theme</a></div></footer>
+</body></html>
