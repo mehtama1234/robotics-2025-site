@@ -29,7 +29,7 @@
   <div class="bug">drone-flight stack &middot; the pipeline, stage by stage</div>
   <h1>Flying a delivery</h1>
   <p>A quadrotor has to know which way is up, plan a path its motors can actually fly, tilt itself to move sideways, turn desired torques into four rotor speeds, and track the plan without lagging. Five stages, five distinct sub-fields &mdash; each a plain rule, <b>run and measured</b>, with the failure it prevents. A production narrative, not a grab-bag: each stage feeds the next.</p>
-  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="pick-place.html">pick-and-place</a> &middot; <a href="nav-stack.html">navigation stack</a> &middot; <a href="driving-stack.html">driving stack</a> &middot; <a href="legged-stack.html">legged locomotion</a></nav>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="pick-place.html">pick-and-place</a> &middot; <a href="nav-stack.html">navigation stack</a> &middot; <a href="driving-stack.html">driving stack</a> &middot; <a href="legged-stack.html">legged locomotion</a> &middot; <a href="warehouse-fleet.html">warehouse fleet</a></nav>
 </div></header>
 <div class="wrap">
   <p class="lead">Each stage is one link: the attitude estimate anchors the controller, the smooth plan gives it something flyable, the tilt law turns motion into rotation, the mixer turns rotation into rotor speeds, and feedforward keeps it all on the line. A weak link anywhere and the drone drifts, jerks, hovers, can't rotate, or lags the path.</p>

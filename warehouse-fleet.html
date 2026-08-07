@@ -1,0 +1,75 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Running the fleet — the warehouse-fleet coordination stack, stage by stage</title>
+<style>
+ :root{--ink:#0F1619;--paper:#F5F6F4;--panel:#FBFCFB;--line:#D7DCD9;--graphite:#59656A;--accent:#B23A7A;--accent-deep:#7E2652;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;}
+ *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.6}
+ a{color:var(--accent-deep)} .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+ header{background:#160812;color:#F6E8EF;padding:40px 0 30px;background-image:linear-gradient(90deg,rgba(178,58,122,.28),rgba(122,108,208,.14),rgba(58,160,200,.12))}
+ header .bug{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#DD98BC}
+ header h1{font-family:var(--serif);font-size:34px;margin:10px 0 8px;color:#FBEEF4}
+ header p{color:#E4C4D6;font-size:16px;max-width:80ch;margin:0 0 14px}
+ header nav{font-family:var(--mono);font-size:12px;color:#C88AAC} header nav a{color:#E2A6C6}
+ .lead{font-size:16px;max-width:82ch;margin:22px 0 8px}
+ .flow{display:flex;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--graphite);margin:6px 0 18px}
+ .flow b{color:var(--accent-deep)}
+ .stage{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:16px 18px;margin:16px 0}
+ .sh{display:flex;align-items:center;gap:10px} .no{font-family:var(--mono);background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px}
+ .stage h2{font-family:var(--serif);font-size:21px;margin:0} .sh .thm{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-deep);background:rgba(178,58,122,.10);padding:3px 8px;border-radius:20px}
+ .cp{color:#333;margin:8px 0}
+ .rule{font-family:var(--serif);font-size:18px;border-left:3px solid var(--accent);padding:7px 13px;background:rgba(178,58,122,.06);border-radius:0 8px 8px 0;margin:8px 0}
+ .mx{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0} .m{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px;display:flex;gap:8px;align-items:baseline}
+ .m b{font-family:var(--serif);font-size:16px} .pv{font-size:13.5px;color:var(--graphite)}
+ .note{font-size:13px;color:var(--graphite);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:22px 0}
+ footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 64px;color:var(--graphite);font-size:12.5px}
+</style></head><body>
+<header><div class="wrap">
+  <div class="bug">warehouse-fleet coordination &middot; the fleet, decision by decision</div>
+  <h1>Running the fleet</h1>
+  <p>A single robot is the easy part. A hundred of them sharing the same aisles, junctions, chargers, and pick stations is where warehouses win or grind to a halt. Five fleet-level decisions &mdash; who does what, who goes first, how to break a jam, how to stay charged, and how to keep the stations balanced &mdash; each a plain rule, <b>run and measured</b>, with the failure it prevents. The first pipeline at fleet scale.</p>
+  <nav><a href="index.html">home</a> &middot; <a href="the-rules.html">the field in 22 rules</a> &middot; <a href="pick-place.html">pick-and-place</a> &middot; <a href="nav-stack.html">navigation</a> &middot; <a href="driving-stack.html">driving</a> &middot; <a href="drone-flight.html">drone</a> &middot; <a href="legged-stack.html">legged</a></nav>
+</div></header>
+<div class="wrap">
+  <p class="lead">Every stage below is a place a fleet quietly loses money or seizes up: overdriving, colliding, deadlocking, stranding, or starving idle stations. Each is a coordination rule measured against the failure it prevents &mdash; the difference between a warehouse that flows and one that jams.</p>
+  <div class="flow"><b>1 assign</b> &rarr; <b>2 route</b> &rarr; <b>3 unstick</b> &rarr; <b>4 recharge</b> &rarr; <b>5 balance</b></div>
+  <section class="stage">
+  <div class="sh"><span class="no">1</span><h2>Hand out the jobs</h2><a class="thm" href="multi-robot-explained.html">Multi-robot</a></div>
+  <p class="cp">A wave of pick orders drops and every idle robot grabs the job nearest to it. That looks efficient robot-by-robot, but it leaves a robot on the far side sprinting across the whole warehouse for a job another robot was right next to — the fleet's total travel balloons.</p>
+  <div class="rule">Assign the whole fleet at once to minimize total travel; grabbing the nearest job first is greedy and leaves everyone else stranded.</div>
+  <div class="mx"><div class="m"><span>total travel — greedy nearest</span><b>25.0 m</b></div><div class="m"><span>total travel — optimal assignment</span><b>18.6 m</b></div><div class="m"><span>fleet driving saved</span><b>26%</b></div></div>
+  <p class="pv">For <b>7</b> robots and 7 jobs, greedy nearest-first assignment racks up <b>25.0 m</b> of total travel. Solving the assignment optimally does the same work in <b>18.6 m</b> — <b>26% less driving</b> for the identical set of jobs.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">2</span><h2>Cross the intersection</h2><a class="thm" href="navigation-explained.html">Navigation</a></div>
+  <p class="cp">Several aisles meet at one junction, and robots from every direction plan straight through it whenever they arrive. Their independently-optimal paths all want the same square at the same second — and two robots in one square is a collision.</p>
+  <div class="rule">Reserve the shared intersection so one robot crosses at a time; letting everyone enter when they like is how they collide in it.</div>
+  <div class="mx"><div class="m"><span>collision steps — free-for-all</span><b>4</b></div><div class="m"><span>collision steps — reserved</span><b>0</b></div><div class="m"><span>total added wait</span><b>19 steps</b></div></div>
+  <p class="pv">With <b>6</b> robots converging on the junction, letting them enter freely produces <b>4</b> collision time-steps. Reserving the cell drops that to <b>0</b> — for just <b>19 steps</b> of total waiting across the fleet.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">3</span><h2>Break the jam</h2><a class="thm" href="multi-robot-explained.html">Multi-robot</a></div>
+  <p class="cp">Two robots meet head-on in a one-wide aisle, each needing to reach the other end. Give them the same polite rule — 'if something's in the way, stop and wait' — and they stop nose to nose and wait for each other forever. The aisle is jammed and neither job finishes.</p>
+  <div class="rule">Break a head-on corridor tie with a yield rule (one robot ducks into a bay); a symmetric 'both wait' deadlocks forever.</div>
+  <div class="mx"><div class="m"><span>deliveries done — symmetric wait</span><b>0 (deadlock)</b></div><div class="m"><span>deliveries done — yield rule</span><b>2</b></div><div class="m"><span>steps to clear the jam</span><b>9</b></div></div>
+  <p class="pv">In a one-wide corridor with a passing bay at cell 3, the symmetric 'both wait' rule completes <b>0</b> of the two deliveries — a permanent deadlock. The yield rule clears the jam and completes <b>2</b> in <b>9 steps</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">4</span><h2>Keep the fleet alive</h2><a class="thm" href="multi-robot-explained.html">Multi-robot</a></div>
+  <p class="cp">Robots run on batteries and there is always another job to take. Chase jobs until the battery is empty and a robot dies mid-aisle — now it is not just idle, it is an obstacle that has to be rescued, and it took its half-finished job down with it.</p>
+  <div class="rule">Send a robot to charge while it can still reach the charger; running every robot until it dies strands them dead in the aisles.</div>
+  <div class="mx"><div class="m"><span>stranded robots — run till dead</span><b>8 of 8</b></div><div class="m"><span>stranded robots — scheduled</span><b>0</b></div><div class="m"><span>jobs done — run-till-dead vs scheduled</span><b>16 vs 200</b></div></div>
+  <p class="pv">Across <b>8</b> robots, running each until it dies strands <b>8</b> of them in the aisles and completes only <b>16</b> jobs. Charging by reachability strands <b>0</b> and completes <b>200</b>.</p>
+</section>
+<section class="stage">
+  <div class="sh"><span class="no">5</span><h2>Balance the stations</h2><a class="thm" href="multi-robot-explained.html">Multi-robot</a></div>
+  <p class="cp">Robots carry every tote to the same convenient pick station because it is closest. That station's queue grows without bound while the other two stand idle — the whole fleet's throughput is capped at what one station can process, no matter how many robots you add.</p>
+  <div class="rule">Send each item to the shortest-queue station; piling every job on one station caps the whole fleet at that station's rate.</div>
+  <div class="mx"><div class="m"><span>throughput — pile on one</span><b>0.33 items/step</b></div><div class="m"><span>throughput — balanced</span><b>1.0 items/step</b></div><div class="m"><span>max queue — one vs balanced</span><b>400 vs 1</b></div></div>
+  <p class="pv">With <b>3</b> pick stations (each 1 item per 3 steps), piling every tote on one station caps throughput at <b>0.33</b> items/step and lets its queue blow up to <b>400</b>. Shortest-queue routing reaches <b>1.0</b> items/step with a max queue of <b>1</b>.</p>
+</section>
+  <div class="note"><b>How this was built.</b> Real experiments (<code>scripts/warehouse_fleet_experiments.py</code>, pure NumPy) produce every number above. Each stage is also a small <b>tested demo package</b> under <code>source-code/learning/warehouse-fleet/&lt;stage&gt;/</code> &mdash; a reusable <code>core.js</code> carrying the rule, with <code>node</code> assert-tests. The sixth pipeline narrative and the first at fleet scale, joining <a href="pick-place.html">pick-and-place</a>, <a href="nav-stack.html">navigation</a>, <a href="driving-stack.html">driving</a>, <a href="drone-flight.html">drone flight</a>, and <a href="legged-stack.html">legged locomotion</a>.</div>
+</div>
+<footer><div class="wrap">Warehouse-fleet coordination &middot; five decisions, one fleet, tested reusable cores &middot; <a href="index.html">Robotics 2025 home</a> &middot; <a href="legged-stack.html">legged locomotion</a></div></footer>
+</body></html>
